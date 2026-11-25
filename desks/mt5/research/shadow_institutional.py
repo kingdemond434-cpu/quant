@@ -23,9 +23,10 @@ Every sensor carries a FETCH CLASS -- `desk_axis` (a file already in `data/axes`
 or `UNMEASURED` -- and a MACHINE_USE_ALLOWED flag. SINCE LAWS 5e (2026-09-23) THAT FLAG IS TRUE
 FOR EVERY SENSOR OFF THE FIVE REFUSED ACTS: a publisher's terms are a ROUTING LABEL carried in
 `terms_note` and `licence`, they bound what the desk may REDISTRIBUTE, and they have never bound
-what it may read. The old "CATALOGUED AND NEVER FETCHED" disposition, and the robots refusal
-beside it, were discovery brakes the desk imposed on itself; both are deleted, the notes survive
-as provenance, and no access control or paywall is ever bypassed.
+what it may read. The old "CATALOGUED AND NEVER FETCHED" disposition was a discovery brake the
+desk imposed on itself and is deleted; the notes survive as provenance, and no access control or
+paywall is ever bypassed. A robots "no" (disallowed, UNREAD or hard stop) STOPS every automated
+wire fetch, whatever the sensor's `robots` field says (Auditor ruling 2026-11-18, #1335).
 
 THE DISAGREEMENT DATASET. D_t = [retail, institutional (COT), derivatives, options, news, macro]
 is a feature series in its own right, because the market's own factions disagreeing is an
@@ -227,18 +228,29 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          {"axis_file": "bis", "axis_series": "USDCNH.carry_differential"}),
     ),
     "usd_liquidity": (
+        # PRIMARY PUBLISHERS, NOT FRED (BACKLOG 609, 2026-11-18). FRED is refused on terms, so
+        # these four read `data/axes/usd_liquidity.json`, written by usd_liquidity_primary from
+        # the Fed Board's H.4.1, the NY Fed and Treasury FiscalData, each point dated by its
+        # publication time. The series names are FRED's, kept so the table reads the same.
         ("us_reserve_balances", "reserve balances at Federal Reserve Banks", "desk_axis",
-         "FRED WRESBAL via the desk's fred axis", "weekly", 2, +1,
-         ("XAUUSD", "NAS100", "US500", "USDX"), {"axis_file": "fred", "axis_series": "WRESBAL"}),
+         "Fed Board H.4.1 week average (RESH4R_XAW_N.WW) via the usd_liquidity axis", "weekly",
+         2, +1, ("XAUUSD", "NAS100", "US500", "USDX"),
+         {"axis_file": "usd_liquidity", "axis_series": "WRESBAL",
+          "licence": "public domain (federalreserve.gov/disclaimer.htm); cite the Board"}),
         ("us_tga", "Treasury General Account: a drain when it rises", "desk_axis",
-         "FRED WTREGEN", "weekly", 2, -1, ("XAUUSD", "NAS100", "USDX"),
-         {"axis_file": "fred", "axis_series": "WTREGEN"}),
+         "Treasury FiscalData Daily Treasury Statement, TGA closing balance (daily)", "daily",
+         1, -1, ("XAUUSD", "NAS100", "USDX"),
+         {"axis_file": "usd_liquidity", "axis_series": "WTREGEN",
+          "licence": "FiscalData: free, without restriction, commercial use allowed"}),
         ("us_rrp", "overnight reverse repo take-up: a drain when it rises", "desk_axis",
-         "FRED RRPONTSYD", "daily", 1, -1, ("XAUUSD", "NAS100", "US500"),
-         {"axis_file": "fred", "axis_series": "RRPONTSYD"}),
+         "NY Fed reverse repo operations API", "daily", 1, -1, ("XAUUSD", "NAS100", "US500"),
+         {"axis_file": "usd_liquidity", "axis_series": "RRPONTSYD",
+          "licence": "NY Fed terms: automated access licensed; attribution required"}),
         ("us_sofr_iorb", "SOFR minus IORB: the funding-stress spread", "desk_axis",
-         "FRED SOFR and IORB", "daily", 1, -1, ("XAUUSD", "USDX", "US500"),
-         {"axis_file": "fred", "axis_series": "SOFR"}),
+         "NY Fed reference rates API (SOFR; IORB leg UNMEASURED)", "daily", 1, -1,
+         ("XAUUSD", "USDX", "US500"),
+         {"axis_file": "usd_liquidity", "axis_series": "SOFR",
+          "licence": "NY Fed terms; SOFR carries the DTCC Solutions notice"}),
         ("us_bill_supply", "Treasury auction sizes: bill supply absorbs cash", "public_endpoint",
          "Treasury FiscalData auctions API (US public domain)", "daily", 1, -1,
          ("USDX", "XAUUSD"), {"url": _FISCAL}),
@@ -514,10 +526,10 @@ class Guard:
     """THE ONE NETWORK DOOR: a timeout, a wall-clock budget and a polite User-Agent.
 
     LAWS 5e (2026-09-23): this door used to consult the terms first and the robots file second,
-    and refuse on either. Both were DISCOVERY BRAKES. The robots verdict is still READ, because
-    it is worth recording, and it now travels back as a LABEL on the row instead of stopping the
-    fetch; the terms refusal is narrowed to the five acts of the hard boundary, which no sensor
-    in this table carries. `no_fetch` turns the door into a fixture reader under
+    and refuse on either. The terms refusal is narrowed to the five acts of the hard boundary,
+    which no sensor in this table carries. The robots verdict STOPS the fetch on a "no"
+    (disallowed, UNREAD or hard stop; Auditor ruling 2026-11-18, #1335) and the reason is kept
+    in `robots_refused`. `no_fetch` turns the door into a fixture reader under
     `data/shadow_fixtures/<sensor_id>.json`, which is how the tests and an egress-less box
     exercise every parse path.
     """
@@ -532,6 +544,7 @@ class Guard:
         self.calls = 0
         self.refused: list[dict[str, str]] = []
         self.notes: list[dict[str, str]] = []
+        self.robots_refused: list[dict[str, str]] = []
         self._robots: dict[str, Any] = {}
 
     def over(self) -> bool:
@@ -541,30 +554,40 @@ class Guard:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """Group-scoped robots verdict, READ AND RECORDED, never obeyed as a veto (LAWS 5e).
+        """Group-scoped robots verdict: False STOPS the automated fetch (Auditor, 2026-11-18).
 
-        The bool is kept so callers can label the row; `get()` no longer turns a False into a
-        skip. An unreadable robots.txt is UNMEASURED, which is also not a refusal.
+        A disallowed path, a hard stop (401/403/429/451) and an UNREAD robots.txt (5xx, HTML,
+        transport failure) are all a "no"; only real rules that allow the path, or a 404/410
+        (no file), are a "yes". Unread robots are not permission.
         """
         parts = urllib.parse.urlsplit(url)
         root = f"{parts.scheme}://{parts.netloc}"
         if root not in self._robots:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(f"{root}/robots.txt")
+            from libs.data import robots_body as rb
             self.calls += 1
+            # Read by hand, not `RobotFileParser.read()`: that parses an HTML page served 200 as
+            # allow-all and reads 429/451 as allow-all, so the LABEL would claim a yes.
+            req = urllib.request.Request(f"{root}/robots.txt", headers={"User-Agent": UA})
             try:
-                rp.read()
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
+                    got_ = rb.robots_rules_or_refusal(getattr(r, "status", 200),
+                                                      r.headers.get("Content-Type"),
+                                                      r.read(500_000))
+            except urllib.error.HTTPError as exc:
+                got_ = rb.robots_rules_or_refusal(int(exc.code), None, "")
+                exc.close()
             except (OSError, urllib.error.URLError, ValueError) as exc:
-                self._robots[root] = f"unreadable: {type(exc).__name__}"
-            else:
-                self._robots[root] = rp
+                got_ = f"unreadable: {type(exc).__name__}"
+            self._robots[root] = got_
         got = self._robots[root]
+        if isinstance(got, str) and got.startswith("ROBOTS_HARD_STOP"):
+            return False, f"{got}: a hard stop for this host; the fetch stops"
         if isinstance(got, str):
-            return True, f"robots.txt {got} -- UNMEASURED, recorded as a label, not a refusal"
+            return False, (f"robots.txt {got} -- UNMEASURED, and unread robots are not "
+                           "permission; the fetch stops")
         ok = bool(got.can_fetch(UA, url))
         return ok, ("robots allows this path for our agent" if ok
-                    else "robots disallows this path for our agent: RECORDED AS A LABEL and "
-                         "fetched anyway (LAWS 5e); it routes redistribution, not reading")
+                    else "robots disallows this path for our agent; the fetch stops")
 
     def fixture(self, sensor_id: str) -> tuple[Any, str]:
         p = self.fixtures / f"{sensor_id}.json"
@@ -592,12 +615,14 @@ class Guard:
             return None, "refused: only http(s) grounds are fetched"
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
-        if sensor.robots == "checked":
-            # READ AND RECORDED, NEVER A SKIP (LAWS 5e, 2026-09-23). This used to `return None`
-            # on a Disallow, which is how the desk lost ground nobody ever re-argued.
-            ok, why = self.robots_ok(url)
-            if not ok:
-                self.notes.append({"sensor": sensor.sensor_id, "terms_note": why})
+        # A robots "no" (disallowed, UNREAD or hard stop) STOPS EVERY automated fetch: Auditor
+        # ruling 2026-11-18 on #1335, whatever LAWS 5e's routing-label text says. Read on every
+        # wire fetch, whatever `sensor.robots` declares -- an "api" sensor is no exemption.
+        ok, why = self.robots_ok(url)
+        if not ok:
+            why = f"refused by robots: {why}"
+            self.robots_refused.append({"sensor": sensor.sensor_id, "why": why})
+            return None, why
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
             self.calls += 1
@@ -1350,8 +1375,10 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
         # The key is kept so an old reader finds an explicit empty list.
         "refused_for_terms": guard.refused,
         "terms_labels": guard.notes,
-        "access_rule": ("every sensor off the five refused acts is MINED; licence, terms and "
-                        "robots notes are routing labels that withhold redistribution"),
+        "refused_for_robots": guard.robots_refused,
+        "access_rule": ("every sensor off the five refused acts is MINED; licence and terms "
+                        "notes are routing labels that withhold redistribution; a robots "
+                        "'no' stops the fetch"),
         "disagreement": {k: v for k, v in dis.items() if k not in ("points", "series")},
         "vault_manifest": vault,
         "gap_map": gap_map(latents, vault, all_sensors),
@@ -1366,7 +1393,7 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="the free shadow-institutional stack")
     ap.add_argument("--fetch", action="store_true",
-                    help="go to the network (robots is read and labelled, never obeyed as a veto)")
+                    help="go to the network (a robots \"no\" stops the fetch)")
     ap.add_argument("--no-fetch", dest="no_fetch", action="store_true",
                     help="read fixtures instead of the wire (the default)")
     ap.add_argument("--dry-run", action="store_true", help="measure and write nothing")

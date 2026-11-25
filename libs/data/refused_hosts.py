@@ -51,10 +51,38 @@ def refusal(url: str) -> str | None:
     host = host_of(url)
     if host is None:
         return "the URL does not parse to a host, so its terms cannot be read"
+    return host_refusal(host)
+
+
+#: The status word a refused fetch is recorded under: the repo's existing vocabulary for a
+#: source refused by its own terms (axis_ingest, data_axis_miner, shadow_institutional).
+STATUS = "BLOCKED_ON_TERMS"
+
+
+def host_refusal(host: str) -> str | None:
+    """Why a bare hostname may not be contacted, or None. Empty is not refused here: a caller
+    holding no host has no request to make (``refusal`` refuses an unparseable URL)."""
+    h = str(host or "").lower().rstrip(".")
+    if not h:
+        return None
     for domain, why in REFUSED_HOSTS.items():
-        if host == domain or host.endswith("." + domain):
+        if h == domain or h.endswith("." + domain):
             return why
     return None
+
+
+class RefusedSource(urllib.error.URLError):
+    """A request to a host whose terms refuse automated contact. Raised BEFORE the wire, so every
+    caller that already handles a failed fetch (URLError) handles a refusal the same way, and the
+    message carries the status word so it is never read as an outage."""
+
+
+def guard(url: str) -> None:
+    """Raise ``RefusedSource`` when ``url`` may not be contacted; return None otherwise. The one
+    line every transport puts in front of its socket."""
+    why = refusal(url)
+    if why:
+        raise RefusedSource(f"{STATUS}: {why}")
 
 
 class RefusedRedirect(urllib.error.URLError):

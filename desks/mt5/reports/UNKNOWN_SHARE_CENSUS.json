@@ -2,16 +2,16 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1632402,
+  "docket_unique_cells": 1708767,
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
-  "utc_day": "2026-11-18",
-  "started_at": "2026-11-18T05:17:50+00:00",
-  "written_at": "2026-11-18T05:19:11+00:00",
+  "stage": "building",
+  "utc_day": "2026-11-24",
+  "started_at": "2026-11-24T03:03:10+00:00",
+  "written_at": "2026-11-24T03:40:16+00:00",
   "cells_planned": 6000,
-  "cells_visited": 0,
+  "cells_visited": 3298,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -20,55 +20,145 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 66217,
-    "rss_cap_mb": 16554,
-    "peak_rss_mb": 522
+    "available_mb": 55300,
+    "rss_cap_mb": 13825,
+    "peak_rss_mb": 1103
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 66.3,
+  "lockbox_cut": "2022-05-04",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 631,
+  "elapsed_s": 2217.1,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 17,
+    "peerless_rows": 21,
     "siblings": 0,
     "unfilled_by_family": {
-      "triangle": 17
+      "triangle": 16,
+      "correlation_regime": 4,
+      "relative_value": 1
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 3298,
+    "gate0_rejected": {
+      "symbol_eligibility": 41
+    },
+    "preflight_refused": 1505,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1750,
+    "unknown": 189,
+    "unknown_share_of_judged": 0.108,
+    "wilson95": [
+      0.0943,
+      0.1234
+    ],
+    "unknown_by_reason": {
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 18,
+      "short_history_after_cut": 7
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 69,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "session_handoff": 4,
+      "asia_momentum": 3,
+      "hedging_demand_close": 3,
+      "london_close_momentum": 3,
+      "dow_effect": 3,
+      "vol_transition": 3,
+      "pca_residual": 2
+    },
+    "unknown_by_chart": {
+      "H1": 91,
+      "M30": 34,
+      "M15": 15,
+      "M5": 15,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
+    },
+    "judged_by_chart": {
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 3298,
+    "gate0_rejected": {
+      "symbol_eligibility": 41
+    },
+    "preflight_refused": 1505,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1750,
+    "unknown": 189,
+    "unknown_share_of_judged": 0.108,
+    "wilson95": [
+      0.0943,
+      0.1234
+    ],
+    "unknown_by_reason": {
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 18,
+      "short_history_after_cut": 7
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 69,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "session_handoff": 4,
+      "asia_momentum": 3,
+      "hedging_demand_close": 3,
+      "london_close_momentum": 3,
+      "dow_effect": 3,
+      "vol_transition": 3,
+      "pca_residual": 2
+    },
+    "unknown_by_chart": {
+      "H1": 91,
+      "M30": 34,
+      "M15": 15,
+      "M5": 15,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
+    },
+    "judged_by_chart": {
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
+    }
   },
   "siblings_only": {
     "cells": 0,

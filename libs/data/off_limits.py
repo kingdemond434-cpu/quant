@@ -49,6 +49,17 @@ def off_limits(url: str) -> str | None:
             return f"{WHY} [{host}]"
     if host in STATUTE_HOSTS:
         return f"{WHY_STATUTE} [{host}]"
+    # HOSTS WHOSE OWN TERMS REFUSE AUTOMATED CONTACT (libs.data.refused_hosts: FRED, Yahoo,
+    # Cboe, ...). Every transport that asks this function is also refused there, so a FRED URL
+    # handed to polite_fetch / free_stack / cn_sources never reaches the wire (BACKLOG 609). An
+    # unimportable list fails closed: unclear terms are a refusal.
+    try:
+        from libs.data.refused_hosts import host_refusal
+    except Exception as exc:
+        return f"BLOCKED_ON_TERMS: refused-host list unimportable ({type(exc).__name__}) [{host}]"
+    why = host_refusal(host)
+    if why:
+        return f"BLOCKED_ON_TERMS: {why} [{host}]"
     return None
 
 

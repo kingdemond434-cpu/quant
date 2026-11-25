@@ -92,6 +92,12 @@ def _fetch(url: str, dest: Path) -> bytes:
     that dies on one client library and reports "source unavailable" would have produced a FALSE
     negative result here (the exact scope-the-negative-result defect the battery warns about --
     the ROUTE failed, not the capability)."""
+    import sys
+    _root = str(Path(__file__).resolve().parent.parent)
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    from libs.data.refused_hosts import guard
+    guard(url)          # a terms-refused host (FRED) raises before the cache and the wire
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size > 0:
         return dest.read_bytes()
@@ -275,7 +281,8 @@ def main() -> int:
         try:
             prices = _fred(sid)
         except (OSError, ValueError) as e:
-            dropped.append(f"{asset}: FRED {sid} unavailable ({type(e).__name__})")
+            dropped.append(f"{asset}: FRED {sid} unavailable ({type(e).__name__}: "
+                           f"{str(e)[:90]})")
             continue
         dates = [d for d, _c, _n in rows]
         comm = np.asarray([c for _d, c, _n in rows], dtype="float64")

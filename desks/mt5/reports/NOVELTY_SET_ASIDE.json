@@ -1,7 +1,7 @@
 {
- "at": "2026-11-18T22:21:13+00:00",
+ "at": "2026-11-24T11:37:42+00:00",
  "screened": 1500,
- "set_aside": 463,
+ "set_aside": 961,
  "rows": [
   {
    "sym": "AUDCAD",
@@ -16,12 +16,6 @@
    "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
-   "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
    "sym": "AUDCHF",
    "family": "clock_transition",
    "twin": "external.AUDCHF@M5.clock_transition.p=5ca4043f7f0d080d",
@@ -92,42 +86,6 @@
    "family": "formula",
    "twin": "external.AUDCHF@M5.formula.p=9181c7f0fa5cfa11",
    "why": "every measurable dimension reads as a twin of external.AUDCHF@M5.formula.p=9181c7f0fa5cfa11 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "cross_asset_residual",
-   "twin": "external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "AUDSGD",
@@ -197,9 +155,21 @@
   },
   {
    "sym": "EURCHF",
-   "family": "mass_screen_cond",
-   "twin": "external.EURCHF@M15.mass_screen_cond.p=f90f42f2816991ba",
-   "why": "every measurable dimension reads as a twin of external.EURCHF@M15.mass_screen_cond.p=f90f42f2816991ba (feature 0.90, semantic 0.92); the twin is NAMED rather th"
+   "family": "formula",
+   "twin": "external.EURCHF@M5.formula.p=a92bd5c193fcc6b5",
+   "why": "every measurable dimension reads as a twin of external.EURCHF@M5.formula.p=a92bd5c193fcc6b5 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "EURCHF",
+   "family": "formula",
+   "twin": "external.EURCHF@M5.formula.p=a92bd5c193fcc6b5",
+   "why": "every measurable dimension reads as a twin of external.EURCHF@M5.formula.p=a92bd5c193fcc6b5 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "EURCHF",
+   "family": "formula",
+   "twin": "external.EURCHF@M5.formula.p=a92bd5c193fcc6b5",
+   "why": "every measurable dimension reads as a twin of external.EURCHF@M5.formula.p=a92bd5c193fcc6b5 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
   },
   {
    "sym": "EURSGD",
@@ -208,1600 +178,1630 @@
    "why": "every measurable dimension reads as a twin of external.EURSGD@M5.formula.p=1e38755a7b779930 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
   },
   {
-   "sym": "EURSGD",
+   "sym": "GBPCAD",
    "family": "formula",
-   "twin": "external.EURSGD@M5.formula.p=1e38755a7b779930",
-   "why": "every measurable dimension reads as a twin of external.EURSGD@M5.formula.p=1e38755a7b779930 (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
+   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDTHB",
+   "family": "formula",
+   "twin": "external.USDTHB@M5.formula.p=5c086ff05042325b",
+   "why": "every measurable dimension reads as a twin of external.USDTHB@M5.formula.p=5c086ff05042325b (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "vol_transition",
+   "twin": "ADAUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "vol_transition",
+   "twin": "AUDCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "vol_transition",
+   "twin": "AUDCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDHUF",
+   "family": "vol_transition",
+   "twin": "AUDHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDJPY",
+   "family": "vol_transition",
+   "twin": "AUDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "vol_transition",
+   "twin": "AUDNZD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDNZD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "vol_transition",
+   "twin": "AUDSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDUSD",
+   "family": "cot_positioning",
+   "twin": "AUDUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDUSD",
+   "family": "vol_transition",
+   "twin": "AUDUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUS200",
+   "family": "vol_transition",
+   "twin": "AUS200.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUS200.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AVAXUSD",
+   "family": "vol_transition",
+   "twin": "AVAXUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AVAXUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BCHUSD",
+   "family": "vol_transition",
+   "twin": "BCHUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BCHUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BNBUSD",
+   "family": "vol_transition",
+   "twin": "BNBUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BNBUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BTCUSD",
+   "family": "vol_transition",
+   "twin": "BTCUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BTCUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CA60",
+   "family": "vol_transition",
+   "twin": "CA60.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CA60.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CADCHF",
+   "family": "vol_transition",
+   "twin": "CADCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CADCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CADJPY",
+   "family": "vol_transition",
+   "twin": "CADJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CADJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFDKK",
+   "family": "vol_transition",
+   "twin": "CHFDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFHUF",
+   "family": "vol_transition",
+   "twin": "CHFHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFJPY",
+   "family": "vol_transition",
+   "twin": "CHFJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "vol_transition",
+   "twin": "CHFNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFPLN",
+   "family": "vol_transition",
+   "twin": "CHFPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFSEK",
+   "family": "vol_transition",
+   "twin": "CHFSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFSGD",
+   "family": "vol_transition",
+   "twin": "CHFSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHINAH",
+   "family": "vol_transition",
+   "twin": "CHINAH.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHINAH.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CORN",
+   "family": "vol_transition",
+   "twin": "CORN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CORN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "COTTON",
+   "family": "vol_transition",
+   "twin": "COTTON.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS COTTON.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "DOGEUSD",
+   "family": "vol_transition",
+   "twin": "DOGEUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS DOGEUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "DOTUSD",
+   "family": "vol_transition",
+   "twin": "DOTUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS DOTUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "E35",
+   "family": "vol_transition",
+   "twin": "E35.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS E35.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ETHUSD",
+   "family": "vol_transition",
+   "twin": "ETHUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ETHUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURAUD",
+   "family": "vol_transition",
+   "twin": "EURAUD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURAUD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCAD",
+   "family": "vol_transition",
+   "twin": "EURCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCHF",
+   "family": "vol_transition",
+   "twin": "EURCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCZK",
+   "family": "vol_transition",
+   "twin": "EURCZK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCZK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURDKK",
+   "family": "vol_transition",
+   "twin": "EURDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURGBP",
+   "family": "vol_transition",
+   "twin": "EURGBP.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURGBP.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURHKD",
+   "family": "vol_transition",
+   "twin": "EURHKD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURHKD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURHUF",
+   "family": "vol_transition",
+   "twin": "EURHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURILS",
+   "family": "vol_transition",
+   "twin": "EURILS.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURILS.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURJPY",
+   "family": "vol_transition",
+   "twin": "EURJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURMXN",
+   "family": "vol_transition",
+   "twin": "EURMXN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURMXN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURNOK",
+   "family": "vol_transition",
+   "twin": "EURNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURNZD",
+   "family": "vol_transition",
+   "twin": "EURNZD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURNZD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURPLN",
+   "family": "vol_transition",
+   "twin": "EURPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURSEK",
+   "family": "vol_transition",
+   "twin": "EURSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURSGD",
+   "family": "vol_transition",
+   "twin": "EURSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURUSD",
+   "family": "cot_positioning",
+   "twin": "EURUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURUSD",
+   "family": "vol_transition",
+   "twin": "EURUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "EURZAR",
-   "family": "formula",
-   "twin": "external.EURZAR@M5.formula.p=82a672ed0c2675a6",
-   "why": "every measurable dimension reads as a twin of external.EURZAR@M5.formula.p=82a672ed0c2675a6 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "family": "vol_transition",
+   "twin": "EURZAR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURZAR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EUSTX50",
+   "family": "vol_transition",
+   "twin": "EUSTX50.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EUSTX50.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "FRA40",
+   "family": "vol_transition",
+   "twin": "FRA40.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS FRA40.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "GBPAUD",
+   "family": "vol_transition",
+   "twin": "GBPAUD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPAUD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "family": "vol_transition",
+   "twin": "GBPCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPCHF",
+   "family": "vol_transition",
+   "twin": "GBPCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPDKK",
+   "family": "vol_transition",
+   "twin": "GBPDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "GBPCAD",
-   "family": "formula",
-   "twin": "external.GBPCAD@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.GBPCAD@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPHUF",
+   "family": "vol_transition",
+   "twin": "GBPHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "GBPJPY",
-   "family": "cross_asset_residual",
-   "twin": "external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
+   "family": "vol_transition",
+   "twin": "GBPJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPMXN",
+   "family": "vol_transition",
+   "twin": "GBPMXN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPMXN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPNOK",
+   "family": "vol_transition",
+   "twin": "GBPNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPNZD",
+   "family": "vol_transition",
+   "twin": "GBPNZD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPNZD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPPLN",
+   "family": "vol_transition",
+   "twin": "GBPPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPSEK",
+   "family": "vol_transition",
+   "twin": "GBPSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPSGD",
+   "family": "vol_transition",
+   "twin": "GBPSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPUSD",
+   "family": "cot_positioning",
+   "twin": "GBPUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPUSD",
+   "family": "vol_transition",
+   "twin": "GBPUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GBPZAR",
+   "family": "vol_transition",
+   "twin": "GBPZAR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPZAR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "GER40",
+   "family": "vol_transition",
+   "twin": "GER40.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GER40.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "HK50",
+   "family": "vol_transition",
+   "twin": "HK50.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS HK50.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "HKDJPY",
+   "family": "vol_transition",
+   "twin": "HKDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS HKDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "GBPJPY",
-   "family": "formula",
-   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "JPN225",
+   "family": "vol_transition",
+   "twin": "JPN225.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS JPN225.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "NAS100",
+   "family": "vol_transition",
+   "twin": "NAS100.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NAS100.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "NOKJPY",
+   "family": "vol_transition",
+   "twin": "NOKJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NOKJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "NOKSEK",
+   "family": "vol_transition",
+   "twin": "NOKSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NOKSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "family": "vol_transition",
+   "twin": "NZDCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NZDCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "family": "vol_transition",
+   "twin": "NZDCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NZDCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "NZDHUF",
+   "family": "vol_transition",
+   "twin": "NZDHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NZDHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "NZDJPY",
+   "family": "vol_transition",
+   "twin": "NZDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NZDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "NZDSGD",
+   "family": "vol_transition",
+   "twin": "NZDSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS NZDSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "SEKJPY",
+   "family": "vol_transition",
+   "twin": "SEKJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS SEKJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "SGDJPY",
+   "family": "vol_transition",
+   "twin": "SGDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS SGDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "SOLUSD",
+   "family": "vol_transition",
+   "twin": "SOLUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS SOLUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "SOYBEAN",
+   "family": "vol_transition",
+   "twin": "SOYBEAN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS SOYBEAN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "UK100",
+   "family": "vol_transition",
+   "twin": "UK100.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS UK100.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "US30",
+   "family": "vol_transition",
+   "twin": "US30.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS US30.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "US500",
+   "family": "vol_transition",
+   "twin": "US500.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS US500.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "USDCAD",
+   "family": "cot_positioning",
+   "twin": "USDCAD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCAD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "NZDCHF",
-   "family": "formula",
-   "twin": "external.NZDCHF@M5.formula.p=67fd084a69d6afeb",
-   "why": "every measurable dimension reads as a twin of external.NZDCHF@M5.formula.p=67fd084a69d6afeb (feature 1.00, semantic 1.00); the twin is NAMED rather than the can"
+   "sym": "USDCAD",
+   "family": "vol_transition",
+   "twin": "USDCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDCHF",
+   "family": "cot_positioning",
+   "twin": "USDCHF.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCHF.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDCHF",
+   "family": "vol_transition",
+   "twin": "USDCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDCNH",
+   "family": "vol_transition",
+   "twin": "USDCNH.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCNH.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDCZK",
+   "family": "vol_transition",
+   "twin": "USDCZK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDCZK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDDKK",
+   "family": "vol_transition",
+   "twin": "USDDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDHKD",
+   "family": "vol_transition",
+   "twin": "USDHKD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDHKD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDHUF",
+   "family": "vol_transition",
+   "twin": "USDHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDIDR",
+   "family": "vol_transition",
+   "twin": "USDIDR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDIDR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDILS",
+   "family": "vol_transition",
+   "twin": "USDILS.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDILS.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDINR",
+   "family": "vol_transition",
+   "twin": "USDINR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDINR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDJPY",
+   "family": "cot_positioning",
+   "twin": "USDJPY.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDJPY.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDJPY",
+   "family": "vol_transition",
+   "twin": "USDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "USDMXN",
-   "family": "mass_screen_cond",
-   "twin": "external.USDMXN@M15.mass_screen_cond.p=f90f42f2816991ba",
-   "why": "every measurable dimension reads as a twin of external.USDMXN@M15.mass_screen_cond.p=f90f42f2816991ba (feature 0.90, semantic 0.92); the twin is NAMED rather th"
+   "family": "vol_transition",
+   "twin": "USDMXN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDMXN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDNOK",
+   "family": "vol_transition",
+   "twin": "USDNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDPLN",
+   "family": "vol_transition",
+   "twin": "USDPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "USDSEK",
+   "family": "vol_transition",
+   "twin": "USDSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "family": "vol_transition",
+   "twin": "USDSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "USDTHB",
+   "family": "vol_transition",
+   "twin": "USDTHB.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDTHB.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "USDX",
+   "family": "vol_transition",
+   "twin": "USDX.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDX.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "USDZAR",
+   "family": "vol_transition",
+   "twin": "USDZAR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS USDZAR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "WHEAT",
+   "family": "vol_transition",
+   "twin": "WHEAT.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS WHEAT.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAGEUR",
+   "family": "vol_transition",
+   "twin": "XAGEUR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAGEUR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAGUSD",
+   "family": "cot_positioning",
+   "twin": "XAGUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAGUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAGUSD",
+   "family": "vol_transition",
+   "twin": "XAGUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAGUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XALUSD",
+   "family": "vol_transition",
+   "twin": "XALUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XALUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAUAUD",
+   "family": "vol_transition",
+   "twin": "XAUAUD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAUAUD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAUEUR",
+   "family": "vol_transition",
+   "twin": "XAUEUR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAUEUR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAUUSD",
+   "family": "cot_positioning",
+   "twin": "XAUUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAUUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XAUUSD",
+   "family": "vol_transition",
+   "twin": "XAUUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XAUUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XBRUSD",
+   "family": "vol_transition",
+   "twin": "XBRUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XBRUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XNGUSD",
+   "family": "vol_transition",
+   "twin": "XNGUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XNGUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XNIUSD",
+   "family": "vol_transition",
+   "twin": "XNIUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XNIUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XPBUSD",
+   "family": "vol_transition",
+   "twin": "XPBUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XPBUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "sym": "XPDUSD",
+   "family": "cot_positioning",
+   "twin": "XPDUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XPDUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "XPDUSD",
+   "family": "vol_transition",
+   "twin": "XPDUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XPDUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "XPTUSD",
+   "family": "vol_transition",
+   "twin": "XPTUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XPTUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "XTIUSD",
+   "family": "cot_positioning",
+   "twin": "XTIUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XTIUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "XZNUSD",
+   "family": "vol_transition",
+   "twin": "XZNUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS XZNUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ZARJPY",
+   "family": "vol_transition",
+   "twin": "ZARJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ZARJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "adx_channel_hybrid",
+   "twin": "ADAUSD.adx_channel_hybrid.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.adx_channel_hybrid.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "asia_momentum",
+   "twin": "ADAUSD.asia_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.asia_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "dav_macd_qqe",
+   "twin": "ADAUSD.dav_macd_qqe.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.dav_macd_qqe.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "dav_range_filter_adx",
+   "twin": "ADAUSD.dav_range_filter_adx.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.dav_range_filter_adx.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "dav_supertrend_trail",
+   "twin": "ADAUSD.dav_supertrend_trail.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.dav_supertrend_trail.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "dow_effect",
+   "twin": "ADAUSD.dow_effect.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.dow_effect.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "drawdown_conditional",
+   "twin": "ADAUSD.drawdown_conditional.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.drawdown_conditional.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "engulfing_reversal",
+   "twin": "ADAUSD.engulfing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.engulfing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "failed_breakout",
+   "twin": "ADAUSD.failed_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.failed_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "fx_fixing_reversal",
+   "twin": "ADAUSD.fx_fixing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.fx_fixing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "generic",
+   "twin": "ADAUSD.generic.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.generic.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "hedging_demand_close",
+   "twin": "ADAUSD.hedging_demand_close.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.hedging_demand_close.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "htf_anchor_trend",
+   "twin": "ADAUSD.htf_anchor_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.htf_anchor_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "ict_fvg",
+   "twin": "ADAUSD.ict_fvg.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.ict_fvg.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "joint_genome",
+   "twin": "ADAUSD.joint_genome.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.joint_genome.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "jump",
+   "twin": "ADAUSD.jump.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.jump.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "level_breakout",
+   "twin": "ADAUSD.level_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.level_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "london_close_momentum",
+   "twin": "ADAUSD.london_close_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.london_close_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered quest"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "mean_reversion_bollinger",
+   "twin": "ADAUSD.mean_reversion_bollinger.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.mean_reversion_bollinger.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered qu"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "mean_reversion_rsi",
+   "twin": "ADAUSD.mean_reversion_rsi.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.mean_reversion_rsi.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "momentum_volgate",
+   "twin": "ADAUSD.momentum_volgate.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.momentum_volgate.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "monday_gap",
+   "twin": "ADAUSD.monday_gap.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.monday_gap.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "multi_speed_trend",
+   "twin": "ADAUSD.multi_speed_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.multi_speed_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "opening_range",
+   "twin": "ADAUSD.opening_range.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.opening_range.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "overnight_drift",
+   "twin": "ADAUSD.overnight_drift.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.overnight_drift.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "range_reversion",
+   "twin": "ADAUSD.range_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.range_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "retail_overlap_reversal",
+   "twin": "ADAUSD.retail_overlap_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.retail_overlap_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered que"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "session_handoff",
+   "twin": "ADAUSD.session_handoff.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.session_handoff.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "session_range_breakout",
+   "twin": "ADAUSD.session_range_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.session_range_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered ques"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "spread_state",
+   "twin": "ADAUSD.spread_state.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.spread_state.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "style_premia",
+   "twin": "ADAUSD.style_premia.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.style_premia.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "trend_ma_cross",
+   "twin": "ADAUSD.trend_ma_cross.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.trend_ma_cross.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "vol_mean_reversion",
+   "twin": "ADAUSD.vol_mean_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.vol_mean_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "volume_spike",
+   "twin": "ADAUSD.volume_spike.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.volume_spike.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "clock_transition",
-   "twin": "external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "adx_channel_hybrid",
+   "twin": "AUDCAD.adx_channel_hybrid.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.adx_channel_hybrid.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "clock_transition",
-   "twin": "external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "asia_momentum",
+   "twin": "AUDCAD.asia_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.asia_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "clock_transition",
-   "twin": "external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "carry",
+   "twin": "AUDCAD.carry.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.carry.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "comex_settlement",
+   "twin": "AUDCAD.comex_settlement.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.comex_settlement.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dav_macd_qqe",
+   "twin": "AUDCAD.dav_macd_qqe.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.dav_macd_qqe.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dav_range_filter_adx",
+   "twin": "AUDCAD.dav_range_filter_adx.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.dav_range_filter_adx.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dav_supertrend_trail",
+   "twin": "AUDCAD.dav_supertrend_trail.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.dav_supertrend_trail.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dow_effect",
+   "twin": "AUDCAD.dow_effect.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.dow_effect.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "engulfing_reversal",
+   "twin": "AUDCAD.engulfing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.engulfing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "failed_breakout",
+   "twin": "AUDCAD.failed_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.failed_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "fx_fixing_reversal",
+   "twin": "AUDCAD.fx_fixing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.fx_fixing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "generic",
+   "twin": "AUDCAD.generic.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.generic.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "hedging_demand_close",
+   "twin": "AUDCAD.hedging_demand_close.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.hedging_demand_close.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "htf_anchor_trend",
+   "twin": "AUDCAD.htf_anchor_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.htf_anchor_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "ict_fvg",
+   "twin": "AUDCAD.ict_fvg.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.ict_fvg.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "joint_genome",
+   "twin": "AUDCAD.joint_genome.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.joint_genome.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "jump",
+   "twin": "AUDCAD.jump.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.jump.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "level_breakout",
+   "twin": "AUDCAD.level_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.level_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "london_close_momentum",
+   "twin": "AUDCAD.london_close_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.london_close_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered quest"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "mean_reversion_bollinger",
+   "twin": "AUDCAD.mean_reversion_bollinger.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.mean_reversion_bollinger.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered qu"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "mean_reversion_rsi",
+   "twin": "AUDCAD.mean_reversion_rsi.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.mean_reversion_rsi.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "momentum_volgate",
+   "twin": "AUDCAD.momentum_volgate.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.momentum_volgate.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "monday_gap",
+   "twin": "AUDCAD.monday_gap.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.monday_gap.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "multi_speed_trend",
+   "twin": "AUDCAD.multi_speed_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.multi_speed_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCAD",
-   "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "opening_range",
+   "twin": "AUDCAD.opening_range.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.opening_range.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "overnight_drift",
+   "twin": "AUDCAD.overnight_drift.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.overnight_drift.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "overnight_gap_decay",
+   "twin": "external.AUDCAD.overnight_gap_decay.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS external.AUDCAD.overnight_gap_decay.p=44136fa355b3678a (survivor), already in the library. Re-testing it spends a trial on an answe"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "pullback_entry",
+   "twin": "AUDCAD.pullback_entry.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.pullback_entry.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "range_reversion",
+   "twin": "AUDCAD.range_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.range_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "regime_transition",
+   "twin": "AUDCAD.regime_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.regime_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "retail_overlap_reversal",
+   "twin": "AUDCAD.retail_overlap_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.retail_overlap_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered que"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "session_handoff",
+   "twin": "AUDCAD.session_handoff.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.session_handoff.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "session_range_breakout",
+   "twin": "AUDCAD.session_range_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.session_range_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered ques"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "spread_state",
+   "twin": "AUDCAD.spread_state.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.spread_state.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "style_premia",
+   "twin": "AUDCAD.style_premia.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.style_premia.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "trend_ma_cross",
+   "twin": "AUDCAD.trend_ma_cross.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.trend_ma_cross.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "turn_of_month",
+   "twin": "AUDCAD.turn_of_month.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.turn_of_month.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "vol_mean_reversion",
+   "twin": "AUDCAD.vol_mean_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.vol_mean_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "volatility_squeeze",
+   "twin": "AUDCAD.volatility_squeeze.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.volatility_squeeze.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "volume_spike",
+   "twin": "AUDCAD.volume_spike.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.volume_spike.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "clock_transition",
-   "twin": "external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "adx_channel_hybrid",
+   "twin": "AUDCHF.adx_channel_hybrid.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.adx_channel_hybrid.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "clock_transition",
-   "twin": "external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "asia_momentum",
+   "twin": "AUDCHF.asia_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.asia_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "clock_transition",
-   "twin": "external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "carry",
+   "twin": "AUDCHF.carry.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.carry.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dav_macd_qqe",
+   "twin": "AUDCHF.dav_macd_qqe.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.dav_macd_qqe.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "dav_range_filter_adx",
+   "twin": "AUDCHF.dav_range_filter_adx.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.dav_range_filter_adx.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "dav_supertrend_trail",
+   "twin": "AUDCHF.dav_supertrend_trail.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.dav_supertrend_trail.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "dow_effect",
+   "twin": "AUDCHF.dow_effect.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.dow_effect.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "engulfing_reversal",
+   "twin": "AUDCHF.engulfing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.engulfing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "failed_breakout",
+   "twin": "AUDCHF.failed_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.failed_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "fx_fixing_reversal",
+   "twin": "AUDCHF.fx_fixing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.fx_fixing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "generic",
+   "twin": "AUDCHF.generic.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.generic.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "hedging_demand_close",
+   "twin": "AUDCHF.hedging_demand_close.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.hedging_demand_close.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "htf_anchor_trend",
+   "twin": "AUDCHF.htf_anchor_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.htf_anchor_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "ict_fvg",
+   "twin": "AUDCHF.ict_fvg.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.ict_fvg.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "joint_genome",
+   "twin": "AUDCHF.joint_genome.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.joint_genome.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "jump",
+   "twin": "AUDCHF.jump.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.jump.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "level_breakout",
+   "twin": "AUDCHF.level_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.level_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "london_close_momentum",
+   "twin": "AUDCHF.london_close_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.london_close_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered quest"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "mean_reversion_bollinger",
+   "twin": "AUDCHF.mean_reversion_bollinger.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.mean_reversion_bollinger.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered qu"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "mean_reversion_rsi",
+   "twin": "AUDCHF.mean_reversion_rsi.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.mean_reversion_rsi.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "momentum_volgate",
+   "twin": "AUDCHF.momentum_volgate.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.momentum_volgate.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "monday_gap",
+   "twin": "AUDCHF.monday_gap.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.monday_gap.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "multi_speed_trend",
+   "twin": "AUDCHF.multi_speed_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.multi_speed_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "opening_range",
+   "twin": "AUDCHF.opening_range.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.opening_range.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "overnight_drift",
+   "twin": "AUDCHF.overnight_drift.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.overnight_drift.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "overnight_gap_decay",
+   "twin": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a (survivor), already in the library. Re-testing it spends a trial on an answe"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "pullback_entry",
+   "twin": "AUDCHF.pullback_entry.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.pullback_entry.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "range_reversion",
+   "twin": "AUDCHF.range_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.range_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "retail_overlap_reversal",
+   "twin": "AUDCHF.retail_overlap_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.retail_overlap_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered que"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "session_handoff",
+   "twin": "AUDCHF.session_handoff.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.session_handoff.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "session_range_breakout",
+   "twin": "AUDCHF.session_range_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.session_range_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered ques"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "spread_state",
+   "twin": "AUDCHF.spread_state.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.spread_state.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "style_premia",
+   "twin": "AUDCHF.style_premia.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.style_premia.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 0.91, semantic 0.94); the twin is NAMED rather than the ca"
+   "family": "trend_ma_cross",
+   "twin": "AUDCHF.trend_ma_cross.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.trend_ma_cross.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "turn_of_month",
+   "twin": "AUDCHF.turn_of_month.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.turn_of_month.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "vol_mean_reversion",
+   "twin": "AUDCHF.vol_mean_reversion.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.vol_mean_reversion.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "volatility_squeeze",
+   "twin": "AUDCHF.volatility_squeeze.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.volatility_squeeze.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
    "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "family": "volume_spike",
+   "twin": "AUDCHF.volume_spike.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.volume_spike.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "adx_channel_hybrid",
+   "twin": "AUDHUF.adx_channel_hybrid.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.adx_channel_hybrid.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "asia_momentum",
+   "twin": "AUDHUF.asia_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.asia_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "carry",
+   "twin": "AUDHUF.carry.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.carry.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "dav_macd_qqe",
+   "twin": "AUDHUF.dav_macd_qqe.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.dav_macd_qqe.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "clock_transition",
-   "twin": "external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "sym": "AUDHUF",
+   "family": "dav_range_filter_adx",
+   "twin": "AUDHUF.dav_range_filter_adx.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.dav_range_filter_adx.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
-   "sym": "AUDJPY",
-   "family": "clock_transition",
-   "twin": "external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "sym": "AUDHUF",
+   "family": "dav_supertrend_trail",
+   "twin": "AUDHUF.dav_supertrend_trail.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.dav_supertrend_trail.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
-   "sym": "AUDJPY",
-   "family": "clock_transition",
-   "twin": "external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "sym": "AUDHUF",
+   "family": "dow_effect",
+   "twin": "AUDHUF.dow_effect.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.dow_effect.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "engulfing_reversal",
+   "twin": "AUDHUF.engulfing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.engulfing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "execution_state",
+   "twin": "AUDHUF.execution_state.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.execution_state.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "failed_breakout",
+   "twin": "AUDHUF.failed_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.failed_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "fx_fixing_reversal",
+   "twin": "AUDHUF.fx_fixing_reversal.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.fx_fixing_reversal.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "generic",
+   "twin": "AUDHUF.generic.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.generic.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "hedging_demand_close",
+   "twin": "AUDHUF.hedging_demand_close.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.hedging_demand_close.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered questi"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "htf_anchor_trend",
+   "twin": "AUDHUF.htf_anchor_trend.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.htf_anchor_trend.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "ict_fvg",
+   "twin": "AUDHUF.ict_fvg.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.ict_fvg.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "joint_genome",
+   "twin": "AUDHUF.joint_genome.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.joint_genome.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "jump",
+   "twin": "AUDHUF.jump.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.jump.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "level_breakout",
+   "twin": "AUDHUF.level_breakout.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.level_breakout.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "london_close_momentum",
+   "twin": "AUDHUF.london_close_momentum.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.london_close_momentum.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered quest"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "mean_reversion_bollinger",
+   "twin": "AUDHUF.mean_reversion_bollinger.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.mean_reversion_bollinger.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered qu"
   },
   {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDJPY",
-   "family": "formula",
-   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "clock_transition",
-   "twin": "external.AUDNZD@M15.clock_transition.p=063f4540daa14dff",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.clock_transition.p=063f4540daa14dff (feature 1.00, semantic 1.00); the twin is NAMED rather th"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "clock_transition",
-   "twin": "external.AUDNZD@M15.clock_transition.p=063f4540daa14dff",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.clock_transition.p=063f4540daa14dff (feature 1.00, semantic 1.00); the twin is NAMED rather th"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDNZD",
-   "family": "formula",
-   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "clock_transition",
-   "twin": "external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "clock_transition",
-   "twin": "external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "AUDSGD",
-   "family": "formula",
-   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
-   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CADJPY",
-   "family": "formula",
-   "twin": "external.CADJPY@M15.formula.p=a1dd01b8835b723b",
-   "why": "every measurable dimension reads as a twin of external.CADJPY@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "sym": "AUDHUF",
+   "family": "mean_reversion_rsi",
+   "twin": "AUDHUF.mean_reversion_rsi.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.mean_reversion_rsi.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"

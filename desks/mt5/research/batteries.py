@@ -233,6 +233,10 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/hour_surface.py", "WHEN the book earns, measured by UTC hour"),
     _e("desks/mt5/research/hour_prior.py", "that surface as the allocation prior the desk reads"),
     _e("desks/mt5/research/axis_ingest_all.py", "ingest every data axis, every pass"),
+    # BACKLOG 609 (2026-11-18): the four usd_liquidity series FRED used to relay, from their
+    # primary publishers, written to data/axes/usd_liquidity.json for shadow_institutional.
+    _e("desks/mt5/research/usd_liquidity_primary.py", "USD liquidity from the Fed, NY Fed and "
+       "Treasury, never FRED", "--apply"),
     # TEXT AS PIT DAILY SERIES (2026-09-30): event/policy factors tagged from the collected news
     # and Japanese/Korean/Chinese retail blog attention and mood, published to the axis door, the
     # lake (for exogenous_conditioner) and an allocation-intel report. The daily test-and-donate

@@ -28,12 +28,74 @@ ROOT = Path(__file__).resolve().parent.parent
 PROVENANCE = ROOT / "data" / "data_route_provenance.json"
 TIMEOUT = 30
 UA = {"User-Agent": "Mozilla/5.0 (quant-desk data fixer)"}
+if str(ROOT) not in __import__("sys").path:
+    __import__("sys").path.insert(0, str(ROOT))
+from libs.data.refused_hosts import guard  # noqa: E402 -- fail closed: no list, no module
 
 
 def _get(url: str) -> bytes:
+    guard(url)                      # a host whose terms refuse automated contact: never the wire
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return r.read()
+
+
+#: DBNOMICS TERMS READING (2026-11-18, read from db.nomics.world/about and
+#: docs.db.nomics.world/legal-terms, web-api and faq). Quoted: "Data distributed by DBnomics is
+#: subject to the same license and terms of use as its original source provider."; "The DBnomics
+#: aggregated datasets are distributed under the Open Database License (ODbL)."; the Web API
+#: "can be used by any programming language able to make HTTP requests" and "allows to automate
+#: the process"; it is "designed to query focused data ... not to download large datasets", with
+#: a cache recommended. No key, no account, no prohibition on automated access was found.
+#: Every mapped series below is a BLS or Federal Reserve Board (FED) original, US federal works,
+#: never a FRED-provider copy, so FRED's refusal does not travel through the mirror. The API
+#: host's robots.txt was NOT read from the cloud (its proxy refused the host), so it is read on
+#: every pass before the first request: unread robots are not permission.
+DBNOMICS_TERMS = {
+    "status": "READ",
+    "read_on": "2026-11-18",
+    "sources": ["https://db.nomics.world/about", "https://docs.db.nomics.world/legal-terms/",
+                "https://docs.db.nomics.world/web-api/", "https://docs.db.nomics.world/faq/"],
+    "providers_mapped": ["BLS", "FED"],
+    "conditions": ("per-provider licence (BLS/FRB: US federal works); ODbL on aggregates; "
+                   "focused queries only, cached"),
+}
+_ROBOTS: dict[str, object] = {}
+
+
+def _looks_like_html(text: str) -> bool:
+    """A page served in place of robots rules: a leading '<' (a real robots file never starts with
+    one: <head>, <body>, <?xml, a comment) or '<html' / '<!doctype' in the first 512 chars."""
+    head = text.lstrip()[:512].lower()
+    return head.startswith("<") or "<html" in head or "<!doctype" in head
+
+
+def _robots_allows(url: str) -> None:
+    """robots.txt for the URL's host, read once per process. 404/410 is an empty file; any other
+    non-2xx, an unreadable file or a disallow raises: unread robots are not permission."""
+    import urllib.error
+    import urllib.parse
+    parts = urllib.parse.urlsplit(url)
+    key = f"{parts.scheme}://{parts.netloc.lower()}"
+    if key not in _ROBOTS:
+        from libs.data.robots_body import robots_rules_or_refusal
+        try:
+            req = urllib.request.Request(f"{key}/robots.txt", headers=UA)
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                hdrs = getattr(r, "headers", None)
+                _ROBOTS[key] = robots_rules_or_refusal(
+                    getattr(r, "status", 200), hdrs.get("Content-Type") if hdrs else None,
+                    r.read())
+        except urllib.error.HTTPError as e:
+            _ROBOTS[key] = robots_rules_or_refusal(e.code, None, "")
+        except Exception as e:  # any failure to read is a refusal
+            _ROBOTS[key] = f"robots.txt unreadable ({type(e).__name__})"
+    rules = _ROBOTS[key]
+    if isinstance(rules, str):
+        raise PermissionError(f"{rules}; unread robots are not permission")
+    assert isinstance(rules, urllib.robotparser.RobotFileParser)
+    if not rules.can_fetch(UA["User-Agent"], url):
+        raise PermissionError("robots.txt disallows this path for our agent")
 
 
 # --------------------------------------------------------------------------- macro series
@@ -58,17 +120,12 @@ DBNOMICS_MIRROR: dict[str, tuple[str, str, str]] = {
 
 
 def fred_route(series_id: str) -> dict[str, float]:
-    """Primary: keyless fredgraph CSV."""
-    raw = _get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
-    out: dict[str, float] = {}
-    for row in csv.DictReader(io.StringIO(raw.decode("utf-8", "replace"))):
-        val = row.get(series_id) or row.get("VALUE") or ""
-        date = row.get("DATE") or row.get("observation_date") or ""
-        if date and val not in ("", "."):
-            out[date] = float(val)
-    if not out:
-        raise ValueError(f"fredgraph returned no rows for {series_id}")
-    return out
+    """FRED is REFUSED for every automated fetch (terms ruling 2026-11-13; BACKLOG 609). The route
+    stays named so provenance can say so, and raises before any request is built."""
+    from libs.data.refused_hosts import RefusedSource, refusal
+    why = refusal("https://fred.stlouisfed.org/graph/fredgraph.csv") or \
+        "FRED: refused for all automated fetches (terms ruling 2026-11-13)"
+    raise RefusedSource(f"BLOCKED_ON_TERMS: {why} ({series_id} not fetched)")
 
 
 def dbnomics_route(series_id: str) -> dict[str, float]:
@@ -77,6 +134,7 @@ def dbnomics_route(series_id: str) -> dict[str, float]:
     if triple is None:
         raise LookupError(f"no DBnomics mirror mapped for {series_id}")
     prov, dataset, sid = triple
+    _robots_allows("https://api.db.nomics.world/v22/series")
     raw = _get(f"https://api.db.nomics.world/v22/series/{prov}/{dataset}/{sid}"
                f"?observations=1&format=json")
     doc = json.loads(raw)
@@ -116,8 +174,9 @@ def stooq_route(symbol: str) -> dict[str, float]:
 
 
 #: feed -> ordered (route_name, callable) pairs. First success wins; provenance is recorded.
+#: FRED left the route list on 2026-11-18 (terms refusal, BACKLOG 609): the primary publishers'
+#: own series, mirrored by DBnomics, are the only macro route.
 MACRO_ROUTES: list[tuple[str, Callable[[str], dict[str, float]]]] = [
-    ("fred", fred_route),
     ("dbnomics", dbnomics_route),
 ]
 

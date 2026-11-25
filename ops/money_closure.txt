@@ -157,6 +157,7 @@ libs/data/mt5_source.py
 libs/data/pit.py
 libs/data/pit_stamp.py
 libs/data/quality.py
+libs/data/refused_hosts.py
 libs/data/schema.py
 libs/data/timeframe.py
 libs/data/units.py
