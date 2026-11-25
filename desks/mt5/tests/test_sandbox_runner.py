@@ -76,6 +76,16 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
             "processed": d / "data" / "external_packets" / "processed"}
 
 
+@pytest.fixture
+def reg(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A throwaway registry and trial ledger only -- ingest needs no bars, so these tests run
+    where a parquet engine is absent."""
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    monkeypatch.setattr(SR, "TRIALS", tmp_path / "sandbox_trials.jsonl")
+    return tmp_path
+
+
 def _pass(paths: dict[str, Path], budget_s: float = 90.0, **kw: Any) -> dict[str, Any]:
     return SR.run_pass(budget_s=budget_s, allow_fetch=False, root=paths["root"],
                        universe_dir=paths["universe"], registry_path=paths["registry"],
@@ -136,7 +146,7 @@ def test_a_pass_runs_cells_names_unmeasured_libraries_and_writes_the_artifact(
 
 
 def test_ingest_enqueues_candidates_with_provenance_and_charges_trials(
-        desk: dict[str, Path]) -> None:
+        reg: Path) -> None:
     bundle = A.synthetic_bundle(seed=1, n=400)
     pkt = A.packet("cell:test", bundle, trials=40, candidates=[A.candidate(
         "trend_ma_cross", ["EURUSD"], "a planted hypothesis", horizon="24h",
@@ -168,7 +178,7 @@ def test_ingest_enqueues_candidates_with_provenance_and_charges_trials(
 
 
 def test_an_executable_sandbox_row_reaches_the_docket_with_its_own_rule(
-        desk: dict[str, Path]) -> None:
+        reg: Path) -> None:
     """A registered family with symbols and a structured rule is enqueued in the family's own
     argument names and carried by the registry's docket lane (libs/moat/docket_feed) -- the
     rule the system proposed, never the family's defaults."""
@@ -191,7 +201,7 @@ def test_an_executable_sandbox_row_reaches_the_docket_with_its_own_rule(
 
 
 def test_a_non_executable_row_is_counted_by_reason_and_never_enqueued(
-        desk: dict[str, Path]) -> None:
+        reg: Path) -> None:
     bundle = A.synthetic_bundle(seed=4, n=400)
     cands = [
         # prose only: the rule is text, no structured parameter -> the judge would score defaults
