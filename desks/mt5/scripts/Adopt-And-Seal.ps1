@@ -631,6 +631,52 @@ foreach ($ensure in @(
     }
 }
 
+# ------------------------------------------- 1c. RETIRED TASKS WHOSE SCRIPT IS GONE: DISABLE
+# MT5-DeepenUniverse was retired 2026-09-30 and its wrapper removed, but the box kept the task and
+# it failed rc 1 every hour. ops\retired_tasks.json declares retirements; a declared task is
+# DISABLED (never unregistered, never deleted) only when its action target script no longer exists.
+# The XML is exported first so the registration can be restored. Fail-soft: logs and continues.
+try {
+    $retiredFile = Join-Path $desk "ops\retired_tasks.json"
+    if (Test-Path $retiredFile) {
+        $retiredDecl = (Get-Content -Raw -LiteralPath $retiredFile | ConvertFrom-Json).retired
+        foreach ($ret in @($retiredDecl)) {
+            try {
+                $rn = [string]$ret.task
+                if (-not $rn) { continue }
+                $rt = Get-ScheduledTask -TaskName $rn -ErrorAction SilentlyContinue
+                if (-not $rt) { continue }
+                if ($rt.State -eq "Disabled") { continue }
+                $targets = @()
+                foreach ($act in @($rt.Actions)) {
+                    $cmdText = ("" + $act.Execute + " " + $act.Arguments)
+                    foreach ($mt in [regex]::Matches($cmdText, '[^\s"]+\.(?:cmd|ps1|py|bat)', 'IgnoreCase')) { $targets += $mt.Value }
+                }
+                if ($targets.Count -eq 0) { Log "retired-task: $rn has no script target; left alone"; continue }
+                $anyExists = $false
+                foreach ($tg in $targets) {
+                    $cands = @($tg)
+                    if (-not [System.IO.Path]::IsPathRooted($tg)) { $cands = @((Join-Path $desk $tg), (Join-Path $RepoRoot $tg)) }
+                    foreach ($c in $cands) { if (Test-Path -LiteralPath $c) { $anyExists = $true } }
+                }
+                if ($anyExists) { Log "retired-task: $rn declared retired but its target still exists; left alone"; continue }
+                $xmlDir = "C:\opt\bridge\quant\retired_tasks"
+                $xmlPath = Join-Path $xmlDir ("{0}_{1}.xml" -f $rn, (Get-Date -Format "yyyyMMdd"))
+                if (-not (Test-Path -LiteralPath $xmlPath)) {
+                    if (-not (Test-Path -LiteralPath $xmlDir)) { New-Item -ItemType Directory -Path $xmlDir -Force | Out-Null }
+                    Export-ScheduledTask -TaskName $rn | Out-File -LiteralPath $xmlPath -Encoding utf8
+                }
+                Disable-ScheduledTask -TaskName $rn -ErrorAction Stop | Out-Null
+                Log ("retired-task: {0} DISABLED (target missing: {1}); xml {2}" -f $rn, ($targets -join ','), $xmlPath)
+            } catch {
+                Log ("retired-task: {0} failed: {1}" -f $ret.task, $_.Exception.Message)
+            }
+        }
+    }
+} catch {
+    Log ("retired-task: step failed: {0}" -f $_.Exception.Message)
+}
+
 # ------------------------------------------------------------ 2a. the box's release signing key
 # EVERY RELEASE.json THIS BOX EVER WROTE WAS UNSIGNED (measured 2026-09-30): `release.seal` signs
 # only when data/secrets/release_signing.key exists, and nothing ever created it. `ensure_key`
