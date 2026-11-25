@@ -71,6 +71,7 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 from prop import ftmo_follower as _fw  # noqa: E402
+from prop.e8_book import ROLLOVER_BROKER_HOURS as _ROLLOVER_HOURS  # noqa: E402
 
 LANE = "ftmo"
 TAG = "FX"
@@ -628,6 +629,14 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
             tier = f"Tier S door error ({type(exc).__name__}: {exc})"
         if tier:
             done("TIER_S_BLOCKED", str(tier), rail="tier_s_door", missed=True)
+            continue
+        # THE ROLLOVER ENTRY GATE (prop/e8_book.ROLLOVER_BROKER_HOURS): every sleeve this executor
+        # runs was admitted on fill evidence that excludes broker 00:00-01:59, so it never enters
+        # there. The MT5 tick epoch is broker wall time.
+        b_hour = datetime.fromtimestamp(float(server_epoch), tz=UTC).hour
+        if b_hour in _ROLLOVER_HOURS:
+            done("RAIL_BLOCKED", f"broker hour {b_hour:02d} is in the rollover slice its fill "
+                 "evidence excludes", rail="rollover_entry_gate", missed=True)
             continue
         func = get_family_func(fam)
         if func is None:

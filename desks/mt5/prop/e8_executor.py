@@ -948,7 +948,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
     # book's RISK_FRAC. Absent, disabled or invalid -> None, and nothing changes.
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
-    cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
+    from prop.e8_book import principal_e8_book
+
+    cert = principal_e8_book(load_cert_book(CERT_BOOK_FILE, "e8"))
     doc["cert_book"] = cert or None
     committed_usd = 0.0
     try:
@@ -1252,7 +1254,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
-                        else risk_usd)
+                        else float(s["risk_frac"]) * e8_guard.START_BALANCE
+                        if isinstance(s.get("risk_frac"), (int, float)) else risk_usd)
         # THE E8 CODE CEILING ON THE FINAL, POST-MULTIPLIER RISK (r7.3, coordinator ruling (a)):
         # the book's risk is sized, the twin-fade, leg-balance and macro multipliers scale it
         # (both ways), and only THEN is the entry held to decision_core.E8_CERT_CEILING (0.006)
@@ -1260,7 +1263,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # The cut is billed CAPPED `e8_cert_ceiling`; a venue minimum over the ceiling is refused
         # and billed RAIL_BLOCKED on the same rail, never lifted over the pin.
         row["book_risk_usd"] = round(row_risk_usd, 2)
-        row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
+        row["risk_source"] = ("cert_book" if _ckey in cert else "book row risk_frac"
+                              if isinstance(s.get("risk_frac"), (int, float)) else "book RISK_FRAC")
         if not row_risk_usd > 0:
             row["risk_usd"] = round(row_risk_usd, 2)
             row["status"] = "STANDS_ASIDE"
@@ -1290,6 +1294,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # each one through on its own merits into a floor none of them breaches alone.
         # `row_risk_usd` is the FINAL lot's measured risk here (r7.3), after every multiplier
         # and the ceiling -- the floor is never checked against a pre-multiplier figure.
+        from prop.e8_book import rollover_block
+        if (_roll := rollover_block(s, now)) is not None:
+            row["status"], row["rail"], row["why"] = "RAIL_BLOCKED", "rollover_entry_gate", _roll
+            row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
+            doc["sleeves"].append(row)
+            continue
         if outstanding_usd + committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
             row["why"] = (f"broker stops and new risks totalling "

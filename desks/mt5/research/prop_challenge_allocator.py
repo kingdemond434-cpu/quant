@@ -597,6 +597,23 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
+def _max_risk() -> float:
+    from mt5desk.sizing import MAX_RISK_FRAC
+    return float(MAX_RISK_FRAC)
+
+
+def _forward_failing() -> frozenset[str]:
+    """prop/e8_book.FORWARD_FAILING_FAMILIES: one set for both prop accounts."""
+    from prop.e8_book import FORWARD_FAILING_FAMILIES
+    return FORWARD_FAILING_FAMILIES
+
+
+def _family_of(col: str) -> str:
+    """`SYMBOL_family_selector` -> family (the world column naming the roster uses)."""
+    parts = col.split("_")
+    return "_".join(parts[1:-1]) if len(parts) >= 3 else ""
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -660,6 +677,8 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    from prop.e8_book import load_fill_proven
+    proven = load_fill_proven()
     door_blocked: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
@@ -679,6 +698,14 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
+        elif col not in proven:
+            # WHAT IS PROFITABLE ON REAL FILLS TRADES (zuck 2026-11-19 19:23Z), the same door E8
+            # uses (prop/e8_book.load_fill_proven): positive after the measured ask-bid, outside
+            # the rollover, n >= 10, through the organ's BH q=0.10. Tier S sizes, never gates.
+            reason = ("not fill-proven: no after-spread forward record passing "
+                      "reports/FILL_PROVEN.json"
+                      + (f"; {_family_of(col)} also fails forward as a family"
+                         if _family_of(col) in _forward_failing() else ""))
         else:
             door = door_block(cert_key)
             if door:
@@ -694,6 +721,13 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
         if columns[col].get("admitted"):
             columns[col]["tier_s"] = col in tier_s
+            # SIZE BY EVIDENCE: the column's ceiling is MAX_RISK_FRAC x n/(n+N0) of its
+            # fill-proven depth, x the Tier S multiplier; the solve sizes inside it.
+            from prop import e8_book as _eb
+            mult = _eb.TIER_S_MULT if col in tier_s else 1.0
+            caps[col] = min(1.0, _eb.fill_shrink(proven[col]["n"]) * mult) * _max_risk()
+            columns[col]["fill_proven"] = proven[col]
+            columns[col]["evidence_cap"] = round(caps[col], 6)
             spec, swhy = sleeve_spec(cert_key)
             if spec is not None:
                 specs[col] = spec
@@ -979,6 +1013,24 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     # initial balance. The written fraction carries the same dollars at today's equity.
     specs = uni.get("specs") or {}
     doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()}
+    # THE WORST HISTORICAL DAY UNDER 60% OF THE FIRM'S DAILY LIMIT (prop/stress.py, the same check
+    # E8's book runs). The solve bounds P(fail) over simulated paths; this bounds the single worst
+    # joint day the history holds, gaps included. Over the cap, the whole book scales down
+    # uniformly (the solve's mix is kept) and the cut is billed as missed growth.
+    from prop import stress
+    ex = doc["executable"]
+    sw = stress.worst_day(list(ex), list(ex.values()), (list(all_cols), r))
+    cap_s = (None if stress.STRESS_CAP_FRAC is None
+             else stress.STRESS_CAP_FRAC * rules.daily_loss)
+    doc["stress"] = {"worst_day": round(sw["loss"], 6), "status": sw["status"],
+                     "x_limit": round(sw["loss"] / rules.daily_loss, 4),
+                     "cap_frac": stress.STRESS_CAP_FRAC, "kill_frac": stress.KILL_FRAC}
+    if cap_s is not None and sw["loss"] > cap_s > 0:
+        k = cap_s / sw["loss"]
+        doc["stress"]["scaled_by"] = round(k, 4)
+        doc["stress"]["missed_growth_risk_frac"] = {
+            c: round(v * (1 - k), 6) for c, v in ex.items()}
+        doc["executable"] = {c: math.floor(v * k * 1e5) / 1e5 for c, v in ex.items()}
     doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
     doc["sized_no_executor"] = {}
     # Missed growth (Rule 1): the joint solve over every admitted column, from the same account

@@ -196,6 +196,7 @@ def _load_survivors() -> list[dict[str, Any]]:
             "lockbox": ((val.get("gates") or {}).get("lockbox") or {}).get("lockbox_sharpe"),
             "days": val.get("days"),
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
+            "tier_s": _is_tier_s((val.get("gates") or {}).get("deflated_sharpe") or {}),
             # PRIVATE-USE LINEAGE IS NEVER IN THE E8 BOOK (coordinator ruling, 2026-10-07).
             # J-Quants is permitted for the registered individual's private use only; E8 trades
             # the prop firm's capital, so a cell derived from it is e8_ineligible. Fusion (the
@@ -211,6 +212,145 @@ def _spec_fingerprint(spec: dict[str, Any]) -> str:
                             spec.get("selector"), spec.get("side"), spec.get("params"))
 
 
+#: ZEROS IN THE E8 PRINCIPAL BOOK THAT THE PRINCIPAL HAS SINCE LIFTED (zuck 2026-11-19 12:15Z: "all
+#: the strategies [should] flow into [E8] ... because we want both accounts to pass with high
+#: probability and speed"). They were written by the 2026-10-20 21:52Z order "trade only gold asia"
+#: and its 17:02Z companion ("USDJPY, NZDJPY and AUDCHF stay at 0.0"), which the 11-19 order
+#: replaces. CERT_BOOK_LIVE.json is box state (libs/ops/release.STATE_PREFIXES), so an origin edit
+#: of its e8 block would be reverted by the box's next push; the lift is therefore read here, in
+#: one place both readers use (this book and prop/e8_executor).
+#: USDJPY_session_range_breakout_asia is NOT lifted: its zero is a lineage quarantine
+#: (CERT_BOOK_LIVE `e8_pins`, live_sleeve_policy), not the
+#: gold-only order, and its own route is #1313. REVERT: empty this set.
+SUPERSEDED_E8_ZEROS: frozenset[str] = frozenset({
+    "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
+
+
+#: FAMILIES HELD AT ZERO UNTIL THEY HOLD UP FORWARD (Judge forward calibration 2026-11-19,
+#: reports/judging/FORWARD_CALIBRATION_2026-11-19.md; coordinator 17:00Z; zuck 17:02Z "all of them
+#: ... through allocator" = every PROMOTABLE strategy, certified AND holding forward). Over 798
+#: certified clocks with 30+ days and 10+ forward trades, these families kept their edge on 14-41%
+#: of clocks at a negative trade-weighted mean R (cross_asset_residual 24% / -0.237R,
+#: macro_conditional 14% / -0.192R, carry 41% / -0.180R, pca_residual 33% / -0.086R), most likely
+#: from look-ahead in their outside-data joins. The price-only families held 95-100%. A family
+#: leaves this set when the Judge's point-in-time fix lands and its forward hit rate holds; the
+#: refusal is billed by name in E8_BOOK.json. REVERT: empty this set.
+FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
+    "cross_asset_residual", "macro_conditional", "carry", "pca_residual"})
+
+
+#: FILL-PROVEN SLEEVES (Box read 2026-11-19 19:05Z, reports/hourly_pass/FILL_PROVEN_READ.md): the
+#: sleeve's own forward trades, re-priced at the measured ask-bid for its symbol and entry hour,
+#: outside the 00:00-01:59 broker rollover slice. Written box-side each pass as
+#: {"sleeves": [{"sleeve": "SYM_family_selector", "n_out": int, "adjR_out": float}, ...]}
+#: (research/fill_proven.py, hourly leg "fill_proven"; `sleeve` is the forward ledger's label).
+#: A sleeve's OWN fill evidence outranks its family's average: a fill-proven sleeve of a
+#: forward-failing family is admitted, and every admitted sleeve is sized by how much evidence
+#: it has (`fill_shrink`). Absent or unreadable: no sleeve is fill-proven (fail closed).
+FILL_PROVEN = DESK / "reports" / "FILL_PROVEN.json"
+FILL_PROVEN_SCHEMA = "fill-proven/1"
+#: STALE FAILS CLOSED (Audit HOLD 2026-11-19 19:41Z): the organ is an hourly leg, so a file
+#: older than three missed passes means the organ stopped and its verdicts no longer describe
+#: today's fills. Past this bound no sleeve is fill-proven. The wrong schema, a missing or
+#: unparseable generated_at, or one in the future reads the same way.
+FILL_PROVEN_MAX_AGE_H = 3.0
+FILL_MIN_N = 10
+#: Shrinkage prior, in trades: a sleeve with n fill-proven trades is sized at n / (n + N0) of
+#: RISK_FRAC, so a 15-trade edge trades at ~23% of full size and a 500-trade one at ~91%.
+FILL_SHRINK_N0 = 50
+
+
+def load_fill_proven(path: Path | None = None,
+                     now: datetime | None = None) -> dict[str, dict[str, float]]:
+    """{sleeve: {"n": n_out, "adjR": adjR_out}} for sleeves positive after spread outside the
+    rollover slice with at least FILL_MIN_N trades; {} when the artifact is absent, of another
+    schema, undated, future-dated or older than FILL_PROVEN_MAX_AGE_H (fail closed)."""
+    try:
+        doc = json.loads((path or FILL_PROVEN).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("schema") != FILL_PROVEN_SCHEMA:
+        return {}
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}
+    if gen.tzinfo is None:
+        return {}
+    age_h = ((now or datetime.now(UTC)) - gen).total_seconds() / 3600.0
+    if not 0.0 <= age_h <= FILL_PROVEN_MAX_AGE_H:
+        return {}
+    out: dict[str, dict[str, float]] = {}
+    rows = doc.get("sleeves") or []
+    for r in rows if isinstance(rows, list) else []:
+        try:
+            n, adj = int(r["n_out"]), float(r["adjR_out"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if n >= FILL_MIN_N and adj > 0:
+            out[str(r["sleeve"])] = {"n": float(n), "adjR": adj}
+    return out
+
+
+def fill_shrink(n: float) -> float:
+    return n / (n + FILL_SHRINK_N0) if n > 0 else 0.0
+
+
+#: TIER S IS A SIZE MULTIPLIER, NOT A GATE (zuck 2026-11-19 19:23Z: "ur bigger size one is the
+#: right approach not block"). A certificate whose deflated Sharpe passed at or over DSR_BAR
+#: carries the stronger statistical evidence, so its fill-proven size is raised by this factor;
+#: the executor's E8_CERT_CEILING and the worst-day stress cap still bound the result.
+TIER_S_DSR_BAR = 0.95
+TIER_S_MULT = 1.5
+
+
+def _is_tier_s(gate: Mapping[str, Any]) -> bool:
+    dsr = gate.get("dsr")
+    return gate.get("passed") is True and isinstance(dsr, (int, float)) and dsr >= TIER_S_DSR_BAR
+
+
+def sleeve_risk(row: Mapping[str, Any]) -> float:
+    """RISK_FRAC x n/(n+N0) for the sleeve's fill-proven depth, x TIER_S_MULT when Tier S. A
+    sleeve admitted on a principal-funded key alone (no fill record) keeps RISK_FRAC."""
+    fp = row.get("fill_proven")
+    base = RISK_FRAC * fill_shrink(float(fp["n"])) if fp else RISK_FRAC
+    return round(base * (TIER_S_MULT if row.get("tier_s") else 1.0), 6)
+
+
+#: THE ROLLOVER ENTRY GATE (coordinator + hourly pass 2026-11-19 19:24Z, zuck "fix all so all is
+#: ready to reach live"). A fill-proven sleeve's evidence EXCLUDES broker 00:00-01:59 -- the slice
+#: where spreads run 10-1000x and the bid-only record was flattering it -- so the sleeve may not
+#: enter there: its edge was never shown in that slice. A principal-funded key with no fill record
+#: is the principal's and is not gated here. The executor bills each refusal as missed growth.
+ROLLOVER_BROKER_HOURS = frozenset({0, 1})
+
+
+def rollover_block(row: Mapping[str, Any], now_utc: datetime) -> str | None:
+    """The reason this sleeve may not enter now, or None. Broker hour = UTC + E8 server offset."""
+    if not row.get("fill_proven"):
+        return None
+    from prop.e8_guard import server_offset_hours
+    hour = (now_utc.astimezone(UTC).hour + server_offset_hours(now_utc)) % 24
+    if hour in ROLLOVER_BROKER_HOURS:
+        return (f"broker hour {hour:02d} is in the rollover slice its fill evidence excludes "
+                "(reports/FILL_PROVEN.json, outside 00:00-01:59 only)")
+    return None
+
+
+def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
+    """The E8 principal book as it stands today: the cert block, less the zeros the principal
+    lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
+    block does not name is sized by the book's RISK_FRAC."""
+    out: dict[str, float] = {}
+    for k, v in (raw or {}).items():
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            continue
+        if k in SUPERSEDED_E8_ZEROS and not v > 0:
+            continue
+        out[str(k)] = float(v)
+    return out
+
+
 def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """Apply the existing replication and principal exclusion doors before ranking E8 risk."""
     from admission_integrity import IntegrityGate, REPLICATED
@@ -221,7 +361,8 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     if not isinstance(excluded, dict):
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
-    authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
+    principal_book = principal_e8_book(load_cert_book(CERT_BOOK, "e8"))
+    proven = load_fill_proven()
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
     accepted: list[dict[str, Any]] = []
@@ -231,8 +372,21 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
-        if not (authorized_book.get(book_key, 0) > 0):
-            reason = "not named with positive risk in the E8 principal book"
+        # EVERY CERTIFIED SLEEVE FLOWS INTO E8 (zuck 2026-11-19 12:15Z). Only an explicit zero in
+        # the principal book stands a key aside; an unnamed key is sized by RISK_FRAC. Before this
+        # an unnamed key was refused, which left E8 on gold_asia alone.
+        if book_key in principal_book and not principal_book[book_key] > 0:
+            reason = "principal zero in the E8 principal book"
+        elif book_key not in proven and not principal_book.get(book_key, 0) > 0:
+            # WHAT IS PROFITABLE TRADES, AND PROFITABLE MEANS ON REAL FILLS (zuck 2026-11-19
+            # 19:23Z): positive after the measured ask-bid, outside the 00:00-01:59 broker
+            # rollover, n >= FILL_MIN_N. A certificate alone no longer admits (the bid-only
+            # backtests and clocks flattered rollover entries, box read 19:05Z); Tier S is a
+            # size multiplier, never a gate.
+            reason = ("not fill-proven: no positive after-spread forward record outside the "
+                      f"rollover with n >= {FILL_MIN_N} (reports/FILL_PROVEN.json)"
+                      + (f"; {fam} also fails forward as a family (Judge calibration "
+                         "2026-11-19)" if fam in FORWARD_FAILING_FAMILIES else ""))
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
@@ -246,6 +400,8 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         if reason:
             blocked.append({"certificate": key, "why": reason})
         else:
+            if book_key in proven:
+                row = {**row, "fill_proven": proven[book_key]}
             accepted.append(row)
     return accepted, blocked
 
@@ -360,7 +516,8 @@ def growth_score(row: Mapping[str, Any], risk_frac: float = 0.0) -> float | None
 
 
 def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
-           rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+           rows: list[dict[str, Any]] | None = None,
+           days: tuple[list[str], Any] | None = None) -> dict[str, Any]:
     """The book, plus everything refused and why. An absence here is always named (L1.28a)."""
     rows = _load_survivors() if rows is None else rows
     blocked = []
@@ -492,6 +649,30 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
             break
         i += 1
 
+    # THE WORST HISTORICAL DAY, WITH CORRELATIONS, UNDER 60% OF THE 2.5% DAILY LIMIT
+    # (prop/stress.py;
+    # CIO review 2026-11-19 move #1). E8's gold lane trades on the same account, so its size is
+    # counted on every day and never cut; the sleeve book gives way, weakest-of-the-worst-family
+    # first, and every cut is a missed-growth line.
+    from prop import stress
+    from prop.e8_guard import DAILY_DRAWDOWN
+    if days is None:
+        days = stress.load_days()
+    try:
+        from mt5desk.kelly_sizing import load_cert_book
+        gold = principal_e8_book(load_cert_book(CERT_BOOK, "e8")).get("gold_asia", 0.0)
+    except Exception:
+        gold = 0.0
+    # SIZE BY EVIDENCE (`sleeve_risk`): fill-proven depth, then Tier S as a multiplier.
+    for r in chosen:
+        r["risk_frac"] = sleeve_risk(r)
+    stressed = stress.cap_book(
+        chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
+        daily_limit=DAILY_DRAWDOWN, days=days,
+        col_of=lambda r: f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}",
+        fixed={"gold_asia": gold})
+    chosen = stressed.pop("kept")
+
     fams: dict[str, int] = {}
     for r in chosen:
         fams[r["family"]] = fams.get(r["family"], 0) + 1
@@ -525,6 +706,7 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "n_selected": len(chosen),
         "gross_exposure_if_all_fire": round(len(chosen) * RISK_FRAC, 5),
         "by_mechanism": fams,
+        "stress": stressed,
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),

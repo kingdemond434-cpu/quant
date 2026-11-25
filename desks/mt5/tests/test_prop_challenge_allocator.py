@@ -457,10 +457,20 @@ def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> N
 
 
 def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
-                  screen: list[dict], door: str | None = None) -> dict:
-    """build_universe over one certified EURUSD column, every venue read stubbed."""
+                  screen: list[dict], door: str | None = None, proven_n: int | None = 50) -> dict:
+    """build_universe over one certified EURUSD column, every venue read stubbed. The column is
+    fill-proven at `proven_n` trades (None: no fill record)."""
+    import json as _json
+
     import kelly_survival as ks
+    from prop import e8_book
     col = "EURUSD_x_asia"
+    fp = tmp_path / "FILL_PROVEN.json"
+    fp.write_text(_json.dumps({"schema": e8_book.FILL_PROVEN_SCHEMA,
+                            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                            "sleeves": [] if proven_n is None else [
+        {"sleeve": col, "n_out": proven_n, "adjR_out": 0.2}]}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", fp)
     worlds = tmp_path / "worlds.npz"
     np.savez(worlds, names=np.asarray([col]), r=np.full((2, 5, 1), 0.1))
     monkeypatch.setattr(ks, "WORLDS", worlds)
@@ -495,6 +505,19 @@ def test_ftmo_admits_the_same_certified_roster_fusion_and_e8_trade(tmp_path, mon
     assert c["admitted"] and c["tier_s"] is False and "certified via" in c["why"]
     assert uni["specs"]["EURUSD_x_asia"]["key"] == "external.EURUSD.x.p=1"
     assert pca.executable_columns(uni["cols"], uni) == {"EURUSD_x_asia"}
+    # SIZE BY EVIDENCE: 50 fill-proven trades -> half of MAX_RISK_FRAC as the column's ceiling.
+    from mt5desk.sizing import MAX_RISK_FRAC
+    assert abs(uni["caps"]["EURUSD_x_asia"] - 0.5 * MAX_RISK_FRAC) < 1e-12
+
+
+def test_a_certified_column_with_no_fill_record_is_refused(tmp_path, monkeypatch) -> None:
+    """zuck 2026-11-19 19:23Z: what is profitable on real fills trades; a certificate alone no
+    longer admits on FTMO, the same door as E8."""
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen, proven_n=None)
+    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE"
+    assert uni["columns"]["EURUSD_x_asia"]["why"].startswith("not fill-proven")
 
 
 def test_a_column_no_certificate_vouches_for_is_still_refused(tmp_path, monkeypatch) -> None:
