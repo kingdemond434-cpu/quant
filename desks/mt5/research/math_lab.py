@@ -1800,8 +1800,9 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             plan["traditions"][tradition]["lifetime_trials"] = (
                 lifetime.get(tradition, 0) + int(row.get("distinct", 0)))
         _atomic(ALLOCATION, plan)
-    engine_s = min(budget_s * ENGINE_SHARE, hard_deadline - 0.03 * budget_s - time.monotonic())
-    engines = (run_engines(panels[0], admitted, max(4.0, engine_s)) if engine_s >= 4.0 else {})
+    room = hard_deadline - 0.03 * budget_s - time.monotonic()
+    engines = (run_engines(panels[0], admitted, min(max(4.0, budget_s * ENGINE_SHARE), room))
+               if room >= 4.0 else {})
     wiring = I.wiring_proof(
         {t: {**row, "passed": row.get("passed_burden", 0)} for t, row in per_tradition.items()},
         engines, chosen, list(MATHLAB_ENGINES))
