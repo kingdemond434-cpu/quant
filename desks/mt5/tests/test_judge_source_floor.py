@@ -138,3 +138,46 @@ def test_member_without_backlog_is_not_granted_slots():
     assert g["active"] is True and g["eligible_members"] == []
     assert g["no_backlog_members"] == ["tape_a"]
     assert jsf.publish(st, slots_per_pass=250.0)["groups"]["tape"]["slots_granted"] == 0
+
+
+def test_floor_survives_the_h2_reorder_when_applied_last():
+    """Audit (2026-11-25, seal r1 HOLD): `reorder_keep` restores every kept cell's pre-allocation
+    position, so a floor applied INSIDE the trim is erased. Applied LAST, after the reorder, every
+    prefix holds each active source's share and the result is still a permutation of keep."""
+    from research.judge_efficiency import reorder_keep
+
+    before = _rows([("carry", 60), ("cot_a", 6), ("momo", 60), ("tape_a", 6), ("cot_b", 6)])
+    keep = [r for r in before if r["family"] != "momo" or r["i"] < 40]   # a family trim
+    block = {"source_floor": {"groups": {"cot": {"active": True, "min_share": 0.10,
+                                "eligible_members": ["cot_a", "cot_b"]}}}}
+    # Floor inside the trim, then the H2 reorder: the floor's permutation is gone.
+    erased = reorder_keep(before, jsf.floor_from_report(list(keep), block))
+    assert [id(r) for r in erased] == [id(r) for r in reorder_keep(before, keep)]
+    assert jsf.floor_from_report(list(keep), block) != keep          # the floor did reorder
+    # Floor last: every prefix holds its share while the source has rows left.
+    out = jsf.floor_from_report(reorder_keep(before, keep), block)
+    assert sorted(map(id, out)) == sorted(map(id, keep)) and len(out) == len(keep)
+    members = {"cot": {"cot_a", "cot_b"}}
+    total = {src: sum(1 for r in keep if r["family"] in fams) for src, fams in members.items()}
+    for n in range(1, len(out) + 1):
+        for src, fams in members.items():
+            got = sum(1 for r in out[:n] if r["family"] in fams)
+            assert got >= min(total[src], math.ceil(0.10 * n - 1e-12)), (src, n, got)
+
+
+def test_sealed_sources_apply_the_floor_after_the_reorder():
+    """Once the sealed judge and its warmer restatement call the floor, they call it AFTER
+    `reorder_keep` (and, in the judge, after the re-mint front), never inside the trim."""
+    gauntlet = ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py"
+    docket = DESK / "research" / "judge_docket_order.py"
+    cases = ((gauntlet, "def main(", ("reorder_keep(_pre_alloc", "_remint_front +")),
+             (docket, "def sealed_keep(", ("reorder_keep(ordered",)))
+    for path, fn, anchors in cases:
+        src = path.read_text("utf-8")
+        if "floor_from_report" not in src:
+            continue                      # seal not landed yet: nothing to order
+        assert "floor_from_report" not in src[src.index("def allocate"):src.index(fn)], path
+        body = src[src.index(fn):]
+        call = body.index("floor_from_report(")
+        for a in anchors:
+            assert body.index(a) < call, (path, a)
