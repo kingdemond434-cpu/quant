@@ -154,7 +154,10 @@ def stamp(row: dict[str, Any], *, text: str | None = None) -> bool:
         row["claim_family"] = claim_family_id(_seat(row), sentence)
     prior = row.get("claim_selection_trials")
     row["claim_selection_trials"] = max(int(prior) if isinstance(prior, int) else 0, n)
-    row["breadth_unit"] = row["claim_family"]
+    # A PRODUCER LINEAGE (research/producer_loop.stamp_lineage) groups TRIALS, not breadth: its
+    # rows keep their own cell's unit, so a lineage of thousands of cells is not one unit.
+    if not str(row["claim_family"]).startswith("lineage:"):
+        row["breadth_unit"] = row["claim_family"]
     return True
 
 
