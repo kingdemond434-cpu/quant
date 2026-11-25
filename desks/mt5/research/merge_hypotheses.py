@@ -18,6 +18,7 @@ discovered reaches the gauntlet; the gauntlet decides, using its own sealed cons
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -63,6 +64,27 @@ def _replace_waiting_for_readers(src: str | Path, dst: Path,
             tries += 1
             time.sleep(min(wait, left))
             wait = min(wait * 2, DOCKET_REPLACE_MAX_WAIT_S)
+
+
+def _write_rows_atomic(path: Path, rows: Any) -> None:
+    """Stream `rows` as JSON to a staging file beside `path`, then rename it into place.
+
+    WHY (2026-11-25): MT5-MergeDocket pid 16808 sat 17.5 h "at study bank" holding the
+    merge_hypotheses lock with 16.3 GB committed and 0.2 GB resident. `write_text(json.dumps(...))`
+    built the whole bank as ONE string before a byte reached disk, and opened the live file with
+    truncate first, so a kill there leaves a truncated bank. `json.dump` to a handle streams in
+    chunks, the live file is only ever replaced whole, and the rename waits out a reader exactly
+    as the docket's does."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _sweep_dead_staging(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(rows, handle, indent=1, default=str)
+        _replace_waiting_for_readers(tmp, path)
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
 
 
 def _sweep_dead_staging(path: Path, now: float | None = None) -> int:
@@ -1128,7 +1150,7 @@ def main() -> int:
     print(f"   lane router: {lane_why}")
     if off_lane:
         EVENT_LANE.parent.mkdir(parents=True, exist_ok=True)
-        EVENT_LANE.write_text(json.dumps(off_lane, indent=1, default=str), "utf-8")
+        _write_rows_atomic(EVENT_LANE, off_lane)
         top = sorted(off_lane_syms.items(), key=lambda kv: -kv[1])[:8]
         print(f"   event lane: {len(off_lane)} row(s) across {len(off_lane_syms)} instrument(s) "
               f"routed OUT of the judging docket {off_lane_counts} (kept, never deleted) -> "
@@ -1146,7 +1168,7 @@ def main() -> int:
                 "for study")
             row["routed_to_study_at"] = stamp
         STUDY_BANK.parent.mkdir(parents=True, exist_ok=True)
-        STUDY_BANK.write_text(json.dumps(study, indent=1, default=str), "utf-8")
+        _write_rows_atomic(STUDY_BANK, study)
         print(f"   study bank: {len(study)} row(s) of banned families "
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
