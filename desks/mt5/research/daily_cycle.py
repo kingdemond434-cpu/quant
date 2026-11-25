@@ -175,24 +175,49 @@ def _weekly_hunt_refresh() -> None:
     now = datetime.now(UTC).timestamp()
     if now - last <= 6 * 86400:
         return
+    # ONE BROKEN HUNT NEVER STOPS THE OTHERS (box 2026-11-22..24: run_hunt7 named a family that
+    # had left mt5desk.families, the import raised, and every hunt behind it went unrun for days).
+    # Each job imports and runs on its own; the step still fails -- and the weekly stamp still
+    # does not advance -- when any job failed, so the failure stays loud and is retried.
     # Explicit imports make every member visible to the canonical wiring census.
-    import fetch_universe
-    import free_shadows
-    import run_hunt7
-    import run_hunt8
-    import run_hunt9
-    import run_hunt10
-    import run_hunt12
-    jobs = (("fetch_universe", fetch_universe.main), ("run_hunt7", run_hunt7.main),
-            ("run_hunt8", run_hunt8.main), ("run_hunt9", run_hunt9.main),
-            ("free_shadows", free_shadows.main), ("run_hunt10", run_hunt10.main),
-            ("run_hunt12", run_hunt12.main))
-    for module, runner in jobs:
-        # These two CLIs parse sys.argv when called without an explicit argument list.
-        # The daily step's own --step flag must never become a hunt argument.
-        result = runner([]) if module in {"fetch_universe", "run_hunt12"} else runner()
+    def _job(module: str):
+        def run():
+            if module == "fetch_universe":
+                import fetch_universe
+                return fetch_universe.main([])
+            if module == "run_hunt7":
+                import run_hunt7
+                return run_hunt7.main()
+            if module == "run_hunt8":
+                import run_hunt8
+                return run_hunt8.main()
+            if module == "run_hunt9":
+                import run_hunt9
+                return run_hunt9.main()
+            if module == "free_shadows":
+                import free_shadows
+                return free_shadows.main()
+            if module == "run_hunt10":
+                import run_hunt10
+                return run_hunt10.main()
+            import run_hunt12
+            return run_hunt12.main([])
+        return run
+    failed: list[str] = []
+    for module in ("fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9", "free_shadows",
+                   "run_hunt10", "run_hunt12"):
+        # fetch_universe and run_hunt12 parse sys.argv when called without an explicit argument
+        # list; the daily step's own --step flag must never become a hunt argument.
+        try:
+            result = _job(module)()
+        except Exception as exc:  # noqa: BLE001 -- named below, and the step still fails
+            dlog(f"weekly hunt: {module} FAILED ({type(exc).__name__}: {exc}); the rest still run")
+            failed.append(f"{module} ({type(exc).__name__})")
+            continue
         if isinstance(result, int) and result != 0:
-            raise RuntimeError(f"{module} exited {result}; weekly stamp not advanced")
+            failed.append(f"{module} exited {result}")
+    if failed:
+        raise RuntimeError(f"weekly hunt: {', '.join(failed)}; weekly stamp not advanced")
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(json.dumps({"last_sweep": now}), encoding="utf-8")
     dlog("weekly hunt7-12 + states sweep completed")
