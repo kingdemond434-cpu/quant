@@ -51,6 +51,10 @@ THE LANES (each one a job kind in `data/free_model_jobs.json`):
                      with the rest. Executed by those organs, not here.
   data_discovery     placeholder for the data-source discovery job (branch
                      claude/llm-data-discovery); registered, never executed here until wired.
+  math_proposer      free models propose objects IN the math lab's grammar
+                     (research/mathlab/llm_proposer.py); validated there (look-ahead, unknown
+                     primitives, duplicates dropped by reason) and queued for the math_lab leg's
+                     `math:llm_proposer` tradition, which charges, judges and donates them.
 
 PROVIDER-AGNOSTIC. Every model call goes through `route_ask`: OpenRouter's free rotation
 (libs/ops/openrouter_free) and then every lit cn_ensemble seat (Groq, SiliconFlow, hcnsec,
@@ -118,16 +122,17 @@ REGISTRY_DB = ROOT / "data" / "alpha_registry.sqlite"
 # ------------------------------------------------------------------------------ the registry
 #: The lane names E35 reads from FUNNEL.json `by_lane` (plus any registry-added job).
 LANES = ("alt_generation", "data_discovery", "translator", "judge_feedback", "near_miss",
-         "redundancy_critic")
+         "redundancy_critic", "math_proposer")
 #: kind -> (executed here?, uses a model?)
 KINDS: dict[str, tuple[bool, bool]] = {
     "translate": (True, True), "feedback": (True, False), "near_miss": (True, True),
-    "critic": (True, False), "alt_generation": (False, True), "data_discovery": (False, True)}
+    "critic": (True, False), "alt_generation": (False, True), "data_discovery": (False, True),
+    "math_proposer": (True, True)}
 #: template id -> its kind. A template is code in this module, never text from the registry.
 TEMPLATES: dict[str, str] = {
     "translate_v1": "translate", "feedback_v1": "feedback", "near_miss_v1": "near_miss",
     "critic_v1": "critic", "alt_catalog_v1": "alt_generation",
-    "data_discovery_v1": "data_discovery"}
+    "data_discovery_v1": "data_discovery", "math_proposer_v1": "math_proposer"}
 STATUSES = ("ACTIVE", "PARKED", "PLACEHOLDER")
 _NAME = re.compile(r"[a-z][a-z0-9_]{2,47}")
 WEIGHT_MIN, WEIGHT_MAX = 0.25, 4.0
@@ -151,7 +156,8 @@ DEFAULT_JOBS: tuple[dict[str, Any], ...] = tuple(
                        ("translator", "translate", "translate_v1", "ACTIVE"),
                        ("judge_feedback", "feedback", "feedback_v1", "ACTIVE"),
                        ("near_miss", "near_miss", "near_miss_v1", "ACTIVE"),
-                       ("redundancy_critic", "critic", "critic_v1", "ACTIVE")))
+                       ("redundancy_critic", "critic", "critic_v1", "ACTIVE"),
+                       ("math_proposer", "math_proposer", "math_proposer_v1", "ACTIVE")))
 
 
 def _now() -> datetime:
@@ -1298,6 +1304,14 @@ def run_pass(*, now: datetime | None = None, budget_s: float = DEFAULT_BUDGET_S,
         tally("redundancy_critic", inputs=c1["in"] + c2["in"],
               outputs=c1["kept"] + c2["kept"])
     report["lanes"]["redundancy_critic"] = crit
+    if "math_proposer" in active:      # free models propose objects IN the math lab's grammar
+        from research.mathlab import llm_proposer as mp
+        mpr = mp.run_job(ask=asker if use_llm else None, calls=shares.get("math_proposer", 0),
+                         deadline=deadline, now=now, queue=lpath.parent / mp.QUEUE.name,
+                         cat=cat, write=write)
+        report["lanes"]["math_proposer"] = mpr
+        tally("math_proposer", inputs=mpr["calls"], proposals=mpr["proposed"],
+              dropped=sum(mpr["dropped"].values()), outputs=mpr["accepted"])
     for lane, rr in (("translator", tr_rows), ("near_miss", nm_rows)):
         if write and rr:
             p = donate(lane, rr, now, intel_root)

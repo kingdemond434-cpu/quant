@@ -43,6 +43,7 @@ from .base import (
     _quiet,
     _z,
 )
+from .llm_proposer import LLM_REGISTRY
 from .objects import MathObject, Panel, Variable
 from .physics import PHYSICS_CORE_REGISTRY
 from .physics_ext import PHYSICS_EXT_REGISTRY
@@ -1569,6 +1570,11 @@ REGISTRY.update(EXTRA_REGISTRY)
 # department, allocated and budgeted beside the mathematics, never diluted into it.
 REGISTRY.update(PHYSICS_CORE_REGISTRY)
 REGISTRY.update(PHYSICS_EXT_REGISTRY)
+# THE LLM PROPOSER (2026-11-25): the free models' proposals as one more mathematical tradition,
+# `math:llm_proposer`. Registered here so `build` reaches it; kept OUT of TRADITIONS (the coded
+# twenty-eight) and joined in by `math_lab.all_traditions()`, so it gets the same floor, share,
+# burden and gauntlet without being counted as one of the coded cohorts.
+REGISTRY.update(LLM_REGISTRY)
 PHYSICS_TRADITIONS: tuple[str, ...] = (*PHYSICS_CORE_REGISTRY, *PHYSICS_EXT_REGISTRY)
 
 

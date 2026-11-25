@@ -460,7 +460,7 @@ def test_math_lab_report_carries_the_physics_department_engines_and_wiring_proof
         monkeypatch.setattr(ML, "MATHLAB_REPRESENTATIONS", tmp_path / "repr")
         monkeypatch.setattr(ML, "build_panels", lambda max_targets=4: (
             [make_panel(41)], {"unmeasured": [], "targets": ["EURUSD"]}))
-        assert set(ML.all_traditions()) == set(S.TRADITIONS) | set(PHYSICS)
+        assert set(ML.all_traditions()) == set(S.TRADITIONS) | set(PHYSICS) | {"llm_proposer"}
         report = ML.run(budget_s=20.0, dry_run=True, permutations=20,
                         traditions=["spectral", "criticality", "field_continuum"])
         assert report["departments"]["physics"] == ["criticality", "field_continuum"]
