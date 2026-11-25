@@ -15,6 +15,16 @@ slippage -- a breach ends the account, which is the whole pass probability -- no
 fiat: every cut is billed as missed growth (`cuts`), and the kill criterion is published: a book
 whose worst day is under KILL_FRAC (30%) of the limit with every sleeve in it never binds this.
 REVERT: STRESS_CAP_FRAC = None reports the stress and cuts nothing.
+
+THE CAP SCALES, IT DOES NOT ZERO (Audit ruling 2026-11-25, audits/ruling-stress-crisis-clip).
+Dropping whole sleeves until the worst day fits sent a book of five certified sleeves to ZERO
+whenever the fixed gold lane alone sat near the cap: each drop removed a bet the account could
+have carried at a smaller size. STRESS_MODE = "scale" finds the LARGEST common factor k in [0, 1]
+on every non-fixed sleeve's risk with the worst day still under the cap (the worst day is convex
+in k, so the feasible set is an interval from 0 and bisection finds its end), writes k into each
+row through `set_risk`, and bills (1 - k) of each sleeve as missed growth. The cap itself is
+unchanged. A fixed lane that breaches the cap on its own is reported as `fixed_breach`, never
+hidden in the sleeves' cut. STRESS_MODE = "cut" is the revert to the drop-the-weakest rule.
 """
 from __future__ import annotations
 
@@ -23,6 +33,10 @@ from pathlib import Path
 from typing import Any
 
 STRESS_CAP_FRAC: float | None = 0.60
+#: "scale" (default) or "cut" (the revert): see the module docstring.
+STRESS_MODE = "scale"
+#: Bisection steps for the common scale: 2**-40 of the book's risk is far below any lot step.
+_SCALE_STEPS = 40
 KILL_FRAC = 0.30
 
 
@@ -69,7 +83,8 @@ def worst_day(cols: Sequence[str], risk: Sequence[float],
 
 def cap_book(rows: list[dict[str, Any]], risk_of: Any, family_of: Any, daily_limit: float,
              days: tuple[list[str], Any] | None, col_of: Any,
-             fixed: dict[str, float] | None = None) -> dict[str, Any]:
+             fixed: dict[str, float] | None = None,
+             set_risk: Any = None) -> dict[str, Any]:
     """Drop the weakest sleeve of the family that loses most on the worst day until that day is
     under STRESS_CAP_FRAC x the limit. `rows` is best-first within each family; `fixed` is risk
     the same account carries on another lane (E8's gold), counted on every day and never cut.
@@ -85,7 +100,41 @@ def cap_book(rows: list[dict[str, Any]], risk_of: Any, family_of: Any, daily_lim
     cuts: list[dict[str, Any]] = []
     cur = before
     cap = None if STRESS_CAP_FRAC is None else STRESS_CAP_FRAC * daily_limit
-    while cap is not None and kept and cur["loss"] > cap + 1e-12:
+    scale: float | None = None
+    fixed_alone = measure([])["loss"] if fixed else 0.0
+    if (STRESS_MODE == "scale" and set_risk is not None and cap is not None and kept
+            and cur["loss"] > cap + 1e-12):
+        base = [float(risk_of(r)) for r in kept]
+
+        def at(k: float) -> dict[str, Any]:
+            return worst_day([col_of(r) for r in kept] + list(fixed),
+                             [k * b for b in base] + list(fixed.values()), days)
+
+        lo, hi = 0.0, 1.0
+        if at(0.0)["loss"] > cap + 1e-12:
+            hi = 0.0                    # the fixed lane alone breaches: nothing a sleeve can fix
+        else:
+            for _ in range(_SCALE_STEPS):
+                mid = 0.5 * (lo + hi)
+                if at(mid)["loss"] <= cap + 1e-12:
+                    lo = mid
+                else:
+                    hi = mid
+            hi = lo
+        scale = hi
+        cur = at(scale)
+        for r, b in zip(kept, base, strict=True):
+            set_risk(r, b * scale)
+            cuts.append({"column": col_of(r), "family": family_of(r),
+                         "missed_growth_risk_frac": round(b * (1.0 - scale), 8),
+                         "scaled_to": round(b * scale, 8), "scale": round(scale, 6),
+                         "worst_day_before": round(before["loss"], 6),
+                         "why": f"worst historical day {before['loss']:.4%} over the "
+                                f"{STRESS_CAP_FRAC:.0%} x {daily_limit:.2%} stress cap; every "
+                                f"sleeve scaled by {scale:.4f} to fit"})
+        kept = [r for r in kept if scale > 0]
+    while (STRESS_MODE != "scale" or set_risk is None) and cap is not None and kept \
+            and cur["loss"] > cap + 1e-12:
         fam_loss: dict[str, float] = {}
         if not kept:
             break
@@ -104,6 +153,9 @@ def cap_book(rows: list[dict[str, Any]], risk_of: Any, family_of: Any, daily_lim
         cur = measure(kept)
     return {"kept": kept, "cuts": cuts, "daily_limit": daily_limit, "fixed": fixed,
             "cap_frac": STRESS_CAP_FRAC, "kill_frac": KILL_FRAC,
+            "mode": STRESS_MODE if set_risk is not None else "cut", "scale": scale,
+            "fixed_alone_loss": round(fixed_alone, 6),
+            "fixed_breach": bool(cap is not None and fixed and fixed_alone > cap + 1e-12),
             "before": {"loss": round(before["loss"], 6), "status": before["status"],
                        "x_limit": round(before["loss"] / daily_limit, 4),
                        "unmeasured": before["unmeasured"]},

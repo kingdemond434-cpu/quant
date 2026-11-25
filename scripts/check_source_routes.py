@@ -88,11 +88,6 @@ ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "dukascopy_datafeed", "url": "https://datafeed.dukascopy.com/datafeed",
      "expect": "any", "terms": "REFUSED"},
     {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any"},
-    {"name": "gld_holdings",
-     "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
-     "expect": "binary", "terms": "REFUSED", "terms_why": (
-         "spdrgoldshares.com terms: personal, non-commercial use only; no access other than "
-         "the website's navigational structure (re-read 2026-11-17)")},
     {"name": "yahoo_chart",
      "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json",
      "terms": "REFUSED"},

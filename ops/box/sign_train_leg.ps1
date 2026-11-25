@@ -104,7 +104,15 @@ $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
 if (Test-Path -LiteralPath $mergerEnv) { . $mergerEnv; $null = Use-MergerIdentity $Clone }
 
 try {
-    if (-not (Test-Path -LiteralPath $Python)) { throw "no desk Python at $Python" }
+    # THE INTERPRETER, resolved as Adopt-And-Seal resolves it (2026-11-25): the desk venv, then
+    # the Windows launcher `py -3`, then bare `python`. This box has no .venv, so every run since
+    # 11-11 failed here before signing anything (box RC 2026-11-25T02:40Z: 60/60 log lines).
+    $PyArgs = @()
+    if (-not (Test-Path -LiteralPath $Python)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $Python = "py"; $PyArgs = @("-3") }
+        elseif (Get-Command python -ErrorAction SilentlyContinue) { $Python = (Get-Command python).Source }
+        else { throw "no desk Python (.venv, py, python)" }
+    }
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
 
     # One sign at a time: an open sign-train PR is waited for, never stacked on. Every
@@ -144,7 +152,7 @@ try {
 
     Push-Location -LiteralPath $Clone
     try {
-        & $Python -u "scripts\sign_train.py" --target $head 2>&1 | ForEach-Object {
+        & $Python @PyArgs -u "scripts\sign_train.py" --target $head 2>&1 | ForEach-Object {
             $l = "$_"
             if ($l) { Say "train@$short $l" }
         }

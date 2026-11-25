@@ -29,13 +29,19 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return asked
 
 
-def test_gld_route_is_terms_refused_and_never_probed(no_network: list[str]) -> None:
-    gld = next(r for r in csr.ROUTES if r["name"] == "gld_holdings")
-    assert "spdrgoldshares.com" in gld["url"] and gld["terms"] == "REFUSED"
-    out = csr.probe(gld)
+@pytest.mark.parametrize("url", [
+    "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
+    "https://spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv",
+])
+def test_spdr_gold_shares_is_refused_by_host_and_never_probed(url: str,
+                                                            no_network: list[str]) -> None:
+    # The fence is the shared host list: every caller (route probe, canary, crawler, robots
+    # read) is refused before it builds a request, so the probe keeps no GLD route at all.
+    assert csr.refusal(url) and "non-commercial" in csr.refusal(url)
+    assert not [r for r in csr.ROUTES if "spdrgoldshares" in str(r.get("url"))]
+    out = csr.probe({"name": "gld_holdings", "url": url, "expect": "binary"})
     assert no_network == []
     assert out["status"] == "BLOCKED_ON_TERMS"
-    assert "non-commercial" in out["why"]
     assert out["missed_growth"]["mechanism"] == "gld_holdings_terms_refusal"
 
 

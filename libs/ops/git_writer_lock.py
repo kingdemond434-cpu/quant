@@ -543,6 +543,34 @@ HUNG_SAMPLE_S = 60.0
 #: on the writer itself decides again.
 TREE_SPARE_MAX_AGE_S = 2 * 25 * 60.0
 
+#: HOW LONG A WRITER MAY SIT IN A NETWORK WAIT AND STILL BE BELIEVED (2026-11-12).
+#:
+#: The comment above predicted that "a writer doing real work -- a chunked push -- moves SOMETHING
+#: in sixty seconds". MEASURED ON THIS BOX, IT DOES NOT, and the reaper killed the push twice:
+#:
+#:     STOPPED  pid=22180 git.exe  0.43h old and moved 0.000s of CPU and 0B of I/O across 60s
+#:              git.exe push origin HEAD:refs/heads/cro/noon-2026-11-12
+#:     STOPPED  pid=15640 git.exe  0.24h old ... (same push, restarted)
+#:
+#: Both died with exit 15 inside the pre-push hook. A push to GitHub over this link spends its
+#: minutes blocked in `recv` on a socket: the CPU counter does not move because nothing is
+#: computing, and the per-process I/O counters do not move because `io_counters` on Windows
+#: reports FILE I/O, not socket bytes. So the reaper's proof of death is a property every healthy
+#: large push on this box has, and the one operation the mutex exists to protect was the one
+#: operation it could never complete. That is why code reaches this box only through origin.
+#:
+#: The discriminator is a socket, and it separates the two cases exactly. The 2026-09-24 writers
+#: this reaper was built for -- `git update-index --stdin` blocked on a pipe nobody would write
+#: to, and the `git stash create` and `merge -s ours` waiting on it -- are LOCAL index operations
+#: with no established connection at all, so they are still reaped on the same proof as before.
+#: A transfer in flight holds an ESTABLISHED connection to the remote.
+#:
+#: The grace is bounded, because a genuinely wedged push can hold a half-open socket for ever.
+#: Past this age the socket stops counting and the CPU/I-O proof applies again -- the pushes in
+#: the original incident were stopped for 6.9 h and 6.0 h, far outside it, and would still be
+#: reaped today. An unreadable connection table is UNMEASURED and never spares anything (L1.28a).
+NET_WAIT_GRACE_S = 3600.0
+
 #: `sshd` is excluded on purpose -- see note 1 above.
 _WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})
 
@@ -639,6 +667,26 @@ def _ancestor_pids(psutil_mod: Any) -> set[int]:
     return pids
 
 
+def _established_tcp(proc: Any) -> int | None:
+    """How many ESTABLISHED TCP connections this process holds, or None when unreadable.
+
+    None is UNMEASURED and never spares anything: an unreadable connection table must not become
+    a licence for a wedged writer to hold the mutex for ever. `net_connections` is the current
+    name and `connections` the one older psutil builds expose; both raise AccessDenied for a
+    process this account cannot open, which is exactly the None case.
+    """
+    for attr in ("net_connections", "connections"):
+        reader = getattr(proc, attr, None)
+        if reader is None:
+            continue
+        try:
+            return sum(1 for c in reader(kind="tcp")
+                       if str(getattr(c, "status", "")) == "ESTABLISHED")
+        except Exception:
+            return None
+    return None
+
+
 def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
     out: dict[int, dict[str, Any]] = {}
     for proc in psutil_mod.process_iter(["pid", "name", "create_time", "cmdline"]):
@@ -669,6 +717,7 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
                 "write_b": write_b,
                 "cmd": cmdline[:200],
                 "parent_alive": parent_alive,
+                "tcp_established": _established_tcp(proc),
             }
         except Exception:  # a process that exits mid-iteration is not an error
             continue
@@ -747,6 +796,22 @@ def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SA
                 **row, "d_tree_cpu_s": round(a_tree - b_tree, 4),
                 "why": (f"its own child processes moved {a_tree - b_tree:.3f}s of CPU in "
                         f"{sample_s:.0f}s (a hook at work under it): slow, not stopped")})
+            continue
+        # A TRANSFER IN FLIGHT MOVES NEITHER COUNTER. `io_counters` on Windows reports FILE I/O,
+        # so a push blocked in `recv` looks identical to a writer blocked on a dead pipe -- and
+        # this reaper killed the same push twice on 2026-11-12 for exactly that reason. An
+        # ESTABLISHED socket to the remote is the difference between the two, and the local index
+        # operations this organ was built to reap hold none.
+        held = [int(s["tcp_established"]) for s in (before, after)
+                if s.get("tcp_established") is not None]
+        if len(held) == 2 and min(held) > 0 and float(after["age_s"]) < NET_WAIT_GRACE_S:
+            rec["spared"].append({
+                **row, "why": (f"{float(after['age_s']) / 3600.0:.2f}h old with "
+                               f"{min(held)} ESTABLISHED TCP connection(s) in both samples: "
+                               f"blocked on the network, not stopped. Neither counter can move "
+                               f"during a transfer (io_counters is file I/O). The grace runs out "
+                               f"at {NET_WAIT_GRACE_S / 3600.0:.1f}h, after which the CPU/I-O "
+                               f"proof applies again.")})
             continue
         rec["hung"].append({
             **row, "why": (f"{float(after['age_s']) / 3600.0:.2f}h old and moved 0.000s of CPU "
