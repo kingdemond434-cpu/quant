@@ -197,7 +197,7 @@ def test_campaign_transitions_are_enforced_persisted_and_advanced_from_the_regis
     moved = again.refresh(_Conn({"cand_c": {"status": "claimed", "survived": 0},
                                  "cand_d": {"status": "judged", "survived": 0,
                                             "terminal_gate": "deflated_sharpe"}}))
-    assert moved == {"TESTING": 1, "FORWARD": 0, "FAILED": 1, "unchanged": 0}
+    assert moved == {"TESTING": 1, "FORWARD": 0, "FAILED": 1, "unchanged": 0, "not_reached": 0}
     assert again.state_of(k2) == "TESTING" and again.state_of(k3) == "FAILED"
     assert "deflated_sharpe" in again.rows[k3]["why"]
     assert again.refresh(_Conn({"cand_c": {"status": "survived", "survived": 1}}))["FORWARD"] == 1
@@ -351,3 +351,74 @@ def test_main_accepts_once_and_budget(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.setattr(XF, "DEFAULT_PATHS", XF.Paths(tmp_path / "desk"))
     assert XF.main(["--once", "--budget-s", "1", "--dry-run"]) == 0
     assert "STOOD_DOWN" in capsys.readouterr().out
+
+
+def test_a_same_state_advance_is_idempotent_and_counts_nothing_twice(tmp_path: Path) -> None:
+    """Box 2026-11-24: "SCREENED -> SCREENED is not a legal transition" killed a whole pass."""
+    camp = XF.Campaign(tmp_path)
+    cell = XF.Cell(["delta", "close", 5], "AAA", 8, asset_class="Forex", chain=["transfer"])
+    camp.propose(cell)
+    camp.advance(cell.key, "SCREENED", cheap={"ic": 0.1})
+    row = camp.advance(cell.key, "SCREENED", cheap={"ic": 0.2})
+    assert row["state"] == "SCREENED" and row["cheap"] == {"ic": 0.2}
+    assert row["history"] == ["PROPOSED", "SCREENED"]
+    assert camp.pass_counts["SCREENED"] == 1 and len(camp.transitions) == 1
+    camp.advance(cell.key, "QUEUED", candidate_id="c1")
+    with pytest.raises(XF.CampaignError):
+        camp.advance(cell.key, "SCREENED")              # backwards is still illegal
+
+
+def test_seen_keeps_the_most_recent_keys_and_the_campaign_is_a_durable_seen(
+        factory: XF.Factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(XF, "SEEN_KEEP", 3)
+    sd = factory.paths.state_dir
+    sd.mkdir(parents=True, exist_ok=True)
+    (sd / "seen.json").write_text(json.dumps({"keys": ["z_old", "a_new", "b_new", "c_new"]}))
+    fac = XF.Factory(factory.paths, lake=factory.lake, seed=3, registry=factory.registry)
+    assert list(fac.seen) == ["a_new", "b_new", "c_new"]     # recency, not the sorted tail
+    # a cell the campaign already holds QUEUED is a duplicate even when `seen` forgot it ...
+    fac.load_worlds(["AAA"], 1)
+    cell = XF.Cell(["delta", "close", 12], "AAA", 8, asset_class="Forex", chain=["transfer"])
+    compiled = XF.dsl.compile_expr(cell.expr, terminals=fac.terminals("AAA"))
+    cell.expr = compiled.expr
+    fac.campaign.propose(cell)
+    fac.campaign.advance(cell.key, "SCREENED")
+    fac.campaign.advance(cell.key, "QUEUED", candidate_id="c1")
+    out = fac.run_cell(cell, None)
+    assert out["tier"] == 0 and "campaign holds it QUEUED" in out["why"]
+    # ... while a SCREENED one (a pass stopped before its write) is re-run without raising
+    cell2 = XF.Cell(["delta", "close", 24], "AAA", 8, asset_class="Forex", chain=["transfer"])
+    cell2.expr = XF.dsl.compile_expr(cell2.expr, terminals=fac.terminals("AAA")).expr
+    fac.campaign.propose(cell2)
+    fac.campaign.advance(cell2.key, "SCREENED")
+    fac.run_cell(cell2, None)                              # must not raise CampaignError
+
+
+def test_a_slow_registry_and_a_short_deadline_still_publish_and_resume_next_pass(
+        factory: XF.Factory, monkeypatch: pytest.MonkeyPatch) -> None:
+    """ANYTIME: the write stops inside its deadline, the report is on disk, and what was not
+    written is carried to the next pass's registry write -- never dropped."""
+    import time as _time
+
+    from libs.moat import registry as R
+    real = R.record_discovery
+
+    def slow(*a: Any, **k: Any) -> Any:
+        _time.sleep(0.05)
+        return real(*a, **k)
+
+    monkeypatch.setattr(R, "record_discovery", slow)
+    monkeypatch.setattr(XF, "WRITE_TAIL_S", 0.0)
+    factory.hard_deadline_s = 6.0
+    report = factory.run(3.0, symbols=["AAA"])
+    assert factory.paths.report.exists()
+    reg = report["registry"]
+    pending = json.loads((factory.paths.state_dir / "pending_registry.json").read_text())["rows"]
+    assert reg.get("pending_for_next_pass", 0) == len(pending) > 0, reg
+    assert report["seconds"] < 6.0 + 5.0
+    monkeypatch.setattr(R, "record_discovery", real)
+    again = XF.Factory(factory.paths, lake=factory.lake, seed=9, registry=R)
+    again.hard_deadline_s = None
+    reg2 = again.record_registry()
+    assert reg2["carried_from_previous_pass"] == len(pending)
+    assert reg2["cells"] >= len(pending) and not reg2.get("pending_for_next_pass")
