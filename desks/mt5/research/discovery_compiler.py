@@ -86,6 +86,8 @@ OUT = BASE / "reports" / "DISCOVERY_COMPILER.json"
 SOURCE = "discovery_compiler"
 BUDGET_S = 240
 MAX_DISCOVERIES = 200
+#: Share of each pass reserved for fresh seat files before the registry backlog (census 11-19).
+SEAT_RESERVE_SHARE = 0.25
 #: Children carried forward per discovery. A COMPUTE BUDGET and it says so: the remainder is
 #: counted as blocked with a named reason and is owed, never refused (L1.61).
 MAX_CHILDREN = 40
@@ -168,6 +170,40 @@ def _fresh(cursor: dict[str, Any], path: Path) -> bool:
     seen = cursor["files"].get(str(path))
     return not (isinstance(seen, dict) and seen.get("size") == st.st_size
                 and seen.get("mtime") == int(st.st_mtime))
+
+
+def _fresh_st(cursor: dict[str, Any], path: Path, size: int, mtime: int) -> bool:
+    """`_fresh` with the size and mtime the directory listing already returned."""
+    seen = cursor["files"].get(str(path))
+    return not (isinstance(seen, dict) and seen.get("size") == size
+                and seen.get("mtime") == mtime)
+
+
+def _intel_files() -> list[tuple[Path, int, int]]:
+    """Every seat donation file (data/intelligence/<seat>/*.json[l]) as (path, size, mtime),
+    newest first, from one os.scandir pass per seat directory."""
+    out: list[tuple[Path, int, int]] = []
+    try:
+        seats = [e for e in os.scandir(INTEL) if e.is_dir()]
+    except OSError:
+        return out
+    for seat in seats:
+        try:
+            with os.scandir(seat.path) as it:
+                for e in it:
+                    if not e.name.endswith((".json", ".jsonl")):
+                        continue
+                    try:
+                        if not e.is_file():
+                            continue
+                        st = e.stat()
+                    except OSError:
+                        continue
+                    out.append((Path(e.path), int(st.st_size), int(st.st_mtime)))
+        except OSError:
+            continue
+    out.sort(key=lambda t: t[2], reverse=True)
+    return out
 
 
 def _mark(cursor: dict[str, Any], path: Path, **extra: Any) -> None:
@@ -505,6 +541,72 @@ def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
     return out
 
 
+#: The producer of a discovery: its generator (e.g. "seat:kimi", "forest_runner"), else its
+#: source type, else its origin. Blank values count as missing (Audit 0017 MF-1/MF-2).
+_PRODUCER_KEY = ("COALESCE(NULLIF(generator,''), NULLIF(source_type,''), "
+                 "NULLIF(origin,''), '')")
+
+
+def fair_unprocessed(limit: int, *, conn: Any = None) -> list[dict[str, Any]]:
+    """UNPROCESSED discoveries taken ROUND-ROBIN ACROSS PRODUCERS, oldest first inside each.
+
+    MEASURED 2026-11-19 (producer census): 97,160 discoveries waited, some since 10-01, because
+    taking the oldest `limit` overall lets the producer with the deepest backlog hold the door
+    every pass, so forest_runner, ingestion_ledger, the seats and the country labs never got a
+    turn. The key is the PRODUCER (generator, else source_type, else origin): `origin` alone
+    is only MOAT / EXTERNAL / DESK, so those producers would still share one queue (Audit 0017
+    MF-1). Each producer gets one discovery per round, its oldest first, until `limit`; no
+    discovery is taken twice. Same rows, same gates, same charging. Any fault falls back to the
+    old oldest-first query, so the drain never stops.
+    """
+    own = conn is None
+    c = R.connect() if own else conn
+    try:
+        keys = [r[0] for r in c.execute(
+            f"SELECT {_PRODUCER_KEY} AS k, MIN(created_at) AS m FROM discoveries "  # noqa: S608
+            "WHERE state='UNPROCESSED' GROUP BY k ORDER BY m")]
+        if len(keys) <= 1:
+            return R.discoveries(state="UNPROCESSED", limit=limit, conn=c)
+        per = max(1, -(-limit // len(keys)))
+        one = (f"SELECT * FROM discoveries WHERE state='UNPROCESSED' "  # noqa: S608
+               f"AND {_PRODUCER_KEY}=? ORDER BY created_at LIMIT ?")
+        queues = [[dict(r) for r in c.execute(one, (k, per))] for k in keys]
+        out: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        depth = 0
+        while len(out) < limit and any(depth < len(q) for q in queues):
+            for q in queues:
+                if depth < len(q):
+                    did = str(q[depth].get("discovery_id"))
+                    if did in seen:
+                        continue
+                    seen.add(did)
+                    out.append(q[depth])
+                    if len(out) >= limit:
+                        break
+            depth += 1
+        if len(out) < limit:
+            # A producer whose queue ran short leaves room: top up oldest-first from the rest,
+            # never taking a discovery twice (Audit 0017 nit).
+            more = ("SELECT * FROM discoveries WHERE state='UNPROCESSED' "
+                    "ORDER BY created_at LIMIT ?")
+            for r in c.execute(more, (limit + len(out),)):
+                row = dict(r)
+                did = str(row.get("discovery_id"))
+                if did not in seen:
+                    seen.add(did)
+                    out.append(row)
+                    if len(out) >= limit:
+                        break
+        return out
+    except Exception:
+        return R.discoveries(state="UNPROCESSED", limit=limit, conn=c)
+    finally:
+        if own:
+            with contextlib.suppress(Exception):
+                c.close()
+
+
 def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVERIES,
            deadline: float | None = None, record: bool = True
            ) -> tuple[list[dict[str, Any]], dict[str, int], list[dict[str, str]]]:
@@ -546,19 +648,25 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             got.append({"discovery_id": did, "source_type": source_type, "origin": origin, **spec})
             by_source[source_type] = by_source.get(source_type, 0) + 1
 
-    for row in R.discoveries(state="UNPROCESSED", limit=limit, conn=conn):
+    # THE SEATS' SHARE (producer census 2026-11-19). The registry backlog alone always filled
+    # `limit`, so this function returned before the seat tree was ever read and no seat file
+    # was recorded for months. A quarter of each pass is now reserved for fresh seat files
+    # (unused reserve still goes to the backlog below via the next pass's rotation).
+    reserve = int(limit * SEAT_RESERVE_SHARE) if INTEL.exists() else 0
+    for row in fair_unprocessed(max(0, limit - reserve), conn=conn):
         got.append(registry_parent(row))
         by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
         if len(got) >= limit:
             return got, by_source, unmeasured
 
     if INTEL.exists():
-        files = sorted([*INTEL.glob("*/*.json"), *INTEL.glob("*/*.jsonl")],
-                       key=lambda p: p.stat().st_mtime if p.exists() else 0.0, reverse=True)
-        for path in files:
+        # ONE DIRECTORY PASS, NOT 2 x 194k stat() CALLS (census 2026-11-19: every one of 87
+        # recorded runs was killed at 720 s after ~9 min of glob + stat + sort before compiling
+        # one row). os.scandir returns size and mtime with the listing on Windows.
+        for path, size, mtime in _intel_files():
             if len(got) >= limit or out_of_time():
                 break
-            if not _fresh(cursor, path):
+            if not _fresh_st(cursor, path, size, mtime):
                 continue
             if path.suffix == ".jsonl":
                 doc = [json.loads(ln) for ln in _jsonl_lines(path)]
