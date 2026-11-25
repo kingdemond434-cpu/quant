@@ -65,6 +65,29 @@ _SEARCHED = re.compile(
     r"\b(?:searched|tested|tried|backtested|optimi[sz]ed|scanned|brute-?forced|swept|ran)\b"
     r"\s+(?:over\s+|through\s+|across\s+)?" + _APPROX + _N + _ADJ + r"\s+" + _UNITS + r"\b",
     re.IGNORECASE)
+#: THE DEEP FOREST WRITES ITS SEARCHES IN ITS OWN LANGUAGES (2026-11-25). The two patterns above
+#: are English, so a Chinese, Japanese, Korean or Russian claim that says "picked from 200
+#: parameter sets" was charged nothing. These read the same two statements natively.
+_NN = r"(\d{1,3}(?:,\d{3})+|\d+)"
+_ZH_UNIT = r"(?:多)?\s*(?:组|個|个|种|種|套|次|轮|條|条)"
+_NATIVE: tuple[re.Pattern[str], ...] = (
+    # zh: 从200组参数中选出 / 在500个组合里挑 / 回测了1000组 / 遍历了300种参数 / 优化了2000次
+    re.compile(r"(?:从|在)\s*(?:约|大约|近|超过)?\s*" + _NN + _ZH_UNIT
+               + r"[^。\uff1b\n]{0,12}?(?:中|里|之中)[^。\uff1b\n]{0,6}?(?:选|挑|筛|择|找|最)"),
+    re.compile(r"(?:测试|回测|优化|遍历|尝试|筛选|暴力搜索|搜索|跑)了?\s*(?:约|大约|近|超过)?\s*"
+               + _NN + _ZH_UNIT),
+    # ja: 200通りの中から / 500パターンを検証 / 1000回最適化
+    re.compile(_NN + r"\s*(?:通り|パターン|種類|個|回|件)[^。\n]{0,8}?"
+               r"(?:の中から|から選|を(?:検証|試|最適化|バックテスト))"),
+    # ko: 200개 조합 중 / 500가지 전략을 테스트 / 1000번 백테스트
+    re.compile(_NN + r"\s*(?:개|가지|번|회)\s*(?:의\s*)?(?:조합|전략|파라미터|설정|변형)?"
+               r"\s*(?:중(?:에서)?|을|를)?\s*(?:선택|골라|테스트|백테스트|최적화|중)"),
+    # ru: из 200 вариантов / перебрал 500 комбинаций / протестировали 1000 стратегий
+    re.compile(r"(?:\bиз|перебра\w*|протестирова\w*|оптимизирова\w*|провери\w*|"
+               r"бэктест\w*)\s+(?:около\s+|более\s+|почти\s+|свыше\s+)?" + _NN
+               + r"\s+(?:вариант|комбинац|стратеги|настро|параметр|набор|верси|прогон)",
+               re.IGNORECASE),
+)
 #: A stated search larger than this is a parse of something else (a trade count, a year).
 MAX_SELECTION = 10_000_000
 #: Row fields a claim's own words live in.
@@ -79,7 +102,7 @@ def _int(s: str) -> int:
 @lru_cache(maxsize=4096)
 def _scan(text: str) -> tuple[int, str]:
     best, span = 0, ""
-    for rx in (_BEST_OF, _SEARCHED):
+    for rx in (_BEST_OF, _SEARCHED, *_NATIVE):
         for m in rx.finditer(text):
             try:
                 n = _int(m.group(1))
