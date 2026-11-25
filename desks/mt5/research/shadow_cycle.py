@@ -425,6 +425,15 @@ def _clock_rotation_summary() -> dict | None:
     return summ if isinstance(summ, dict) else None
 
 
+def _clock_coverage_summary() -> dict | None:
+    """reports/shadow/CLOCK_COVERAGE.json's verdict and counts (not its per-certificate list)."""
+    doc = _read(BASE / "reports" / "shadow" / "CLOCK_COVERAGE.json")
+    if not isinstance(doc, dict) or not doc:
+        return None
+    return {k: doc.get(k) for k in ("at", "status", "n_certified", "n_owed", "n_clocked",
+                                    "n_missing", "missing_by_reason")}
+
+
 def run() -> tuple[dict, int]:
     import external_shadow
     import promoter
@@ -463,20 +472,30 @@ def run() -> tuple[dict, int]:
     # The stamp is applied HERE -- by the orchestrator that owns these files -- so every engine,
     # present and future, is covered by one code path instead of each reimplementing it (the
     # one-pipeline law). First-seen-now is the only defensible stamp; backdating is fabrication.
-    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
-        _p = BASE / "reports" / "shadow" / _sf
-        _d = _read(_p)
-        _stamped = 0
+    # READ FRESH UNDER THE LEDGER LOCK (2026-11-25, invariant I1): this used to read the file,
+    # stamp, and replace it whole, so a clock another writer opened in between was dropped.
+    import ledger_lock
+
+    def _stamp_forward_start(_d: dict) -> int:
+        _n = 0
         for _row in list(_d.values()) + list((_d.get("sleeves") or {}).values()):
             if (isinstance(_row, dict) and ("status" in _row or "n" in _row)
                     and not _terminal_status(_row.get("status"))
                     and not _row.get("forward_start")):
                 _row["forward_start"] = datetime.now(UTC).isoformat()
-                _stamped += 1
+                _n += 1
+        return _n
+
+    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
+        _p = BASE / "reports" / "shadow" / _sf
+        if not _p.exists():
+            continue
+        try:
+            _stamped = ledger_lock.update(_p, _stamp_forward_start)
+        except OSError as _exc:
+            print(f"forward_start stamp not written to {_sf} ({type(_exc).__name__}: {_exc})")
+            continue
         if _stamped:
-            # Same Windows sharing-violation class as the census writes above: shadow_forward and
-            # the sync publisher hold these files open, so a bare overwrite raised Errno 13.
-            _resilient_writers().write_text_resilient(_p, json.dumps(_d, indent=2))
             print(f"stamped forward_start on {_stamped} row(s) in {_sf}")
 
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
@@ -592,6 +611,9 @@ def run() -> tuple[dict, int]:
         "certified_canon_total": None if census is None else census["all"],
         "certified_excluded": None if census is None else census["excluded"],
         "clock_rotation": _clock_rotation_summary(),
+        # INVARIANT I1's verdict (research/clock_coverage.py, hourly in `forward_enrolment`):
+        # certified non-exotic specs minus clocked specs, which must be 0.
+        "clock_coverage": _clock_coverage_summary(),
         "forward_clocks_total": len(active_rows),
         "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
         # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).

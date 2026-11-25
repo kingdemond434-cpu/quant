@@ -14,6 +14,7 @@ import sleeve_registry as reg
 STATE = os.path.join("reports", "shadow", "shadow_state.json")
 rows = json.load(open(os.path.join("data", "sleeve_registry.json")))["sleeves"]
 state = json.load(open(STATE))
+merge_base = json.loads(json.dumps(state))    # three-way merge base (invariant I1)
 
 fams = {}
 try:
@@ -60,10 +61,9 @@ print(f"  cleared: {len(cleared)}  kept: {len(kept)}")
 
 if cleared and "--apply" in sys.argv:
     shutil.copy2(STATE, STATE + ".pre_identity_repair")
-    tmp = STATE + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(state, fh, indent=1)
-    os.replace(tmp, STATE)
+    # under the ledger lock, applying only this script's changes (invariant I1)
+    import ledger_lock
+    ledger_lock.merge_write(STATE, merge_base, state, indent=1)
     print(f"  APPLIED -- backup at {STATE}.pre_identity_repair")
 else:
     print("  DRY RUN (pass --apply to write)")

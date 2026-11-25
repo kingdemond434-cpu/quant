@@ -6021,6 +6021,9 @@ def main() -> None:
     # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
     # judge, deliberately: a certificate minted by THIS hour's sweep is enrolled in THIS hour's
     # pass rather than the next one, which is what "immediately" has to mean on an hourly clock.
+    # INVARIANT I1 RIDES THIS LEG (2026-11-25): `forward_enrolment.run` first runs
+    # `research/clock_coverage.py` -- the bounded clock backfill, then the census that writes
+    # reports/shadow/CLOCK_COVERAGE.json (certified non-exotic minus clocked == 0, else RED).
     fen = _costed("forward_enrolment", lambda: _producer(
         "forward_enrolment", "research/forward_enrolment.py", "--once", "--budget-s", "300"))
     # L1.102 -- AND DID THE CLOCK IT JUST GAVE OUT ACTUALLY START TICKING? Immediately after

@@ -61,6 +61,10 @@ def _max_drawdown(values: list[float]) -> float:
 def main() -> int:
     certs = _read(REPORTS / "UNIVERSAL_SURVIVORS.json")
     state = _read(STATE)
+    # THIS PASS'S MERGE BASE (2026-11-25, invariant I1): writes apply only this pass's changes
+    # under the ledger lock, so a clock another writer opened meanwhile is never dropped.
+    import ledger_lock
+    merge_base = ledger_lock.snapshot(state) if STATE.exists() else {}
     now = datetime.now(UTC)
     policy_valid = is_exact_policy(certs.get("gate_policy"))
     if not policy_valid:
@@ -70,7 +74,7 @@ def main() -> int:
             "UNIVERSAL_SURVIVORS.json lacks the exact immutable gate-policy attestation"
         )
         SHADOW.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        ledger_lock.merge_write(STATE, merge_base, state)
         print("qquant shadow refused: survivor source has no exact gate-policy attestation")
         return 1
     state.pop("source_error", None)
@@ -236,7 +240,7 @@ def main() -> int:
     state["processed_qquant_sleeves"] = processed
     state["integrity_held"] = held            # a LIST: never mistaken for a clock row
     SHADOW.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    ledger_lock.merge_write(STATE, merge_base, state)
     print(f"qquant shadow: {processed}/{certified} exact certificate(s) processed")
     return 0
 

@@ -51,6 +51,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DESK = ROOT / "desks" / "mt5"
 SHADOW = DESK / "reports" / "shadow"
+
+
+def _ledger_lock():
+    """The one lock on the forward ledgers (desks/mt5/research/ledger_lock.py, invariant I1)."""
+    import sys as _sys
+    _r = str(DESK / "research")
+    if _r not in _sys.path:
+        _sys.path.insert(0, _r)
+    import ledger_lock
+    return ledger_lock
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 
 #: Statuses this fixer will resume. RETIRED_UNRECONSTRUCTIBLE is deliberately NOT here: that
@@ -97,6 +107,7 @@ def heal(apply: bool) -> int:
         except (OSError, ValueError):
             print(f"  {path.name}: unreadable, skipped")
             continue
+        merge_base = json.loads(json.dumps(doc))      # three-way merge base (invariant I1)
         rows = doc.get("sleeves") if isinstance(doc.get("sleeves"), dict) else doc
         if not isinstance(rows, dict):
             continue
@@ -148,7 +159,8 @@ def heal(apply: bool) -> int:
             doc["sleeves"] = rows
         else:
             doc = rows
-        path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        # under the ledger lock, applying only this script's changes (invariant I1)
+        _ledger_lock().merge_write(path, merge_base, doc, indent=1)
         print(f"   resumed {len(revived)} -> {path.name} "
               f"(previous file kept as {path.name}.pre_revival)")
         total_revived += len(revived)

@@ -177,6 +177,12 @@ def certified_recipes() -> dict[str, tuple[str, str, families.Choice]]:
 
 def run(now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
+    # THIS PASS'S MERGE BASE (2026-11-25, invariant I1): the ledger as it was when the pass began,
+    # so the final write applies only this pass's changes and keeps any clock another writer
+    # opened meanwhile.
+    from desks.mt5.research import ledger_lock
+    _disk = ledger_lock.read(STATE)
+    merge_base = ledger_lock.snapshot(_disk) if isinstance(_disk, dict) else None
     prior_sleeves = _previous_sleeves()
     source = _source()
     authority = bool(source.get("promotion_authority"))
@@ -397,7 +403,7 @@ def run(now: datetime | None = None) -> dict:
             if not authority else "Fusion-native forward shadow."),
         }
     state["represented_sleeves"] = len(state["sleeves"])
-    STATE.write_text(json.dumps(state, indent=2), "utf-8")
+    ledger_lock.merge_write(STATE, merge_base, state)
     return state
 
 
