@@ -2583,7 +2583,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             # positions stay. A veto, so billed once per window per day (missed_growth), and a
             # decision row of its own (R_ADOPT_HOLD), never filed as one_at_risk.
             from libs.ops import new_risk_hold as _nrh
-            blocker = adopt_hold = _nrh.reason()
+            # The canary hold frees only the window it names (pre-mortem #1, Audit 19:48Z).
+            blocker = adopt_hold = _nrh.reason(sleeve=name)
             if adopt_hold is not None:
                 blocker_code = e8_evidence.R_ADOPT_HOLD
         if blocker is not None:
@@ -2902,6 +2903,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                        "risk_usd": round(leg_risk.get(side, risk_usd), 2),
                        "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
                        "armed": bool(armed)}
+                # WHAT THE ADOPT CANARY CHECKS THIS SEND AGAINST (Audit 19:49Z): the equity the
+                # fraction applied to, the room to today's floor, and the contract size, so the
+                # guard can bound risk-at-stop without re-deriving the sizing.
+                with contextlib.suppress(Exception):
+                    row["equity"] = round(float(equity), 2)
+                    row["contract_size"] = float(contract)
+                    if guard_decision is not None:
+                        # the room BEFORE this window: `committed` already carries its risk
+                        row["room_to_floor"] = round(
+                            floor_room(guard_decision)
+                            - (float(committed or 0.0) - window_risk_usd), 2)
                 if side in shrunk_by:
                     row["shrunk"] = shrunk_by[side]
                 if not (lot > 0):

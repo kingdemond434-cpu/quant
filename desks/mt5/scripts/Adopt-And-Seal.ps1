@@ -523,6 +523,28 @@ if ($script:GuardHead) {
         Done 8 "guard-root-not-in-target"
     }
 }
+# THE ADOPT CANARY FIRST (pre-mortem #1; Audit 2026-11-25 19:48Z). A canary hold standing from an
+# earlier adoption is judged before anything else: PASS lifts it, WAIT/EXPIRED keep it, and FAIL --
+# or a post-lift SPIKE -- exits 12: the code goes back to the last head that traded cleanly under
+# the guard's own hold, the restored release must pass health (which lifts that hold), and only
+# then does the canary hold for the bad release come down. A failed rollback leaves both up, paged.
+$can = Invoke-AdoptGuard @("canary")
+if ($can.Code -eq 12) {
+    $to = [string]$can.Doc.rollback_to; $bad = [string]$can.Doc.bad
+    if ($to -notmatch '^[0-9a-f]{40}$' -or $bad -notmatch '^[0-9a-f]{40}$') {
+        Log "canary asked for a rollback without a readable head; every hold stays; paged" | Out-Host
+        Done 12 "canary-rollback-unreadable"
+    }
+    $rb = Invoke-AdoptGuard @("rollback", "--to", $to, "--bad", $bad, "--why", ("canary: " + $can.Decision))
+    if ($rb.Code -ne 0) { Done 12 "canary-rollback-failed" }
+    $rbAt = (Get-Date).ToUniversalTime().ToString('o')
+    New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
+    Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+    $after = Invoke-AdoptGuard @("health", "--sealed-at", "HEAD", "--since", $rbAt, "--gateway-expected", $script:GatewayExpected, "--page-on-fail")
+    if ($after.Code -ne 0) { Done 12 "canary-rolled-back-unhealthy" }
+    $null = Invoke-AdoptGuard @("canary-clear", "--release", $bad)
+    Done 0 "canary-rolled-back"
+}
 $pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget)
 if ($pre.Code -eq 10) {
     $held = switch ($pre.Decision) {
@@ -575,6 +597,11 @@ $adoptArgs += @("-Target", $gateTarget, "-NoFetch")
 # ONLY WHEN SOMETHING GOVERNED CHANGES (adopter v3 audit MF3): most hours the target is the running
 # release plus state commits, and holding every lane through that Adopt-Release bought nothing.
 # A missing answer holds. A failure without a hold still rolls back, and the rollback holds first.
+# BOX-LOCAL DRIFT IS EVIDENCE: copied to evidence_backups\adopt_drift\<run> and journaled before
+# Adopt-Release can overwrite it. A copy that fails means no adoption this run.
+$drift = Invoke-AdoptGuard @("drift", "--run", $script:RunId)
+if ($drift.Code -ne 0) { Invoke-EnsureManifestTasks; Done 0 "held-drift-unsaved" }
+$script:ArmCanary = -not ($pre.Doc -and $pre.Doc.needs_hold -eq $false)
 if ($pre.Doc -and $pre.Doc.needs_hold -eq $false) {
     Log "no governed path changes; adopting without the new-risk hold"
 } else {
@@ -887,7 +914,10 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 # The identity must run under the seal of $head, the code just sealed (not HEAD, which the box's
 # own state commits move); an expected gateway must restart after the recycle, stamp that seal
 # and finish a pass; and no live lane may have failed on it. A pass lifts any hold of ours.
-$hl = Invoke-AdoptGuard @("health", "--sealed", $head, "--since", $recycledAt, "--gateway-expected", $script:GatewayExpected)
+# NEW GOVERNED CODE TRADES THE CANARY FIRST: health puts the canary hold up before it lifts ours.
+$hlArgs = @("health", "--sealed", $head, "--since", $recycledAt, "--gateway-expected", $script:GatewayExpected)
+if ($script:ArmCanary) { $hlArgs += @("--arm-canary", "--release", $head, "--prev", $script:HeadBefore) }
+$hl = Invoke-AdoptGuard $hlArgs
 if ($hl.Code -ne 0) { Undo-Adoption ("health: " + $hl.Why) 11 "unhealthy" }
 Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
 Invoke-StateApply

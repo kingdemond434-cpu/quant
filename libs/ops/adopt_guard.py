@@ -168,6 +168,12 @@ DEFAULT_POLICY: dict[str, Any] = {
         "fusion": ["MT5-Gateway"],
         "ftmo": ["MT5-FTMO-Follower"],
     },
+    #: THE ADOPT CANARY (libs/ops/adopt_canary): after new code lands, only these windows may open
+    #: until one of them has sent a clean order on it. The file can add windows and lengthen the
+    #: deadline and the post-lift watch, never shorten them.
+    "canary_allow": ["asia"],
+    "canary_deadline_h": 24,
+    "canary_watch_h": 24,
 }
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -1339,6 +1345,55 @@ CODE_ROOTS = (
     "scripts",
     "pyproject.toml",
 )
+
+
+#: BOX-LOCAL DRIFT IS EVIDENCE (zuck: evidence is never deleted). Tracked code a box session
+#: edited in place, and untracked code nobody committed, are copied here before Adopt-Release
+#: writes a byte, and listed in the journal, so an adoption never silently destroys them.
+DRIFT_DIR_REL = "evidence_backups/adopt_drift"
+DRIFT_JOURNAL_REL = "desks/mt5/data/ADOPT_DRIFT_JOURNAL.jsonl"
+
+
+def drift_evidence(root: Path, run: str) -> tuple[int, dict[str, Any]]:
+    """Copy every drifted code file (tracked and changed on disk, or untracked) to
+    evidence_backups/adopt_drift/<run>/ and journal it. GO when all are copied (or none drifted);
+    HOLD when any copy fails: an adoption that would destroy evidence it could not keep waits."""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", run) or run.startswith("."):
+        raise GuardError(f"run id {run!r} is not a plain name")
+    out = _git(root, "diff", "--name-only", "--no-ext-diff", "HEAD", "--", *CODE_ROOTS)
+    tracked = {ln.strip() for ln in out.splitlines() if ln.strip()}
+    paths = sorted(p for p in tracked | set(untracked_code(root)) if is_code(p))
+    if not paths:
+        return GO, {"decision": "NO_DRIFT"}
+    dest = root / DRIFT_DIR_REL / run
+    copied: dict[str, str] = {}
+    failed: list[str] = []
+    for rel in paths:
+        src = root / rel
+        if not src.exists():
+            copied[rel] = "deleted-on-disk"
+            continue
+        try:
+            data = src.read_bytes()
+            t = dest / rel
+            t.parent.mkdir(parents=True, exist_ok=True)
+            t.write_bytes(data)
+            copied[rel] = hashlib.sha256(data).hexdigest()
+        except OSError as exc:
+            failed.append(f"{rel}: {type(exc).__name__}: {exc}")
+    row = {"at": datetime.now(UTC).isoformat(), "run": run, "dir": f"{DRIFT_DIR_REL}/{run}",
+           "head": _rev(root, "HEAD"), "files": copied, "failed": failed}
+    try:
+        j = root / DRIFT_JOURNAL_REL
+        j.parent.mkdir(parents=True, exist_ok=True)
+        with j.open("a", encoding="utf-8") as h:
+            h.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError as exc:
+        failed.append(f"journal: {type(exc).__name__}: {exc}")
+    if failed:
+        return HOLD, {"decision": "HOLD_DRIFT_UNSAVED", "reason": "; ".join(failed[:5]),
+                      "drift": len(paths)}
+    return GO, {"decision": "DRIFT_SAVED", "drift": len(paths), "dir": row["dir"]}
 
 
 def code_dirty(root: Path) -> list[str]:

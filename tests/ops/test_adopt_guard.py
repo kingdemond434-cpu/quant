@@ -627,7 +627,7 @@ def test_an_unreadable_hold_still_holds(tmp_path: Path) -> None:
 )
 def test_every_lane_that_opens_risk_reads_the_hold_first(rel: str, before: str) -> None:
     src = (ROOT / rel).read_text(encoding="utf-8")
-    at = src.index("_nrh.reason()")
+    at = src.index("_nrh.reason(")  # e8_gold names its window (canary)
     assert before in src[at:], f"{rel}: the hold is read after the last {before!r}"
 
 
@@ -700,14 +700,18 @@ def test_adopt_and_seal_runs_the_guard_in_order() -> None:
         'Write-GitWriterWitness -Script "Adopt-And-Seal.ps1"',
         "try { $script:HeadBefore = (git -C $RepoRoot rev-parse HEAD",
         'Invoke-AdoptGuard @("heal"',
+        'Invoke-AdoptGuard @("canary")',
         'Invoke-AdoptGuard @("pre"',
+        'Invoke-AdoptGuard @("drift", "--run", $script:RunId)',
         "\n$script:Adopted = $true",
         "$adoptOut = @(& powershell.exe",
         'Invoke-AdoptGuard @("smoke")',
         'Invoke-AdoptGuard @("blackout", "--margin-min", "30")',
         "release.seal(by='Adopt-And-Seal')",
         "$script:Recycled = $true",
-        'Invoke-AdoptGuard @("health", "--sealed", $head',
+        '$hlArgs = @("health", "--sealed", $head',
+        '"--arm-canary", "--release", $head, "--prev", $script:HeadBefore',
+        "$hl = Invoke-AdoptGuard $hlArgs",
         'Done 0 "sealed"',
     ]
     at = [PS.rindex(o) if o.startswith("try { $script:HeadBefore") else PS.index(o) for o in order]
