@@ -220,6 +220,9 @@ TAPE_MAX_FILES = max(1, int(os.environ.get("QUANT_TAPE_MAX_FILES", "400") or 400
 #: `short_tape` instead of reading a silent empty verdict as "the spec never fires".
 TAPE_MIN_DAYS = 60
 
+#: A vintage store whose newest file is older than this is reported `stale_calendar`.
+CALENDAR_STALE_DAYS = 14
+
 TAPE_OK = "ok"
 TAPE_NO_DIR = "no_tape_dir"
 TAPE_NO_READABLE = "no_readable_tape_files"
@@ -780,8 +783,130 @@ def _event_index():
                                              "time") if row.get(k)), None)
             if raw is not None:
                 values.append(raw)
+    # EVERY OTHER CALENDAR THE REPOSITORY ALREADY COLLECTS (2026-11-25). The vintage store above
+    # was the family's only source, and the store the box actually has runs weeks behind its
+    # writer (see `calendar_status`). The committed FOMC decision calendar, the Bank of Canada
+    # announcement dates and the Fed's own published calendar hold scheduled, market-moving
+    # instants of their own, free and already on disk; `calendar_status` lists what each gave.
+    for _name, _vals in _extra_calendar_values().items():
+        values.extend(_vals)
     idx = pd.to_datetime(values, utc=True, errors="coerce")
     return pd.DatetimeIndex(idx.dropna().unique()).sort_values() if len(idx) else None
+
+
+def _local_to_utc(day: str, clock: str, tz: str) -> str | None:
+    """`2026-09-17` + `09:45` in `tz` -> a UTC ISO instant, or None when it does not parse."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    try:
+        hh, mm = clock.split(":")[:2]
+        t = datetime.fromisoformat(day).replace(hour=int(hh), minute=int(mm),
+                                                tzinfo=ZoneInfo(tz))
+        return t.astimezone(ZoneInfo("UTC")).isoformat()
+    except (ValueError, TypeError, KeyError, OSError):
+        return None
+
+
+def _read_fomc_decisions(doc) -> list[str]:
+    """`data/event_calendar.json`: `events[].utc` (the generator writes UTC instants)."""
+    rows = (doc or {}).get("events") if isinstance(doc, dict) else None
+    return [str(e["utc"]) for e in rows or [] if isinstance(e, dict) and e.get("utc")]
+
+
+def _read_boc_dates(doc) -> list[str]:
+    """`calendars/boc_policy_rate.json`: `dates` {day: local HH:MM} in the file's own `tz`."""
+    if not isinstance(doc, dict) or not isinstance(doc.get("dates"), dict):
+        return []
+    tz = str(doc.get("tz") or "America/Toronto")
+    out = [_local_to_utc(str(d), str(c), tz) for d, c in doc["dates"].items()]
+    return [v for v in out if v]
+
+
+#: The Fed's own calendar rows that are SCHEDULED RELEASES, by `type`. Speeches and conferences
+#: are excluded on purpose: they are many, unsized and unlike a statement.
+_FED_RELEASE_TYPES = ("FOMC", "Testimony")
+
+
+def _read_fed_calendar(doc) -> list[str]:
+    """`observables/fomc_calendar.json`: rows {type, month 'YYYY-MM', days 'D', time '2:00 p.m.'}
+    in America/New_York. A row with no clock, a range of days or a time that will not parse is
+    skipped, never guessed."""
+    import re
+    rows = (doc or {}).get("raw") if isinstance(doc, dict) else None
+    out: list[str] = []
+    for r in rows or []:
+        if not isinstance(r, dict) or r.get("type") not in _FED_RELEASE_TYPES:
+            continue
+        m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*([ap])\.?m\.?\s*", str(r.get("time") or ""),
+                         flags=re.I)
+        day = str(r.get("days") or "").strip()
+        month = str(r.get("month") or "").strip()
+        if not m or not day.isdigit() or not re.fullmatch(r"\d{4}-\d{2}", month):
+            continue
+        hh = int(m.group(1)) % 12 + (12 if m.group(3).lower() == "p" else 0)
+        v = _local_to_utc(f"{month}-{int(day):02d}", f"{hh:02d}:{m.group(2)}", "America/New_York")
+        if v:
+            out.append(v)
+    return out
+
+
+def _calendar_sources():
+    """(name, path, reader): every committed calendar besides the vintage store."""
+    return (
+        ("fomc_decisions", BASE.parent.parent / "data" / "event_calendar.json",
+         _read_fomc_decisions),
+        ("boc_policy_rate", BASE / "data" / "calendars" / "boc_policy_rate.json",
+         _read_boc_dates),
+        ("fed_calendar", BASE / "data" / "observables" / "fomc_calendar.json",
+         _read_fed_calendar),
+    )
+
+
+def _extra_calendar_values() -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for name, path, reader in _calendar_sources():
+        doc = _read(path)
+        try:
+            out[name] = reader(doc) if doc is not None else []
+        except Exception:
+            out[name] = []
+    return out
+
+
+def calendar_status() -> dict:
+    """What the event reader holds and how old it is, NAMED -- never a silent short calendar.
+
+    `vintage_newest_event` / `vintage_newest_file` say where the writer's output stops; `reason`
+    is `stale_calendar` when the newest vintage FILE (the writer's own timestamp, not an event
+    date) is older than CALENDAR_STALE_DAYS. The measured case: the writer
+    (`side_channels/seed_miners.mine_ff_calendar_vintage`) kept capturing, but the store a tree
+    holds ends where the shipping branch's last landing ends.
+    """
+    import re
+    from datetime import UTC, datetime
+    root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
+    files = sorted(root.glob("*.json*")) if root.exists() else []
+    newest = None
+    for f in files:
+        m = re.search(r"(\d{8})", f.name)
+        if m:
+            try:
+                d = datetime.strptime(m.group(1), "%Y%m%d").replace(tzinfo=UTC)
+            except ValueError:
+                continue
+            newest = d if newest is None or d > newest else newest
+    age = None if newest is None else (datetime.now(tz=UTC) - newest).days
+    extra = {k: len(v) for k, v in _extra_calendar_values().items()}
+    idx = _event_index()
+    reason = ("no_calendar" if (idx is None or len(idx) == 0)
+              else "stale_calendar" if (age is None or age > CALENDAR_STALE_DAYS) else "ok")
+    return {"reason": reason, "vintage_files": len(files),
+            "vintage_newest_file": newest.date().isoformat() if newest else None,
+            "vintage_age_days": age, "stale_after_days": CALENDAR_STALE_DAYS,
+            "events_total": 0 if idx is None else int(len(idx)),
+            "events_first": None if idx is None or len(idx) == 0 else str(idx[0])[:10],
+            "events_last": None if idx is None or len(idx) == 0 else str(idx[-1])[:10],
+            "extra_calendars": extra}
 
 
 def timeframes_of(symbol: str, meta: dict) -> list[str]:

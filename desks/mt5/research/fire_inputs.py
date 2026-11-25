@@ -155,8 +155,12 @@ def _probe_event(sym: str) -> dict[str, Any]:
         fer._CONVERTED.clear()
         fer._CONVERTED.update(_seen_c)
     if times:
+        try:
+            cal = inputs.calendar_status()["reason"]      # ok / stale_calendar, NAMED
+        except Exception:
+            cal = "unmeasured"
         return {"status": PRESENT, "input": "event_calendar", "placeable_events": len(times),
-                "clock": placed, "dropped": dropped}
+                "clock": placed, "dropped": dropped, "calendar": cal}
     # THE LABEL IS THE FAMILY'S OWN DROP REASON (audit of c72ecfc53). Keying it off "is there any
     # offset at all" called a missing SEASON offset `event_calendar_history`; the input that is
     # missing there is the bar clock. Only events dropped as shoulder-month, with every event's
