@@ -316,7 +316,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             spread, flow = inputs._tape_series(sym, h1.index, tf)
             series = spread if family == "liquidity_regime" else flow
             if series is None:
-                return None, "tape series unavailable"
+                # NAMED, never silent: the reader says which of no_tape_dir /
+                # no_readable_tape_files it found, so the caller can surface the cause.
+                try:
+                    st = inputs.tape_status(sym)
+                    return None, (f"tape series unavailable: {st['reason']} "
+                                  f"({st['days_read']}/{st['days_found']} days read)")
+                except Exception:
+                    return None, "tape series unavailable"
             extra["spread_series" if family == "liquidity_regime" else "flow"] = series
             return extra, "ok"
 

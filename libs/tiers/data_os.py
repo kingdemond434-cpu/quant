@@ -594,6 +594,12 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "desks/mt5/research/asia_transmission.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names sge_benchmark as a not-yet-collected proxy; reads no values"},
+    "desks/mt5/mt5desk/cot_contracts.py": {
+        "route": "mention", "sources": ("cot_fx",),
+        "basis": "the one symbol -> CFTC contract table (market names, codes, slugs); pure "
+                 "data, standard library only, reads no COT values and joins nothing. Its "
+                 "readers (fetch_cot, the zcache builder, mt5desk.data) load COT through the "
+                 "loaders that apply COT_RELEASE_LAG_DAYS"},
     "desks/mt5/research/research_gap_map.py": {
         "route": "mention", "sources": ("cot_fx", "macro_state"),
         "basis": "maps families to data paths to test existence; reads no values"},
