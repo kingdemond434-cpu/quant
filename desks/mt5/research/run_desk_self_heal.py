@@ -97,6 +97,136 @@ def _end_task(name: str) -> bool:
     return proc.returncode == 0
 
 
+#: THE HOLDER AN END LEAVES BEHIND (Audit ruling 2026-11-25 12:17Z). `schtasks /End` ends the
+#: process the scheduler started. A task whose action is `cmd /c ... python x.py` can leave the
+#: python grandchild ALIVE and still holding its job lock -- box 11-24..25: MT5-MergeDocket's
+#: merge_hypotheses.py (pid 16808) sat 17.5 h at 0.01 core with the lock, so every next run was
+#: refused and the End+Run cured nothing. After an End, the lock's holder is terminated, with its
+#: tree, ONLY when every proof holds:
+#:   * the task is a research/ops lane (`_may_end`) and is NOT live-shaped (heal._LIVE_TASK);
+#:   * the task names its lock here (no lock, nothing to reap);
+#:   * BEFORE the End, the holder was alive, its create_time matched the lock row's (Windows
+#:     reuses pids), and its parent's command line carried the task's own registered action;
+#:   * AFTER the End, the same holder (same pid, same create_time) is still alive.
+#: Any proof missing: nothing is killed and the guardian alerts Claude. Every reap is logged under
+#: REAP_KEY and emitted as a PLUMBING_DEFECT (Claude's feed, never a phone).
+TASK_LOCKS: dict[str, str] = {"MT5-MergeDocket": "merge_hypotheses"}
+LOCK_DIR = Path("desks") / "mt5" / "data" / ".job_locks"
+REAP_KEY = "_reaps"
+REAP_WAIT_S = 10.0
+
+
+def _norm(text: str) -> str:
+    return " ".join(str(text).replace('"', " ").lower().split())
+
+
+def _task_action(name: str) -> str | None:
+    """The task's registered Command + Arguments, read off the scheduler; None off Windows."""
+    if os.name != "nt":
+        return None
+    try:
+        proc = subprocess.run(["schtasks", "/Query", "/TN", name, "/XML"], capture_output=True,
+                              text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    import re as _re
+    cmd = _re.search(r"<Command>(.*?)</Command>", proc.stdout, _re.S)
+    args = _re.search(r"<Arguments>(.*?)</Arguments>", proc.stdout, _re.S)
+    if not cmd:
+        return None
+    import html as _html
+    return _html.unescape(cmd.group(1) + " " + (args.group(1) if args else ""))
+
+
+def _proc_info(pid: int) -> dict[str, Any] | None:
+    try:
+        import psutil
+        p = psutil.Process(int(pid))
+        info: dict[str, Any] = {"pid": int(pid), "create_time": float(p.create_time())}
+        try:
+            parent = p.parent()
+            info["ppid"] = parent.pid if parent else None
+            info["parent_cmdline"] = " ".join(parent.cmdline()) if parent else ""
+        except Exception:
+            info["ppid"], info["parent_cmdline"] = None, ""
+        return info
+    except Exception:
+        return None
+
+
+def _kill_tree(pid: int, create_time: float) -> bool:
+    try:
+        import psutil
+        p = psutil.Process(int(pid))
+        if abs(float(p.create_time()) - float(create_time)) > 2.0:
+            return False
+        procs = [*p.children(recursive=True), p]
+        import contextlib
+        for q in procs:
+            with contextlib.suppress(psutil.NoSuchProcess):
+                q.terminate()
+        _, alive = psutil.wait_procs(procs, timeout=REAP_WAIT_S)
+        for q in alive:
+            with contextlib.suppress(psutil.NoSuchProcess):
+                q.kill()
+        return not psutil.pid_exists(int(pid)) or not p.is_running()
+    except Exception:
+        return False
+
+
+def holder_before_end(root: Path, task: str, *, proc_info: Any = None,
+                      task_action: Any = None) -> dict[str, Any]:
+    """The proofs taken BEFORE the End. `ok` True only when the holder may be reaped after it."""
+    lock = TASK_LOCKS.get(task)
+    out: dict[str, Any] = {"task": task, "lock": lock, "ok": False}
+    if not lock or heal._LIVE_TASK.search(task) or not _may_end(task):
+        out["why"] = "no lock declared for this task" if not lock else "not a research/ops lane"
+        return out
+    try:
+        row = json.loads((root / LOCK_DIR / f"{lock}.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        out["why"] = "lock absent or unreadable: nothing holds it"
+        return out
+    pid, want = row.get("pid"), row.get("create_time")
+    if not isinstance(pid, int) or not isinstance(want, (int, float)):
+        out.update(why="lock row has no pid/create_time to prove the holder by", alert=True)
+        return out
+    info = (proc_info or _proc_info)(pid)
+    if info is None:
+        out["why"] = f"holder pid {pid} is not alive"
+        return out
+    if abs(float(info["create_time"]) - float(want)) > 2.0:
+        out.update(why=f"pid {pid} was reused: it is not the lock's holder", alert=True)
+        return out
+    action = (task_action or _task_action)(task)
+    if not action or _norm(action) not in _norm(info.get("parent_cmdline") or ""):
+        out.update(why=f"holder pid {pid}'s parent is not {task}'s own action", alert=True)
+        return out
+    out.update(ok=True, pid=pid, create_time=float(want), ppid=info.get("ppid"),
+               why="holder proven: same create_time, parent runs the task's action")
+    return out
+
+
+def reap_after_end(snap: dict[str, Any], *, proc_info: Any = None,
+                   kill_tree: Any = None) -> dict[str, Any]:
+    """After the End: terminate the proven holder's tree if (and only if) it survived."""
+    row = {k: snap.get(k) for k in ("task", "lock", "pid", "create_time")}
+    if not snap.get("ok"):
+        return {**row, "reaped": False, "alert": bool(snap.get("alert")), "why": snap.get("why")}
+    info = (proc_info or _proc_info)(int(snap["pid"]))
+    if info is None:
+        return {**row, "reaped": False, "alert": False, "why": "the End took the holder too"}
+    if abs(float(info["create_time"]) - float(snap["create_time"])) > 2.0:
+        return {**row, "reaped": False, "alert": True,
+                "why": "pid reused between the proofs and the reap: nothing killed"}
+    ok = bool((kill_tree or _kill_tree)(int(snap["pid"]), float(snap["create_time"])))
+    return {**row, "reaped": ok, "alert": True,
+            "why": "holder survived the End; its tree was terminated" if ok
+            else "holder survived the End and could NOT be terminated"}
+
+
 def _run_task(name: str) -> bool:
     if os.name != "nt":
         return False
@@ -135,7 +265,8 @@ def run(*, root: Path = ROOT, apply: bool = False,
         out: Path = REPORT, ledger_path: Path = RERUN_LEDGER,
         run_task: Any = None, now: datetime | None = None,
         task_running: Any = None, end_task: Any = None,
-        measure_headroom: bool = True, run_pass: bool = True) -> dict[str, Any]:
+        measure_headroom: bool = True, run_pass: bool = True,
+        before_end: Any = None, after_end: Any = None) -> dict[str, Any]:
     t_now = now or datetime.now(tz=UTC)
     # HEADROOM FIRST (principal 2026-11-25 02:49Z): measure + reclaim (disk only, evidence
     # compressed never deleted) so the invariants below read this pass's numbers. Never raises.
@@ -156,6 +287,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
     hung = {f.task for f in findings
             if not f.ok and f.hung and f.task and _may_end(f.task)}
     ended: list[dict[str, Any]] = []
+    reaps: list[dict[str, Any]] = []
 
     def _bounded_run(task: str) -> bool:
         # Two faults owned by one task (cadence and judge stall both -> MT5-Gauntlet) are one run.
@@ -169,12 +301,18 @@ def run(*, root: Path = ROOT, apply: bool = False,
         ledger[task] = [*[str(x) for x in (ledger.get(task) or [])][-10:],
                         t_now.isoformat(timespec="seconds")]
         if task in hung and _may_end(task) and is_running(task):
+            snap = (before_end or (lambda t: holder_before_end(root, t)))(task)
             ok_end = bool(end(task))
             row = {"task": task, "at": t_now.isoformat(timespec="seconds"), "ended": ok_end}
             ended.append(row)
             ledger[END_KEY] = [*(ledger.get(END_KEY) or [])[-50:], row]
             if not ok_end:
                 return False
+            if snap.get("lock"):
+                reap = {"at": t_now.isoformat(timespec="seconds"),
+                        **(after_end or reap_after_end)(snap)}
+                reaps.append(reap)
+                ledger[REAP_KEY] = [*(ledger.get(REAP_KEY) or [])[-50:], reap]
         return bool(launch(task))
 
     remedies, escalations = heal.plan(findings, run_task=_bounded_run if apply else None)
@@ -193,6 +331,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
         "unrepaired": [{"check": f.check, "detail": f.detail} for f in escalations],
         "bounded": bounded,
         "ended": ended,
+        "reaped": reaps,
         "bounds": {"min_gap_s": RERUN_MIN_GAP_S, "max_per_day": RERUN_MAX_PER_DAY},
         "boundary": ("research evidence producers may be re-run; promotion, capital, gates, "
                      "deadman state and orders are outside this actuator"),
@@ -261,6 +400,22 @@ def run(*, root: Path = ROOT, apply: bool = False,
                          detail=f.detail[:600], producer="desk_self_heal", priority=2)
         except Exception as exc:  # the report still names every alert
             doc["moneypath_alert_error"] = f"{type(exc).__name__}: {exc}"
+    # EVERY REAP, AND EVERY HOLDER THAT COULD NOT BE PROVEN, IS CLAUDE'S TO KNOW (Audit 11-25).
+    loud = [r for r in reaps if r.get("alert")]
+    if apply and loud:
+        try:
+            import sys as _sys
+            if str(root) not in _sys.path:
+                _sys.path.insert(0, str(root))
+            from libs.ops import events as _ev
+            for r in loud:
+                _ev.emit("PLUMBING_DEFECT", root / "desks" / "mt5" / "data" / "events.jsonl",
+                         organ=f"lock {r.get('lock')}",
+                         defect="LOCK_HOLDER_REAPED" if r.get("reaped") else "LOCK_HOLDER_UNPROVEN",
+                         detail=f"{r.get('task')}: pid {r.get('pid')}: {r.get('why')}"[:600],
+                         producer="desk_self_heal", priority=2)
+        except Exception as exc:
+            doc["reap_alert_error"] = f"{type(exc).__name__}: {exc}"
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(out.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
