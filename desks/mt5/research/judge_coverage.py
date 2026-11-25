@@ -3224,7 +3224,7 @@ def _judged_by_exoticness(judged_cells: Any) -> dict[str, Any]:
         from research import judge_exotic_exclusion as jee
         return jee.judged_split(judged_cells)
     except Exception as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _source_floor_block(mined: dict[str, int], judged_total: dict[str, int],
@@ -3242,7 +3242,7 @@ def _source_floor_block(mined: dict[str, int], judged_total: dict[str, int],
         return jsf.publish(state, slots_per_pass=slots, missing_inputs=missing,
                            enforced=jsf.sealed_applies(BASE / "scripts" / "external_gauntlet.py"))
     except Exception as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def allocate(backlog: dict[str, int], capacity: int,

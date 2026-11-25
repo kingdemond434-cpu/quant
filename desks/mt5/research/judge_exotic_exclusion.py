@@ -70,7 +70,7 @@ def split(rows: list[dict[str, Any]], stamp: str, *,
             if isinstance(row, dict):
                 for k in _STAMPS:
                     row.pop(k, None)
-        return rows, [], {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300], "count": 0,
+        return rows, [], {"status": f"FAILED: {type(exc).__name__}", "count": 0,
                           "reason": REASON}
     fam = Counter(str(r.get("family") or "") for r in aside)
     sym = Counter(row_symbol(r) for r in aside)
@@ -126,4 +126,4 @@ def judged_split(judged_cells: Any, *, is_exotic: Callable[[str], bool] | None =
                 "judged_cells_exotic": ex,
                 "basis": "distinct cells with a real verdict in gate_verdict_ledger.jsonl"}
     except Exception as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
