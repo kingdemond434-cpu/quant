@@ -532,7 +532,7 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
                     "params": {}}
         else:
             spec = FS.to_executable(family, raw_params, prose=text)
-        if spec["status"] != FS.EXECUTABLE:
+        if not FS.is_testable(spec["status"]):
             n_rows = max(1, len(symbols))
             # THE SEARCH STILL HAPPENED: the system tested this rule to emit it, so its trial is
             # charged exactly as before (never deflated); only the judge slot is withheld.

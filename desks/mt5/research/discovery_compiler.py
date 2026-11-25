@@ -30,8 +30,12 @@ THE SEVEN STEPS.
                 the flow and the quarter-end regime, not a random exotic.
   4. GATES      three, in order, each refusing with a NAMED and COUNTED reason -- ECONOMIC (the
                 ontology admits the cell), DATA/PIT (bars for symbol x chart, the required data
-                resolves, the stamp is knowable), NOVELTY (content hash, grid twin, or the
-                novelty gate's redundancy census).
+                resolves, the stamp is knowable), EXECUTION (the shared replay can apply the
+                variant), SPEC (the child sets at least one of its family's own keywords to a
+                value other than the default, after `family_spec.translate` renames the
+                parent's stated settings -- a defaults-only child is `spec:defaults_only`, never
+                a judge row), NOVELTY (content hash, grid twin, or the novelty gate's
+                redundancy census).
   5. COMPILE    a survivor becomes an EXACT RULE with a registered family, enqueued carrying its
                 discovery_id and transformation, and donated so the docket sees it.
   6. TESTED     is NOT set here. The registry bridge sets it when the gauntlet judges; a compiler
@@ -411,11 +415,41 @@ def carried(spec: Mapping[str, Any]) -> dict[str, Any]:
     return {k: spec[k] for k in PROVENANCE_KEYS if spec.get(k) not in (None, "")}
 
 
+#: Where an intake row's rule text lives, in the spellings the seats and the registry use.
+RULE_TEXT_KEYS: tuple[str, ...] = ("exact_rule", "exact_rule_if_known", "exact_rules", "rule")
+
+
+def stated_params(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Every setting an intake row STATES: its `params` (or the sandbox shape's
+    `parameters` / `evidence.parameters`), plus `name=value` and `RSI(14)`-style numbers its rule
+    text names (`family_spec.stated_numbers`). A structured value always wins over one read from
+    the text. Names stay the SOURCE's own here; `family_spec.translate` maps them onto the family
+    once a child has one, and names whatever it cannot map.
+
+    WHY (funnel, 2026-11-25): 24,711 of this compiler's 26,008 docket rows were DEFAULTS_ONLY --
+    a mechanism's family at its defaults plus a session / regime / conditioner variant -- because
+    only `row["params"]` was ever read, so a rule stated anywhere else never reached a child."""
+    got: dict[str, Any] = {}
+    ev = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
+    for blob in (row.get("params"), row.get("parameters"), ev.get("parameters")):
+        if isinstance(blob, dict) and blob:
+            got = dict(blob)
+            break
+    try:
+        from research import family_spec as FS
+    except Exception:
+        return got
+    for key in RULE_TEXT_KEYS:
+        for k, v in FS.stated_numbers(row.get(key)).items():
+            got.setdefault(k, v)
+    return got
+
+
 def _spec_from_row(row: Mapping[str, Any], *, seat: str | None = None,
                    path: Path | None = None) -> dict[str, Any]:
     """One intake row, whatever seat wrote it, normalised into the miners' parent shape, with
     its provenance (culture, source URL, seat, donation file) carried forward."""
-    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    params = stated_params(row)
     sym = str(row.get("symbol") or row.get("sym") or row.get("target") or "").strip().upper()
     syms = row.get("symbols") if isinstance(row.get("symbols"), list) else []
     if not sym and syms:
@@ -435,7 +469,8 @@ def _spec_from_row(row: Mapping[str, Any], *, seat: str | None = None,
             "economic_actor": str(cell.get("economic_actor") or ""),
             "failure_class": str(row.get("failure_class") or row.get("rejection_reason") or ""),
             "side": str(row.get("side") or params.get("side_mode") or ""),
-            "exact_rule": str(row.get("exact_rule") or row.get("cell") or ""),
+            "exact_rule": str(next((row.get(k) for k in RULE_TEXT_KEYS if row.get(k)), "")
+                              or row.get("cell") or ""),
             "required_data": row.get("required_data"), "novelty": row.get("novelty"),
             "confidence": row.get("confidence"), "falsifier": str(row.get("falsifier") or ""),
             "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or ""),
@@ -873,6 +908,63 @@ def gate_executability(child: Mapping[str, Any]) -> tuple[bool, str]:
     return True, "execution:replayable"
 
 
+def translate_params(child: Mapping[str, Any], *, prose: str = "") -> dict[str, Any]:
+    """The child with its params in the keywords ITS family reads (`family_spec.translate`):
+    the parent's stated settings renamed through the declared aliases, the miners' variant keys
+    and the identity keys carried unchanged, and anything the family cannot read named in
+    `params_unread` instead of riding into the call. The verdict rides on the child as
+    `spec_status` / `spec_reason` for `gate_spec`.
+
+    THE CAUSE THIS FIXES (funnel 2026-11-25, 24,711 of 26,008 rows DEFAULTS_ONLY). A family is
+    chosen for a child only AFTER the closure (`_with_family`), from the mechanism's pool, so the
+    parent's settings arrive under the SOURCE's names (`lookback`, `window`, `w`) -- or not at
+    all -- and nothing ever mapped them onto the family that was finally picked."""
+    from research import family_spec as FS
+    # The child's own session window rides IN its params, where the docket and the replay read
+    # it (`family_spec.with_cell_axes`); as a top-level field it was fanned out to all four.
+    params = FS.with_cell_axes(child.get("params") or {}, session=child.get("session"),
+                               chart=child.get("chart"))
+    got = FS.translate(str(child.get("family") or ""), params, prose=prose)
+    out = dict(child)
+    out["spec_status"], out["spec_reason"] = got["status"], got.get("reason") or ""
+    if got["status"] == FS.SIGNATURE_UNREADABLE:
+        return out
+    out["params"] = dict(got["call"])
+    if got.get("mapped"):
+        out["params_mapped"] = dict(got["mapped"])
+    if got.get("unread"):
+        out["params_unread"] = list(got["unread"])
+    if out["params"] != dict(child.get("params") or {}):
+        out["content_hash"] = _hash_of(out)
+    return out
+
+
+def gate_spec(child: Mapping[str, Any]) -> tuple[bool, str]:
+    """GATE -- does the child carry a REAL setting of its family, or only the family's defaults?
+
+    TESTABLE (`family_spec.TESTABLE`) is a family keyword off its default (EXECUTABLE) or the
+    family's defaults under a variant the replay APPLIES -- a session window, a volatility or
+    calendar regime, a side, a delayed entry (EXECUTABLE_VARIANT): a London-only breakout is a
+    different rule from the all-hours one. A child with nothing but a label, a variant the replay
+    refuses, or prose is NOT donated: the judge
+    would score the family's defaults, a cell this discovery never proposed, and spend a slot on
+    it. It is BLOCKED with the verdict as its named, counted reason -- `spec:defaults_only`,
+    `spec:prose_only` -- exactly as `sandbox_runner` counts its `not_executable` rows. The trial
+    count is untouched: the child stays in `possible_cells`, which is what `donate` charges."""
+    from research import family_spec as FS
+    status = child.get("spec_status")
+    reason = str(child.get("spec_reason") or "")
+    if not status:
+        got = FS.translate(str(child.get("family") or ""),
+                           FS.with_cell_axes(child.get("params") or {},
+                                             session=child.get("session"),
+                                             chart=child.get("chart")))
+        status, reason = got["status"], str(got.get("reason") or "")
+    if FS.is_testable(status):
+        return True, f"spec:{str(status).lower()}"
+    return False, f"spec:{str(status).lower()} ({reason[:160]})"
+
+
 def pit_status(child: Mapping[str, Any], ctx: TM.Context) -> str:
     """PIT_BAR_CLOSE for a price-only cell (a bar is knowable at its own close); PIT_STAMPED when
     the conditioning axis file carries `knowable_at`; UNKNOWN otherwise, which the data gate
@@ -1154,6 +1246,7 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
             "title": (f"{child.get('transformation')} of {parent.get('symbol') or 'a discovery'}"
                       f" -> {child.get('symbol')} {child.get('chart')} {child.get('session')}"),
             "why": child.get("why"), "parent_discovery_ids": child.get("parent_discovery_ids"),
+            **{k: child[k] for k in ("params_mapped", "params_unread") if child.get(k)},
             "discovery_id": parent.get("discovery_id"),
             # the source's culture, URL, seat and file ride every emitted cell (Tier S joins them)
             **carried(parent)}
@@ -1162,17 +1255,18 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
 # --------------------------------------------------------------------------- the organ
 def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, int],
              hashes: set[str], redundant: set[str], conn: Any) -> tuple[bool, str]:
-    """The three gates in order. The FIRST refusal is the reason recorded -- a child refused by
+    """The gates in order. The FIRST refusal is the reason recorded -- a child refused by
     economics is not also a data gap, and reporting it as both would double-count the debt."""
     for gate in (lambda: gate_economic(child, ctx),
                  lambda: gate_data(child, ctx),
                  lambda: gate_executability(child),
+                 lambda: gate_spec(child),
                  lambda: gate_novelty(child, ctx, coverage=coverage, hashes=hashes,
                                       redundant=redundant, conn=conn)):
         ok, why = gate()
         if not ok:
             return False, why
-    return True, "passed all three gates"
+    return True, "passed every gate"
 
 
 def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str, int],
@@ -1208,10 +1302,12 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
                               generated_cells=len(capped), conn=conn)
 
     compiled = 0
+    prose = str(parent.get("exact_rule") or parent.get("why") or "")
     for raw in capped:
-        child = complete_inputs(_with_family({**raw, "mechanism_id": mechanism_id,
-                                              "economic_actor": parent.get("economic_actor")},
-                                             ctx), ctx, meta)
+        child = complete_inputs(translate_params(
+            _with_family({**raw, "mechanism_id": mechanism_id,
+                          "economic_actor": parent.get("economic_actor")}, ctx),
+            prose=prose), ctx, meta)
         ok, why = _dispose(child, ctx, coverage=coverage, hashes=hashes, redundant=redundant,
                            conn=conn)
         slot = by_miner.setdefault(str(child.get("miner") or "?"),

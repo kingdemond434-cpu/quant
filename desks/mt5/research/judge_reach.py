@@ -66,7 +66,7 @@ UNMEASURED = "UNMEASURED"
 REACHING = "REACHING"
 LEAKING = "LEAKING"
 NOTHING_EMITTED = "NOTHING_EMITTED"
-PAGED_VERDICTS = (LEAKING, FS.PROSE_ONLY, FS.DEFAULTS_ONLY)
+PAGED_VERDICTS = (LEAKING, FS.PROSE_ONLY, FS.DEFAULTS_ONLY, FS.UNHONOURED_VARIANT)
 
 #: A producer that has emitted for this long with nothing judged is LEAKING, not "early".
 GRACE_H = 24.0
@@ -257,14 +257,17 @@ def verdict(row: dict[str, Any], *, first_seen: datetime | None, now: datetime,
             return row
     q = row.get("judged_quality") or {}
     sampled = sum(int(v) for k, v in q.items() if k != UNMEASURED)
-    bad = {k: int(q.get(k) or 0) for k in (FS.PROSE_ONLY, FS.DEFAULTS_ONLY)}
+    # EXECUTABLE_VARIANT is testable (family_spec.TESTABLE) and so never counted here.
+    bad = {k: int(q.get(k) or 0) for k in (FS.PROSE_ONLY, FS.DEFAULTS_ONLY,
+                                            FS.UNHONOURED_VARIANT)}
     if sampled >= MIN_QUALITY_SAMPLE and sum(bad.values()) >= NOT_GENUINE_SHARE * sampled:
         which = max(bad, key=lambda k: (bad[k], k))
         row.update(verdict=which, stage="JUDGE",
                    reason=(f"{sum(bad.values())} of {sampled} sampled judged row(s) carry no "
                            f"executable rule ({bad[FS.PROSE_ONLY]} prose-only, "
-                           f"{bad[FS.DEFAULTS_ONLY]} defaults-only): the judge scored the "
-                           f"family's defaults, not this producer's rule"))
+                           f"{bad[FS.DEFAULTS_ONLY]} defaults-only, "
+                           f"{bad[FS.UNHONOURED_VARIANT]} unhonoured-variant): the judge "
+                           f"scored the family's defaults, not this producer's rule"))
         return row
     if judged == 0:
         row.update(verdict=REACHING, stage=None,
@@ -348,8 +351,8 @@ def build(*, now: datetime | None = None, budget_s: float | None = None,
         cut = now - timedelta(hours=SNAPSHOT_KEEP_H)
         snaps[name] = [x for x in hist if (PL._parse(x.get("at")) or now) >= cut]
         rows.append(row)
-    order = {LEAKING: 0, FS.PROSE_ONLY: 1, FS.DEFAULTS_ONLY: 2, UNMEASURED: 3, REACHING: 4,
-             NOTHING_EMITTED: 5}
+    order = {LEAKING: 0, FS.PROSE_ONLY: 1, FS.DEFAULTS_ONLY: 2, FS.UNHONOURED_VARIANT: 2,
+             UNMEASURED: 3, REACHING: 4, NOTHING_EMITTED: 5}
     rows.sort(key=lambda x: (order.get(x["verdict"], 9), x["producer"]))
     census = Counter(x["verdict"] for x in rows)
     doc = {
@@ -369,7 +372,8 @@ def build(*, now: datetime | None = None, budget_s: float | None = None,
         "summary": {"n_producers": len(rows), "n_reaching": census.get(REACHING, 0),
                     "n_leaking": census.get(LEAKING, 0),
                     "n_not_genuine": census.get(FS.PROSE_ONLY, 0)
-                    + census.get(FS.DEFAULTS_ONLY, 0),
+                    + census.get(FS.DEFAULTS_ONLY, 0)
+                    + census.get(FS.UNHONOURED_VARIANT, 0),
                     "n_unmeasured": census.get(UNMEASURED, 0)},
         "flagged": [{"producer": x["producer"], "verdict": x["verdict"], "stage": x["stage"],
                      "reason": x["reason"]} for x in rows if x["verdict"] in PAGED_VERDICTS],
