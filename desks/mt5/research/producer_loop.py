@@ -1421,7 +1421,13 @@ def alt_gaps(path: Path | None = None) -> list[str] | str:
     d = _read(path or FUNNEL_REPORT, {}) or {}
     b = d.get("by_alt_source") if isinstance(d, dict) else None
     z = b.get("zero_coverage_series") if isinstance(b, dict) else None
-    return sorted(str(x) for x in z)[:MAX_ALT_GAPS] if isinstance(z, list) else UNMEASURED
+    if not isinstance(z, list):
+        return UNMEASURED
+    # A series a free model FOUND the data for (funnel tags it `discovered_by`) is the newest
+    # ground on the desk and the one the cap must never cut: it leads the list.
+    ser = b.get("series") if isinstance(b.get("series"), dict) else {}
+    return sorted((str(x) for x in z), key=lambda x: (
+        not (isinstance(ser.get(x), dict) and ser[x].get("discovered_by")), x))[:MAX_ALT_GAPS]
 
 
 def coverage_gaps(live_sl: dict[str, dict[str, Any]] | None,

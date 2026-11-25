@@ -167,6 +167,16 @@ def _is_z(column: str) -> bool:
 
 
 # ---------------------------------------------------------------------------- the catalog ---
+def discovered() -> dict[str, dict[str, Any]]:
+    """Lake series a free model proposed the DATA for (research/data_discovery.py), with who
+    found it; {} when that module or its queue is unreadable (provenance only, never a gate)."""
+    try:
+        from research import data_discovery
+        return data_discovery.provenance()
+    except Exception:
+        return {}
+
+
 def _columns(path: Path) -> tuple[list[str], bool]:
     """(numeric signal columns, has available_time) -- the dataset translator's own reader."""
     try:
@@ -220,6 +230,7 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
                 "series": []}
     rows: list[dict[str, Any]] = []
     refused: dict[str, str] = {}
+    found = discovered()
     for stem, path in _stems(base).items():
         cols, stamped = _columns(path)
         if not stamped:
@@ -243,7 +254,10 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
         rows.append({"series": stem, "source": source_of(stem), "columns": cols[:12],
                      "z_columns": [c for c in cols if _is_z(c)], "specs": specs,
                      "symbol": (stem[len(p):].upper() if (p := next(
-                         (x for x in PER_SYMBOL_PREFIXES if stem.startswith(x)), "")) else "")})
+                         (x for x in PER_SYMBOL_PREFIXES if stem.startswith(x)), "")) else ""),
+                     **({"discovered_by": found[stem]["discovered_by"],
+                         "method": found[stem]["method"],
+                         "lane": found[stem].get("lane")} if stem in found else {})})
     return {"status": "READ", "series": rows, "refused": refused,
             "n_series": len(rows), "n_sources": len({r["source"] for r in rows})}
 
@@ -492,6 +506,8 @@ def parse_cells(text: str, *, cat: Mapping[str, Any] | None = None, organ: str =
     one the block offered. The row is the compiler's EXACT_RECIPE shape: family + params +
     symbols; the gauntlet then applies the conditioner exactly as written."""
     allowed = set(families())
+    found = {str(r["series"]): r for r in (cat or {}).get("series") or []
+             if r.get("discovered_by")} if cat is not None else {}
     known = {str(r["series"]): set(r.get("columns") or []) for r in (cat or {}).get("series")
              or []} if cat is not None else None
     rows: list[dict[str, Any]] = []
@@ -533,5 +549,9 @@ def parse_cells(text: str, *, cat: Mapping[str, Any] | None = None, organ: str =
                               f"{got[3]:g}"[:300],
                      "mechanism": mech[:600], "text": mech[:600],
                      "alt_series": got[0], "alt_source": source_of(got[0]),
-                     "alt_catalog_organ": organ})
+                     "alt_catalog_organ": organ,
+                     # The series' DATA was found by a free model: credit it per method.
+                     **({"discovered_by": found[got[0]]["discovered_by"],
+                         "method": found[got[0]]["method"],
+                         "lane": found[got[0]].get("lane")} if got[0] in found else {})})
     return rows, why

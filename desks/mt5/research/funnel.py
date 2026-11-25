@@ -289,6 +289,8 @@ class Paths:
     lake: Path | None = None
     alt_exposure: Path | None = None
     digest: Path | None = None
+    #: Seat output roots holding `data_source_proposals.json` (research/data_discovery.py).
+    intelligence: tuple[Path, ...] | None = None
 
     @classmethod
     def at(cls, desk: Path) -> Paths:
@@ -306,7 +308,10 @@ class Paths:
                    out=desk / "reports" / "FUNNEL.json",
                    lake=desk / "data" / "lake" / "series",
                    alt_exposure=desk / "data" / "alt_catalog" / "exposure.json",
-                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json")
+                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json",
+                   intelligence=((ROOT / "data" / "intelligence",
+                                  desk / "data" / "intelligence") if desk == DESK
+                                 else (desk / "data" / "intelligence",)))
 
 
 def _blank() -> dict[str, Any]:
@@ -683,6 +688,37 @@ def lane_block(paths: Paths, rows: list[Mapping[str, Any]] | None, seen: list[An
         out["alt_generation"]["inputs"] = sum(int((v or {}).get("prompts") or 0)
                                               for v in (exp.get("organs") or {}).values())
     return out
+def _discovery_into_lane(by_lane: Any, by_method: Any) -> None:
+    """The `data_discovery` job's stages in `by_lane` come from `by_method` (proposals -> accepted
+    -> landed -> offered, then the rows on its series): its rows carry the series, not only the
+    lane tag. A stage `by_method` cannot read stays as `by_lane` had it."""
+    if not isinstance(by_lane, dict) or not isinstance(by_method, dict):
+        return
+    lane, view = by_lane.get("data_discovery"), by_method.get("llm_data_discovery")
+    if not isinstance(lane, dict) or not isinstance(view, dict):
+        return
+    for dst, src in (("inputs", "proposals"), ("outputs", "accepted"), ("landed", "landed"),
+                     ("offered", "offered"), ("testable", "testable"), ("judged", "judged"),
+                     ("certified", "certified")):
+        if isinstance(view.get(src), int):
+            lane[dst] = view[src]
+
+
+def method_block(paths: Paths, by_alt: Mapping[str, Any]) -> dict[str, Any]:
+    """`by_method`: the alt series' funnel split by HOW the data reached the lake -- proposed by
+    a free model (`llm_data_discovery`, per discovering organ: proposals -> accepted -> landed ->
+    offered -> rows -> testable -> judged -> certified) beside every registered source. Each
+    discovered series in `by_alt_source.series` is also tagged with its `discovered_by`."""
+    from research import data_discovery as dd
+
+    roots = paths.intelligence if paths.intelligence is not None else ()
+    ser = by_alt.get("series") if isinstance(by_alt, Mapping) else None
+    if isinstance(ser, dict):
+        for name, tag in dd.provenance(roots).items():
+            if isinstance(ser.get(name), dict):
+                ser[name].update(tag)
+    return dd.method_view(by_alt if isinstance(ser, dict) else None, roots=roots,
+                          lake=paths.lake)
 
 
 def build(paths: Paths | None = None, *, now: datetime | None = None,
@@ -942,6 +978,11 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                              chain.get("certs"))
     except Exception as exc:                       # a report section never costs the funnel
         by_lane = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        by_method = method_block(paths, by_alt)
+    except Exception as exc:                       # a report section never costs the funnel
+        by_method = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    _discovery_into_lane(by_lane, by_method)
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -975,6 +1016,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
         "producers": rows_p, "asset_classes": rows_c, "families": rows_f,
         "by_alt_source": by_alt,
         "by_lane": by_lane,
+        "by_method": by_method,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,

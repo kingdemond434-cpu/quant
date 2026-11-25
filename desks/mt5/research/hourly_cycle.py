@@ -1411,7 +1411,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "occupancy_map", "dsr_inputs",
                      # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
                      # and the ledger of which keys are set (#144, 2026-09-30)
-                     "keyed_sources", "credential_coverage",
+                     "keyed_sources", "credential_coverage", "data_discovery",
                      # primary-publisher first prints for release_vintages (BLS first)
                      "first_print_capture"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
@@ -2283,6 +2283,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
     # cursor after every source; the cap sits above so the report and the donation are written.
     "keyed_sources": 420,
+    # One free-chain completion (failover stops at --budget-s 300) and a queue-file write.
+    "data_discovery": 420,
     # One robots read and one BLS POST (30 s timeouts each) plus a CSV append: well under this.
     "first_print_capture": 180,
     # A registry read, a glob over clock files and the last 24h of donation files: seconds.
@@ -4564,6 +4566,11 @@ def main() -> None:
     # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
     # direct exogenous_conditioner cells, indirect conditioned parents and
     # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    # FREE-MODEL DATA DISCOVERY (2026-11-25): one pass of the `data_discovery` job on the shared
+    # free chain (every seat, failover) proposes keyless official SDMX series; BEFORE the keyed
+    # sources, which union the vetted proposals into their roster and fetch them PIT this hour.
+    ddj = _costed("data_discovery", lambda: _producer(
+        "data_discovery", "research/data_discovery.py", "--once", "--budget-s", "300"))
     kys = _costed("keyed_sources", lambda: _producer(
         "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
     # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
@@ -7304,6 +7311,7 @@ def main() -> None:
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
                     "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
+                    "data_discovery": ddj,
                     "first_print_capture": fpc,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
