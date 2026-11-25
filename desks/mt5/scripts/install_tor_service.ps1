@@ -36,10 +36,12 @@ $ErrorActionPreference = 'Stop'
 
 # ---- PINS. Update the two together, from the sums file named above, never from anywhere else.
 $TorVersion   = '16.0.1'
-# Pinned 2026-11-17 from the published sums file for 16.0.1 (tor 0.4.9.16), the current stable
-# Expert Bundle on the Tor Project's download page, read from the published sums file (the dist
-# mirror serves the identical file):
-#   https://archive.torproject.org/tor-package-archive/torbrowser/16.0.1/sha256sums-signed-build.txt
+# PROVENANCE, stated exactly (Auditor 2026-11-25): pinned 2026-11-17 by a cloud session from a
+# web-fetch subagent's report of the 16.0.1 (tor 0.4.9.16) line in
+#   https://dist.torproject.org/torbrowser/16.0.1/sha256sums-signed-build.txt
+# The cloud container itself cannot reach torproject.org, so no session byte-compared that file.
+# That is why the box CROSS-CHECKS the pin against the published sums file below before it
+# downloads anything: the pin must appear on the bundle's own line there, or nothing installs.
 $PinnedSha256 = '9eed3c3ff1fe43df034ce360196c9ec95472560d77ff55614d0cd5120edea27b'
 
 $ArchiveBase = "https://archive.torproject.org/tor-package-archive/torbrowser/$TorVersion"
@@ -67,6 +69,29 @@ if ($PinnedSha256 -notmatch '^[0-9a-f]{64}$') {
 }
 if ($BundleUrl -notmatch '^https://archive\.torproject\.org/tor-package-archive/torbrowser/') {
     throw "download URL is not the Tor Project archive: $BundleUrl"
+}
+
+# CROSS-CHECK THE PIN against the Tor Project's own sums file for this version (archive, then the
+# dist mirror). The pin must sit on the bundle's line; an unreadable sums file refuses (fail closed).
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$sumsOk = $false
+foreach ($sumsUrl in @("$ArchiveBase/sha256sums-signed-build.txt",
+                      "https://dist.torproject.org/torbrowser/$TorVersion/sha256sums-signed-build.txt")) {
+    try {
+        $sums = (Invoke-WebRequest -Uri $sumsUrl -UseBasicParsing).Content
+    } catch {
+        Write-Step "sums file unreadable at $sumsUrl ($($_.Exception.GetType().Name))"
+        continue
+    }
+    $line = ($sums -split "`n" | Where-Object { $_ -match [regex]::Escape($BundleName) } | Select-Object -First 1)
+    if (-not $line) { Write-Step "no line for $BundleName in $sumsUrl"; continue }
+    if ($line.Trim().ToLowerInvariant().StartsWith($PinnedSha256)) { $sumsOk = $true; Write-Step "pin matches $sumsUrl"; break }
+    Write-Step "REFUSED: the pin is not the published hash ($($line.Trim())) at $sumsUrl; nothing installed"
+    exit 4
+}
+if (-not $sumsOk) {
+    Write-Step "REFUSED: could not confirm the pin against any published sums file; nothing installed"
+    exit 4
 }
 
 New-Item -ItemType Directory -Force -Path $TorDir | Out-Null
