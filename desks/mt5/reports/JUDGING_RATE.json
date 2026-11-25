@@ -1,30 +1,52 @@
 {
- "at": "2026-11-24T23:57:13+00:00",
- "status": "UNMEASURED",
- "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,478,656 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+ "at": "2026-11-25T00:57:26+00:00",
+ "status": "MEASURED",
  "verdicts": {
-  "status": "UNMEASURED",
-  "rows_read": 1478656,
-  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,478,656 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+  "status": "MEASURED",
+  "rows_total": 1887039,
+  "rows_unstamped": 0,
+  "last_verdict_at": "2026-11-24T10:14:12+00:00",
+  "counts": {
+   "1h": 0,
+   "24h": 15450,
+   "7d": 136451
+  },
+  "count_basis": "changed verdict events; unchanged retests do not append",
+  "first_terminal_counts": {
+   "1h": 0,
+   "24h": 6734,
+   "7d": 73840
+  },
+  "first_terminal_cells": 869551,
+  "first_terminal_per_hour": {
+   "1h": 0.0,
+   "24h": 280.583,
+   "7d": 439.524
+  },
+  "per_hour": {
+   "1h": 0.0,
+   "24h": 643.75,
+   "7d": 812.208
+  }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 10619,
-   "7d": 130280
+   "24h": 10625,
+   "7d": 124951
   },
   "per_hour": {
-   "24h": 442.458,
-   "7d": 775.476
+   "24h": 442.708,
+   "7d": 743.756
   }
  },
- "verdicts_per_hour": "UNMEASURED",
- "verdicts_per_day": "UNMEASURED",
+ "verdicts_per_hour": 643.75,
+ "verdicts_per_day": 15450.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": "UNMEASURED",
+ "first_judged_per_day": 6734.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 10619.0,
+ "created_per_day": 10625.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -36,7 +58,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-24T23:57:03+00:00",
-  "pid": 26144
+  "started_at": "2026-11-25T00:57:14+00:00",
+  "pid": 21060
  }
 }
