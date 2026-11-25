@@ -453,7 +453,7 @@ def test_successor_rows_are_tagged_non_exotic_executable_and_never_touch_the_par
         for k in kids:
             assert k["producer"] == "dud~s1" and k["successor_of"] == "dud"
             assert k["design_axis"] == axis and k["origin"] == pl.SUCCESSOR_ORIGIN
-            assert k["claim_family"] == k["breadth_unit"] == "lineage:dud"
+            assert k["claim_family"] == "lineage:dud"
             assert k["family"] == "carry" and isinstance(k["params"], dict)
             assert k["symbol"] not in ("USDZAR", "USDTRY")             # exotics stay banned
             assert "id" not in k and "prejudge" not in k               # the parent's identity
@@ -630,3 +630,32 @@ def test_every_producer_gets_a_gap_target_and_gap_coverage(tmp_path: Path,
     gc = doc["gap_coverage"]["a"]
     assert gc["gap_row_share"] > 0 and "independence_credit" in gc
     assert doc["producers"][0]["failed_volume_share"] == round(899 / 900, 6)
+
+
+def test_a_lineage_groups_trials_but_breadth_counts_per_parent_cell(monkeypatch: Any) -> None:
+    from libs.research import claim_selection as cs
+    from libs.research import trial_ledger as tl
+    monkeypatch.setattr(pl, "_tradable", lambda s, f: True)
+    monkeypatch.setattr(pl, "_all_symbols", lambda: {})
+    parents = [{"symbol": s, "family": "carry", "params": {"timeframe": "H1", "n": i},
+                "producer": "dud"} for i, s in enumerate(("EURUSD", "GBPUSD", "AUDUSD"))]
+    for r in parents:
+        pl.stamp_lineage(r, "dud")
+        cs.stamp(r)                         # the merge's later claim-selection pass
+    assert cs.breadth(parents)["breadth_units"] == 3          # the parent keeps 3 units
+    kids = pl.successor_rows(parents, {"name": "dud~s1", "root": "dud", "parent": "dud",
+                                       "generation": 1, "axis": pl.REGIME_CONDITIONED})
+    variants = [next(k for k in kids if k["breadth_unit"] == cs.breadth_unit(p))
+                for p in parents]
+    assert len(variants) == 3
+    fresh = pl.successor_rows(parents, {"name": "dud~s2", "root": "dud", "parent": "dud~s1",
+                                        "generation": 2, "axis": pl.FRESH_DESIGN},
+                              pool=[{"symbol": "EURUSD", "family": "trend", "params": {},
+                                     "producer": "brain"}])[:1]
+    assert len(fresh) == 1
+    for r in variants + fresh:
+        cs.stamp(r)
+    assert cs.breadth(parents + variants)["breadth_units"] == 3      # variants add 0
+    assert cs.breadth(parents + variants + fresh)["breadth_units"] == 4   # fresh adds 1
+    groups = {tl.trial_from_record(r).group for r in parents + variants + fresh}
+    assert groups == {"lineage:dud"}                                  # one trial lineage

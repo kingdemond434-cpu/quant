@@ -98,9 +98,12 @@ compute follows whichever yields more. A successor that triggers in turn is clos
 SEED: it keeps minting at its own weight) and the lineage's next generation is designed.
 
 ONE LINEAGE, ONE TRIAL GROUP. Every row of a lineage (parent and every generation) is stamped
-`claim_family = breadth_unit = lineage:<root>` (`stamp_lineage`), the key trial_ledger groups on
-first, so repeatedly spawning variants is charged as ONE family-wise lineage and counts as one
-breadth unit; trial_ledger.grid_key keeps the strategy family on the grid axis for a lineage, so
+`claim_family = lineage:<root>` (`stamp_lineage`), the key trial_ledger groups on first, so
+repeatedly spawning variants is charged as ONE family-wise lineage. BREADTH is counted per parent
+CELL, not per lineage: a parent row keeps its own unit, a close-variant child takes the
+`claim_selection.breadth_unit` of the cell it was mutated from (a variant is not a new
+independent bet), and a fresh-design child keeps its own cell unit. trial_ledger.grid_key
+keeps the strategy family on the grid axis for a lineage, so
 grouping never lowers the charge. Every judged cell is still a trial; `lineage_trials` (parent
 plus successors, cumulative, ratcheted) is published. No gate, DSR, FDR or the fixed 597 is
 touched.
@@ -914,7 +917,8 @@ def successor_rows(parent_rows: list[dict[str, Any]], design: dict[str, Any], *,
                     key=lambda r: str(r.get("ingested_time") or r.get("available_time") or ""),
                     reverse=True)
 
-    def emit(src: dict[str, Any], sym: str, params: dict[str, Any], fam: str) -> None:
+    def emit(src: dict[str, Any], sym: str, params: dict[str, Any], fam: str,
+             unit: str | None = None) -> None:
         if len(out) >= MAX_SUCCESSOR_ROWS or not _ok(sym, fam):
             return
         child = {k: v for k, v in src.items() if k not in _CHILD_DROP}
@@ -926,6 +930,8 @@ def successor_rows(parent_rows: list[dict[str, Any]], design: dict[str, Any], *,
                       "origin": SUCCESSOR_ORIGIN, "generation": int(design.get("generation") or 0),
                       "lineage": root})
         stamp_lineage(child, root)
+        if unit is not None:
+            child["breadth_unit"] = unit      # a variant of a cell is that cell's breadth
         ident = row_identity(child)
         if ident in seen:
             return
@@ -955,15 +961,25 @@ def successor_rows(parent_rows: list[dict[str, Any]], design: dict[str, Any], *,
     for r in latest:
         if len(out) >= MAX_SUCCESSOR_ROWS:
             break
+        unit = _breadth_unit(r)
         for s, q in _variants(r, axis, book, targets):
-            emit(r, s, q, str(r.get("family") or ""))
+            emit(r, s, q, str(r.get("family") or ""), unit)
     return out
+
+
+def _breadth_unit(row: dict[str, Any]) -> str | None:
+    try:
+        from libs.research import claim_selection as cs
+        return cs.breadth_unit(row)
+    except Exception:
+        return None
 
 
 def stamp_lineage(row: dict[str, Any], root: str) -> bool:
     """Charge `row` to its LINEAGE: the trial ledger groups on `claim_family` first
-    (trial_from_record), so the parent's and every generation's rows are one family-wise group and
-    one breadth unit (claim_selection.breadth_unit). Additive only: `family`, `params`, the symbol
+    (trial_from_record), so the parent's and every generation's rows are one family-wise group.
+    BREADTH IS NOT TOUCHED here: the row keeps its own breadth unit (successor_rows gives a close
+    variant its parent cell's unit). Additive only: `family`, `params`, the symbol
     and every verdict are untouched, and a row that already carries a claim family -- or whose
     text states a searched selection claim_selection will charge -- keeps that grouping, because
     re-keying it could drop the source's selection charge. trial_ledger.grid_key keeps the
@@ -978,7 +994,6 @@ def stamp_lineage(row: dict[str, Any], root: str) -> bool:
         pass
     key = f"{LINEAGE_PREFIX}{root}"
     row["claim_family"] = key
-    row["breadth_unit"] = key
     row["lineage_root"] = root
     return True
 
