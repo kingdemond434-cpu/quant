@@ -1412,6 +1412,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "conversion_maximiser", "conversion_funnel", "trend_core",
                      # the judge's parked cells, handed over in conversion_handoff.json
                      "conversion_handoff_converter",
+                     # every producer, seat, idea, parked cell and data source measured against
+                     # the gauntlet's doors, and the mechanical gaps converted through donate
+                     "cell_conversion_audit",
                      # the anchor/exit grid and the empty-cluster forcer: both mint cells
                      "htf_anchor", "empty_cluster_forcer",
                      # the genetic rule builder (entries x filters x exits, 2026-11-20)
@@ -2423,6 +2426,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # of --budget-s 420 (or of the cap it is told), writing its ledger, cursor and two reports;
     # the cap sits above its own budget so a cut hour costs rows, never the artifact.
     "conversion_handoff_converter": 540,
+    # The cell-conversion audit stops its converter at 60% of --budget-s 300 and always writes
+    # CELL_CONVERSION_AUDIT.json; the cap sits above its budget so a slow hour costs rows only.
+    "cell_conversion_audit": 420,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -4911,6 +4917,16 @@ def main() -> None:
     chc = _costed("conversion_handoff_converter", lambda: _producer(
         "conversion_handoff_converter", "research/conversion_handoff_converter.py", "--once",
         "--budget-s", "420"))
+    # THE CELL-CONVERSION AUDIT (principal 2026-11-11, given three times: every research output,
+    # producer, miner, yield and idea becomes testable breadth cells, nothing missed). Every leg,
+    # seat, idea artifact, idea-queue row, parked handoff cell and data source, DERIVED, with how
+    # it reaches the gauntlet and a verdict (CONVERTING / PARTIAL / NOT_WIRED / UNMEASURED); the
+    # raw-cell funnel by stage with STALLED flagged; the mechanical gaps converted through
+    # proposer_common.donate, one file per trial_family, tests_run charged per family. After the
+    # compiler and the funnel, so it reads this hour's conversions. Discovery department.
+    cca = _costed("cell_conversion_audit", lambda: _producer(
+        "cell_conversion_audit", "research/cell_conversion_audit.py", "--once",
+        "--budget-s", "300"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -6721,6 +6737,7 @@ def main() -> None:
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
                     "conversion_handoff_converter": chc,
+                    "cell_conversion_audit": cca,
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,
