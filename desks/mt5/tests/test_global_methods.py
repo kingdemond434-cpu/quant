@@ -188,8 +188,9 @@ def test_value_area_holds_seventy_percent_around_the_poc():
 # ----------------------------------------------------------------------------- the producer ---
 class _Policy:
     """A registry stand-in: two FX classes (one with an exotic), a share, an unclassified."""
-    CLASS: ClassVar[dict[str, str]] = {"EURUSD": "fx_usd", "GBPUSD": "fx_usd", "AUDUSD": "fx_usd", "NZDUSD": "fx_usd",
-             "USDJPY": "fx_usd", "USDTRY": "fx_usd", "USDCAD": "fx_usd"}
+    CLASS: ClassVar[dict[str, str]] = {
+        "EURUSD": "fx_usd", "GBPUSD": "fx_usd", "AUDUSD": "fx_usd", "NZDUSD": "fx_usd",
+        "USDJPY": "fx_usd", "USDTRY": "fx_usd", "USDCAD": "fx_usd"}
 
     def may_hypothesise(self, s, family=None):
         return s in self.CLASS
@@ -296,6 +297,7 @@ def test_each_leg_script_declares_its_own_report():
     """One leg, one producer file, one artifact: the component registry reads REPORT unimported,
     and it must be the report the method writes."""
     from desks.mt5.ops.components import own_artifact
+
     from research import global_methods as gmp
     for name, m in gmp.METHODS.items():
         rel = f"desks/mt5/research/global_method_{name}.py"
