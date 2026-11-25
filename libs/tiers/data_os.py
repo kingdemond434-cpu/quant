@@ -603,6 +603,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "desks/mt5/research/research_gap_map.py": {
         "route": "mention", "sources": ("cot_fx", "macro_state"),
         "basis": "maps families to data paths to test existence; reads no values"},
+    "desks/mt5/research/source_conversion.py": {
+        "route": "mention", "sources": ("cot_fx", "macro_state"),
+        "basis": "FIXED_PATHS maps each family's source to its data paths and tests only "
+                 "that they exist (source_inventory); it reads no COT or macro values and "
+                 "joins nothing to a bar"},
     "desks/mt5/research/south_america_interaction.py": {
         "route": "mention", "sources": ("cot",),
         "basis": "lists axes/cot.json as a leg's evidence path; existence only"},
