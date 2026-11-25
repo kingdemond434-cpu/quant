@@ -138,3 +138,26 @@ def test_self_arm_writes_key_never_reports_it(tmp_path: Path) -> None:
 def test_local_repo_prefers_a_non_system_volume() -> None:
     assert ob.local_repo_path(["C:\\", "D:\\"]).startswith("D:")
     assert ob.local_repo_path([]).replace("/", "\\").endswith("backup\\restic")
+
+
+def test_tiers_skip_rebuildable_everywhere_and_bulk_locally(tmp_path: Path) -> None:
+    base = tmp_path / "desk"
+    for rel in ("data/ledger.jsonl", "data/tape/t1.bin", "reports/gauntlet_cache/c.json",
+                "reports/x.json.tmp", "MetaQuotes/Terminal/AB/bases/h.hcc",
+                "MetaQuotes/Terminal/AB/MQL5/e.ex5"):
+        (base / rel).parent.mkdir(parents=True, exist_ok=True)
+        (base / rel).write_text("x")
+    got = ob.files_to_ship([str(base)], secret_dirs=(), skip=(str(base / "data" / "tape"),))
+    names = {Path(g).relative_to(base).as_posix() for g in got}
+    assert names == {"data/ledger.jsonl", "MetaQuotes/Terminal/AB/MQL5/e.ex5"}
+    full = ob.files_to_ship([str(base)], secret_dirs=())
+    assert "data/tape/t1.bin" in {Path(g).relative_to(base).as_posix() for g in full}
+
+
+def test_local_disk_guard_writes_nothing(tmp_path: Path) -> None:
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "PW"}))
+    calls: list[list[str]] = []
+    d = ob.run(config=cfg, out=tmp_path / "o.json", sources=(str(tmp_path),), restic="r",
+               runner=lambda c, e: calls.append(c), disk_used=lambda p: 91.0)
+    assert d["status"] == "FAIL" and d["why"].startswith("disk guard") and calls == []

@@ -123,6 +123,19 @@ SOURCES: tuple[str, ...] = (
 #: Repository schemes that live somewhere other than this box. Anything else (a drive path) is
 #: local: versioned, but gone with the box.
 REMOTE_SCHEMES = ("s3", "sftp", "rest", "b2", "azure", "gs", "swift", "rclone")
+#: TIERS (2026-11-25, measured on the box: ~206 GB in the sources, C: 83% used, one volume).
+#: REBUILDABLE never ships anywhere: the gauntlet cache (10.8 GB, 722k files, rebuilt by
+#: MT5-CacheWarm), the judge's merge snapshot, the terminal's broker-history `bases` (31.8 GB,
+#: re-downloaded by the terminal) and *.tmp half-writes. BULK (bronze ticks 41 GB, tape 32 GB,
+#: intelligence 35 GB) is irreplaceable but too big for a repository on the box's own, already
+#: 83%-full disk: it ships only to an off-site repository. Everything else -- ledgers, registry,
+#: certs, state, evidence, config -- is the CRITICAL tier and ships to every repository.
+REBUILDABLE_DIRS = ("gauntlet_cache", ".judge_merge_snapshot")
+REBUILDABLE_SUFFIX = (".tmp",)
+BULK: tuple[str, ...] = (r"C:\moat\bronze", str(BASE / "data" / "tape"),
+                         str(BASE / "data" / "intelligence"))
+#: A repository on the box's own disk is never written past this used share of that disk.
+LOCAL_DISK_MAX_PCT = 88.0
 #: Path components and names that never enter the file list.
 NEVER = ("secret",)   # a prefix: secrets, Secrets.bak, secret_old
 NEVER_NAMES = ("accounts.dat",)
@@ -253,7 +266,14 @@ def _secret_identities(dirs: set[str]) -> set[tuple[int, int]]:
     return ids
 
 
-def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None) -> list[str]:
+def _rebuildable_dir(parent: str, name: str) -> bool:
+    if name in REBUILDABLE_DIRS:
+        return True
+    return name.lower() == "bases" and "metaquotes" in parent.lower()
+
+
+def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None,
+                  skip: tuple[str, ...] = ()) -> list[str]:
     """Every file under the sources except secrets, the broker login, locks and logs; each file
     once, however many sources contain it.
 
@@ -263,9 +283,12 @@ def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None
     refused; and a file that is the same file (device, inode) as one under a secrets directory,
     i.e. a hard link, is refused."""
     found = {str(x) for x in (secret_dirs if secret_dirs is not None else SECRET_DIRS)}
+    skipn = tuple(os.path.normcase(os.path.normpath(x)) for x in skip)
     cand: set[str] = set()
     for src in sources:
         root = Path(src)
+        if os.path.normcase(os.path.normpath(src)) in skipn:
+            continue
         if _is_link(str(root)) or any(_secretish(x) for x in root.parts):
             continue
         walk = [(str(root.parent), [], [root.name])] if root.is_file() else os.walk(root)
@@ -275,14 +298,16 @@ def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None
                 full = os.path.join(d, x)
                 if _secretish(x):
                     found.add(full)
-                elif x.lower() != "logs" and not _is_link(full):
+                elif (x.lower() != "logs" and not _is_link(full)
+                      and not _rebuildable_dir(d, x)
+                      and os.path.normcase(os.path.normpath(full)) not in skipn):
                     keep.append(x)
             dirs[:] = keep
             if any(_secretish(part) for part in Path(d).parts):
                 continue
             for n in names:
                 full = os.path.join(d, n)
-                if _never_name(n) or _is_link(full):
+                if _never_name(n) or _is_link(full) or n.endswith(REBUILDABLE_SUFFIX):
                     continue
                 cand.add(full)
     banned = _secret_identities({x for x in found if os.path.isdir(x)})
@@ -341,6 +366,17 @@ def install_restic(dest: Path = RESTIC_DEST, url: str = RESTIC_URL,
         return str(dest / "restic.exe"), f"installed restic {RESTIC_VERSION} (sha256 verified)"
     except Exception as exc:   # an install that cannot run is a recorded state, not a crash
         return None, f"install failed: {type(exc).__name__}: {exc}"[:300]
+
+
+def _disk_used_pct(path: str) -> float | None:
+    p = Path(path)
+    while not p.exists() and p.parent != p:
+        p = p.parent
+    try:
+        u = shutil.disk_usage(p)
+    except OSError:
+        return None
+    return round(100.0 * u.used / u.total, 1) if u.total else None
 
 
 def local_repo_path(drives: list[str] | None = None) -> str:
@@ -470,7 +506,7 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
 def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         sources: tuple[str, ...] = SOURCES, runner: Any = _run,
         restic: str | None = None, now: datetime | None = None, self_arm: bool = False,
-        installer: Any = install_restic) -> dict[str, Any]:
+        installer: Any = install_restic, disk_used: Any = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     prev = _load(out)
     armed_now = ""
@@ -509,12 +545,21 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         env = {**os.environ, **{str(k): str(v) for k, v in (cfg.get("env") or {}).items()},
                "RESTIC_REPOSITORY": str(cfg["repository"]),
                "RESTIC_PASSWORD": str(cfg["password"])}
+        used = (disk_used or _disk_used_pct)(str(cfg["repository"]))
+        if not is_remote(cfg["repository"]) and used is not None and used > LOCAL_DISK_MAX_PCT:
+            doc.update(status="FAIL", why=f"disk guard: the local repository's disk is {used}% "
+                                          f"used (> {LOCAL_DISK_MAX_PCT}%); nothing written")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(doc, indent=1), "utf-8")
+            return doc
         probe = runner([exe, "cat", "config"], env)
         if probe.returncode != 0:
             init = runner([exe, "init"], env)
             doc["initialised"] = init.returncode == 0
         ex = [a for e in EXCLUDES for a in ("--exclude", e)]
-        listing = files_to_ship(have)
+        remote = is_remote(cfg["repository"])
+        doc["tier"] = "full" if remote else "critical (bulk ships off-site only)"
+        listing = files_to_ship(have, skip=() if remote else BULK)
         doc["files_listed"] = len(listing)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt",
                                          delete=False) as fl:
