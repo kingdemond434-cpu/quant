@@ -1391,6 +1391,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     # tick-derived PIT conditioners (spread regime, liquidity by hour,
+                     # post-news response) published as lake series for the generators
+                     "tick_features",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
@@ -2251,6 +2254,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plan's kill margin can yield it -- an undeclared leg has cap 0 and is never yielded (Audit
     # HOLD 8044d9b16, 2026-11-25: the core pass was killed at its limit on 5 of 5 runs).
     "exotic_transplant": 345,
+    # The tick-feature conditioner stops itself at --budget-s 240 (one instrument-day resident,
+    # oldest pending day first); 300 leaves the derive-and-write phase its margin.
+    "tick_features": 300,
     # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
     # margin, when priced lower) and saves its state after every symbol turn.
     "tape_deepen": 420,
@@ -4935,6 +4941,11 @@ def main() -> None:
     # depth, coverage, moat score and named gaps; derived tape series built per instrument-day.
     mos = _costed("moat_series", lambda: _producer("moat_series", "research/moat_series.py",
                                                     "--budget-s", "240", "--max-days", "3"))
+    # TICK FEATURES (principal 2026-11-25): the tape as point-in-time CONDITIONERS -- spread
+    # regime, liquidity by hour, post-news response per non-exotic symbol -- published as
+    # data/lake/series/tick_{features,news}_<SYM>.csv for exogenous_conditioner and causal_lab.
+    tkf = _costed("tick_features", lambda: _producer("tick_features", "research/tick_features.py",
+                                                      "--budget-s", "240"))
     # THE SCOUT ROSTER (W4): every intelligence organ as a scout with a beat, a clock, a measured
     # yield and a cost; open beats named. Intel department.
     scr = _costed("scout_roster", lambda: _producer("scout_roster", "research/scout_roster.py"))
@@ -7034,6 +7045,7 @@ def main() -> None:
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
+                    "tick_features": tkf,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf, "strategy_builder": sbd,
                     "generator_coverage": gcv, **hyp,

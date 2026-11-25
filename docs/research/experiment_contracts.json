@@ -370,6 +370,21 @@
     "threshold": 0,
     "after": "60 days on the trading box: after two full remedy rounds no producer's funnel reaches certified and forward-kept, so the remedies bought nothing"
    }
+  },
+  "tick_features": {
+   "hypothesis": "Publishing the tick tape as point-in-time conditioners (spread regime, liquidity by hour, post-news response) per non-exotic symbol gives the generators tape state they could not name before, so exogenous_conditioner and causal_lab cells on tick_features_/tick_news_ series reach the gauntlet.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "series_published",
+    "better": "up",
+    "organ": "report:TICK_FEATURES.json"
+   },
+   "falsifier": {
+    "metric": "symbols_measured",
+    "op": "==",
+    "threshold": 0,
+    "after": "48h on the trading box: no non-exotic symbol has a published hour, so the tape never reached the lake and the conditioners do not exist"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

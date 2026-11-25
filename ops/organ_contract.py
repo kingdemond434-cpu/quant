@@ -436,6 +436,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/MERGE_PIPELINE.json", 45,
         "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
         "heartbeat; owned by Quant-WorkflowGate, not a task of its own"),
+    # TICK FEATURES (2026-11-25): the `tick_features` leg of the data department, run by the
+    # department resident under MT5-Hourly. It writes its report on every pass, built or budget
+    # stopped, so a stale report means the leg stopped being scheduled. Six hours = a rotation
+    # that skips the data department for a few passes is not yet a defect; a day is.
+    "MT5-Hourly (tick features)": (
+        "desks/mt5/reports/TICK_FEATURES.json", 360,
+        "per non-exotic symbol: spread regime, liquidity by hour and post-news response as "
+        "point-in-time lake series the generators condition on; UNMEASURED where no tape"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
