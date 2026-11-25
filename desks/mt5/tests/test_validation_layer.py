@@ -116,8 +116,10 @@ def test_the_second_replay_agrees_with_the_engine_on_a_real_family():
     # A zero round trip would make "agree at cost" the uncosted comparison under another name.
     assert float(costs.per_oz_roundtrip()) > 0, costs
     bt = run_backtest(d, sig, costs)
+    # A short exits on the ask (engine FILL_RULES fill-2026-11-25-a): bid + the charged spread.
     r2 = replay2.replay(d, sig, cost_price_units=float(costs.per_oz_roundtrip())
-                        / float(costs.contract_oz))
+                        / float(costs.contract_oz),
+                        ask_price_units=float(costs.spread_per_lot) / float(costs.contract_oz))
     cmp = replay2.compare([t.r_multiple for t in bt.trades], [t.r for t in r2])
     assert cmp["ok"], cmp
 
