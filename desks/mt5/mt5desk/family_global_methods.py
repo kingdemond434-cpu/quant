@@ -241,11 +241,27 @@ def lambdarank_fit(x: np.ndarray, g: np.ndarray, w0: np.ndarray | None = None, *
     return w
 
 
+#: Iterations of the first fit, and of every warm-started refit after it.
+LTR_ITERS_FIRST = 30
+LTR_ITERS_REFIT = 10
+#: Scores already computed in this process, keyed by the class's member set, its values and the
+#: params: every leg of one class reads the SAME panel, so a judge or a forward clock building the
+#: class's legs one cell at a time fits the class once, not once per member.
+_LTR_CACHE: dict[tuple, np.ndarray] = {}
+LTR_CACHE_MAX = 64
+
+
+def _train_stride(hold_d: int) -> int:
+    """Training rows are taken every `stride` rows, newest first: labels `hold_d` days long
+    overlap, so adjacent rows repeat each other and thinning them loses almost nothing."""
+    return max(1, min(5, int(hold_d) // 2))
+
+
 def ltr_scores(lv: np.ndarray, *, hold_d: int, train_d: int, refit_d: int,
                min_train_d: int) -> np.ndarray:
     """rows x members: the learned score of each member at each decision row, NaN before the
     first fit. The fit at row t reads labels lv[s + hold_d] - lv[s] only for s + hold_d <= t."""
-    x = ltr_features(lv)
+    x = ltr_features(lv).astype("float32")
     h = int(hold_d)
     lab = np.full_like(lv, np.nan)
     if lv.shape[0] > h:
@@ -255,16 +271,36 @@ def ltr_scores(lv: np.ndarray, *, hold_d: int, train_d: int, refit_d: int,
     out = np.full(lv.shape, np.nan)
     w: np.ndarray | None = None
     next_fit = 0
+    stride = _train_stride(h)
     for t in range(rows):
         if t >= next_fit:
             hi = t - h + 1                     # labels at rows < hi end at row <= t
             lo = max(0, hi - int(train_d))
             if hi - lo >= int(min_train_d):
-                w = lambdarank_fit(x[lo:hi], g_all[lo:hi], w)
+                take = np.arange(hi - 1, lo - 1, -stride)[::-1]
+                w = lambdarank_fit(x[take], g_all[take], w,
+                                   iters=LTR_ITERS_FIRST if w is None else LTR_ITERS_REFIT)
                 next_fit = t + int(refit_d)
         if w is not None:
             s = x[t] @ w
             out[t] = np.where(np.isfinite(lv[t]), s, np.nan)
+    return out
+
+
+def ltr_scores_cached(members: list[str], lv: np.ndarray, **kw: int) -> np.ndarray:
+    """`ltr_scores` over the class in a canonical (sorted) column order, cached per process."""
+    order = sorted(range(len(members)), key=lambda j: members[j])
+    canon = lv[:, order]
+    key = (tuple(members[j] for j in order), canon.shape,
+           hash(np.nan_to_num(canon, nan=-9e9).tobytes()), tuple(sorted(kw.items())))
+    got = _LTR_CACHE.get(key)
+    if got is None:
+        got = ltr_scores(canon, **kw)
+        _LTR_CACHE[key] = got
+        while len(_LTR_CACHE) > LTR_CACHE_MAX:
+            _LTR_CACHE.pop(next(iter(_LTR_CACHE)))
+    out = np.empty_like(got)
+    out[:, order] = got
     return out
 
 
@@ -283,8 +319,9 @@ def family_cross_sectional_class_ltr(
     if got is None:
         return []
     d, panel = got
-    score = ltr_scores(panel["logv"], hold_d=int(hold_d), train_d=int(train_d),
-                       refit_d=int(refit_d), min_train_d=int(min_train_d))
+    score = ltr_scores_cached(panel["members"], panel["logv"], hold_d=int(hold_d),
+                              train_d=int(train_d), refit_d=int(refit_d),
+                              min_train_d=int(min_train_d))
     side = xs._rank_sides(score, panel["own"], quantile)
     return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
                        tag=f"xs_ltr:{panel['klass']}:{hold_d}:{train_d}")
