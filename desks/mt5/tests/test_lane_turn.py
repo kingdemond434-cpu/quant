@@ -113,3 +113,24 @@ def test_resident_loop_yields_before_its_next_sweep(tmp_path, monkeypatch):
     rsg._resident_loop(state, sweep, sleep, lambda: t[0], 0.0, None, 1)
     assert order == ["nap", "sweep"]
     assert state["certifier_turns"] == 1 and state["last_certifier_turn"]["outcome"] == "TOOK_TURN"
+
+
+def test_deferral_is_never_silent_past_the_contract(tmp_path):
+    out = tmp_path / "CERTIFIER_LANE.json"
+    rcs = [lane_turn.record_outcome("DEFERRED", path=out) for _ in range(lane_turn.STARVED_STREAK)]
+    assert rcs[:-1] == [0] * (lane_turn.STARVED_STREAK - 1)
+    assert rcs[-1] == lane_turn.STARVED_RC
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["status"] == "STARVED" and doc["deferred_streak"] == lane_turn.STARVED_STREAK
+    assert lane_turn.record_outcome("RAN", rc=0, path=out) == 0
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["status"] == "OK" and doc["deferred_streak"] == 0 and doc["last_ran_utc"]
+    assert lane_turn.record_outcome("RAN", rc=3, path=out) == 3
+
+
+def test_the_lane_lock_beats_only_on_measured_progress():
+    resident = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
+    tick = resident[resident.index("    def tick(self)"):]
+    tick = tick[:tick.index("\n    def ", 10)]
+    assert "_beat_sweep_locks()" in tick
+    assert "self.progress.measured and self._idle <=" in tick

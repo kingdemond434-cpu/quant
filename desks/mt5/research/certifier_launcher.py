@@ -51,11 +51,13 @@ def main(argv: list[str] | None = None) -> int:
                               "boundary", flush=True)
                     command = [sys.executable, "-u", "-W", "ignore",
                                str(BASE / "research" / "qquant_gates.py"), *args]
-                    return subprocess.run(command, cwd=BASE, env=env, check=False).returncode
+                    rc = subprocess.run(command, cwd=BASE, env=env, check=False).returncode
+                    lane_turn.record_outcome("RAN", rc=rc)
+                    return rc
             if time.monotonic() >= deadline:
                 print("qquant_gates: DEFERRED -- another canonical certifier owns the lane "
                       f"(waited {lane_turn.CERT_WAIT_S // 60} min for a turn)", flush=True)
-                return 0
+                return lane_turn.record_outcome("DEFERRED")
             if not announced:
                 lane_turn.announce("qquant_gates")
                 announced = True

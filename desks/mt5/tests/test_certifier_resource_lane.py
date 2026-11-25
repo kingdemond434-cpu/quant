@@ -18,7 +18,10 @@ def test_expected_contention_defers_without_false_failure() -> None:
     assert "another canonical certifier owns the lane" in external
     assert "another canonical certifier owns the lane" in qquant
     assert "return 0" in external
-    assert "return 0" in qquant
+    # The launcher exits 0 on a deferral while the deferral streak is inside the certifier's
+    # 180-minute contract, and STARVED (75) past it (research/lane_turn.record_outcome): expected
+    # contention is never a false failure, starvation is never a false success.
+    assert 'lane_turn.record_outcome("DEFERRED")' in qquant
 
 
 def test_qquant_lease_is_taken_before_heavy_target_import() -> None:

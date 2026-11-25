@@ -3242,6 +3242,20 @@ def _holds_lane() -> bool:
     return doc.get("pid") == os.getpid() and str(doc.get("host") or "") == socket.gethostname()
 
 
+def _beat_sweep_locks() -> list[str]:
+    """Stamp `heartbeat_at` on the sweep locks THIS process holds. Never raises."""
+    out: list[str] = []
+    try:
+        from research import job_lock
+    except Exception:
+        return out
+    for name in SWEEP_LOCKS:
+        with contextlib.suppress(Exception):
+            if job_lock.heartbeat(name):
+                out.append(name)
+    return out
+
+
 def _release_own_locks() -> list[str]:
     """Remove the sweep locks THIS process holds. `os._exit` skips the `finally` that would."""
     import socket
@@ -3556,6 +3570,12 @@ class SweepWatchdog:
         m = self.mono()
         self.progress.update(sample, m)
         self._idle = self.progress.idle_s(m)
+        # THE LANE LOCK BEATS ONLY WHILE THE TREE WORKS (2026-11-25). The box's lock carried no
+        # heartbeat at all, so a held lane read the same whether the sweep judged or sat idle.
+        # Stamped only on measured progress: an idle sweep's lock ages, and anything reading it
+        # (job_lock.orphan_stale, the guardian) sees the stall without trusting this thread.
+        if self.progress.measured and self._idle <= 2 * self.beat_s:
+            _beat_sweep_locks()
         phase = _PHASE_DOC.get("phase")
         since = _PHASE_DOC.get("_t")
         phase_el = now - since if isinstance(since, float) else None

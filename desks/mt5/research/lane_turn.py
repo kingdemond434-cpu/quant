@@ -40,6 +40,13 @@ YIELD_MAX_S = 15 * 60
 YIELD_POLL_S = 10.0
 #: A waiter record older than this is a crashed certifier's, never honoured.
 WAITER_FRESH_S = CERT_WAIT_S + 10 * 60
+#: NEVER SILENT-OK (2026-11-25): the certifier exited 0 on every deferral, so the scheduler showed
+#: green while QQUANT_GATES aged past its 180-minute contract. Every outcome is recorded in
+#: OUTCOME, and from this many deferrals in a row (3 hourly runs = the contract) the launcher
+#: exits STARVED_RC, so the task itself goes red and the guardian's failed-task check sees it.
+STARVED_STREAK = 3
+STARVED_RC = 75
+OUTCOME = Path(__file__).resolve().parent.parent / "reports" / "CERTIFIER_LANE.json"
 
 
 def _root() -> Path:
@@ -114,3 +121,35 @@ def yield_to_waiter(*, sleep: Callable[[float], Any] = time.sleep,
             "held_s": round(clock() - t0, 1),
             "outcome": ("TIMED_OUT" if waiting(lane=lane, root=root) is not None
                         else "TOOK_TURN")}
+
+
+def record_outcome(outcome: str, *, rc: int | None = None, path: Path | None = None) -> int:
+    """Record one certifier run's outcome; return the exit code the launcher should give.
+
+    RAN -> the battery's own rc (the streak resets). DEFERRED -> 0 while the deferral streak is
+    under STARVED_STREAK, STARVED_RC from then on. A record that cannot be written never changes
+    the rc of a run that ran."""
+    path = path or OUTCOME
+    try:
+        prev = json.loads(path.read_text("utf-8"))
+        if not isinstance(prev, dict):
+            prev = {}
+    except (OSError, ValueError):
+        prev = {}
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    streak = 0 if outcome == "RAN" else int(prev.get("deferred_streak") or 0) + 1
+    doc = {**prev, "schema": "certifier_lane/1", "last_outcome": outcome, "last_at_utc": now,
+           "deferred_streak": streak, "starved_at_streak": STARVED_STREAK}
+    if outcome == "RAN":
+        doc.update(last_ran_utc=now, last_rc=rc)
+    else:
+        doc.update(last_deferred_utc=now)
+    doc["status"] = "STARVED" if streak >= STARVED_STREAK else "OK"
+    with contextlib.suppress(OSError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+    if outcome == "RAN":
+        return int(rc or 0)
+    return STARVED_RC if streak >= STARVED_STREAK else 0
