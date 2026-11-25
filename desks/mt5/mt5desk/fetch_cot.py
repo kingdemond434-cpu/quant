@@ -68,6 +68,49 @@ SYMBOL_SLUG = {
 }
 
 
+def _frame(rows: list[dict]) -> pd.DataFrame | None:
+    """The legacy-schema frame the readers expect, from raw Socrata rows."""
+    if not rows:
+        return None
+    df = pd.DataFrame(rows)
+    df["report_date_as_yyyy_mm_dd"] = pd.to_datetime(
+        df["report_date_as_yyyy_mm_dd"], format="ISO8601", utc=True
+    )
+    for col in df.columns:
+        if col not in ("report_date_as_yyyy_mm_dd", "commodity_name",
+                       "contract_market_name", "market_and_exchange_names"):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.rename(columns={"report_date_as_yyyy_mm_dd": "report_date"})
+    return df.sort_values("report_date").drop_duplicates("report_date", keep="last")
+
+
+def _page(where: str) -> list[dict]:
+    rows: list[dict] = []
+    offset = 0
+    while True:
+        params = {"$where": where, "$select": SELECT, "$order": "report_date_as_yyyy_mm_dd",
+                  "$limit": "5000", "$offset": str(offset)}
+        url = f"{BASE}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            batch = json.load(resp)
+        rows.extend(batch)
+        if len(batch) < 5000:
+            return rows
+        offset += 5000
+
+
+def fetch_market(market: str) -> pd.DataFrame | None:
+    """One contract by its EXACT CFTC market name (`mt5desk.cot_contracts.MARKETS`)."""
+    q = market.replace("'", "''")
+    return _frame(_page(f"market_and_exchange_names='{q}'"))
+
+
+def fetch_code(code: str) -> pd.DataFrame | None:
+    """One contract by CFTC contract_market_code (`cot_contracts.CODES`, from COT_MAP)."""
+    return _frame(_page(f"cftc_contract_market_code='{code}'"))
+
+
 def fetch_contract(commodity: str) -> pd.DataFrame | None:
     rows: list[dict] = []
     offset = 0
@@ -106,20 +149,46 @@ def fetch_contract(commodity: str) -> pd.DataFrame | None:
     return df
 
 
+def _targets() -> list[tuple[str, list[str], str | None, str | None]]:
+    """(slug, commodity candidates, exact market fallback, code fallback) for every raw file.
+
+    The legacy slugs are tried by `commodity_name` first, exactly as before, then by their exact
+    market name -- `eur.parquet` never landed on the commodity route (36 cells probed
+    `cot_file:eur.parquet`). Every other slug has no commodity route: its market name or its
+    COT_MAP code is the only address.
+    """
+    from mt5desk import cot_contracts as cc
+    out = [(slug, cands, cc.MARKETS.get(slug), cc.CODES.get(slug)) for slug, cands in TARGETS]
+    seen = {t[0] for t in out}
+    for slug in sorted(set(cc.SYMBOL_SLUG.values()) - seen):
+        out.append((slug, [], cc.MARKETS.get(slug), cc.CODES.get(slug)))
+    return out
+
+
 def main() -> None:
-    for slug, candidates in TARGETS:
+    missing: list[str] = []
+    for slug, candidates, market, code in _targets():
         df = None
         for cand in candidates:
             df = fetch_contract(cand)
             if df is not None:
                 break
+        if df is None and market:
+            df = fetch_market(market)
+            candidates = [*candidates, market]
+        if df is None and code:
+            df = fetch_code(code)
+            candidates = [*candidates, f"code {code}"]
         if df is None or df.empty:
             print(f"{slug:>10}: FAILED (no rows for {candidates})")
+            missing.append(slug)
             continue
         df.to_parquet(OUT / f"{slug}.parquet", index=False)
         print(f"{slug:>10}: {len(df)} rows  "
               f"{df['report_date'].min().date()} -> {df['report_date'].max().date()}"
               f"  market={df['contract_market_name'].iloc[0]}")
+    if missing:
+        print(f"UNFETCHED: {missing} -- those symbols stay probed cot_file until they land")
     # legacy gold alias
     g = OUT / "gold.parquet"
     if g.exists():
