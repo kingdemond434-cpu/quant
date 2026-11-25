@@ -135,7 +135,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
         out: Path = REPORT, ledger_path: Path = RERUN_LEDGER,
         run_task: Any = None, now: datetime | None = None,
         task_running: Any = None, end_task: Any = None,
-        measure_headroom: bool = True) -> dict[str, Any]:
+        measure_headroom: bool = True, run_pass: bool = True) -> dict[str, Any]:
     t_now = now or datetime.now(tz=UTC)
     # HEADROOM FIRST (principal 2026-11-25 02:49Z): measure + reclaim (disk only, evidence
     # compressed never deleted) so the invariants below read this pass's numbers. Never raises.
@@ -265,6 +265,14 @@ def run(*, root: Path = ROOT, apply: bool = False,
     tmp = out.with_suffix(out.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
     os.replace(tmp, out)
+    # THE HOURLY PASS ON THE BOX (principal 2026-11-25 03:11Z), last: it reads this report.
+    # Read-only; on the real report path only, so a test's report never feeds the box pass.
+    if run_pass and out == REPORT:
+        try:
+            import box_pass
+            box_pass.run(root, t_now)
+        except Exception as exc:
+            doc["pass_error"] = f"{type(exc).__name__}: {exc}"
     return doc
 
 

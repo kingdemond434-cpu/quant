@@ -688,4 +688,5 @@ desks/mt5/data/counterparty_accounts.local*.tmp
 !desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json
 !desks/mt5/reports/DISK_HEADROOM.json
 !desks/mt5/reports/BOX_HEADROOM.json
+!desks/mt5/reports/PASS_FINDINGS.json
 !desks/mt5/reports/DESK_SELF_HEAL.json
