@@ -43,7 +43,14 @@ HERE = Path(__file__).resolve().parent
 if str(HERE.parents[1]) not in sys.path:
     sys.path.insert(0, str(HERE.parents[1]))
 
-from ops.box_git import box_ci, drop_pull, forge_api, impacted, inbox  # noqa: E402
+from ops.box_git import (  # noqa: E402
+    box_ci,
+    delivery_leadtime,
+    drop_pull,
+    forge_api,
+    impacted,
+    inbox,
+)
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 GATING = ("quality", "mt5-money-path", "coverage-floor")
@@ -729,6 +736,53 @@ def drop_tick(cfg: Config) -> str:
     return drop_pull.pull(cfg.drop, cfg.inbox, cfg.state.parent)
 
 
+#: Lead time is re-measured at most this often (it reads every PR's comments and statuses).
+LEADTIME_EVERY_S = 1800
+
+
+def _production_commits(cfg: Config) -> list[tuple[datetime, str]]:
+    rc, out = _run(["git", "-C", str(cfg.bare), "log", "--first-parent", "--format=%cI %H",
+                    "refs/heads/production"])
+    rows = []
+    for line in out.splitlines() if rc == 0 else []:
+        stamp, _, sha = line.strip().partition(" ")
+        with contextlib.suppress(ValueError):
+            rows.append((datetime.fromisoformat(stamp).astimezone(UTC), sha))
+    return rows
+
+
+def leadtime_tick(cfg: Config, now: datetime | None = None) -> str:
+    """DELIVERY_LEADTIME.json beside LOOP_LAST.json (L16). Read only: forge GETs, git ancestry."""
+    t = now or datetime.now(UTC)
+    out = cfg.state.with_name(delivery_leadtime.REPORT)
+    with contextlib.suppress(OSError, ValueError):
+        last = json.loads(out.read_text(encoding="utf-8")).get("at")
+        if last and (t - datetime.fromisoformat(last)).total_seconds() < LEADTIME_EVERY_S:
+            return f"lead time fresh ({last})"
+    f = _forge(cfg, forge_api.BOX_CI_USER)
+    repo = f"/repos/{forge_api.FORGE_REPO}"
+    prs = [p for p in f._all(f"{repo}/pulls?state=all")
+           if (p.get("base") or {}).get("ref") == LIVE]
+    comments = {int(p["number"]): f._all(f"{repo}/issues/{p['number']}/comments") for p in prs}
+    statuses = {}
+    for p in prs:
+        sha = str((p.get("head") or {}).get("sha") or "")
+        if re.fullmatch(r"[0-9a-f]{40}", sha):
+            statuses[sha] = f._all(f"{repo}/commits/{sha}/statuses")
+
+    def anc(a: str, b: str) -> bool:
+        return _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", a, b])[0] == 0
+
+    doc = delivery_leadtime.build(
+        prs, comments, statuses,
+        full_results=box_ci.load_state(cfg.state).get("full_results") or [],
+        production=_production_commits(cfg), adopted=None, is_ancestor=anc, now=t)
+    box_ci.save_state(out, doc)
+    s = doc["summary"]
+    return (f"lead time: {len(prs)} PR(s), backlog {s['built_not_live']['n']}, "
+            f"p90 {s['lead_time_h']['p90']}h, bottleneck {s['bottleneck']}")
+
+
 def tick(cfg: Config) -> dict[str, Any]:
     out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
     try:
@@ -741,7 +795,8 @@ def tick(cfg: Config) -> dict[str, Any]:
                      ("sign", lambda: sign_tick(cfg, live_head(cfg))),
                      ("pr", lambda: pr_tick(cfg)),
                      ("full", lambda: full_tick(cfg, live_head(cfg))),
-                     ("promote", lambda: promote_tick(cfg))):
+                     ("promote", lambda: promote_tick(cfg)),
+                     ("leadtime", lambda: leadtime_tick(cfg))):
         try:
             out[name] = fn()
         except Exception as exc:  # one stage failing never stops the others
