@@ -88,13 +88,33 @@ def test_never_list_and_path_fences(tmp_path: Path) -> None:
     assert sorted(skipped) == sorted(n for n, _ in rows)
 
 
-def test_no_money_path_task_is_newly_self_registered() -> None:
-    """The adopter's step-1b list already registers the FTMO book and its STANDBY executor
-    (registering arms nothing: data\\FTMO_EXECUTOR_ARMED does). Nothing else that trades may join
-    the self-registered set without this list changing in review."""
-    trades = re.compile(r"(?i)executor|follower|gateway|e8|fusion|live|deadman|bridge")
+#: Money- and prop-lane tasks the adopter may register by itself, reviewed one by one (Audit
+#: 2026-11-25): the FTMO book and its STANDBY executor (registering arms nothing --
+#: data\\FTMO_EXECUTOR_ARMED does), and MT5-AllocatorPulse (CLEARed #1107/#1233; its absence on
+#: the box is MISS M3). Any other money/prop-lane task joining the self-registered set must change
+#: this list in review. Keyed off the manifest's own lane tag, never a name pattern.
+MONEY_LANE_ALLOWED = frozenset({"MT5-FTMO-Allocator", "MT5-FTMO-Executor", "MT5-AllocatorPulse"})
+
+
+def test_no_money_lane_task_self_registers_unless_reviewed() -> None:
+    lanes = {r["name"]: r.get("lane", "") for r in cbt.manifest_rows()}
     names = {n for n, _ in cbt.ensure_rows()[0]}
-    assert {n for n in names if trades.search(n)} <= {"MT5-FTMO-Executor"}
+    money = {n for n in names if lanes.get(n) in ("money", "prop")}
+    assert money <= MONEY_LANE_ALLOWED, sorted(money - MONEY_LANE_ALLOWED)
+
+
+def test_the_money_lane_pin_reads_the_lane_tag(tmp_path: Path) -> None:
+    rel = "desks/mt5/scripts/install_q_task.ps1"
+    m = tmp_path / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+    m.parent.mkdir(parents=True, exist_ok=True)
+    m.write_text(f'TASK name="MT5-Quiet" trigger="hourly" runs="x.py" installer="{rel}" '
+                 f'lane="money"\n', "utf-8")
+    _installer(tmp_path, rel, "param([switch]$IfMissing)\n$TaskName = 'MT5-Quiet'\n")
+    rows = cbt.manifest_rows(m)
+    names = {n for n, _ in cbt.ensure_rows(tmp_path)[0]}
+    money = {n for n in names if {r["name"]: r["lane"] for r in rows}.get(n) == "money"}
+    # A name no pattern would flag is still caught by its lane, and is not on the reviewed list.
+    assert money == {"MT5-Quiet"} and not money <= MONEY_LANE_ALLOWED
 
 
 def test_the_adopter_calls_it_on_every_path_that_exits_cleanly() -> None:
