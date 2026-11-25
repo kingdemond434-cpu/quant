@@ -633,7 +633,7 @@
     "certificate_at_revival": null
   },
   "last_run": "2026-11-25",
-  "updated_at": "2026-11-25T05:03:16+00:00",
+  "updated_at": "2026-11-25T05:13:35+00:00",
   "configured_sleeves": 1018,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -28925,7 +28925,7 @@
   },
   "NZDHUF.carry.asia@M15": {
     "n": 175,
-    "cum_r": -97.34275795938738,
+    "cum_r": -96.41037888732433,
     "max_dd_r": -96.37147143124162,
     "first_entry": "2026-09-28 06:15:00+00:00",
     "last_entry": "2026-11-25 01:15:00+00:00",
@@ -28936,16 +28936,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:01:21.895880+00:00",
     "sleeve_id": "56ad4e69842d229f8eee",
-    "last_attempt_at": "2026-11-25T02:23:32+00:00",
+    "last_attempt_at": "2026-11-25T05:03:16+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.5562443311964993,
+    "exp_r": -0.5509164507847104,
     "days_active": 59,
-    "forward_t": -5.88,
-    "e_value": 4420764.1478,
+    "forward_t": -5.802,
+    "e_value": 3079854.6083,
     "e_crossed_at": 60,
     "e_crossed_stamp": "2026-10-16 05:00:00+00:00",
     "e_n": 175,
@@ -28959,7 +28959,7 @@
     "last_error_cleared": "no M15 bars from any source for NZDHUF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T02:23:32+00:00"
+      "at": "2026-11-25T05:03:16+00:00"
     },
     "last_error": "no M15 bars from any source for NZDHUF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -36334,7 +36334,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:12:41+00:00",
     "sleeve_id": "e7fee249ba3efddabd27",
-    "last_attempt_at": "2026-11-25T02:23:34+00:00",
+    "last_attempt_at": "2026-11-25T05:09:38+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -36396,7 +36396,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T02:23:34+00:00"
+      "at": "2026-11-25T05:09:38+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -36417,7 +36417,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.711809+00:00",
     "sleeve_id": "5c1ee264ce55e51f413e",
-    "last_attempt_at": "2026-11-25T02:23:35+00:00",
+    "last_attempt_at": "2026-11-25T05:10:03+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -36441,7 +36441,7 @@
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 130.0->130.0 spread per lot; round-trip charge 115.6728->115.6728 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T02:23:35+00:00"
+      "at": "2026-11-25T05:10:03+00:00"
     },
     "last_error": "no M15 bars from any source for XAGUSD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -36463,7 +36463,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.711819+00:00",
     "sleeve_id": "0aa5702747d8c8326d23",
-    "last_attempt_at": "2026-11-25T02:23:36+00:00",
+    "last_attempt_at": "2026-11-25T05:10:26+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -36486,7 +36486,7 @@
     "last_error_cleared": "no M15 bars from any source for XAGUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T02:23:36+00:00"
+      "at": "2026-11-25T05:10:26+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -36507,7 +36507,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:12:51+00:00",
     "sleeve_id": "1334a0789216c3c5a2bd",
-    "last_attempt_at": "2026-11-25T02:23:37+00:00",
+    "last_attempt_at": "2026-11-25T05:11:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -36569,7 +36569,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T02:23:37+00:00"
+      "at": "2026-11-25T05:13:35+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -60595,31 +60595,31 @@
   },
   "engine_pass": {
     "started_at": "2026-11-25T03:51:13+00:00",
-    "rows_reached": 649,
+    "rows_reached": 654,
     "rows": 1018,
     "complete": false,
     "profile": {
-      "seconds": 4343.7,
-      "rows_timed": 649,
+      "seconds": 4962.9,
+      "rows_timed": 654,
       "phase_seconds": {
-        "backtest": 247.1,
-        "fetch": 2777.9,
-        "resolve": 192.2,
-        "signals": 673.4
+        "backtest": 247.9,
+        "fetch": 3017.9,
+        "resolve": 356.1,
+        "signals": 686.5
       },
       "phase_calls": {
-        "backtest": 591,
-        "fetch": 90,
-        "resolve": 649,
-        "signals": 587
+        "backtest": 595,
+        "fetch": 91,
+        "resolve": 654,
+        "signals": 591
       },
       "reused": {
-        "backtest": 58,
-        "signals": 62
+        "backtest": 59,
+        "signals": 63
       },
       "family_seconds": {
-        "cross_asset_residual": 1881.8,
-        "carry": 709.9,
+        "cross_asset_residual": 2500.5,
+        "carry": 710.4,
         "macro_conditional": 675.5,
         "clock_transition": 557.4,
         "range_reversion": 185.2,
@@ -60631,12 +60631,16 @@
         "overnight_drift": 0.3
       },
       "chart_seconds": {
-        "M15": 2085.1,
+        "M15": 2704.2,
         "M30": 1009.4,
         "M5": 979.8,
         "H1": 248.8
       },
       "slowest_rows": [
+        {
+          "key": "XAGUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+          "seconds": 399.95
+        },
         {
           "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
           "seconds": 323.78
@@ -60644,6 +60648,10 @@
         {
           "key": "AUDCAD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
           "seconds": 211.09
+        },
+        {
+          "key": "XAGUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+          "seconds": 189.59
         },
         {
           "key": "GBPMXN.range_reversion.asia@M15",
@@ -60678,24 +60686,16 @@
           "seconds": 93.77
         },
         {
+          "key": "NZDHUF.carry.asia@M15#input_symbol=NZDHUF",
+          "seconds": 92.29
+        },
+        {
           "key": "CHFDKK.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=fade_side=1_stamp_hour=0",
           "seconds": 92.24
         },
         {
-          "key": "NZDHUF.carry.asia@M15#input_symbol=NZDHUF",
-          "seconds": 92.19
-        },
-        {
           "key": "GBPJPY.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=16",
           "seconds": 84.28
-        },
-        {
-          "key": "EURCAD.macro_conditional.asia@M5",
-          "seconds": 70.64
-        },
-        {
-          "key": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=48",
-          "seconds": 70.25
         }
       ]
     }
