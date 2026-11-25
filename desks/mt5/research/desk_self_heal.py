@@ -468,6 +468,72 @@ def check_tape(root: Path, now: datetime) -> Finding:
                    fixable=curable)
 
 
+#: DEEPENING LOCK (Research 2026-11-25 17:29Z): MT5-ConvertSwarm lanes exited on "another
+#: deepening run holds the lock" every hour from 03:38Z to 15:38Z until one took over a 4,681 s old
+#: lock at 16:38Z -- twelve hours of conversion lost with every task reading rc=0. The lock is
+#: presumed stale at twice the run budget (deepening_worker.RUN_BUDGET_SEC, 2,100 s on the swarm);
+#: a holder that is gone and a lock past that age is LOCK_STALE, and a holder still alive past
+#: four budgets is LOCK_HUNG (a run that never ends starves every lane just the same). Pages only:
+#: the code's own take-over frees a dead holder's lock, and a live holder is not ours to kill.
+DEEPEN_LOCK = "desks/mt5/data/hypotheses/.deepening.lock"
+#: The swarm's budget (run_convert_swarm sets DEEPEN_RUN_BUDGET_SEC=2100). A constant, not the
+#: environment: this module may not import os (test_nothing_here_can_promote_arm_or_edit_a_gate).
+DEEPEN_BUDGET_S = 2100.0
+DEEPEN_STALE_BUDGETS = 2.0
+DEEPEN_HUNG_BUDGETS = 4.0
+
+
+def _pid_alive(pid: int, create_time: Any) -> bool | None:
+    """True/False when measured; None when it cannot be (no psutil, access denied)."""
+    if pid <= 0:
+        return False
+    try:
+        import psutil
+    except ImportError:
+        return None
+    try:
+        proc = psutil.Process(pid)
+        if create_time is not None and abs(proc.create_time() - float(create_time)) > 2.0:
+            return False
+        return bool(proc.is_running())
+    except psutil.NoSuchProcess:
+        return False
+    except (psutil.AccessDenied, OSError, ValueError, TypeError):
+        return None
+
+
+def check_deepening_lock(root: Path, now: datetime, *,
+                         alive: Callable[[int, Any], bool | None] = _pid_alive,
+                         budget: float = DEEPEN_BUDGET_S) -> Finding:
+    """Is the deepening single-flight lock held by a run that is gone, or by one that never ends?"""
+    f = root / DEEPEN_LOCK
+    if not f.exists():
+        return Finding("deepening_lock", True, "no deepening run holds the lock")
+    try:
+        held = json.loads(f.read_text(encoding="utf-8"))
+        at = float(held.get("at") or 0.0)
+        pid = int(held.get("pid") or 0)
+        ctime = held.get("create_time")
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        return Finding("deepening_lock", False,
+                       f"LOCK_STALE: {DEEPEN_LOCK} unreadable ({type(exc).__name__}): every "
+                       f"lane reads it as held until it ages out", fixable=False)
+    age = now.timestamp() - at
+    live = alive(pid, ctime)
+    if live is False and age > DEEPEN_STALE_BUDGETS * budget:
+        return Finding("deepening_lock", False,
+                       f"LOCK_STALE: deepening lock held {age:.0f}s by pid {pid}, which is gone "
+                       f"(> {DEEPEN_STALE_BUDGETS:g}x the {budget:.0f}s run budget): every "
+                       f"ConvertSwarm lane exits instead of converting", fixable=False)
+    if live is not False and age > DEEPEN_HUNG_BUDGETS * budget:
+        state = "alive" if live else "unmeasurable"
+        return Finding("deepening_lock", False,
+                       f"LOCK_HUNG: deepening lock held {age:.0f}s by pid {pid} ({state}), "
+                       f"> {DEEPEN_HUNG_BUDGETS:g}x the {budget:.0f}s run budget: one run that "
+                       f"never ends starves every lane", fixable=False)
+    return Finding("deepening_lock", True, f"deepening lock {age:.0f}s old, pid {pid}")
+
+
 # --------------------------------------------------------------------------
 # THROUGHPUT, not just liveness (principal 2026-11-20 19:47Z: "They're supposed to do 24 hrs bro
 # nonstop n the weak isn't supposed to be weak"). Measured that evening: every task read Running,
@@ -1024,6 +1090,8 @@ def audit(root: Path, now: datetime | None = None) -> list[Finding]:
             # the tape check names a stopped recorder; neither was ever cured by anything.
             check_judge_stall(root, now),
             check_tape(root, now),
+            # ADDED 2026-11-25 (Research: ConvertSwarm lost 12 h to the deepening lock).
+            check_deepening_lock(root, now),
             # ADDED 2026-11-20 (principal: 24/7 at full strength): output against floors.
             check_judge_throughput(root, now),
             check_llm_throughput(root, now),

@@ -194,3 +194,51 @@ def test_it_never_reports_healthy_when_everything_is_unmeasured(clone):
     text = D.render(fs)
     assert "evidence pipeline healthy" not in text or all(
         "UNMEASURED" not in f.detail for f in fs)
+
+
+# --- deepening lock (Research 2026-11-25: ConvertSwarm lost 12 h to a held lock) ---------------
+
+def _lock(root, age_s, pid=4242):
+    p = root / D.DEEPEN_LOCK
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"pid": pid, "at": NOW.timestamp() - age_s, "create_time": 1.0}))
+
+
+def test_a_dead_holder_past_two_budgets_pages_lock_stale(tmp_path):
+    _lock(tmp_path, 4681)
+    f = D.check_deepening_lock(tmp_path, NOW, alive=lambda pid, ct: False)
+    assert not f.ok and f.detail.startswith("LOCK_STALE") and not f.fixable
+
+
+def test_a_live_holder_past_four_budgets_pages_lock_hung_and_unmeasurable_counts_as_alive(
+        tmp_path):
+    _lock(tmp_path, 4 * 2100 + 1)
+    for live in (True, None):
+        f = D.check_deepening_lock(tmp_path, NOW, alive=lambda pid, ct, v=live: v)
+        assert not f.ok and f.detail.startswith("LOCK_HUNG")
+
+
+def test_an_honest_run_and_no_lock_are_healthy(tmp_path):
+    assert D.check_deepening_lock(tmp_path, NOW).ok
+    _lock(tmp_path, 3000)
+    assert D.check_deepening_lock(tmp_path, NOW, alive=lambda pid, ct: True).ok
+    _lock(tmp_path, 4000)       # dead, but inside two budgets: the code's own take-over is due
+    assert D.check_deepening_lock(tmp_path, NOW, alive=lambda pid, ct: False).ok
+
+
+def test_the_thresholds_scale_with_the_budget(tmp_path):
+    _lock(tmp_path, 1300)
+    assert not D.check_deepening_lock(tmp_path, NOW, alive=lambda pid, ct: False, budget=600).ok
+
+
+def test_an_unreadable_lock_pages(tmp_path):
+    p = tmp_path / D.DEEPEN_LOCK
+    p.parent.mkdir(parents=True)
+    p.write_text("{not json")
+    f = D.check_deepening_lock(tmp_path, NOW)
+    assert not f.ok and "unreadable" in f.detail
+
+
+def test_the_audit_runs_the_deepening_lock_check():
+    import inspect
+    assert "check_deepening_lock(root, now)" in inspect.getsource(D.audit)
