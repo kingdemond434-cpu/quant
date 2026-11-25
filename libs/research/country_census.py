@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -59,7 +59,7 @@ def _outcomes(frontier_doc: Any) -> dict[str, str] | None:
         return None
     vecs = frontier_doc.get("vectors")
     if isinstance(vecs, Mapping):
-        items = vecs.items()
+        items: Iterable[tuple[Any, Any]] = vecs.items()
     elif isinstance(vecs, list):
         items = ((str(v.get("name") or ""), v) for v in vecs if isinstance(v, Mapping))
     else:
