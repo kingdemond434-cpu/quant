@@ -562,3 +562,16 @@ def test_siliconflow_tries_com_then_cn_and_uses_free_models_only() -> None:
                               "https://api.siliconflow.com/v1"}, lister)
     assert not pinned.lit                                   # an explicit base is not second-guessed
     assert not cn.seat_for(SF, {"SILICONFLOW": "k"}, _no_list).lit
+
+
+def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling() -> None:
+    """OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25): AgentRouter and its kind stay dark even
+    with a key set and an ALLOWED ruling; official relays (hcnsec) are untouched by the list."""
+    from libs.ops import cn_ensemble as cn
+    ar = next(p for p in cn.PROVIDERS if p.name == "agentrouter")
+    seat = cn.seat_for(ar, {"AGENTROUTER": "sk-test-not-a-key"})
+    assert not seat.lit and "DENIED" in seat.why
+    assert cn.denied("freegg") and cn.denied("codex-relay") and cn.denied("tg_quantbot")
+    assert cn.denied("acme", "https://api.agentrouter.org/v1")
+    assert cn.denied("hcnsec", "https://api.hcnsec.cn/v1") is None
+    assert cn.denied("groq", "https://api.groq.com/openai/v1") is None

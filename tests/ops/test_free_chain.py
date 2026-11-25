@@ -248,3 +248,15 @@ def test_conversion_lanes_and_data_discovery_ride_the_shared_chain(
 def test_the_chain_can_be_switched_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FREE_CHAIN_OFF", "1")
     assert fc.ask("j", "s", "u", chain=[_route("a")])[2].startswith("free chain switched off")
+
+
+def test_a_denied_relay_is_dark_from_every_source(monkeypatch: Any) -> None:
+    """An unofficial key-resale relay plugged in through the env convention stays dark."""
+    from libs.ops import free_chain as fc
+    env = {"FREE_LLM_FREEGG_KEY": "sk-test-not-a-key", "FREE_LLM_FREEGG_BASE": "https://freegg.example/v1",
+           "FREE_LLM_ACME_KEY": "sk-test-not-a-key", "FREE_LLM_ACME_BASE": "https://codex-relay.example/v1"}
+    rs = {r.name: r for r in fc.discover(env=env, list_models=lambda b, k: ["m1"])}
+    for name in ("freegg", "acme"):
+        if name in rs:
+            assert not rs[name].lit and "DENIED" in rs[name].why and rs[name].key == ""
+    assert not any(r.lit and r.name in ("agentrouter", "freegg", "acme") for r in rs.values())

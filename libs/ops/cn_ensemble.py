@@ -285,10 +285,34 @@ def _read(name: str, env: Mapping[str, str] | None) -> str:
     return str(read_key(name) or "").strip()
 
 
+#: OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25 21:54Z, on provider terms and edge leakage):
+#: unofficial key-resale relays never serve this desk, whatever key or ruling exists for them.
+#: Matched on the provider NAME and on the base URL's host, so a plug-in entry in
+#: data/secrets/cn_providers.json or a FREE_LLM_<NAME> env key cannot route around it.
+DENIED_RELAY_NAMES: frozenset[str] = frozenset({"agentrouter", "freegg", "codex_relay",
+                                                "codexrelay", "telegram", "tg_bot", "tgbot"})
+DENIED_RELAY_HOSTS: tuple[str, ...] = ("agentrouter.", "freegg", "codex-relay", "codexrelay",
+                                       "t.me", "telegram.", "api.telegram")
+
+
+def denied(name: str, base_url: str = "") -> str | None:
+    """Why this provider is refused outright (an unofficial key-resale relay), else None."""
+    n = str(name or "").strip().lower().replace("-", "_")
+    host = re.sub(r"^https?://", "", str(base_url or "").strip().lower()).split("/", 1)[0]
+    if n in DENIED_RELAY_NAMES or n.startswith(("tg_", "telegram")):
+        return f"DARK: DENIED {n}: unofficial key-resale relay (official providers only)"
+    if host and any(h in host for h in DENIED_RELAY_HOSTS):
+        return f"DARK: DENIED host {host}: unofficial key-resale relay (official providers only)"
+    return None
+
+
 def seat_for(p: Provider, env: Mapping[str, str] | None = None,
              list_models: Callable[[str, str], list[str]] | None = None) -> Seat:
     """The provider's seat, or a DARK seat saying why. Never raises, never prints a key."""
     e = os.environ if env is None else env
+    refused = denied(p.name, str(e.get(p.base_env, "") or p.default_base))
+    if refused:
+        return Seat(p, p.default_base, "", why=refused)
     if p.relay and relay_ruling(p.name) != "ALLOWED":
         return Seat(p, p.default_base, "",
                     why=f"DARK: no ALLOWED terms ruling ({RULINGS} says "

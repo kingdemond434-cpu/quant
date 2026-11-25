@@ -365,6 +365,14 @@ def discover(*, env: Mapping[str, str] | None = None, root: Path | None = None,
         if r.lit is False and not p.default_base:
             r.why = f"DARK: {ENV_PREFIX}{p.name.upper()}_BASE is not set"
         out.append(r)
+    # OFFICIAL PROVIDERS ONLY: an unofficial key-resale relay is dark from every source
+    # (panel files, plug-ins and the env convention included), never just from cn_ensemble.
+    with contextlib.suppress(Exception):
+        from libs.ops import cn_ensemble as _cn
+        for r in out:
+            refused = _cn.denied(r.name, r.base_url)
+            if refused:
+                r.lit, r.key, r.why = False, "", refused
     # dedupe lit routes by (base, key, pinned model); names unique
     seen: set[tuple[str, str, str]] = set()
     names: set[str] = set()
