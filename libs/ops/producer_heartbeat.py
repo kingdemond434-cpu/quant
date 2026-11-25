@@ -263,8 +263,8 @@ def judge_leg(runs: list[dict[str, Any]], now: datetime, *, window_h: float = WI
               dead_after_h: float = DEAD_AFTER_H) -> dict[str, Any]:
     """One leg's status from its runs. Skipped runs (plan, rotation) decide nothing."""
     real = [r for r in runs if r.get("status") != RUN_SKIPPED]
-    ts = [(_parse_ts(r.get("ended_at")), r) for r in real]
-    ts = [(t, r) for t, r in ts if t is not None]
+    stamped = [(_parse_ts(r.get("ended_at")), r) for r in real]
+    ts: list[tuple[datetime, dict[str, Any]]] = [(t, r) for t, r in stamped if t is not None]
     ts.sort(key=lambda tr: tr[0])
     win = [(t, r) for t, r in ts if (_age_h(t, now) or 0.0) <= window_h]
     oks = [(t, r) for t, r in win if r.get("status") == RUN_OK]
