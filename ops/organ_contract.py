@@ -145,6 +145,28 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/JUDGE_CALIBRATION.json", 180,
         "the judge against matured forward clocks: forward-over-backtest, leaks and false kills "
         "per family and gate; re-stamped every pass, rebuilt weekly or on a clock maturity"),
+    # THE RESEARCH LABS (2026-11-25). The math lab produced nothing on the box from 11-24 19:49Z:
+    # math_lab, physics_lab and expression_factory were killed at their caps with 0 artifacts
+    # moved and NO contract said so -- every reader saw the last good report. Each is contracted
+    # on its COMPLETION stamp (INTERNAL_STAMPS: `completed_at`, written only by a pass that
+    # finished), not on mtime, because the labs now checkpoint partial reports as they go: a pass
+    # killed every time after its panels would keep the file fresh and the contract must still
+    # read STALE. 180 min = the department's ~1 h reserved-slot cadence plus slack.
+    "MT5-Dept-Mathlab (math lab)": (
+        "desks/mt5/reports/MATH_LAB.json", 180,
+        "the mathematics civilization's pass: traditions run, objects admitted, donated cells"),
+    "MT5-Dept-Mathlab (physics lab)": (
+        "desks/mt5/reports/PHYSICS_LAB.json", 180,
+        "the physics institution's pass: cards, nulls, review, donation"),
+    "MT5-Dept-Mathlab (expression factory)": (
+        "desks/mt5/reports/EXPRESSION_FACTORY.json", 180,
+        "the expression factory's pass: transfer, mutation, invention, cells queued to the judge"),
+    "MT5-Dept-Mathlab (coevolution)": (
+        "desks/mt5/reports/COEVOLUTION.json", 360,
+        "factor x model co-evolution: pairings bred, survivors enqueued, the closure"),
+    "MT5-Dept-Macro (world lab)": (
+        "desks/mt5/reports/WORLD_LAB.json", 360,
+        "the causal world lab: scenarios, interventions, donated hypotheses"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # THE FTMO LANE (2026-11-13). Its three box tasks ran every pass and read UNCONTRACTED in
@@ -471,6 +493,10 @@ INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
     "desks/mt5/reports/CONVERT_SWARM.json": "last_decided_utc",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json": "generated_utc",
+    # a lab's partial checkpoint moves the file; only a FINISHED pass stamps `completed_at`
+    "desks/mt5/reports/MATH_LAB.json": "completed_at",
+    "desks/mt5/reports/PHYSICS_LAB.json": "completed_at",
+    "desks/mt5/reports/EXPRESSION_FACTORY.json": "completed_at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.

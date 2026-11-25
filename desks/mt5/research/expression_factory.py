@@ -2333,6 +2333,7 @@ class Factory:
             return report
         written = self.persist(report)
         report["written"] = [str(p) for p in written]
+        report["completed_at"] = now_iso()
         atomic_json(self.paths.report, report)
         return report
 
@@ -2343,7 +2344,11 @@ class Factory:
         # is done, replaced by the full one at the end. A kill inside the registry write then
         # leaves this pass's measured counts on disk instead of "0 of 1 artifacts moved".
         with contextlib.suppress(OSError, TypeError, ValueError):
-            atomic_json(self.paths.report, {**report, "partial": True, "phase": "SEARCHED"})
+            prev = read_json(self.paths.report, {}) or {}
+            carried = ({"completed_at": prev["completed_at"]}
+                       if isinstance(prev, dict) and prev.get("completed_at") else {})
+            atomic_json(self.paths.report, {**report, "partial": True, "phase": "SEARCHED",
+                                            **carried})
         # THE JUDGE'S DOOR FIRST (see WRITE_RESERVE_FRAC): the registry rows are the pass's
         # output; the state files below only make the next pass smarter.
         write_status(self.paths, "SEARCHED", search_seconds=round(self.elapsed(), 1),

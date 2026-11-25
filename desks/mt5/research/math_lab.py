@@ -1230,7 +1230,17 @@ def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
     with contextlib.suppress(OSError):
         _atomic(path, {"at": now_iso(), "partial": True, "phase": phase, "dry_run": False,
                        "elapsed_s": round(time.monotonic() - started, 2),
-                       "objects": {"admitted": admitted}, "donation": donation})
+                       "objects": {"admitted": admitted}, "donation": donation,
+                       **last_completed(path)})
+
+
+def last_completed(path: Path) -> dict[str, Any]:
+    """The previous FINISHED pass's `completed_at`, carried on a partial checkpoint, so the
+    organ contract (which reads that stamp) keeps the last completion's age through a running
+    pass and reads STALE only when no pass has finished -- never flapping mid-pass."""
+    prev = _read_json(path)
+    stamp = prev.get("completed_at") if isinstance(prev, dict) else None
+    return {"completed_at": stamp} if stamp else {}
 
 
 def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
@@ -1613,6 +1623,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                          {}, [], {}, {}, {}, {}, dry_run,
                          ["panel: no target produced a usable residual panel this pass"])
         if not dry_run:
+            report["completed_at"] = now_iso()
             _atomic(OUT, report)
         return report
 
@@ -1822,6 +1833,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                      simplified_away=simplified_away, engines=engines,
                      wiring=wiring)
     if not dry_run:
+        report["completed_at"] = now_iso()
         _atomic(OUT, report)
     return report
 

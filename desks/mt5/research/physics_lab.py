@@ -238,7 +238,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                              {}, {}, list(populations(pass_index, physics, maths)["A"]),
                              list(E.ENGINE_NAMES)))
         if not dry_run:
-            I.atomic_json(OUT, report)
+            I.atomic_json(OUT, {**report, "completed_at": I.now_iso()})
         return report
 
     # ---- department budgets, two-sided by ROI with a floor
@@ -592,7 +592,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                      donation=donation, event=event, wiring=wiring,
                      working_rows={p.target: p.n for p in working})
     if not dry_run:
-        I.atomic_json(OUT, report)
+        I.atomic_json(OUT, {**report, "completed_at": I.now_iso()})
     return report
 
 

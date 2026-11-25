@@ -631,6 +631,9 @@ def merge_up(disk: Mapping[str, Any], new: Mapping[str, Any]) -> dict[str, Any]:
                 merged[k] = {**(merged.get(k) or {}), field: old,
                              "raised_at": (v or {}).get("raised_at")}
         out[block] = merged
+    if isinstance(disk.get("labs"), dict) or isinstance(new.get("labs"), dict):
+        from research import funnel_labs as FLB
+        out["labs"] = FLB.merge_up(disk.get("labs") or {}, new.get("labs") or {})
     return out
 
 
@@ -983,6 +986,19 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
     except Exception as exc:                       # a report section never costs the funnel
         by_method = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
     _discovery_into_lane(by_lane, by_method)
+    # THE LABS (2026-11-25): breadth / depth / conversion per research lab, floors that only
+    # rise, and STALE when the lab has written nothing for two hours (research/funnel_labs.py).
+    try:
+        from research import funnel_labs as FLB
+        labs, lab_floors = FLB.block(
+            reports=paths.out.parent, roots=paths.intelligence or (), now=now,
+            floors=floors_old, ratchet_one=ratchet_one,
+            compiler_rows=comp.get("rows") if comp.get("available") else None,
+            seen={str(c) for c in seen} if seen is not None else None, who=who)
+        floors_new["labs"] = lab_floors["labs"]
+    except Exception as exc:                       # a report section never costs the funnel
+        from research import funnel_labs as FLB
+        labs = FLB.unmeasured_block(f"{type(exc).__name__}: {exc}")
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -1017,6 +1033,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
         "by_alt_source": by_alt,
         "by_lane": by_lane,
         "by_method": by_method,
+        "labs": labs,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,
