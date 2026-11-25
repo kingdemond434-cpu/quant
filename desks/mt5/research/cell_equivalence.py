@@ -56,6 +56,25 @@ REWRITTEN_KEYS = frozenset({"input_symbol", "peer_symbol", "factor_symbols", "in
 #: A pinned family's `timeframe` key is left alone: dropping it is safe only for H1-by-absence.
 PINNED = frozenset({"lvc_asia_london"})
 
+#: INPUT KEYS A FAMILY'S BUILD DISCARDS UNREAD (2026-11-04, Auditor ruling on alias certificates).
+#: `external_gauntlet.build_cell` POPS these for the family and loads nothing from them (carry and
+#: event_reaction then set `symbol` to the cell's own symbol), and the forward clock and the
+#: executor do the same (`family_inputs.runtime_call_params` strips them; `resolve` loads by the
+#: cell's own symbol). So `CHFNOK.carry` with `input_symbol` eBay, GBPJPY or absent is ONE trade,
+#: measured: identical exp and n on all three (sizing/promotion_docket_recheck_2026-11-04.json).
+#: A key named here is a spelling, not a parameter. `tests/test_cell_identity.py` builds both
+#: spellings through the real `build_cell` and the runtime call and asserts the family receives
+#: the identical call; a branch that starts reading one of these fails there.
+IGNORED_INPUTS: dict[str, frozenset[str]] = {
+    "carry": frozenset({"input_symbol", "symbol"}),
+    "event_reaction": frozenset({"input_source", "symbol"}),
+    "liquidity_regime": frozenset({"input_source"}),
+    "orderflow_imbalance": frozenset({"input_source"}),
+    "execution_state": frozenset({"input_source"}),
+    "macro_conditional": frozenset({"input_source"}),
+    "cot_positioning": frozenset({"input_source"}),
+}
+
 _FN_CACHE: dict[str, Any] = {}
 
 
@@ -114,7 +133,10 @@ def canonical_params(family: str, params: dict[str, Any] | None) -> dict[str, An
     except Exception:
         labels, modifiers = frozenset(), frozenset()
     out: dict[str, Any] = {}
+    ignored = IGNORED_INPUTS.get(str(family or ""), frozenset())
     for k, v in dict(params or {}).items():
+        if k in ignored:
+            continue
         if k in REWRITTEN_KEYS:
             out[k] = v
             continue
@@ -163,3 +185,82 @@ def groups(specs: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
                                         "p": sp.get("params") or {}}, sort_keys=True, default=str)
         out.setdefault(key, []).append(sp)
     return out
+
+
+# ------------------------------------------------------------------ canonical cell identity
+#: The session names the shared call applies (`mt5desk.family_call.SESSIONS`); any other name,
+#: or none, is every hour, which is what the call does with it.
+_SESSION_NAMES = frozenset({"asia", "london", "ny"})
+
+
+def effective_session(params: dict[str, Any] | None) -> str:
+    """The session window the shared call will actually apply: a known name, else `all`."""
+    v = str(dict(params or {}).get("session") or "").strip().lower()
+    return v if v in _SESSION_NAMES else "all"
+
+
+def canonical_cell(family: str, symbol: str, params: dict[str, Any] | None,
+                   timeframe: str | None = None) -> dict[str, Any] | None:
+    """The cell as the family will trade it: family, symbol, chart, effective session and only
+    the params it reads, or None when this module cannot vouch for the family's spelling."""
+    raw = dict(params or {})
+    canon = canonical_params(family, {k: v for k, v in raw.items() if k != "session"})
+    if canon is None:
+        return None
+    tf = str(timeframe or raw.get("timeframe") or "H1").upper()
+    canon.pop("timeframe", None)
+    return {"family": str(family or ""), "symbol": str(symbol or "").upper(), "timeframe": tf,
+            "session": effective_session(raw), "params": canon}
+
+
+def canonical_fingerprint(family: str, symbol: str, params: dict[str, Any] | None,
+                          timeframe: str | None = None) -> str | None:
+    """One id per executable cell (alias spellings share it); None when not canonicalisable."""
+    import hashlib
+    cell = canonical_cell(family, symbol, params, timeframe)
+    if cell is None:
+        return None
+    blob = json.dumps(cell, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode()).hexdigest()[:16]
+
+
+def undeclared_keys(family: str, params: dict[str, Any] | None) -> list[str] | None:
+    """Param keys the family neither names nor consumes: what a generator must not mint.
+
+    Declared = the family's signature, plus the keys every cell may carry (the chart, the
+    session, the miners' modifiers and labels), plus the input keys the build path consumes for
+    this family. A key the build DISCARDS for this family (`IGNORED_INPUTS`) is undeclared: it
+    would mint an alias. None when the family cannot be resolved or takes `**kwargs`.
+    """
+    fn = family_fn(str(family or ""))
+    if fn is None:
+        return None
+    try:
+        sig = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return None
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in sig.values()):
+        return None
+    try:
+        from mt5desk import cell_modifiers as cm
+        modifiers = set(cm.MODIFIER_KEYS) | set(cm.LABEL_KEYS)
+    except Exception:
+        modifiers = set()
+    ignored = IGNORED_INPUTS.get(str(family or ""), frozenset())
+    consumed = CONSUMED_INPUTS.get(str(family or ""), frozenset())
+    ok = (set(sig) | modifiers | consumed | {"timeframe", "session"}) - set(ignored)
+    return sorted(k for k in dict(params or {}) if k not in ok)
+
+
+#: Input keys the build path READS for a family (loads a frame from, or names a peer by). Only
+#: these may be minted beside the signature; everything else a family does not name is a spelling.
+CONSUMED_INPUTS: dict[str, frozenset[str]] = {
+    "relative_value": frozenset({"peer_symbol"}),
+    "correlation_regime": frozenset({"peer_symbol"}),
+    "cross_asset_residual": frozenset({"factor_symbols"}),
+    "pca_residual": frozenset({"factor_symbols"}),
+    "triangle": frozenset({"leg_b_symbol", "leg_c_symbol"}),
+    **{f: frozenset({"fx_symbol", "input_symbol", "input_source"})
+       for f in ("usd_session_shock", "cot_net_fade", "cot_change_fade", "cot_change_momentum",
+                 "cot_comm_follow")},
+}
