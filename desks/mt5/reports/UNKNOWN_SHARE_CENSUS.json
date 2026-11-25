@@ -5,13 +5,13 @@
   "docket_unique_cells": 1708773,
   "sample": 6000,
   "overlay": [],
-  "complete": false,
-  "stage": "building",
+  "complete": true,
+  "stage": "complete",
   "utc_day": "2026-11-25",
   "started_at": "2026-11-25T17:19:02+00:00",
-  "written_at": "2026-11-25T17:48:11+00:00",
+  "written_at": "2026-11-25T17:54:04+00:00",
   "cells_planned": 6000,
-  "cells_visited": 3298,
+  "cells_visited": 6000,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 63991,
     "rss_cap_mb": 15998,
-    "peak_rss_mb": 1098
+    "peak_rss_mb": 932
   },
-  "lockbox_cut": "2022-05-04",
+  "lockbox_cut": "2022-04-06",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 628,
-  "elapsed_s": 1745.7,
+  "cells_carved_at_own_tail": 705,
+  "elapsed_s": 2098.2,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 21,
@@ -39,37 +39,46 @@
     }
   },
   "sampled_cells": {
-    "cells": 3298,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 1505,
+    "preflight_refused": 2749,
     "build_failed": 2,
     "build_failed_by_reason": {
       "family_raised:TypeError": 2
     },
-    "deferred": 0,
-    "judged_built": 1750,
-    "unknown": 192,
-    "unknown_share_of_judged": 0.1097,
+    "deferred": 1269,
+    "judged_built": 1939,
+    "unknown": 213,
+    "unknown_share_of_judged": 0.1099,
     "wilson95": [
-      0.0959,
-      0.1252
+      0.0967,
+      0.1245
     ],
     "unknown_by_reason": {
-      "no_signals": 130,
-      "too_rare": 34,
-      "lockbox_consumed_history": 19,
-      "short_history_after_cut": 9
+      "no_signals": 145,
+      "too_rare": 37,
+      "lockbox_consumed_history": 21,
+      "short_history_after_cut": 10
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 79,
+      "session_excludes_fire_hour": 64,
+      "too_rare": 25,
+      "lockbox_consumed_history": 21,
+      "session_thins_below_60": 12,
+      "short_history_after_cut": 10,
+      "input_absent:liquidity_regime": 1,
+      "input_absent:orderflow_imbalance": 1
+    },
     "unknown_by_family": {
-      "formula": 69,
-      "session_range_breakout": 33,
+      "formula": 75,
+      "session_range_breakout": 40,
+      "htf_anchor_trend": 15,
       "overnight_drift": 15,
-      "htf_anchor_trend": 13,
-      "execution_state": 5,
-      "jump": 5,
+      "execution_state": 6,
+      "jump": 6,
       "regime_split": 4,
       "comex_settlement": 4,
       "session_handoff": 4,
@@ -78,59 +87,68 @@
       "london_close_momentum": 3,
       "dow_effect": 3,
       "vol_transition": 3,
-      "pca_residual": 2
+      "alt_conditioned": 2
     },
     "unknown_by_chart": {
-      "H1": 91,
-      "M30": 34,
-      "M5": 17,
-      "M15": 16,
-      "H4": 15,
-      "D1": 13,
+      "H1": 101,
+      "M30": 37,
+      "M15": 19,
+      "M5": 19,
+      "H4": 17,
+      "D1": 14,
       "M1": 6
     },
     "judged_by_chart": {
-      "H1": 751,
-      "M30": 353,
-      "M15": 291,
-      "M5": 222,
-      "H4": 60,
-      "M1": 49,
-      "D1": 24
+      "H1": 827,
+      "M30": 394,
+      "M15": 322,
+      "M5": 250,
+      "H4": 69,
+      "M1": 52,
+      "D1": 25
     }
   },
   "sampled_plus_siblings": {
-    "cells": 3298,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 1505,
+    "preflight_refused": 2749,
     "build_failed": 2,
     "build_failed_by_reason": {
       "family_raised:TypeError": 2
     },
-    "deferred": 0,
-    "judged_built": 1750,
-    "unknown": 192,
-    "unknown_share_of_judged": 0.1097,
+    "deferred": 1269,
+    "judged_built": 1939,
+    "unknown": 213,
+    "unknown_share_of_judged": 0.1099,
     "wilson95": [
-      0.0959,
-      0.1252
+      0.0967,
+      0.1245
     ],
     "unknown_by_reason": {
-      "no_signals": 130,
-      "too_rare": 34,
-      "lockbox_consumed_history": 19,
-      "short_history_after_cut": 9
+      "no_signals": 145,
+      "too_rare": 37,
+      "lockbox_consumed_history": 21,
+      "short_history_after_cut": 10
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 79,
+      "session_excludes_fire_hour": 64,
+      "too_rare": 25,
+      "lockbox_consumed_history": 21,
+      "session_thins_below_60": 12,
+      "short_history_after_cut": 10,
+      "input_absent:liquidity_regime": 1,
+      "input_absent:orderflow_imbalance": 1
+    },
     "unknown_by_family": {
-      "formula": 69,
-      "session_range_breakout": 33,
+      "formula": 75,
+      "session_range_breakout": 40,
+      "htf_anchor_trend": 15,
       "overnight_drift": 15,
-      "htf_anchor_trend": 13,
-      "execution_state": 5,
-      "jump": 5,
+      "execution_state": 6,
+      "jump": 6,
       "regime_split": 4,
       "comex_settlement": 4,
       "session_handoff": 4,
@@ -139,25 +157,25 @@
       "london_close_momentum": 3,
       "dow_effect": 3,
       "vol_transition": 3,
-      "pca_residual": 2
+      "alt_conditioned": 2
     },
     "unknown_by_chart": {
-      "H1": 91,
-      "M30": 34,
-      "M5": 17,
-      "M15": 16,
-      "H4": 15,
-      "D1": 13,
+      "H1": 101,
+      "M30": 37,
+      "M15": 19,
+      "M5": 19,
+      "H4": 17,
+      "D1": 14,
       "M1": 6
     },
     "judged_by_chart": {
-      "H1": 751,
-      "M30": 353,
-      "M15": 291,
-      "M5": 222,
-      "H4": 60,
-      "M1": 49,
-      "D1": 24
+      "H1": 827,
+      "M30": 394,
+      "M15": 322,
+      "M5": 250,
+      "H4": 69,
+      "M1": 52,
+      "D1": 25
     }
   },
   "siblings_only": {
