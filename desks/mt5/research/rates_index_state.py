@@ -61,15 +61,17 @@ import io
 import json
 import math
 import sys
+import urllib.robotparser
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
-from urllib.robotparser import RobotFileParser
 
 import numpy as np
+
+from libs.data import robots_body
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -333,30 +335,27 @@ def robots_url(url: str) -> str:
 
 
 #: robots_url -> parsed rules, or the UNREADABLE reason string. One read per host per run.
-RobotsCache = dict[str, RobotFileParser | str]
+RobotsCache = dict[str, urllib.robotparser.RobotFileParser | str]
 
 
 def robots_refusal(url: str, fetch: Fetcher, cache: RobotsCache) -> tuple[str | None, bool]:
     """(None, False) when robots.txt allows this exact path for USER_AGENT; otherwise
     (why, unreadable). robots.txt is fetched through the SAME fetcher, so it carries the same UA
-    and follows no redirect. Unreadable robots is a refusal, never an assumed allow."""
+    and follows no redirect. The reply is read by the shared fail-closed reader
+    (libs.data.robots_body): an HTML body, 401/403/429/451 or any non-2xx other than 404/410
+    is a refusal, never an assumed allow."""
     key = robots_url(url)
     host = host_of(url)
     if key not in cache:
         status, text = fetch(key)
-        rp = RobotFileParser()
-        if status == 200:
-            rp.parse(text.splitlines())
-            cache[key] = rp
-        elif status in ROBOTS_ABSENT_CODES:
-            rp.parse([])
-            cache[key] = rp
-        elif status == -1:
+        if status == -1:
             cache[key] = f"robots.txt unreadable at {host} (network error {text[:40]})"
         elif 300 <= status < 400:
             cache[key] = f"robots.txt unreadable at {host} (HTTP {status} redirect not followed)"
         else:
-            cache[key] = f"robots.txt unreadable at {host} (HTTP {status})"
+            got = robots_body.robots_rules_or_refusal(status, None, text)
+            cache[key] = (f"robots.txt unreadable at {host} ({got})"
+                          if isinstance(got, str) else got)
     rules = cache[key]
     if isinstance(rules, str):
         return rules, True
