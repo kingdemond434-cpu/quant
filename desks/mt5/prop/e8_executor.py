@@ -39,6 +39,7 @@ import contextlib
 import json
 import sys
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -347,6 +348,7 @@ def _last_closed(frame: Any) -> Any:
 MT5_SLEEVES = DESK / "data" / "sleeves.json"
 
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+
 MT5_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 TWIN_TRAIL_DAYS = 45
 TWIN_FADE_N = 5
@@ -848,6 +850,55 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
     return rows
 
 
+
+def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
+                exclusions: Mapping[str, Any], integrity: Any, authority: Any, cert_id: str,
+                fingerprint: str, priced: Any = (), replicated: str = "REPLICATED",
+                ) -> tuple[str, str, list[str], float]:
+    """(refusal status or "", why, doubts, size multiplier) for one certified sleeve.
+
+    NO BLOCKERS BUT EXOTICS (principal 2026-11-24 18:34Z: "make sure all promoted strategies get
+    to EA and FTMO, and the rule never intervenes or anything, no blockers for anything. Only
+    exotics are blocked"). The book is no longer a whitelist: a sleeve it does not name is sized
+    by its book row (prop/e8_book.sleeve_risk). Only an exotic pair, an explicit zero the
+    principal wrote, and his named exclusions he has not lifted stand a sleeve aside. The
+    certifier alarm, a replication miss and the Tier S door SIZE it -- x DOUBT_MULT each, unless
+    the book already priced that doubt in (its `doubt_codes`) or the principal's own number funds
+    it -- and never refuse it."""
+    from prop.e8_book import (
+        DOUBT_MULT,
+        DOUBT_PLACEBO,
+        DOUBT_REPLICATION,
+        DOUBT_TIER_S,
+        SUPERSEDED_EXCLUSIONS,
+        is_exotic_pair,
+    )
+    if is_exotic_pair(sym):
+        return ("EXOTIC_BANNED", "exotic FX pair: exotics are banned (principal 2026-11-24 "
+                "18:04Z)", [], 0.0)
+    if book_key in cert and not cert[book_key] > 0:
+        return "PRINCIPAL_ZERO", "principal zero in the E8 certified book", [], 0.0
+    if book_key in exclusions and book_key not in SUPERSEDED_EXCLUSIONS:
+        return "PRINCIPAL_EXCLUDED", str(exclusions[book_key]), [], 0.0
+    doubts: list[tuple[str, str]] = []
+    if integrity.alarm.get("blocks"):
+        doubts.append((DOUBT_PLACEBO,
+                       f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})"))
+    verdict, why = integrity.replication(cert_id, fingerprint)
+    if verdict != replicated:
+        doubts.append((DOUBT_REPLICATION, f"replication {verdict}: {why}"))
+    try:
+        tier_reason = authority.block(cert_id)
+    except Exception as exc:
+        tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
+    if tier_reason:
+        doubts.append((DOUBT_TIER_S, f"Tier S door: {tier_reason}"))
+    done = {str(c) for c in priced or ()}
+    fresh = [c for c, _ in doubts if c not in done]
+    mult = 1.0 if cert.get(book_key, 0) > 0 else DOUBT_MULT ** len(fresh)
+    return "", "", [t for _, t in doubts], mult
+
+
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
     from mt5desk import order_door
@@ -948,6 +999,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
     # book's RISK_FRAC. Absent, disabled or invalid -> None, and nothing changes.
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+
     from prop.e8_book import principal_e8_book
 
     cert = principal_e8_book(load_cert_book(CERT_BOOK_FILE, "e8"))
@@ -1080,32 +1132,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         cert_id = str(s.get("key") or "")
         book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
-        if not (cert.get(book_key, 0) > 0):
-            row.update(status="NOT_IN_PRINCIPAL_BOOK",
-                       why="no positive risk for this sleeve in the E8 certified book")
+        status, why, doubts, doubt_mult = entry_doors(
+            sym, book_key, cert, exclusions, integrity, promotion_authority, cert_id,
+            str(s.get("fingerprint") or ""), s.get("doubt_codes") or (), REPLICATED)
+        if status:
+            row.update(status=status, why=why)
             doc["sleeves"].append(row)
             continue
-        if book_key in exclusions:
-            row.update(status="PRINCIPAL_EXCLUDED", why=str(exclusions[book_key]))
-            doc["sleeves"].append(row)
-            continue
-        if integrity.alarm.get("blocks"):
-            row.update(status="CERTIFIER_ALARM", why=str(integrity.alarm.get("why")))
-            doc["sleeves"].append(row)
-            continue
-        verdict, why = integrity.replication(cert_id, str(s.get("fingerprint") or ""))
-        if verdict != REPLICATED:
-            row.update(status="UNREPLICATED", why=f"{verdict}: {why}")
-            doc["sleeves"].append(row)
-            continue
-        try:
-            tier_reason = promotion_authority.block(cert_id)
-        except Exception as exc:
-            tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
-        if tier_reason:
-            row.update(status="TIER_S_BLOCKED", why=str(tier_reason))
-            doc["sleeves"].append(row)
-            continue
+        if doubts:
+            row["doubts"] = doubts
+            row["doubt_mult"] = doubt_mult
         func = get_family_func(fam)
         if func is None:
             row["status"] = "NO_FAMILY"
@@ -1254,8 +1290,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
-                        else float(s["risk_frac"]) * e8_guard.START_BALANCE
-                        if isinstance(s.get("risk_frac"), (int, float)) else risk_usd)
+                        else float(s["risk_frac"]) * e8_guard.START_BALANCE * doubt_mult
+                        if isinstance(s.get("risk_frac"), (int, float))
+                        else risk_usd * doubt_mult)
         # THE E8 CODE CEILING ON THE FINAL, POST-MULTIPLIER RISK (r7.3, coordinator ruling (a)):
         # the book's risk is sized, the twin-fade, leg-balance and macro multipliers scale it
         # (both ways), and only THEN is the entry held to decision_core.E8_CERT_CEILING (0.006)
@@ -1401,6 +1438,7 @@ def size_certified_entry(venue: Any, sym: str, side: str, fam: str, g: Any, stop
     minimum would cross the ceiling, a RAIL_BLOCKED one on the same rail with lot 0.
     """
     from mt5desk.decision_core import E8_CERT_CEILING
+
     from prop import e8_guard
     cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
     vmin = float(venue.min_lot(sym))
@@ -1501,6 +1539,7 @@ def cert_ceiling(risk_usd: float, key: str) -> tuple[float, dict[str, Any] | Non
     funds above `decision_core.E8_CERT_CEILING` x START_BALANCE is sent at the ceiling, and the
     cut is billed `e8_cert_ceiling` (growth governance: every cap carries its ledger line)."""
     from mt5desk.decision_core import E8_CERT_CEILING
+
     from prop import e8_guard
     cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
     if not risk_usd > cap_usd:

@@ -70,6 +70,7 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from prop import e8_book as _eb  # noqa: E402
 from prop import ftmo_follower as _fw  # noqa: E402
 from prop.e8_book import ROLLOVER_BROKER_HOURS as _ROLLOVER_HOURS  # noqa: E402
 
@@ -611,25 +612,33 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         if _e8._family_banned(fam):
             done("BANNED_FAMILY", _e8._ban_reason(fam))
             continue
-        if col in exclusions:
+        if _eb.is_exotic_pair(sym):
+            done("EXOTIC_BANNED", "exotic FX pair: exotics are banned (principal 2026-11-24 "
+                 "18:04Z)", rail="exotic_ban")
+            continue
+        if col in exclusions and col not in _eb.SUPERSEDED_EXCLUSIONS:
             done("PRINCIPAL_EXCLUDED", str(exclusions[col]))
             continue
+        # NO BLOCKERS BUT EXOTICS (principal 2026-11-24 18:34Z): the certifier alarm and a
+        # replication miss halve the sleeve's risk (x DOUBT_MULT each) instead of refusing it.
+        # The Tier S door is already priced into this column's ceiling by the allocator
+        # (research/prop_challenge_allocator, `evidence_mult`), so here it is journaled only.
+        doubts: list[str] = []
         if integrity.alarm.get("blocks"):
-            done("CERTIFIER_ALARM", str(integrity.alarm.get("why")), rail="certifier_alarm",
-                 missed=True)
-            continue
+            doubts.append(f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})")
         verdict, vwhy = integrity.replication(str(spec.get("key") or ""),
                                               str(spec.get("fingerprint") or ""))
         if verdict != REPLICATED:
-            done("UNREPLICATED", f"{verdict}: {vwhy}", rail="replication", missed=True)
-            continue
+            doubts.append(f"replication {verdict}: {vwhy}")
         try:
             tier = promotion_authority.block(str(spec.get("key") or ""))
         except Exception as exc:
             tier = f"Tier S door error ({type(exc).__name__}: {exc})"
         if tier:
-            done("TIER_S_BLOCKED", str(tier), rail="tier_s_door", missed=True)
-            continue
+            row["tier_s_door"] = f"{tier} (priced by the allocator's evidence cap)"
+        if doubts:
+            frac = frac * _eb.DOUBT_MULT ** len(doubts)
+            row.update(doubts=doubts, risk_frac=frac)
         # THE ROLLOVER ENTRY GATE (prop/e8_book.ROLLOVER_BROKER_HOURS): every sleeve this executor
         # runs was admitted on fill evidence that excludes broker 00:00-01:59, so it never enters
         # there. The MT5 tick epoch is broker wall time.

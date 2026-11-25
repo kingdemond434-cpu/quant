@@ -35,7 +35,7 @@ class _Gate:
                 ("REPLICATED", "independent rebuild agrees"))
 
 
-def test_e8_admission_requires_replication_and_honours_principal_exclusions(
+def test_e8_admission_sizes_replication_doubts_and_drops_lifted_exclusions(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     config = tmp_path / "CERT_BOOK_LIVE.json"
     config.write_text(json.dumps({"enabled": True, "e8": {
@@ -56,10 +56,12 @@ def test_e8_admission_requires_replication_and_honours_principal_exclusions(
          "selector": "asia", "fingerprint": "frozen-spec"},
     ]
     accepted, blocked = e8_book.live_admissible(rows)
-    assert [r["key"] for r in accepted] == ["good"]
-    assert {r["certificate"]: r["why"] for r in blocked} == {
-        "bad": "replication MISMATCH: independent rebuild disagrees",
-        "excluded": "principal exclusion: Reddit-only lineage"}
+    # Principal 2026-11-24 18:34Z, no blockers but exotics: a replication MISMATCH halves the
+    # size, and USDJPY's Reddit-lineage exclusion is lifted (SUPERSEDED_EXCLUSIONS).
+    assert [r["key"] for r in accepted] == ["good", "bad", "excluded"] and blocked == []
+    bad = accepted[1]       # principal-funded: his number sizes it, the doubt is journaled
+    assert any("replication MISMATCH" in n for n in bad["evidence_notes"])
+    assert "evidence_mult" not in bad
 
 
 def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
@@ -99,7 +101,7 @@ def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
                         "why": "principal zero in the E8 principal book"}]
 
 
-def test_a_certificate_alone_no_longer_admits_without_fills(
+def test_a_certificate_alone_admits_at_its_prior_size_without_fills(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     config = tmp_path / "CERT_BOOK_LIVE.json"
     config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
@@ -113,11 +115,13 @@ def test_a_certificate_alone_no_longer_admits_without_fills(
              "fingerprint": "frozen-spec"}
             for k, f in (("held", "cross_asset_residual"), ("ok", "formula"))]
     accepted, blocked = e8_book.live_admissible(rows)
-    assert accepted == []
-    why = {b["certificate"]: b["why"] for b in blocked}
-    assert why["ok"].startswith("not fill-proven")
-    assert why["held"].startswith("not fill-proven") and "cross_asset_residual also fails" \
-        in why["held"]
+    assert blocked == [] and [r["key"] for r in accepted] == ["held", "ok"]
+    by = {r["key"]: r for r in accepted}
+    prior = e8_book.fill_shrink(e8_book.CERT_PRIOR_N)
+    assert by["ok"]["evidence_mult"] == round(prior, 6)
+    assert by["held"]["evidence_mult"] == round(prior * e8_book.DOUBT_MULT, 6)
+    assert any("cross_asset_residual fails forward" in n for n in by["held"]["evidence_notes"])
+    assert 0 < e8_book.sleeve_risk(by["held"]) < e8_book.sleeve_risk(by["ok"]) < e8_book.RISK_FRAC
 
 
 def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
@@ -141,9 +145,12 @@ def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
                                 ("thin", "GBPAUD", "cross_asset_residual"),
                                 ("negative", "USDSGD", "carry"))]
     accepted, blocked = e8_book.live_admissible(rows)
-    assert [r["key"] for r in accepted] == ["proven"]
+    assert [r["key"] for r in accepted] == ["proven", "thin"]
     assert accepted[0]["fill_proven"] == {"n": 15.0, "adjR": 1.402}
-    assert {b["certificate"] for b in blocked} == {"thin", "negative"}
+    assert accepted[0]["evidence_mult"] > accepted[1]["evidence_mult"] > 0
+    # USDSGD is exotic: the one refusal left.
+    assert [b["certificate"] for b in blocked] == ["negative"]
+    assert "exotic" in blocked[0]["why"]
     assert abs(e8_book.fill_shrink(15) - 15 / 65) < 1e-12 and e8_book.fill_shrink(0) == 0.0
 
 
@@ -159,10 +166,11 @@ def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
            "NZDJPY_clock_transition_asia": 0.0, "AUDCHF_overnight_gap_decay_asia": 0.002,
            "flag": True}
     assert e8_book.principal_e8_book(raw) == {
-        "gold_asia": 0.006, "USDJPY_session_range_breakout_asia": 0.0,
-        "AUDCHF_overnight_gap_decay_asia": 0.002}
+        "gold_asia": 0.006, "AUDCHF_overnight_gap_decay_asia": 0.002}
     assert e8_book.principal_e8_book(None) == {}
-    lifted = frozenset({"NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
+    lifted = frozenset({"NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia",
+                        "USDJPY_session_range_breakout_asia", "gold_london_am",
+                        "gold_afternoon"})
     assert lifted == e8_book.SUPERSEDED_E8_ZEROS
 
 

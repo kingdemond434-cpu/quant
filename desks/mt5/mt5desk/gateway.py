@@ -313,7 +313,9 @@ from mt5desk.decision_core import (
     minlot_floor_risk_frac as minlot_floor_risk_frac,
 )
 from mt5desk.decision_core import (
+    SUPERSEDED_CERT_ZEROS as SUPERSEDED_CERT_ZEROS,
     cert_book_zero as cert_book_zero,
+    lifted_rule_breaches as lifted_rule_breaches,
 )
 from mt5desk.decision_core import (
     FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
