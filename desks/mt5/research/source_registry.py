@@ -67,6 +67,10 @@ NOVELTY = DESK / "reports" / "NOVELTY_GATE.json"
 UNSEEN = DESK / "reports" / "UNSEEN_FRONTIER.json"
 REGISTRY = DESK / "data" / "source_registry.json"
 REPORT = DESK / "reports" / "SOURCE_REGISTRY.json"
+#: Rule E13 ("compute by measured yield plus an exploration share") reads this name, written beside
+#: REPORT so a test that redirects REPORT redirects this too. It is a view of
+#: the same pass: the shares, the exploration share, the cadence and what each share rests on.
+YIELD_ALLOCATION_NAME = "YIELD_ALLOCATION.json"
 #: The last SETTLED budget (what the crawlers spend between daily recomputes) sits beside the
 #: registry, read at call time, so whatever redirects REGISTRY redirects it too.
 SETTLED_NAME = "source_shares_settled.json"
@@ -1085,6 +1089,34 @@ def _summary(registry: dict[str, Any], report: dict[str, Any], wrote: bool) -> l
     ]
 
 
+def yield_allocation(registry: dict[str, Any], report: dict[str, Any]) -> dict[str, Any]:
+    """The E13 artifact: per-source compute share, how it was earned, and what is still a guess.
+
+    UNMEASURED is a verdict here. `cost_basis` says the price is the declared table, not CPU
+    seconds, and `regime` says whether any costed source has produced a survivor at all.
+    """
+    rows = registry.get("sources") or {}
+    per: dict[str, Any] = {}
+    for sid, r in rows.items():
+        sh = float(r.get("share") or 0.0)
+        if sh <= 0.0:
+            continue
+        per[sid] = {"share": round(sh, 6), "kind": r.get("kind"),
+                    "n_certified": r.get("n_certified"), "n_leads": r.get("n_leads"),
+                    "yield_terms": r.get("yield_terms"), "cost": r.get("cost")}
+    expl = float(report.get("exploration_floor") or 0.0)
+    return {
+        "at": report.get("at"), "n_sources": len(rows), "n_funded": len(per),
+        "exploration_share": expl, "regime": report.get("roi_regime"),
+        "cadence": report.get("cadence"),
+        "cost_basis": ("DECLARED price table (cost_table); measured CPU-seconds per source is "
+                       "UNMEASURED"),
+        "sum_of_shares": round(sum(v["share"] for v in per.values()), 6),
+        "sources": dict(sorted(per.items(), key=lambda t: -t[1]["share"])),
+        "rule": report.get("rule"),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="W1: one source registry with result-based reputation")
     ap.add_argument("--dry-run", action="store_true", help="measure and print, write nothing")
@@ -1094,6 +1126,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.dry_run:
         _atomic(REGISTRY, registry)
         _atomic(REPORT, report)
+        _atomic(REPORT.with_name(YIELD_ALLOCATION_NAME), yield_allocation(registry, report))
         if isinstance(settled, dict) and not settled.get("held"):
             _atomic(REGISTRY.with_name(SETTLED_NAME), settled)
     for line in _summary(registry, report, not args.dry_run):
