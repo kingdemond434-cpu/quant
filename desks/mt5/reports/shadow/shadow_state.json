@@ -633,7 +633,7 @@
     "certificate_at_revival": null
   },
   "last_run": "2026-11-25",
-  "updated_at": "2026-11-25T16:14:22+00:00",
+  "updated_at": "2026-11-25T16:22:54+00:00",
   "configured_sleeves": 1018,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -20448,14 +20448,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:39+00:00",
     "sleeve_id": "752ec732035669db3458",
-    "last_attempt_at": "2026-11-25T12:21:07+00:00",
+    "last_attempt_at": "2026-11-25T16:14:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.8011943823304882,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 6.01,
     "e_value": 0.0857,
     "e_crossed_at": null,
@@ -20510,7 +20510,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:07+00:00"
+      "at": "2026-11-25T16:14:22+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -20537,14 +20537,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:41+00:00",
     "sleeve_id": "de63c29dfd6b289d8319",
-    "last_attempt_at": "2026-11-25T12:21:08+00:00",
+    "last_attempt_at": "2026-11-25T16:14:23+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.8270710013198393,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 5.902,
     "e_value": 0.0919,
     "e_crossed_at": null,
@@ -20599,7 +20599,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:08+00:00"
+      "at": "2026-11-25T16:14:23+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -20626,14 +20626,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:42+00:00",
     "sleeve_id": "e361b5670a9ddd16cb1e",
-    "last_attempt_at": "2026-11-25T12:21:09+00:00",
+    "last_attempt_at": "2026-11-25T16:14:23+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.8270710013198393,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 5.902,
     "e_value": 0.0919,
     "e_crossed_at": null,
@@ -20688,7 +20688,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:09+00:00"
+      "at": "2026-11-25T16:14:23+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -20715,14 +20715,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:48+00:00",
     "sleeve_id": "655ec964b0f7d14b2ff4",
-    "last_attempt_at": "2026-11-25T12:21:16+00:00",
+    "last_attempt_at": "2026-11-25T16:14:25+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 2.286620947546842,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 1.139,
     "e_value": 0.4409,
     "e_crossed_at": null,
@@ -20777,7 +20777,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:16+00:00"
+      "at": "2026-11-25T16:14:25+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -20798,7 +20798,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:45:24.688252+00:00",
     "sleeve_id": "744eec9ff3ef5b380484",
-    "last_attempt_at": "2026-11-25T12:21:17+00:00",
+    "last_attempt_at": "2026-11-25T16:14:25+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -20821,7 +20821,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:17+00:00"
+      "at": "2026-11-25T16:14:25+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -20842,7 +20842,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:45:28.580947+00:00",
     "sleeve_id": "3c791080b2c788c8d9d3",
-    "last_attempt_at": "2026-11-25T12:21:18+00:00",
+    "last_attempt_at": "2026-11-25T16:14:26+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -20865,7 +20865,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:18+00:00"
+      "at": "2026-11-25T16:14:26+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (3.5->2.0 commission, 912.0->421.0 spread per lot; round-trip charge 49.4926->22.8761 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "revived_from": "RETIRED_ORPHAN",
@@ -20887,14 +20887,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:51+00:00",
     "sleeve_id": "21b7a9b2a873b858b34f",
-    "last_attempt_at": "2026-11-25T12:21:19+00:00",
+    "last_attempt_at": "2026-11-25T16:14:26+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.6854426847398768,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 4.539,
     "e_value": 0.1286,
     "e_crossed_at": null,
@@ -20949,7 +20949,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:19+00:00"
+      "at": "2026-11-25T16:14:26+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
@@ -54961,7 +54961,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:38.191899+00:00",
     "sleeve_id": "642fa205f570c85c16d5",
-    "last_attempt_at": "2026-11-25T12:21:06+00:00",
+    "last_attempt_at": "2026-11-25T16:14:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -54984,7 +54984,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:06+00:00"
+      "at": "2026-11-25T16:14:22+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -55011,7 +55011,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:42.878117+00:00",
     "sleeve_id": "afee5660a460c7240445",
-    "last_attempt_at": "2026-11-25T12:21:11+00:00",
+    "last_attempt_at": "2026-11-25T16:14:23+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -55034,7 +55034,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:11+00:00"
+      "at": "2026-11-25T16:14:23+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
@@ -55062,7 +55062,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:45.794592+00:00",
     "sleeve_id": "1571d7cba4a9ac0961e4",
-    "last_attempt_at": "2026-11-25T12:21:12+00:00",
+    "last_attempt_at": "2026-11-25T16:14:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -55085,7 +55085,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:12+00:00"
+      "at": "2026-11-25T16:14:24+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -55112,7 +55112,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:47.474475+00:00",
     "sleeve_id": "8a71db179fa470facefb",
-    "last_attempt_at": "2026-11-25T12:21:12+00:00",
+    "last_attempt_at": "2026-11-25T16:14:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -55136,7 +55136,7 @@
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 7210.000000000001->7210.000000000001 spread per lot; round-trip charge 386.4160->386.4160 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:13+00:00"
+      "at": "2026-11-25T16:14:24+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -55157,7 +55157,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:49.591724+00:00",
     "sleeve_id": "707a2f08bae9a9917070",
-    "last_attempt_at": "2026-11-25T12:21:14+00:00",
+    "last_attempt_at": "2026-11-25T16:14:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -55180,7 +55180,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:14+00:00"
+      "at": "2026-11-25T16:14:24+00:00"
     },
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -55207,7 +55207,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:59:51.588433+00:00",
     "sleeve_id": "b2e66eff3f2551fde3e3",
-    "last_attempt_at": "2026-11-25T12:21:15+00:00",
+    "last_attempt_at": "2026-11-25T16:14:25+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -55230,7 +55230,7 @@
     "last_error_cleared": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:15+00:00"
+      "at": "2026-11-25T16:14:25+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
@@ -55246,31 +55246,31 @@
     "certificate_at_revival": null
   },
   "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny": {
-    "n": 90,
-    "cum_r": 8.954410607993912,
+    "n": 91,
+    "cum_r": 8.61999031327401,
     "max_dd_r": -11.114356412278626,
     "first_entry": "2026-10-07 14:15:00+00:00",
-    "last_entry": "2026-11-24 14:15:00+00:00",
+    "last_entry": "2026-11-25 14:15:00+00:00",
     "status": "PROMOTION CANDIDATE",
     "enrolled_at": "2026-09-27T12:00:00+00:00",
     "n_historical": 99,
-    "evidence_note": "90 forward observation(s) since the clock froze; 99 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "91 forward observation(s) since the clock froze; 99 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:53+00:00",
     "sleeve_id": "062048b0fb1d587e841a",
-    "last_attempt_at": "2026-11-25T12:21:21+00:00",
+    "last_attempt_at": "2026-11-25T16:22:54+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.09949345119993236,
-    "days_active": 48,
-    "forward_t": 0.757,
-    "e_value": 0.1463,
+    "exp_r": 0.09472516827773639,
+    "days_active": 49,
+    "forward_t": 0.728,
+    "e_value": 0.1483,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 90,
+    "e_n": 91,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -55320,7 +55320,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:21:21+00:00"
+      "at": "2026-11-25T16:22:54+00:00"
     },
     "last_error": "no M15 bars from any source for EURZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -60595,47 +60595,51 @@
   },
   "engine_pass": {
     "started_at": "2026-11-25T15:58:18+00:00",
-    "rows_reached": 212,
+    "rows_reached": 226,
     "rows": 1018,
     "complete": false,
     "profile": {
-      "seconds": 975.7,
-      "rows_timed": 212,
+      "seconds": 1488.3,
+      "rows_timed": 226,
       "phase_seconds": {
-        "backtest": 38.0,
-        "fetch": 742.0,
+        "backtest": 38.5,
+        "fetch": 1249.0,
         "resolve": 1.8,
-        "signals": 109.1
+        "signals": 109.9
       },
       "phase_calls": {
-        "backtest": 177,
-        "fetch": 19,
-        "resolve": 212,
-        "signals": 174
+        "backtest": 191,
+        "fetch": 20,
+        "resolve": 226,
+        "signals": 188
       },
       "reused": {
         "backtest": 35,
         "signals": 38
       },
       "family_seconds": {
-        "carry": 553.2,
+        "carry": 1061.3,
         "macro_conditional": 193.0,
         "cross_asset_residual": 97.3,
-        "formula": 79.0,
+        "formula": 82.2,
         "session_range_breakout": 19.3,
         "clock_transition": 8.5,
         "pca_residual": 7.0,
-        "overnight_gap_decay": 3.1,
-        "spread_state": 1.6,
+        "overnight_gap_decay": 4.1,
+        "spread_state": 1.9,
         "range_reversion": 1.2
       },
       "chart_seconds": {
-        "H1": 525.3,
+        "M15": 644.5,
+        "H1": 529.8,
         "M5": 219.9,
-        "M15": 136.3,
         "M30": 81.6
       },
       "slowest_rows": [
+        {
+          "key": "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny",
+          "seconds": 508.11
+        },
         {
           "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
           "seconds": 405.58
@@ -60646,7 +60650,7 @@
         },
         {
           "key": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-          "seconds": 76.33
+          "seconds": 76.41
         },
         {
           "key": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
@@ -60691,10 +60695,6 @@
         {
           "key": "CHFNOK.carry.asia@M5#require_quiet=False_symbol=CHFNOK",
           "seconds": 3.78
-        },
-        {
-          "key": "CHFNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
-          "seconds": 3.75
         }
       ]
     }
