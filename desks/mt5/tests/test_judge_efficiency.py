@@ -127,8 +127,9 @@ def test_the_docket_order_restatement_reorders_only_once_the_sealed_file_does() 
     before = _specs()
     plain = O.allocate(G, before)
     G.JUDGE_KEEP_REORDER = True  # type: ignore[attr-defined]
-    O_order, O_drop, O_stamp = O.order, O.drop_redundant, O.stamp_new
+    O_order, O_drop, O_stamp, O_ban = O.order, O.drop_redundant, O.stamp_new, O.drop_banned
     try:
+        O.drop_banned = lambda s: (s, 0)                            # type: ignore[assignment]
         O.order = lambda _G, s: s                                   # type: ignore[assignment]
         O.drop_redundant = lambda _G, s: (s, 0)                     # type: ignore[assignment]
         O.stamp_new = lambda _G, s: sum(1 for x in s if x["_never_judged"])  # type: ignore
@@ -136,7 +137,7 @@ def test_the_docket_order_restatement_reorders_only_once_the_sealed_file_does() 
         del G.JUDGE_KEEP_REORDER  # type: ignore[attr-defined]
         keep_off, _ = O.sealed_keep(G, before, novelty=False)
     finally:
-        O.order, O.drop_redundant, O.stamp_new = O_order, O_drop, O_stamp
+        O.order, O.drop_redundant, O.stamp_new, O.drop_banned = O_order, O_drop, O_stamp, O_ban
     assert [id(x) for x in keep_off] == [id(x) for x in plain]
     assert keep == je.reorder_keep(before, plain)
     assert census["keep_never_judged"] == sum(1 for x in plain if x["_never_judged"])
@@ -201,7 +202,7 @@ GB = 1024.0
 
 def _plan(**kw):
     args = {"n_cpus": 18, "floor_cpus": FLOOR, "percpu_busy": [0.1] * 18, "judge_cores": 5.0,
-            "live_cores": 0.2, "other_cores": 4.0, "free_mb": 60 * GB, "total_mb": 96 * GB}
+            "live_cores": 0.2, "other_cores": 3.0, "free_mb": 60 * GB, "total_mb": 96 * GB}
     args.update(kw)
     return ec.plan(**args)
 
