@@ -2481,6 +2481,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         TILT_LO,
         consumed_inputs,
         factor_tier_factors,
+        fill_proven_factors,
         marginal_breadth_factors,
         match_mechanism,
         posterior_prior_factors,
@@ -2495,6 +2496,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
     post_terms, post_why = posterior_prior_factors(posterior_doc)
     breadth_terms, breadth_why = marginal_breadth_factors(posterior_doc)
     tier_terms, tier_why = factor_tier_factors(exposure_doc)
+    fill_terms, fill_why = fill_proven_factors([e.name for e in ev], now=now)
     mechanisms = list(roi_terms)
     by_sleeve: dict[str, dict[str, Any]] = {}
     n_tilted = n_shifted = 0
@@ -2513,13 +2515,14 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         # toward the sleeves that survive their own costs and cannot change the total.
         nf = float(row.get("net_of_cost_factor", 1.0))
         sf = float(ts_terms.get(e.name, 1.0))
-        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf)))
+        ff = float(fill_terms.get(e.name, 1.0))
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf * ff)))
         if sf < TILT_LO:
             # The exchange scaled this sleeve BELOW the shared floor, down to NOTHING for a
             # ZERO / EXIT / DEFER: its own factor is applied under the floor, not raised to it
             # (audit 2026-09-30: 0 < sf < 0.5 was lifted to 0.5). The Tier S tilt is heat-neutral,
             # so the heat it frees is the heat law's to refill.
-            tilt = float(max(0.0, min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf))
+            tilt = float(max(0.0, min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * ff))
                                   * sf))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
@@ -2543,6 +2546,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
                              "factor_tier_factor": round(tf, 6),
                              "net_of_cost_factor": round(nf, 6),
                              "tier_s_factor": round(sf, 6),
+                             "fill_proven_factor": round(ff, 6),
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
@@ -2554,6 +2558,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "status": "APPLIED" if by_sleeve else "NEUTRAL",
         "evidence": ev_why, "roi": roi_why,
         "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
+        "fill_proven": fill_why, "n_fill_proven_tilted": len(fill_terms),
         "tier_s": ts_why, "n_tier_s_tilted": sum(
             1 for e in ev if abs(float(ts_terms.get(e.name, 1.0)) - 1.0) >= 1e-9),
         # THE EXCHANGE'S ZEROS, NAMED: a zero mean alone did not keep a sleeve out of the book
@@ -2577,7 +2582,8 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
         "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
                  "clip(lineage_factor x roi_factor x forward_posterior x marginal_breadth x "
-                 "factor_tier x net_of_cost x tier_s); every one of the seven is heat-neutral "
+                 "factor_tier x net_of_cost x tier_s x fill_proven); every one of the eight is "
+                 "heat-neutral "
                  "(mean 1.0 across the book) so they reallocate and never lever; the shift only "
                  "where the replay charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside "
                  "the E[log W] solve"),
