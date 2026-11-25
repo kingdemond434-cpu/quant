@@ -37,8 +37,9 @@ $ErrorActionPreference = 'Stop'
 # ---- PINS. Update the two together, from the sums file named above, never from anywhere else.
 $TorVersion   = '16.0.1'
 # PROVENANCE, stated exactly (Auditor 2026-11-25): pinned 2026-11-17 by a cloud session from a
-# web-fetch subagent's report of the 16.0.1 (tor 0.4.9.16) line in
-#   https://dist.torproject.org/torbrowser/16.0.1/sha256sums-signed-build.txt
+# web-fetch subagent's report of the 16.0.1 (tor 0.4.9.16) line in the dist.torproject.org mirror
+# of the same sums file as below:
+#   https://archive.torproject.org/tor-package-archive/torbrowser/16.0.1/sha256sums-signed-build.txt
 # The cloud container itself cannot reach torproject.org, so no session byte-compared that file.
 # That is why the box CROSS-CHECKS the pin against the published sums file below before it
 # downloads anything: the pin must appear on the bundle's own line there, or nothing installs.
@@ -71,12 +72,11 @@ if ($BundleUrl -notmatch '^https://archive\.torproject\.org/tor-package-archive/
     throw "download URL is not the Tor Project archive: $BundleUrl"
 }
 
-# CROSS-CHECK THE PIN against the Tor Project's own sums file for this version (archive, then the
-# dist mirror). The pin must sit on the bundle's line; an unreadable sums file refuses (fail closed).
+# CROSS-CHECK THE PIN against the Tor Project's own sums file for this version, on the same archive
+# host the bundle comes from. The pin must sit on the bundle's line; an unreadable sums file refuses (fail closed).
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $sumsOk = $false
-foreach ($sumsUrl in @("$ArchiveBase/sha256sums-signed-build.txt",
-                      "https://dist.torproject.org/torbrowser/$TorVersion/sha256sums-signed-build.txt")) {
+foreach ($sumsUrl in @("$ArchiveBase/sha256sums-signed-build.txt")) {
     try {
         $sums = (Invoke-WebRequest -Uri $sumsUrl -UseBasicParsing).Content
     } catch {
