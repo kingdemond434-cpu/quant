@@ -146,6 +146,21 @@ def source_of(series: str) -> str:
     return s
 
 
+#: z columns whose WRITER computes them from strictly-prior observations only (read 2026-11-25),
+#: so a threshold of 0 splits history with no out-of-sample information. A z column from any
+#: other writer may be a full-sample z, which would leak the OOS mean and spread into the split,
+#: so it is not offered until its writer is read and added here.
+#:   alt_<src>__<series>.surprise_z  alt_proxies: sd over prior surprises only (expanding)
+#:   ks_<src>__<series>.z / .chg_z   keyed_sources._z: mean/sd over the prior Z_WINDOW points
+#:   *.shock_z                       futures_state: rolling mean/sd of chg.shift(1)
+PIT_Z_COLUMNS: tuple[tuple[str, str], ...] = (("alt_", "surprise_z"), ("ks_", "z"),
+                                               ("ks_", "chg_z"), ("", "shock_z"))
+
+
+def _pit_z(series: str, column: str) -> bool:
+    return any(series.startswith(pre) and column == col for pre, col in PIT_Z_COLUMNS)
+
+
 def _is_z(column: str) -> bool:
     c = column.lower()
     return c.endswith(Z_SUFFIXES) and (c == "z" or c.endswith("_z"))
@@ -195,8 +210,10 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
     """Every executable `alt:` series on this host.
 
     `thresholds=False` (the cheap read every coverage pass takes) offers specs only on z-shaped
-    columns; `thresholds=True` also reads a level column's median for its spec. A missing lake is
-    UNMEASURED with the reason, never an empty catalog."""
+    columns whose writer is PIT (`PIT_Z_COLUMNS`); `thresholds=True` also reads a level column's
+    WHOLE-FILE median, which is look-ahead (it splits history at a point chosen with the OOS
+    window), so no generator prompt may use it -- it is kept for offline inspection only.
+    A missing lake is UNMEASURED with the reason, never an empty catalog."""
     base = lake or LAKE
     if not base.is_dir():
         return {"status": UNMEASURED, "why": f"no lake directory at {base} on this host",
@@ -213,7 +230,10 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
             continue
         specs: list[str] = []
         for c in cols[:6]:
-            thr: float | None = 0.0 if _is_z(c) else (_median(path, c) if thresholds else None)
+            if _is_z(c):
+                thr: float | None = 0.0 if _pit_z(stem, c) else None
+            else:
+                thr = _median(path, c) if thresholds else None
             if thr is None:
                 continue
             specs += [spec(stem, c, op, thr) for op in OPS]
@@ -432,7 +452,7 @@ def prompt_block(organ: str, *, k: int = PROMPT_K, lake: Path | None = None,
                  cat: Mapping[str, Any] | None = None) -> str:
     """The block a generator appends to its prompt, or "" when no executable series is on this
     host (an absent lake is not a reason to send the model a list it cannot be tested on)."""
-    cat = cat if cat is not None else catalog(lake, thresholds=True)
+    cat = cat if cat is not None else catalog(lake)     # PIT z columns only: see catalog()
     now = now or _now()
     picked = choose(cat, k=k, tested=tested_counts(), gaps=gap_series(organ=organ),
                     seed=f"{organ}|{now:%Y-%m-%dT%H}")

@@ -34,7 +34,7 @@ def _csv(path: Path, cols: str, n: int = 12, *, stamped: bool = True) -> None:
 
 def _lake(tmp: Path, sub: str = "lake") -> Path:
     lake = tmp / sub
-    _csv(lake / "ks_bok__exports.csv", "surprise_z,level")
+    _csv(lake / "ks_bok__exports.csv", "chg_z,level")
     _csv(lake / "tick_news_EURUSD.csv", "chg_z")
     _csv(lake / "kr_exports_20d.csv", "level")
     _csv(lake / "unstamped.csv", "value_z", stamped=False)
@@ -57,13 +57,37 @@ def test_catalog_lists_stamped_series_with_measured_specs_only(tmp_path: Path) -
     assert by["ks_bok__exports"]["source"] == "ks_bok"
     assert by["tick_news_EURUSD"]["source"] == "tick_news"
     assert by["tick_news_EURUSD"]["symbol"] == "EURUSD"
-    assert "alt:ks_bok__exports:surprise_z:gt:0" in by["ks_bok__exports"]["specs"]
+    assert "alt:ks_bok__exports:chg_z:gt:0" in by["ks_bok__exports"]["specs"]
     # a level column's threshold is its own measured median, never an invented number
     lvl = [s for s in by["kr_exports_20d"]["specs"] if ":level:" in s]
     assert lvl and all(ac.parse_spec(s)[3] == 5.5 for s in lvl)
     # the cheap read offers z-shaped specs only
     cheap = {r["series"]: r for r in ac.catalog(tmp_path / "lake")["series"]}
     assert cheap["kr_exports_20d"]["specs"] == []
+
+
+def test_no_generator_spec_carries_a_look_ahead_threshold(tmp_path: Path, monkeypatch: Any) -> None:
+    """Audit HOLD ab718fd10a: a level column's whole-file median, or a z column whose writer may
+    standardise over the full sample, would split history at a point chosen with the OOS window.
+    The generators' catalog offers only z columns from writers read as PIT, at 0, so appending
+    later rows can never move a threshold."""
+    _isolate(monkeypatch, tmp_path)
+    lake = _lake(tmp_path)
+    cat = ac.catalog(lake)
+    by = {r["series"]: r for r in cat["series"]}
+    assert by["kr_exports_20d"]["specs"] == []                    # level column: not offered
+    assert all(":level:" not in s for r in cat["series"] for s in r["specs"])
+    assert by["tick_news_EURUSD"]["specs"] == []                  # z from an unread writer
+    assert by["ks_bok__exports"]["specs"]                         # keyed_sources._z: trailing
+    before = sorted(s for r in cat["series"] for s in r["specs"])
+    _csv(lake / "ks_bok__exports.csv", "chg_z,level", n=28)       # later rows arrive
+    _csv(lake / "kr_exports_20d.csv", "level", n=28)
+    after = sorted(s for r in ac.catalog(lake)["series"] for s in r["specs"])
+    assert after == before
+    block = ac.prompt_block("kimi_hunt", cat=ac.catalog(lake), now=NOW)
+    assert ":level:" not in block and "tick_news_EURUSD:chg_z" not in block
+    for organ in ("scripts/kimi_hunter.py", "libs/ops/deepseek_cycle.py"):
+        assert "thresholds=True" not in (_ROOT / organ).read_text("utf-8")
 
 
 def test_an_absent_lake_is_unmeasured_never_an_empty_clean_catalog(tmp_path: Path) -> None:
@@ -115,7 +139,7 @@ def test_exploration_share_still_reshows_covered_series() -> None:
 def test_prompt_block_carries_exact_specs_and_records_exposure(tmp_path: Path,
                                                                 monkeypatch: Any) -> None:
     _isolate(monkeypatch, tmp_path)
-    cat = ac.catalog(_lake(tmp_path), thresholds=True)
+    cat = ac.catalog(_lake(tmp_path))
     block = ac.prompt_block("kimi_hunt", cat=cat, now=NOW)
     assert "alt:<series>:<column>:<gt|lt>:<threshold>" in block
     assert "ALT_CELL |" in block
@@ -129,10 +153,10 @@ def test_prompt_block_carries_exact_specs_and_records_exposure(tmp_path: Path,
 def test_parse_cells_keeps_catalog_specs_and_names_every_refusal(tmp_path: Path) -> None:
     cat = ac.catalog(_lake(tmp_path))
     text = "\n".join([
-        "ALT_CELL | session_range_breakout | AUDUSD | alt:ks_bok__exports:surprise_z:gt:0 | "
+        "ALT_CELL | session_range_breakout | AUDUSD | alt:ks_bok__exports:chg_z:gt:0 | "
         "Korean exporters must convert USD receipts, lifting AUD proxies",
         "ALT_CELL | session_range_breakout | AUDUSD | alt:not_a_series:z:gt:0 | some reason here",
-        "ALT_CELL | not_a_family | AUDUSD | alt:ks_bok__exports:surprise_z:gt:0 | reason text x",
+        "ALT_CELL | not_a_family | AUDUSD | alt:ks_bok__exports:chg_z:gt:0 | reason text x",
         "ALT_CELL | session_range_breakout | AUDUSD | macro | prose conditioner refused",
         "VERIFIED | something | else | that is not a cell",
     ])
@@ -140,27 +164,27 @@ def test_parse_cells_keeps_catalog_specs_and_names_every_refusal(tmp_path: Path)
     assert len(rows) == 1 and len(why) == 3
     r = rows[0]
     assert r["family"] == "session_range_breakout" and r["symbols"] == ["AUDUSD"]
-    assert r["params"] == {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}
+    assert r["params"] == {"conditioner": "alt:ks_bok__exports:chg_z:gt:0"}
     assert r["alt_source"] == "ks_bok" and r["kind"] == "hypothesis"
 
 
 def test_a_donated_alt_cell_compiles_as_an_exact_testable_recipe(tmp_path: Path) -> None:
     import miner_candidate_compiler as mcc
     rows, _ = ac.parse_cells(
-        "ALT_CELL | session_range_breakout | AUDUSD | alt:ks_bok__exports:surprise_z:gt:0 | "
+        "ALT_CELL | session_range_breakout | AUDUSD | alt:ks_bok__exports:chg_z:gt:0 | "
         "exporters convert receipts at the fix", cat=ac.catalog(_lake(tmp_path)))
     cands, disp = mcc.compile_row("kimi_k3_deep_forest", rows[0], {"AUDUSD"})
     assert disp == "EXACT_RECIPE"
-    assert cands[0]["params"]["conditioner"] == "alt:ks_bok__exports:surprise_z:gt:0"
+    assert cands[0]["params"]["conditioner"] == "alt:ks_bok__exports:chg_z:gt:0"
     assert fs.is_testable(fs.to_executable(cands[0]["family"], cands[0]["params"])["status"])
 
 
 # ------------------------------------------------------------------------ family_spec -----
 def test_an_alt_conditioner_on_family_defaults_is_executable_and_kept() -> None:
     got = fs.to_executable("session_range_breakout",
-                           {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"})
+                           {"conditioner": "alt:ks_bok__exports:chg_z:gt:0"})
     assert got["status"] == fs.EXECUTABLE_VARIANT
-    assert got["params"]["conditioner"] == "alt:ks_bok__exports:surprise_z:gt:0"
+    assert got["params"]["conditioner"] == "alt:ks_bok__exports:chg_z:gt:0"
     # a prose axis is still refused by the gauntlet, so it is still not a rule
     assert not fs.is_testable(fs.to_executable("session_range_breakout",
                                                {"conditioner": "macro"})["status"])
@@ -173,7 +197,7 @@ def test_coverage_counts_rows_testable_judged_certified_per_series(tmp_path: Pat
     from research import frontier_identity as fi
     cat = ac.catalog(_lake(tmp_path))
     row = {"symbol": "AUDUSD", "family": "session_range_breakout",
-           "params": {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}}
+           "params": {"conditioner": "alt:ks_bok__exports:chg_z:gt:0"}}
     cid = fi.cell_id(fi.docket_cell(row))
     rows = [row, dict(row, symbol="NZDUSD"),
             {"symbol": "EURUSD", "family": "carry", "params": {"conditioner": "macro"}},
@@ -200,7 +224,7 @@ def test_funnel_publishes_by_alt_source(tmp_path: Path, monkeypatch: Any) -> Non
     monkeypatch.setattr(fn.Paths, "at", classmethod(lambda cls, d: p))
     p2 = fn.Paths(**{**p.__dict__, "lake": lake})
     row = {"symbol": "AUDUSD", "family": "session_range_breakout", "source": "miner:kimi",
-           "params": {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}}
+           "params": {"conditioner": "alt:ks_bok__exports:chg_z:gt:0"}}
     p2.compiler.parent.mkdir(parents=True, exist_ok=True)
     p2.compiler.write_text(json.dumps({"hypotheses": [row], "per_source": {}}), "utf-8")
     doc = fn.build(p2, now=NOW, budget_s=60, is_exotic=lambda s: False,
@@ -252,7 +276,7 @@ def test_deepseek_prompt_carries_alt_specs_and_donates_the_recipe(tmp_path: Path
         "title": "exporter conversion lifts AUD on BOK surprise",
         "mechanism": "exporters must convert receipts", "testable_claim": "x",
         "symbols": ["AUDUSD"], "family": "session_range_breakout",
-        "conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}]})
+        "conditioner": "alt:ks_bok__exports:chg_z:gt:0"}]})
 
     def chat(user: str, **kw: Any) -> tuple[str, None]:
         seen["user"] = user
@@ -262,9 +286,9 @@ def test_deepseek_prompt_carries_alt_specs_and_donates_the_recipe(tmp_path: Path
     out = ds.run_role("cold_alpha_inventor", "brief", deep=False, root=tmp_path,
                       env={"OPENROUTER_API_KEY": "sk-test", "DEEPSEEK_BULK_MODEL": "m"})
     assert out["status"] == "OK"
-    assert "alt:ks_bok__exports:surprise_z:gt:0" in seen["user"]
+    assert "alt:ks_bok__exports:chg_z:gt:0" in seen["user"]
     don = json.loads(Path(out["donated_to"]).read_text("utf-8"))["discoveries"][0]
-    assert don["params"] == {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}
+    assert don["params"] == {"conditioner": "alt:ks_bok__exports:chg_z:gt:0"}
 
 
 def test_kimi_shows_the_slice_to_waves_two_and_three_and_donates_recipes() -> None:

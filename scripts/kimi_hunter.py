@@ -821,7 +821,7 @@ def main() -> None:
     alt_cat = None
     if ac is not None:
         try:
-            alt_cat = ac.catalog(thresholds=True)
+            alt_cat = ac.catalog()
         except Exception:  # blind-except intentional (BLE001)
             alt_cat = None
     alt_cells: list[dict] = []

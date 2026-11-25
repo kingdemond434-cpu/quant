@@ -676,7 +676,7 @@ def _alt_slice(root: Path) -> tuple[Any, Any, str]:
             if p not in _sys.path:
                 _sys.path.insert(0, p)
         from research import alt_catalog as ac
-        cat = ac.catalog(desk / "data" / "lake" / "series", thresholds=True)
+        cat = ac.catalog(desk / "data" / "lake" / "series")
         return ac, cat, ac.prompt_block("deepseek", cat=cat)
     except Exception:  # blind-except intentional (BLE001): a slice never costs the cycle
         return None, None, ""
