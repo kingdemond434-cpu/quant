@@ -1885,11 +1885,12 @@ def run(
             need = (*need, RISK_JOB)
         if os.environ.get("QUANT_FORGE_URL"):
             need = forge_need(need)
-            # THE FAST PATH (zuck 2026-11-25 18:53Z, Audit design check 18:53Z): on the box forge
-            # an Auditor CLEAR at the exact head plus the money-path risk suites decide; quality,
-            # coverage and replay-shadow are informational. QUANT_FORGE_FULL_GATING=1 restores all.
+            # THE FAST PATH (zuck 2026-11-25 18:53Z; Audit 18:53Z, HOLD H2 19:08Z): on the box
+            # forge an Auditor CLEAR at the exact head plus the two KEPT money gates decide (risk
+            # invariants and replay-shadow); quality and coverage are informational.
+            # QUANT_FORGE_FULL_GATING=1 restores all.
             if os.environ.get(FULL_GATING_ENV, "").strip() not in {"1", "true", "yes"}:
-                need = (RISK_JOB,)
+                need = FORGE_REQUIRED
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break

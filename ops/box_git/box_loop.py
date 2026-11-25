@@ -324,7 +324,8 @@ def risk_job(cfg: Config, root: Path, base: str, head: str,
     return True, f"risk-invariants passed ({len(suites)} suite file(s))"
 
 
-def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tuple[bool, str]:
+def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str],
+               timeout_s: int = 3600) -> tuple[bool, str]:
     """release-gates.yml `replay-shadow`, on the box: the BASE's harness replays the live E8
     book on the base and on the PR head; any divergence not declared fails."""
     with worktree(cfg, base) as b, worktree(cfg, head) as h:
@@ -337,7 +338,7 @@ def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tup
                                        str(b / "ops" / "release" / "replay_shadow.py"),
                                        "--base", str(b), "--head", str(h), "--changed", str(lst),
                                        "--report", str(report)],
-                                 cwd=cfg.work, extra_env=extra, timeout=3600)
+                                 cwd=cfg.work, extra_env=extra, timeout=timeout_s)
         lst.unlink(missing_ok=True)
         report.unlink(missing_ok=True)
     return rc == 0, f"replay-shadow rc={rc}: {out.strip()[-160:]}"
@@ -438,25 +439,45 @@ def audited_clear(comments: Sequence[Mapping[str, Any]], head: str) -> bool:
     return last == ("CLEAR", head)
 
 
-#: THE FAST PATH (zuck 2026-11-25 18:53Z; Audit design check 18:53Z). A CLEARed PR runs only the
-#: money-path risk suites before merge, capped at ten minutes; a failure classed `env` (a box
-#: defect, delivery_leadtime.cause) does not block, a real red does. Impacted tests, coverage and
-#: replay-shadow no longer gate a merge (the full suite still runs after it, informational).
+#: THE FAST PATH (zuck 2026-11-25 18:53Z; Audit design check 18:53Z, HOLD H1/H2 19:08Z). A CLEARed
+#: PR runs only the two KEPT money gates before merge -- the risk suites and replay-shadow -- each
+#: capped at ten minutes. Impacted tests and coverage no longer gate (the full suite still runs
+#: after merge, informational). A failure counts as a box defect that does not block ONLY when it
+#: is env-classed (delivery_leadtime.cause), produced no pytest result line, did not exit 1 and
+#: was not a pytest-timeout hang ("+++ Timeout +++" always blocks: a hang in money code is red).
 #: QUANT_FORGE_FULL_GATING=1 restores the old pre-merge checks, here and in audit_gate.
 FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
 RISK_CONTEXT = "risk-invariants"
-FAST_RISK_TIMEOUT_S = 600
+REPLAY_CONTEXT = "replay-shadow"
+FAST_TIMEOUT_S = 600
+FAST_RISK_TIMEOUT_S = FAST_TIMEOUT_S
+_RESULT_LINE = re.compile(r"\b\d+ (passed|failed|errors?)\b")
+_RC = re.compile(r"rc=(\d+)")
 
 
 def fast_path() -> bool:
     return os.environ.get(FULL_GATING_ENV, "").strip().lower() not in {"1", "true", "yes"}
 
 
-def fast_risk(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
-    ok, why = risk_job(cfg, root, base, head, suite_timeout_s=FAST_RISK_TIMEOUT_S)
-    if not ok and delivery_leadtime.cause(why) == "env":
-        return True, f"risk suites hit a box defect, not the code (env, does not block): {why}"
+def env_only(why: str) -> bool:
+    """A red that is a box defect, not the code: env-classed, no test result, not rc 1, no hang."""
+    rc = _RC.search(why or "")
+    return (delivery_leadtime.cause(why) == "env" and not _RESULT_LINE.search(why or "")
+            and "+++ Timeout +++" not in (why or "") and not (rc and rc.group(1) == "1"))
+
+
+def _fast(ok: bool, why: str) -> tuple[bool, str]:
+    if not ok and env_only(why):
+        return True, f"a box defect, not the code (env, does not block): {why}"
     return ok, why
+
+
+def fast_risk(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
+    return _fast(*risk_job(cfg, root, base, head, suite_timeout_s=FAST_TIMEOUT_S))
+
+
+def fast_replay(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tuple[bool, str]:
+    return _fast(*replay_job(cfg, base, head, changed, timeout_s=FAST_TIMEOUT_S))
 
 
 def pr_tick(cfg: Config) -> str:
@@ -476,7 +497,11 @@ def pr_tick(cfg: Config) -> str:
             if fast_path():
                 rok, rwhy = fast_risk(cfg, root, base, head)
                 post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", (RISK_CONTEXT,))
-                return f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}"
+                sok, swhy = fast_replay(cfg, base, head, changed)
+                post(cfg, head, "success" if sok else "failure", f"box: {swhy}",
+                     (REPLAY_CONTEXT,))
+                return (f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}; "
+                        f"replay {'ok' if sok else 'FAIL'}")
             sel = impacted.select(root, changed)
             if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
                 why = "box CI: documents and images only (fast lane)"
