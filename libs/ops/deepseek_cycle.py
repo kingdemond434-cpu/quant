@@ -37,6 +37,7 @@ engine as every other candidate, with no shortcut and no parallel registry.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 from dataclasses import dataclass, field
@@ -675,7 +676,7 @@ def _alt_slice(root: Path) -> tuple[Any, Any, str]:
         for p in (str(desk), str(desk / "research")):
             if p not in _sys.path:
                 _sys.path.insert(0, p)
-        from research import alt_catalog as ac  # type: ignore[import-not-found]
+        ac = importlib.import_module("research.alt_catalog")  # desks/mt5 on sys.path
         cat = ac.catalog(desk / "data" / "lake" / "series")
         return ac, cat, ac.prompt_block("deepseek", cat=cat)
     except Exception:  # blind-except intentional (BLE001): a slice never costs the cycle
@@ -691,7 +692,7 @@ def _data_discovery(root: Path) -> tuple[Any, list[str], set[str]]:
         for p in (str(desk), str(desk / "research")):
             if p not in _sys.path:
                 _sys.path.insert(0, p)
-        from research import data_discovery as dd
+        dd = importlib.import_module("research.data_discovery")
         labels, full = dd.known(desk / "data" / "source_rosters" / "keyed_sources.json",
                                 roots=(root / "data" / "intelligence",
                                        desk / "data" / "intelligence"))
@@ -778,7 +779,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
     fb_block = ""
     try:
         if alt_ac is not None:
-            from research import conversion_lanes as _cl
+            _cl = importlib.import_module("research.conversion_lanes")
             fb_block = _cl.feedback_block("deepseek")
     except Exception:  # blind-except intentional (BLE001): feedback never costs the cycle
         fb_block = ""
