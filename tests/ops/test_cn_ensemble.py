@@ -29,7 +29,8 @@ def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
     for p in (GQ, CF, SF):
         assert cn.relay_ruling(p.name) == "ALLOWED"
         assert not cn.seat_for(p, {}, _no_list).lit
-    for p in (HC, AR, YJ):
+    assert cn.relay_ruling(AR.name) == "ALLOWED"   # the ruling stands; the denylist darkens it
+    for p in (HC, YJ):
         assert cn.relay_ruling(p.name) == "ALLOWED"
         s = cn.seat_for(p, {}, _no_list)
         assert not s.lit and p.key_env in s.why          # still dark until the key exists
@@ -38,7 +39,8 @@ def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
 
 
 def test_every_provider_is_dark_without_its_key() -> None:
-    for p in (HC, AR, YJ):
+    assert not cn.seat_for(AR, {}, _no_list).lit                 # denied outright
+    for p in (HC, YJ):
         s = cn.seat_for(p, {}, _no_list)
         assert not s.lit and s.key == "" and p.key_env in s.why
 
