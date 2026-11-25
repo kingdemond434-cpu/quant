@@ -307,7 +307,7 @@ def test_a_short_panel_refuses_rather_than_reporting_noise(tmp_path, monkeypatch
 def test_cli_dry_run_writes_nothing(tmp_path, monkeypatch, capsys):
     out = tmp_path / "CAUSAL_LAB.json"
     monkeypatch.setattr(cl, "OUT", out)
-    assert cl.main(["--dry-run", "--symbols", "NOSUCHSYM", "--days", "50"]) == 0
+    assert cl.main(["--dry-run", "--no-global", "--symbols", "NOSUCHSYM", "--days", "50"]) == 0
     assert not out.exists(), "--dry-run wrote the artifact"
     printed = capsys.readouterr().out
     assert "UNMEASURED" in printed and "nothing written" in printed
@@ -316,7 +316,7 @@ def test_cli_dry_run_writes_nothing(tmp_path, monkeypatch, capsys):
 def test_cli_writes_the_artifact_atomically(tmp_path, monkeypatch, capsys):
     out = tmp_path / "reports" / "CAUSAL_LAB.json"
     monkeypatch.setattr(cl, "OUT", out)
-    assert cl.main(["--symbols", "NOSUCHSYM", "--days", "50"]) == 0
+    assert cl.main(["--no-global", "--symbols", "NOSUCHSYM", "--days", "50"]) == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["status"] == "UNMEASURED" and doc["rule"] == cl.RULE
     assert not list(out.parent.glob("*.tmp")), "the temp file survived the write"
