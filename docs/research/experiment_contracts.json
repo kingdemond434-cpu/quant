@@ -356,6 +356,21 @@
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
   },
+  "judge_reach": {
+   "hypothesis": "Naming every producer whose rows are emitted but never judged, or judged only as prose or family defaults, and paging it to Claude, raises the share of producers whose own executable rules actually reach the judge, without changing a gate, a trial count or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.n_reaching",
+    "better": "up",
+    "organ": "report:JUDGE_REACH.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_reaching",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: no producer reads REACHING, so the guardian names leaks nobody closes and its pages bought nothing"
+   }
+  },
   "producer_loop": {
    "hypothesis": "Naming the funnel stage where each producer dies and applying the fixed remedy for that stage -- charged to the lifetime trial count, judged held-out, reverted when worse -- while steering judge order by independent forward-kept edges per CPU-hour, raises the desk's independent certified edges without raising its false-discovery charge beyond the trials it records.",
    "metric": {

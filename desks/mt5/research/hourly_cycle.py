@@ -1213,6 +1213,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE PRODUCER LOOP (LOOP_COVERAGE L1, 2026-11-25): dead detection, funnel and weights every
     # pass from artifacts; its registry + verdict-ledger diagnosis recomputes itself only daily.
     "producer_loop",
+    # JUDGE REACH (2026-11-25): every producer whose rows are emitted but never judged, or judged
+    # only as prose/defaults, named and paged to Claude. Artifact reads + two registry queries.
+    "judge_reach",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
     # and dead-replacement RED checks, and the weights the free panel spends its calls by.
@@ -1566,6 +1569,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # THE PRODUCER LOOP: every producer's funnel, the stage it dies at, the
                      # fixed remedy and its two-sided compute weight -- measurement, so meta.
                      "producer_loop",
+                     # JUDGE REACH: every producer's emitted > received > judged and whether its
+                     # judged rows carried its own rule -- the machine auditing itself, so meta.
+                     "judge_reach",
                      # THE ALL-PRODUCER BREADTH CONTROLLER (rules-compliance row 13): every
                      # producer's docket share, class/exotic split, saturation and frontier,
                      # and the advisory steer producers read -- measurement, so meta.
@@ -2578,6 +2584,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE PRODUCER LOOP: artifact reads every pass (seconds); once a day its diagnosis streams the
     # verdict ledger under its own deadline (85% of QUANT_LEG_BUDGET_S), so the cap sits above it.
     "producer_loop": 480,
+    # JUDGE REACH: one grouped registry query and a bounded judged-row sample under its own
+    # deadline (85% of QUANT_LEG_BUDGET_S); the cap sits above it.
+    "judge_reach": 360,
     # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
     # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
     # cap sits above so both of its files are written rather than cut. A priced-down cap reaches
@@ -6963,6 +6972,12 @@ def main() -> None:
     # merge_hypotheses). Attempts are charged to the lifetime trial ledger; no model call.
     plp = _costed("producer_loop", lambda: _producer(
         "producer_loop", "research/producer_loop.py"))
+    # JUDGE REACH (principal 2026-11-25: "everything must always reach judge if it's meant to").
+    # Built on the loop's funnel just written: per producer emitted > received > judged with
+    # every loss named, and the judged rows sampled for an executable rule (PROSE_ONLY /
+    # DEFAULTS_ONLY). A producer LEAKING or not genuine pages Claude through the event log.
+    jrc = _costed("judge_reach", lambda: _producer(
+        "judge_reach", "research/judge_reach.py"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -7212,6 +7227,7 @@ def main() -> None:
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "producer_loop": plp,
+                    "judge_reach": jrc,
                     "breadth_controller": bcl,
                     "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
