@@ -159,5 +159,5 @@ def test_local_disk_guard_writes_nothing(tmp_path: Path) -> None:
     cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "PW"}))
     calls: list[list[str]] = []
     d = ob.run(config=cfg, out=tmp_path / "o.json", sources=(str(tmp_path),), restic="r",
-               runner=lambda c, e: calls.append(c), disk_used=lambda p: 91.0)
+               runner=lambda c, e: calls.append(c), disk_used=lambda p, add: 91.0)
     assert d["status"] == "FAIL" and d["why"].startswith("disk guard") and calls == []

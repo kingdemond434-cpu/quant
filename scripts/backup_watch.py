@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the backup watch once (libs/ops/backup_watch.py); MT5-Guardian calls it every 15 min.
 
-    python scripts/output_watch.py --once     # writes desks/mt5/reports/BACKUP_WATCH.json
+    python scripts/backup_watch.py --once     # writes desks/mt5/reports/BACKUP_WATCH.json
 """
 from __future__ import annotations
 
