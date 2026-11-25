@@ -162,6 +162,23 @@ def _halt_age_h(now: datetime) -> tuple[float | None, str]:
     return float(hours) + max(0.0, at_age or 0.0), str(halt.get("basis") or "gateway log")
 
 
+def _updated_age_h(p: Path, now: datetime) -> float | None:
+    """Age of a JSON artifact by its OWN `updated` stamp -- never by file mtime.
+
+    A git checkout, an adoption or a copy rewrites mtime, so a file frozen for six weeks read as
+    minutes old to this fence (macro_state.json, measured 2026-10-21: `updated` 2026-09-12 while
+    the checkout's mtime was current). An absent, non-object or unparseable `updated` is None,
+    which the caller reports as a breach: an age that cannot be proved is never a pass.
+    """
+    doc = _read(p)
+    if not isinstance(doc, dict):
+        return None
+    raw = doc.get("updated")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    return _age_h(raw.strip().replace("Z", "+00:00"), now)
+
+
 def _docket_projection(now: datetime) -> tuple[int | None, float | None, float | None]:
     """Remote docket count, producer age and projection age without opening the row bank."""
     state = _read(ROOT / "web" / "desk_state.json") or {}
@@ -369,7 +386,10 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             ("DATA-COT", ROOT / "data" / "cot_zcache.parquet", 8 * 24.0),
             ("DATA-EVENTS", DESK / "data" / "intelligence" / "ff_calendar_vintage", 26.0)):
         try:
-            if path.is_dir():
+            if label == "DATA-MACRO":
+                # Judged by the file's own `updated` stamp, not mtime (2026-10-21).
+                f_age = _updated_age_h(path, now)
+            elif path.is_dir():
                 newest = max((f.stat().st_mtime for f in path.iterdir()), default=None)
                 f_age = ((now.timestamp() - newest) / 3600.0) if newest else None
             else:
@@ -379,8 +399,10 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         m[label.lower().replace("-", "_") + "_age_h"] = (round(f_age, 2)
                                                           if f_age is not None else None)
         if f_age is None or f_age > max_h:
+            what = ("missing or without a parseable `updated` stamp"
+                    if label == "DATA-MACRO" else "missing")
             breaches.append(f"{label}: {path.name} is "
-                            f"{'missing' if f_age is None else str(round(f_age, 1)) + 'h old'} "
+                            f"{what if f_age is None else str(round(f_age, 1)) + 'h old'} "
                             f"(ceiling {max_h:.0f}h) -- the families reading it are starving "
                             f"while the staleness reads as quiet ground")
 

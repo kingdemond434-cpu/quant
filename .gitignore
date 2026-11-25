@@ -460,6 +460,9 @@ desks/mt5/data/free_data_cache/
 # keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
 # the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
 desks/mt5/data/keyed_sources/
+# macro_desk's publisher cache and host hard-stop file (2026-11-17): raw publisher series and run
+# state stay on the box; data/macro_state.json is the record of what was read.
+desks/mt5/data/macro_sources/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/
@@ -548,6 +551,10 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+# macro_desk's state, published by $reportPaths beside cross_asset_anchors.pkl. Not ignored by
+# any rule above today; allowlisted anyway so a future broad `desks/mt5/data/*` rule cannot
+# silently stop it again (tests/scripts/test_box_sync_publishes_macro_state.py pins it).
+!desks/mt5/data/macro_state.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
