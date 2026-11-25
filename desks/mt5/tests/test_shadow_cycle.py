@@ -280,3 +280,56 @@ def test_census_writes_survive_a_windows_sharing_violation(
     assert json.loads(state.read_text())["XAUUSD.asia"]["forward_start"]
     assert json.loads(health_path.read_text())["status"] == health["status"]
     assert not list(reports.glob(".*.tmp"))
+
+
+def test_exotic_and_banned_family_certificates_are_named_exclusions_not_missing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A certificate the desk may not clock is not a missing clock (2026-11-25, I1).
+
+    Before this, banned exotics counted as missing and ENROLMENT_GAP (exit 3) could never clear.
+    The exclusion is counted and reasoned on the health row; the owed count is what remains."""
+    import external_shadow
+    import family_policy
+    import gate_policy
+    import promoter
+    import qquant_shadow
+    import scalp_shadow
+    import shadow_forward
+
+    for module in (external_shadow, shadow_forward, scalp_shadow, qquant_shadow, promoter):
+        monkeypatch.setattr(module, "main", lambda: None)
+    monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
+    monkeypatch.setattr(family_policy, "family_banned", lambda fam: fam == "discovered")
+    reports = tmp_path / "reports" / "shadow"
+    reports.mkdir(parents=True)
+    gates = {name: {"passed": True} for name in gate_policy.GATES}
+
+    def cert(sym: str, fam: str) -> dict:
+        return {"gates": gates, "shadow_spec": {"symbol": sym, "family": fam,
+                                                "selector": "asia", "params": {}}}
+    (reports.parent / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps({
+        "gate_policy": gate_policy.ATTESTATION,
+        "survivors": {"external.EURUSD.carry": cert("EURUSD", "carry"),
+                      "external.EURZAR.carry": cert("EURZAR", "carry"),
+                      "external.USDNOK.carry": cert("USDNOK", "carry"),
+                      "external.AUDUSD.discovered": cert("AUDUSD", "discovered")}}))
+    (reports / "shadow_state.json").write_text(json.dumps({
+        "EURUSD.carry.asia": {"n": 3, "status": "ACTIVE",
+                              "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS"},
+        "EURZAR.carry.asia": {"n": 3, "status": "ACTIVE",
+                              "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS"}}))
+    (reports / "scalp_shadow_state.json").write_text(json.dumps({"sleeves": {}}))
+    (reports / "qquant_shadow_state.json").write_text(json.dumps({}))
+    (reports / "CLOCK_FRESHNESS.json").write_text(json.dumps(
+        {"summary": {"n_clocks": 1, "pass_complete": True}}))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    monkeypatch.setattr(shadow_cycle, "OUT", reports / "health.json")
+    health, rc = shadow_cycle.run()
+    assert health["certified_canon_total"] == 4
+    assert health["certified_sleeves_total"] == 1, "only EURUSD carry is owed a clock"
+    assert health["certified_excluded"]["exotic"]["n"] == 2
+    assert health["certified_excluded"]["banned_family"]["n"] == 1
+    assert "exotic" in health["certified_excluded"]["exotic"]["why"]
+    assert health["missing_sleeves"] == [], "an excluded certificate was reported missing"
+    assert health["status"] != "ENROLMENT_GAP" and rc != 3
+    assert health["clock_rotation"] == {"n_clocks": 1, "pass_complete": True}
