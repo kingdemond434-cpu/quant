@@ -159,9 +159,12 @@ def test_a_SUCCESSFUL_call_is_available_and_carries_the_model(monkeypatch,
     monkeypatch.setattr(SF, "_LEDGER", tmp_path / "log.json")
     import scripts.run_strategic_director as RSD
     monkeypatch.setattr(RSD, "_ask", lambda p, m, timeout=0: ("MISSED: the bybit clock", ""))
+    import libs.ops.openrouter_free as ORF
+    monkeypatch.setattr(ORF, "free_models", lambda key="", **k: (["openai/oss:free"], "test"))
     op = SF.ask_second_family("prompt", context="sweep")
     assert op.available is True
-    assert op.text.startswith("MISSED:") and op.model == RSD.MODEL
+    # the partner is the FREE id actually called, never the paid pin the guard refuses
+    assert op.text.startswith("MISSED:") and op.model == "openai/oss:free" != RSD.MODEL
     assert SF.merge_verdict("own findings", op)["verdict"] == "CONFIRMED"
 
 

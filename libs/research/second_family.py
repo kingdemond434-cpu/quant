@@ -53,9 +53,30 @@ class SecondOpinion:
                 "at": self.at, "reason": self.reason, "chars": len(self.text)}
 
 
+#: Vendor prefixes tried first for the FREE partner, in order. The partner exists to be ANOTHER
+#: family, so a vendor list rather than one pinned id: the free catalogue rotates weekly.
+PARTNER_VENDORS = ("openai/", "google/", "meta-llama/", "mistralai/", "qwen/", "deepseek/")
+
+
+def partner_model(pinned: str, free_ids: list[str]) -> str | None:
+    """The partner id actually callable for free. The director's pinned MODEL is a PAID id
+    (openai/gpt-5.6-sol-pro), which openrouter_guard refuses by design (free data, no paid APIs),
+    so every consult on the box came back SOLO with PaidModelRefused (Autonomy read, 2026-11-25):
+    the cross-family check never ran once. A pinned id that is already ':free' is kept; otherwise
+    the first free id from the preferred vendors, else the first free id; None if there is none."""
+    if pinned.endswith(":free"):
+        return pinned
+    for vendor in PARTNER_VENDORS:
+        for mid in free_ids:
+            if mid.startswith(vendor):
+                return mid
+    return free_ids[0] if free_ids else None
+
+
 def ask_second_family(prompt: str, *, context: str, timeout: float = 300.0) -> SecondOpinion:
-    """Ask the GPT-9 seat. NEVER raises and never blocks an organ: a dead partner degrades the
-    run to single-family with a stated reason, which the caller must record."""
+    """Ask the partner family on a FREE model. NEVER raises and never blocks an organ: a dead
+    partner degrades the run to single-family with a stated reason, which the caller must
+    record."""
     try:
         import sys
         if str(_ROOT) not in sys.path:
@@ -63,10 +84,21 @@ def ask_second_family(prompt: str, *, context: str, timeout: float = 300.0) -> S
         from scripts.run_strategic_director import MODEL, _ask
     except Exception as exc:
         return SecondOpinion(False, reason=f"second family unimportable: {exc}", context=context)
-    text, err = _ask(prompt, MODEL, timeout=timeout)
-    op = (SecondOpinion(False, reason=err or "empty response", model=MODEL, context=context)
+    try:
+        from libs.ops.openrouter_free import free_models
+        free_ids, _basis = free_models("")
+    except Exception:
+        free_ids = []
+    model = partner_model(MODEL, list(free_ids))
+    if model is None:
+        op = SecondOpinion(False, reason=f"no free partner model (pinned {MODEL} is paid)",
+                           context=context)
+        _log(op)
+        return op
+    text, err = _ask(prompt, model, timeout=timeout)
+    op = (SecondOpinion(False, reason=err or "empty response", model=model, context=context)
           if (err or not text.strip())
-          else SecondOpinion(True, text=text, model=MODEL, context=context))
+          else SecondOpinion(True, text=text, model=model, context=context))
     _log(op)
     return op
 
