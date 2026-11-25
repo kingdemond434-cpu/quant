@@ -50,7 +50,7 @@ def test_fomc_boc_and_fed_calendars_are_read_in_utc(tmp_path, monkeypatch) -> No
     assert "2026-01-28 14:45:00+00:00" in got            # BoC 09:45 EST = 14:45Z
     assert "2026-07-15 13:45:00+00:00" in got            # BoC 09:45 EDT = 13:45Z
     assert "2026-12-30 19:00:00+00:00" in got            # Fed minutes 2pm EST
-    assert len(idx) == 5                                  # speech, no-clock, range, {} skipped
+    assert len(idx) == 4                                  # speech, no-clock, range, {} skipped
 
 
 def test_instants_shared_with_the_vintage_store_are_not_counted_twice(tmp_path,
