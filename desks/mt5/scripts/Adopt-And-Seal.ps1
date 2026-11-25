@@ -375,6 +375,40 @@ function Invoke-StateApply {
     $st = Invoke-AdoptGuard @("state-apply")
     if ($st.Code -ne 0 -and $st.Code -ne 10) { Log "box-state apply: $($st.Decision) -- $($st.Why)" | Out-Host }
 }
+# TASKS THE MANIFEST DECLARES REGISTER THEMSELVES (principal 2026-11-25 11:53Z: nothing on the box ever waits on his
+# paste again). The box Claude's classifier refuses to register tasks, so MT5-Guardian -- the task
+# that ends hung producers -- was built and never ran. Every box_tasks.manifest row whose installer
+# OPTS IN with `[switch]$IfMissing` is registered here when missing; scripts\check_box_tasks.py
+# --ensure-list is the one rule (tests/scripts/test_box_task_self_registration.py pins it). The
+# list in step 1b stays as the floor if the checker cannot run. Best-effort, never stops the seal.
+# A HELD box (no new release to adopt) calls this too, from the sealed tree it is already on: a
+# hold that lasts days must not leave a declared task unregistered for days.
+function Invoke-EnsureManifestTasks {
+    $ensured = @{}
+    try {
+        $checker = Join-Path $RepoRoot "scripts\check_box_tasks.py"
+        $ensureList = @(& $py @pyArgs $checker --ensure-list 2>$null | ForEach-Object { "$_" })
+        if ($LASTEXITCODE -ne 0) { Log "ensure-task: check_box_tasks --ensure-list exit $LASTEXITCODE" }
+    } catch { $ensureList = @(); Log ("ensure-task: manifest list failed: {0}" -f $_.Exception.Message) }
+    foreach ($line in $ensureList) {
+        $parts = $line.Split("`t")
+        if ($parts.Count -ne 2 -or $parts[1].Contains("..")) { continue }
+        $task = $parts[0]; $rel = $parts[1]
+        if (Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue) { continue }
+        $installer = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if ($ensured.ContainsKey($installer)) { continue }
+        if (-not (Test-Path $installer)) { Log "ensure-task: $task missing and $installer absent"; continue }
+        $ensured[$installer] = $true
+        try {
+            $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
+                     ForEach-Object { "$_" })
+            $now = [bool](Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue)
+            Log ("ensure-task: {0} was missing; installer exit {1}; registered now={2}: {3}" -f $task, $LASTEXITCODE, $now, ($out -join ' | '))
+        } catch {
+            Log ("ensure-task: {0} registration failed: {1}" -f $task, $_.Exception.Message)
+        }
+    }
+}
 if (-not (Test-Path $script:GuardScript)) {
     Log "adopt guard absent in this tree (scripts\adopt_guard.py); keeping the running release"
     Done 8 "adopt-guard-absent"
@@ -433,6 +467,7 @@ if (Test-Path $gateScript) {
             $n = @($gate.unreleased_code).Count
             Log ("holding: {0} unreleased code path(s) on the tip, first: {1}" -f $n,
                  ((@($gate.unreleased_code) | Select-Object -First 6) -join ', '))
+            Invoke-EnsureManifestTasks
             Done 0 "held-awaiting-release"
         }
         if ($gate.decision -notin @("ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
@@ -491,6 +526,7 @@ if ($pre.Code -eq 10) {
     foreach ($p in @($pre.Doc.uncovered) + @($pre.Doc.rolled_back) | Where-Object { $_ } | Select-Object -First 12) {
         Log "    $p"
     }
+    Invoke-EnsureManifestTasks
     Done 0 $held
 }
 if ($pre.Code -ne 0) { Done 8 "adopt-guard-error" }
@@ -636,6 +672,9 @@ foreach ($ensure in @(
         Log ("ensure-task: {0} registration failed: {1}" -f $ensure.Task, $_.Exception.Message)
     }
 }
+
+# THE MANIFEST'S SELF-REGISTERING TASKS (Invoke-EnsureManifestTasks, defined with the helpers above).
+Invoke-EnsureManifestTasks
 
 # ------------------------------------------- 1c. RETIRED TASKS WHOSE SCRIPT IS GONE: DISABLE
 # MT5-DeepenUniverse was retired 2026-09-30 and its wrapper removed, but the box kept the task and

@@ -12,13 +12,20 @@
          release/sign/forge chain and the bridge are never re-run or ended (board_rerunnable).
     Revert: Disable-ScheduledTask -TaskName MT5-Guardian (the hourly self-heal leg keeps running).
 
-        powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_guardian_task.ps1
+        powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_guardian_task.ps1 [-IfMissing]
 #>
 [CmdletBinding()]
-param([string] $RepoRoot = "C:\opt\quant")
+# -IfMissing: register only when the task does not exist, and touch nothing otherwise. This is the
+# form Adopt-And-Seal calls on every adoption (step 1b), so the guardian appears on the box by itself
+# and nobody ever pastes this installer (principal 2026-11-25 11:53Z).
+param([string] $RepoRoot = "C:\opt\quant", [switch]$IfMissing)
 $ErrorActionPreference = "Stop"
 
 $TaskName = "MT5-Guardian"
+if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+    "{0}: already registered; nothing to do" -f $TaskName
+    exit 0
+}
 $cmd = Join-Path $RepoRoot "ops\run_guardian.cmd"
 if (-not (Test-Path $cmd)) { throw "run_guardian.cmd missing at $cmd" }
 
