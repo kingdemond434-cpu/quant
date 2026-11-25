@@ -72,6 +72,8 @@ OUT = DESK / "reports" / "PHYSICS_LAB.json"
 MEMORY_DIR = I.MEMORY_DIR
 METHODS = DATA / "mathlab" / "method_allocation.json"
 DONATED = DATA / "physics_lab_donated.json"
+#: Registry entries this lab's deadline left unwritten, written first next pass (beside DONATED).
+REGISTRY_PENDING_NAME = "physics_lab_registry_pending.json"
 SOURCE = "physics_lab"
 SEED = 20260922
 CIVILIZATIONS: dict[str, int] = {"A": SEED + 101, "B": SEED + 202}
@@ -205,11 +207,16 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         maths: list[str] | None = None) -> dict[str, Any]:
     """One pass of the institution. Returns the report it also writes."""
     started = time.monotonic()
+    # THE PASS STOPS ITSELF INSIDE ITS LEG CAP (2026-11-25, see math_lab.LEG_MARGIN_S): killed at
+    # 700 s with 0 of 1 artifacts on both 11-25 passes. Every share below is of this budget.
+    budget_s = ML.effective_budget(budget_s)
     unmeasured: list[str] = []
     previous = _read_json(METHODS) or {}
     pass_index = int(previous.get("pass_index", 0))
     memory = I.TheoremMemory(MEMORY_DIR)
     full_panels, panel_status = ML.build_panels(max_targets)
+    ML.checkpoint(OUT, started, "panels", {"status": "NOT_YET: the pass is past its panels"}, 0,
+                  dry_run)
     unmeasured.extend(panel_status.get("unmeasured") or [])
     workers, memory_status = ML.max_workers()
 
@@ -371,9 +378,13 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
     try:
         from libs.research import proposer_seat as _ps
         _unnamed = [c for c in cards if str(c.mechanism).startswith("uninterpreted")][:12]
-        _names = _ps.names_for("physics_lab",
-                               [{"key": c.card_id, "claim": c.claim[:200],
-                                 "tradition": c.tradition, "target": c.target} for c in _unnamed])
+        _records = [{"key": c.card_id, "claim": c.claim[:200], "tradition": c.tradition,
+                     "target": c.target} for c in _unnamed]
+        # BOUNDED: the ask had no overall deadline and could hold the pass past its cap.
+        _left = min(ML.SEAT_TIMEOUT_S, (started + 0.70 * budget_s - time.monotonic()) / 3.0)
+        _names, _seat_status = ML.bounded(
+            lambda: _ps.names_for("physics_lab", _records, timeout=max(1.0, _left))
+            if _records else {}, _left + 5.0, {})
         for _c in _unnamed:
             _hit = _names.get(_c.card_id)
             if _hit:
@@ -509,6 +520,8 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                 ordering="G.tradeable(expression) is not None -- the formula executor must be "
                          "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
+                                "refusal_classes": ML.refusal_classes(refused),
+                                "offered_rows": len(donation_rows),
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in unique_forward if o.object_id in already]),
                                 "ledger": ledger,
@@ -542,7 +555,9 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                        if not (o.object_id in seen or seen.add(o.object_id))]  # type: ignore[func-returns-value]
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run
                 else ML.record_registry(unique_admitted, per_tradition_registry,
-                                        donated_by_tradition))
+                                        donated_by_tradition,
+                                        deadline=started + budget_s,
+                                        pending_path=Path(DONATED).parent / REGISTRY_PENDING_NAME))
     event = None if dry_run else I.event_row(
         "MATH_CARDS_JUDGED", leg="physics_lab", cards=len(cards),
         forward=sum(1 for c in cards if c.status == "FORWARD"),

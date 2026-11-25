@@ -208,8 +208,20 @@ def test_cost_stress_reads_the_surface_and_names_what_it_cannot(tmp_path, real):
 
 
 def test_translation_to_the_trade_grammar_is_exact_or_refused():
-    assert G.to_alpha_grammar(["curv", "close", 12]) == [
-        "sub", ["delta", "close", 12], ["delay", ["delta", "close", 12], 12]]
+    assert G.to_alpha_grammar(["curv", "close", 12]) == ["delta", ["delta", "close", 12], 12]
+    # the rewrite is the same law, bar for bar, as the lab's own curvature
+    import pandas as pd
+
+    from libs.research import alpha_grammar as ag
+    rng = np.random.default_rng(3)
+    close = 100 + np.cumsum(rng.normal(0, 1, 400))
+    lab = G.evaluate(["curv", "close", 12], {"close": close}, 400)
+    trade = ag.evaluate(G.to_alpha_grammar(["curv", "close", 12]),
+                        {"close": pd.Series(close)}).to_numpy(dtype=float)
+    assert np.allclose(lab, trade, equal_nan=True)
+    # and a curvature over a depth-3 subtree now fits the trade grammar's depth
+    expr, why = G.tradeable(["curv", ["rmin", ["rmin", ["lag", "high", 2], 5], 5], 8])
+    assert expr is not None and why == "", why
     assert G.to_alpha_grammar(["z", "ret", 24]) == ["zscore", "ret", 24]
     assert G.to_alpha_grammar(["gt", "ret", 0.5]) is None
     assert G.to_alpha_grammar(["log", "close"]) is None
