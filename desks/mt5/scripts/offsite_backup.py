@@ -624,7 +624,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         if ok and not remote and git_offsite:
             try:
                 doc["offsite_git"] = offsite_git_leg(exe, listing, prev, now, runner, git_run,
-                                                     roots=have)
+                                                     roots=have, disk_used=disk_used)
             except Exception as exc:   # the off-site leg failing never fails the local snapshot
                 doc["offsite_git"] = {"ok": False, "why": f"{type(exc).__name__}: {exc}"[:300]}
         og = doc.get("offsite_git") or prev.get("offsite_git") or {}
@@ -643,7 +643,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
 
 def offsite_git_leg(exe: str, listing: list[str], prev: dict[str, Any], now: datetime,
                     runner: Any = _run, git_run: Any = None,
-                    roots: list[str] | None = None) -> dict[str, Any]:
+                    roots: list[str] | None = None, disk_used: Any = None) -> dict[str, Any]:
     """Back the off-site tier up into its own restic repository and push it to GitLab."""
     grun = git_run or offsite_git._run
     raw_old = prev.get("offsite_git")
@@ -660,6 +660,13 @@ def offsite_git_leg(exe: str, listing: list[str], prev: dict[str, Any], now: dat
         return rep
     work = Path(local_repo_path()).parent / "offsite-git"
     ship, skipped = offsite_git.select(listing, OFFSITE_PRIORITY)
+    # The work dir holds the repository twice (restic files + git's copy): worst case 2x the tier
+    # (Audit S1, 48bf708e7).
+    used = (disk_used or _disk_used_after)(str(work), 2 * sum(_size(f) for f in ship))
+    if used is not None and used > LOCAL_DISK_MAX_PCT:
+        rep.update(ok=False, why=f"disk guard: the off-site work dir could take its disk to "
+                                 f"{used}% (> {LOCAL_DISK_MAX_PCT}%); nothing written")
+        return rep
     rep.update(files=len(ship), bytes=sum(_size(f) for f in ship), skipped_n=len(skipped),
                offsite_skipped_largest=[[f, b] for f, b in skipped[:20]],
                branch=offsite_git.BRANCH, work=str(work))
@@ -695,6 +702,7 @@ def offsite_git_leg(exe: str, listing: list[str], prev: dict[str, Any], now: dat
     if not rep["ok"]:
         rep["why"] = pushed.get("why")
         rep["key_unregistered"] = bool(pushed.get("key_unregistered"))
+        rep["over_cap"] = bool(pushed.get("over_cap"))
     return rep
 
 

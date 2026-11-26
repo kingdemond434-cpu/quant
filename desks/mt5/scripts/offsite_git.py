@@ -40,7 +40,11 @@ from typing import Any
 DROP_URL = "git@gitlab.com:quant-group9361047/quant.git"
 BRANCH = "box-backup"
 OFFSITE_MAX_FILE = 64 * 1024 * 1024
-OFFSITE_CAP_BYTES = 6 * 1024**3
+OFFSITE_CAP_BYTES = 3 * 1024**3
+#: The MEASURED restic repository (work dir minus .git) may not exceed this: a squash force-pushes
+#: the whole repository in one push (GitLab: 5 GiB per push), and old + new objects plus the drop's
+#: code must stay well under the project's 10 GiB before housekeeping (Audit M1, 48bf708e7).
+REPO_CAP_BYTES = int(3.5 * 1024**3)
 PUSH_BATCH_BYTES = 1024**3
 PACK_SIZE_MB = "32"
 
@@ -86,6 +90,9 @@ def ensure_key(key: Path, pub_out: Path, run: Run = _run) -> tuple[bool, str]:
                  "-f", str(key)], None, None)
         if r.returncode != 0 or not key.exists():
             return False, f"ssh-keygen failed (exit {r.returncode})"
+    ok_acl, acl_why = tighten_acl(key, run)
+    if not ok_acl:
+        return False, f"could not restrict the private key: {acl_why}"
     pub = Path(str(key) + ".pub")
     if not pub.exists():
         return False, "public key missing next to the private key"
@@ -119,8 +126,30 @@ def _git(work: Path, key: Path, known: Path, *args: str) -> list[str]:
             "-C", str(work), *args]
 
 
+def repo_bytes(work: Path) -> int:
+    """Bytes of the restic repository in `work`, excluding git's own copy."""
+    total = 0
+    for dirpath, dirs, files in os.walk(work):
+        dirs[:] = [d for d in dirs if d != ".git"]
+        for f in files:
+            with contextlib.suppress(OSError):
+                total += os.path.getsize(os.path.join(dirpath, f))
+    return total
+
+
+def tighten_acl(key: Path, run: Run = _run) -> tuple[bool, str]:
+    """Windows OpenSSH refuses a private key other accounts can read: SYSTEM and Administrators
+    only, inheritance off (Audit S3). A no-op elsewhere (ssh-keygen already wrote it 0600)."""
+    if os.name != "nt":
+        return True, "posix: 0600 from ssh-keygen"
+    r = run(["icacls", str(key), "/inheritance:r", "/grant:r", "SYSTEM:F",
+             "/grant:r", "Administrators:F"], None, None)
+    return r.returncode == 0, f"icacls exit {r.returncode}"
+
+
 def push_repo(work: Path, key: Path, known: Path, url: str = DROP_URL, branch: str = BRANCH,
-              run: Run = _run, batch: int = PUSH_BATCH_BYTES) -> dict[str, Any]:
+              run: Run = _run, batch: int = PUSH_BATCH_BYTES,
+              cap: int = REPO_CAP_BYTES) -> dict[str, Any]:
     """Commit the restic repository in `work` and push it to `branch`, in batches.
 
     Restic writes packs once and never edits them; prune deletes some. When nothing was deleted
@@ -130,6 +159,11 @@ def push_repo(work: Path, key: Path, known: Path, url: str = DROP_URL, branch: s
     def g(*a: str) -> subprocess.CompletedProcess[str]:
         return run(_git(work, key, known, *a), None, None)
 
+    size = repo_bytes(work)
+    if size > cap:
+        return {"ok": False, "over_cap": True, "repo_bytes": size,
+                "why": f"restic repository is {size / 1024**3:.2f} GiB > cap "
+                       f"{cap / 1024**3:.2f} GiB; nothing pushed (would risk the drop project)"}
     if not (work / ".git").is_dir():
         r = g("init", "-q", "-b", branch)
         if r.returncode != 0:

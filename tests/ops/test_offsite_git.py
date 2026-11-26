@@ -87,3 +87,22 @@ def test_load_or_init_never_replaces(tmp_path: Path) -> None:
     assert d["password"] and og.load_or_init(c)["password"] == d["password"]
     c.write_text("not json")
     assert og.load_or_init(c) == {} and c.read_text() == "not json"
+
+
+def test_over_cap_repo_is_never_pushed(tmp_path: Path) -> None:
+    work = tmp_path / "w"
+    (work / "data").mkdir(parents=True)
+    (work / "data" / "p").write_bytes(b"x" * 2000)
+    (work / ".git").mkdir()
+    (work / ".git" / "big").write_bytes(b"x" * 10_000)    # git's own copy is not counted
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], env: object, cwd: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    assert og.repo_bytes(work) == 2000
+    r = og.push_repo(work, tmp_path / "k", tmp_path / "kh", run=run, cap=1000)
+    assert not r["ok"] and r["over_cap"] and calls == []
+    now = datetime.now(UTC)
+    assert "OFFSITE_OVER_CAP" in bw.judge({"offsite_git": {"over_cap": True}}, now)

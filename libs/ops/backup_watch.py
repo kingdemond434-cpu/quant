@@ -45,6 +45,8 @@ REPAGE_SOFT = timedelta(hours=24)
 SOFT = frozenset({"LOCAL_ONLY", "KEY_NOT_ESCROWED"})
 #: Flags the guardian repairs by starting the job.
 REPAIRABLE = frozenset({"NO_REPORT", "NOT_ARMED", "NO_RESTIC", "FAIL", "STALE"})
+#: OFFSITE_OVER_CAP: the off-site restic repository outgrew its cap; nothing is pushed until the
+#: cap or the off-site tier is changed (page, never repair).
 
 
 def _ts(v: Any) -> datetime | None:
@@ -92,6 +94,9 @@ def judge(doc: dict[str, Any], now: datetime) -> list[str]:
         # the box made its deploy key and published BACKUP_DEPLOY_KEY.pub; GitLab refuses it
         # until it is registered on the drop project with push
         flags.append("OFFSITE_KEY_UNREGISTERED")
+    push = og.get("push") if isinstance(og.get("push"), dict) else {}
+    if og.get("over_cap") or (isinstance(push, dict) and push.get("over_cap")):
+        flags.append("OFFSITE_OVER_CAP")
     if not doc.get("key_escrowed_off_box"):
         flags.append("KEY_NOT_ESCROWED")
     return flags
