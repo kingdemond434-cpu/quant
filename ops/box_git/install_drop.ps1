@@ -46,9 +46,25 @@ $cfg = Get-Content -LiteralPath $cfgPath -Raw | ConvertFrom-Json
 $drop = [pscustomobject]@{ url = $DropUrl; key = $key; checkout = $checkout; branch = $Branch }
 if ($cfg.PSObject.Properties.Name -contains "drop") { $cfg.drop = $drop }
 else { $cfg | Add-Member -NotePropertyName drop -NotePropertyValue $drop }
+# The loop runs as $GateUser and reads loop.json through an EXPLICIT grant (the forge folder's own
+# grant does not inherit). Move-Item of a fresh .part file replaced the file's ACL with the inherited
+# one and dropped that grant: every QuantForge-Loop pass then died reading loop.json (box 11-26
+# 04:07Z). So every explicit grant the old file had is re-granted after the write (icacls, no owner
+# change), the loop's read grant is ensured, and checked.
+$explicit = @((Get-Acl -LiteralPath $cfgPath).Access | Where-Object { -not $_.IsInherited -and $_.AccessControlType -eq 'Allow' })
 $tmp = "$cfgPath.part"
 $cfg | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $tmp -Encoding ascii
 Move-Item -LiteralPath $tmp -Destination $cfgPath -Force
+foreach ($r in $explicit) {
+    $m = [Security.AccessControl.FileSystemRights]::Modify
+    $perm = if (($r.FileSystemRights -band $m) -eq $m) { "M" } else { "R" }
+    & icacls $cfgPath /grant "$($r.IdentityReference):($perm)" | Out-Null
+}
+& icacls $cfgPath /grant "${GateUser}:(R)" | Out-Null
+$canRead = @((Get-Acl -LiteralPath $cfgPath).Access | Where-Object {
+    "$($_.IdentityReference)" -match "(^|\\)$([regex]::Escape($GateUser))$" -and
+    $_.AccessControlType -eq 'Allow' -and ($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Read) })
+if (-not $canRead) { throw "${GateUser} cannot read ${cfgPath} after the write: the loop would not start" }
 
 Write-Output "DROP CONFIGURED url=$DropUrl branch=$Branch"
 Write-Output ("PUBLIC KEY: " + (Get-Content -LiteralPath "$key.pub" -Raw).Trim())
