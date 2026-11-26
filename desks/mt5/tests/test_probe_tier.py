@@ -9,7 +9,6 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-
 import research.probe_tier as pt
 
 NOW = datetime(2026, 11, 27, 1, 0, tzinfo=UTC)
@@ -108,7 +107,7 @@ def test_admits_positive_rows_at_shrink_and_names_refusals() -> None:
 def test_off_marker_lists_nothing_and_demotes_live() -> None:
     shadow = {"EURCHF.carry.asia": clock(30, 6.0)}
     _, state, _ = pt.step(shadow, {}, now=NOW)
-    art, state2, events = pt.step(shadow, state, now=NOW, off=True)
+    art, state2, _ = pt.step(shadow, state, now=NOW, off=True)
     assert art["live"] == {}
     assert state2["rows"]["EURCHF.carry.asia"]["status"] == "DEMOTED"
 
@@ -158,7 +157,7 @@ def _admitted(n: int = 40, cum: float = 12.0) -> tuple[dict, dict]:
 
 
 def test_losing_after_admission_demotes_to_forward_never_retires() -> None:
-    shadow, state = _admitted()
+    _, state = _admitted()
     rec = state["rows"]["EURCHF.carry.asia"]
     later = {"EURCHF.carry.asia": clock(52, 12.0 - 6.0, t=1.0)}
     art, state2, events = pt.step(later, state, now=NOW + timedelta(days=5))
@@ -365,7 +364,7 @@ def test_e8_probe_rows_and_their_size(tmp_path: Path, monkeypatch: pytest.Monkey
     for name in ("OUT", "LEDGER", "STATE", "OFF"):
         monkeypatch.setattr(pt, name, tmp_path / name)
     pt.run({"EURCHF.carry.asia": clock(30, 6.0)}, now=datetime.now(UTC), identities=IDS)
-    rows, why = e8_book.probe_rows()
+    rows, _ = e8_book.probe_rows()
     assert [r["key"] for r in rows] == ["EURCHF.carry.asia"]
     r = rows[0]
     assert r["params"] == {"timeframe": "M15"} and r["probe"]["n"] == 30

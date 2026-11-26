@@ -2478,7 +2478,8 @@ def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: 
         if source == "probe_tier":
             _probe_rail("probe_shrink", f"{key}/{stamp[:10]}", sleeve=key, shrink=shrink,
                         risk_frac=round(PROMOTED_RISK_FRAC - frac, 6),
-                        why=f"probe size {frac:.4%} = {PROMOTED_RISK_FRAC:.2%} x n/(n+50), n={int(n)}")
+                        why=(f"probe size {frac:.4%} = {PROMOTED_RISK_FRAC:.2%} x n/(n+50), "
+                             f"n={int(n)}"))
         probe_fields = {"probe": True, "probe_status": "LIVE", "probe_n": int(n),
                         "probe_shrink": shrink, "probe_admitted_at": pv.get("admitted_at"),
                         "missed_growth_risk_frac": (round(PROMOTED_RISK_FRAC - frac, 6)

@@ -20,22 +20,24 @@ grouped only on MEASURED co-movement -- an identical forward record, or a Pearso
 their daily forward R of at least COMOVE_RHO over at least COMOVE_MIN_OVERLAP common days. The
 group trades once, through its representative (a member already live, else the best forward t).
 
-DEMOTION (`sprt_llr`). A Gaussian sequential probability ratio test on the R the row produced
-SINCE IT WENT LIVE, against its own expectation: H0 mean R = MU0_FRAC x exp_r at admission
-(the row is still earning) vs H1 mean R = 0 (the edge is gone), sigma from the row's own sum of
-squares. The sum is sufficient, so no per-trade replay is needed. LLR >= log((1-beta)/alpha)
-demotes; so does the LOSING leg, a live mean below zero at the same alpha over at least
-LOSING_MIN_N trades, because the SPRT alone is slow on a row that is plainly losing. A demoted row goes back to FORWARD ONLY -- its clock keeps running, nothing is retired
--- and is re-admitted once the R it produced since the demotion accepts H0
-(LLR <= log(beta/(1-alpha)) over at least READMIT_MIN_N trades, or a since-demotion mean above
-zero at the same alpha) AND it is eligible again: the hysteresis.
+DEMOTION (`sprt_llr`, `losing_z`). A Gaussian sequential probability ratio test on the R the row
+produced SINCE IT WENT LIVE, against its own expectation: H0 mean R = MU0_FRAC x exp_r at
+admission (the row is still earning) vs H1 mean R = 0 (the edge is gone), sigma from the row's
+own sum of squares. The sum is sufficient, so no per-trade replay is needed. LLR >=
+log((1-beta)/alpha) demotes; so does the LOSING leg, a live mean below zero at the same alpha over
+at least LOSING_MIN_N trades, because the SPRT alone is slow on a row that is plainly losing.
 
-FALSE AND LATE DEMOTES ARE BILLED (`score_outcomes`, `tune`). Every demote is logged with what
-the row did next. A false demote's cost is the R it made after it was demoted (growth forgone); a
-late demote's cost is the R it lost while live before the test tripped. The tuner moves alpha
-toward whichever side cost less, and T_IN by what admitted rows actually did, inside declared
-ranges, scored in missed growth. That is the Rule-1 proof the demotion owes (GROWTH_GOVERNANCE):
-a risk reduction that keeps costing more than it saves loosens itself.
+A demoted row goes back to FORWARD ONLY -- its clock keeps running, nothing is retired -- and is
+re-admitted once the R it produced since the demotion accepts H0 (LLR <= log(beta/(1-alpha)) over
+at least READMIT_MIN_N trades, or a since-demotion mean above zero at the same alpha) AND it is
+eligible again: that is the hysteresis.
+
+FALSE AND LATE DEMOTES ARE BILLED (`step` scores them, `tune` acts). Every demote is logged with
+what the row did next. A false demote's cost is the R it made after it was demoted (growth
+forgone); a late demote's cost is the R it lost while live before the test tripped. The tuner
+moves alpha toward whichever side cost less, and T_IN by what admitted rows actually did, inside
+declared ranges, scored in missed growth. That is the Rule-1 proof the demotion owes
+(GROWTH_GOVERNANCE): a risk reduction that keeps costing more than it saves loosens itself.
 
 Revert: data/PROBE_TIER_OFF (the artifact then lists nothing live).
 Artifacts: reports/PROBE_TIER.json, reports/probe_ledger.jsonl, data/PROBE_TIER_STATE.json.
@@ -421,14 +423,14 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
             proven = llr_d <= b_bound or (zd is not None and zd >= z_up)
             if dn >= READMIT_MIN_N and proven and verdict.get(key) is None:
                 rec.update(status="READMIT_PENDING")
-        if rec.get("status") == "LIVE" and rec.get("admit_outcome_open"):
-            if _num(rec.get("post_n")) >= OUTCOME_N:
-                out = {"kind": "admit", "key": key, "at": stamp,
-                       "t_at_admit": _num(rec.get("t_at_admit")),
-                       "post_r": _num(rec.get("post_r"))}
-                history.append(out)
-                events.append({"at": stamp, "event": "outcome", **out})
-                rec["admit_outcome_open"] = False
+        if rec.get("status") == "LIVE" and rec.get("admit_outcome_open") \
+                and _num(rec.get("post_n")) >= OUTCOME_N:
+            out = {"kind": "admit", "key": key, "at": stamp,
+                   "t_at_admit": _num(rec.get("t_at_admit")),
+                   "post_r": _num(rec.get("post_r"))}
+            history.append(out)
+            events.append({"at": stamp, "event": "outcome", **out})
+            rec["admit_outcome_open"] = False
         rows_out[key] = rec
 
     # 2. ONE BET PER MEASURED CO-MOVE GROUP, over the rows that are live or may become live.
@@ -519,9 +521,9 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
             refused[head] = refused.get(head, 0) + 1
     artifact = {
         "generated_at": stamp, "off": bool(off),
-        "rule": ("probe = lane ceiling x n/(n+%d); SPRT H0 mean %.2f x exp_r at admission vs "
-                 "H1 mean 0; demote -> forward only; re-admit on H0 accepted since demotion"
-                 % (PROBE_SHRINK_N0, MU0_FRAC)),
+        "rule": (f"probe = lane ceiling x n/(n+{PROBE_SHRINK_N0}); SPRT H0 mean {MU0_FRAC:.2f} "
+                 f"x exp_r at admission vs H1 mean 0, plus the losing leg; demote -> forward "
+                 f"only; re-admit on H0 accepted (or a winning leg) since demotion"),
         "tuning": {**tuning, "beta": BETA, "demote_llr": round(a_bound, 4),
                    "readmit_llr": round(b_bound, 4)},
         "n_live": len(live), "n_demoted": len(demoted), "n_aliases": len(aliases),
