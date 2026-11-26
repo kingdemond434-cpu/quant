@@ -19,6 +19,16 @@ imports it exactly as before; nothing about the gate, the verdict seat or the ho
     before its manifest and verdicts last, each through a temporary name, so the inbox never sees
     half a packet.
   * a failed fetch changes nothing and says why; the next pass tries again.
+
+THE LOCAL DROP (zuck 2026-11-26 15:59Z: "why do we even need GitLab"). Cloud threads with folder
+access to the box write packets into LOCAL_DROP, a plain folder with the drop's own layout. Every
+pass stages its packet files into the drop checkout's working tree (untracked: the checkout's
+`checkout -f` keeps them), so BOTH consumers read them exactly as if GitLab had carried them:
+deliver() below copies root packets and verdicts into the inbox, and the boot mover reads
+forge_reboot/ with every one of its sha256, verdict, HOLD, fast-forward and trust-set checks
+unchanged. Staging runs even when the GitLab fetch fails, so GitLab is an optional second source.
+Only the drop's packet names are staged (wanted() plus forge_reboot boot packets), each under its
+size cap, never a symlink, each through a temporary name.
 """
 from __future__ import annotations
 
@@ -39,6 +49,8 @@ NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,150}")
 MAX_BUNDLE = 200 * 1024 * 1024
 MAX_JSON = 256 * 1024
 LEDGER = "drop_ledger.json"
+LOCAL_DROP = Path(r"C:\opt\bridge\quant\drop_local")
+_BOOT = re.compile(r"boot-[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(bundle|bundle\.sha256|verdict\.json)")
 
 Run = Callable[[Sequence[str]], tuple[int, str]]
 
@@ -82,6 +94,48 @@ def wanted(rel: str) -> int | None:
         if dot and ext == "json" and NAME.fullmatch(stem) and ".." not in stem:
             return MAX_JSON
     return None
+
+
+def wanted_local(rel: str) -> int | None:
+    """wanted() plus the boot mover's packet names under forge_reboot/. Pure."""
+    parts = rel.split("/")
+    if len(parts) == 2 and parts[0] == "forge_reboot" and _BOOT.fullmatch(parts[1]) \
+            and ".." not in parts[1]:
+        return MAX_BUNDLE if parts[1].endswith(".bundle") else MAX_JSON
+    return wanted(rel)
+
+
+def stage_local(local: Path | None, checkout: Path) -> list[str]:
+    """Copy new or changed packet files from the local drop folder into the checkout's tree."""
+    if local is None or not local.is_dir():
+        return []
+    rows: list[str] = []
+    found = [p for p in [*local.glob("*"), *local.glob("verdicts/*"),
+                         *local.glob("forge_reboot/*")]
+             if p.is_file() and not p.is_symlink()]
+    for p in sorted(found, key=lambda q: order(q.relative_to(local).as_posix())):
+        rel = p.relative_to(local).as_posix()
+        cap = wanted_local(rel)
+        if cap is None:
+            continue
+        size = p.stat().st_size
+        if size > cap:
+            rows.append(f"local refused {rel}: {size} bytes over the {cap} cap")
+            continue
+        dest = checkout / rel
+        try:
+            data = p.read_bytes()
+            if dest.is_file() and dest.read_bytes() == data:
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            tmp = dest.with_name(dest.name + ".part")
+            tmp.write_bytes(data)
+            os.replace(tmp, dest)
+        except OSError as exc:  # retried next pass
+            rows.append(f"local stuck {rel}: {type(exc).__name__}: {str(exc)[:200]}")
+            continue
+        rows.append(f"local staged {rel} {hashlib.sha256(data).hexdigest()[:12]}")
+    return rows
 
 
 def order(rel: str) -> tuple[int, str]:
@@ -177,12 +231,15 @@ def deliver(checkout: Path, inbox: Path, ledger_path: Path) -> list[str]:
     return rows
 
 
-def pull(drop: Drop, inbox: Path, state_dir: Path, run: Run = _run) -> str:
+def pull(drop: Drop, inbox: Path, state_dir: Path, run: Run = _run,
+         local: Path | None = LOCAL_DROP) -> str:
     ok, why = fetch(drop, run)
-    if not ok:
+    staged = stage_local(local, drop.checkout) if drop.checkout.is_dir() else []
+    if not ok and not (local is not None and local.is_dir() and drop.checkout.is_dir()):
         return f"drop not pulled ({why}); inbox unchanged"
-    rows = deliver(drop.checkout, inbox, state_dir / LEDGER)
-    return f"drop {why}: " + ("; ".join(rows) if rows else "nothing new")
+    rows = staged + deliver(drop.checkout, inbox, state_dir / LEDGER)
+    head = f"drop {why}" if ok else f"drop not pulled ({why}); local drop only"
+    return f"{head}: " + ("; ".join(rows) if rows else "nothing new")
 
 
 def init_key(key: Path, run: Run = _run) -> str:
