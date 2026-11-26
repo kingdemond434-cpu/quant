@@ -1,56 +1,30 @@
 {
- "at": "2026-11-26T16:40:36+00:00",
- "status": "MEASURED",
+ "at": "2026-11-26T17:41:57+00:00",
+ "status": "UNMEASURED",
+ "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 430,080 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
  "verdicts": {
-  "status": "MEASURED",
-  "rows_total": 1887039,
-  "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-24T10:14:12+00:00",
-  "counts": {
-   "1h": 0,
-   "24h": 0,
-   "7d": 128579,
-   "build_step_lo": 0,
-   "build_step_hi": 0
-  },
-  "count_basis": "changed verdict events; unchanged retests do not append",
-  "first_terminal_counts": {
-   "1h": 0,
-   "24h": 0,
-   "7d": 72122,
-   "build_step_lo": 0,
-   "build_step_hi": 0
-  },
-  "first_terminal_cells": 869551,
-  "first_terminal_per_hour": {
-   "1h": 0.0,
-   "24h": 0.0,
-   "7d": 429.298
-  },
-  "per_hour": {
-   "1h": 0.0,
-   "24h": 0.0,
-   "7d": 765.351
-  }
+  "status": "UNMEASURED",
+  "rows_read": 430080,
+  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 430,080 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 6258,
-   "7d": 117477
+   "24h": 6269,
+   "7d": 117401
   },
   "per_hour": {
-   "24h": 260.75,
-   "7d": 699.268
+   "24h": 261.208,
+   "7d": 698.815
   }
  },
- "verdicts_per_hour": 0.0,
- "verdicts_per_day": 0.0,
+ "verdicts_per_hour": "UNMEASURED",
+ "verdicts_per_day": "UNMEASURED",
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 0.0,
+ "first_judged_per_day": "UNMEASURED",
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 6258.0,
+ "created_per_day": 6269.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +36,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-26T16:40:22+00:00",
-  "pid": 25508
+  "started_at": "2026-11-26T17:41:28+00:00",
+  "pid": 19268
  }
 }
