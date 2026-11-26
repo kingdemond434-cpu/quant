@@ -1,0 +1,1 @@
+{"id": "backup_watch_fresh", "path": "desks/mt5/reports/BACKUP_WATCH.json", "max_age_h": 24, "min_bytes": 50, "json_key": "verdict", "why": "6h pass 11-25 23:05Z: E40 box backup"}
