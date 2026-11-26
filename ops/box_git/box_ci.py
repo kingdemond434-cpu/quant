@@ -131,11 +131,16 @@ def pytest_argv(python: str, tests: Sequence[str] | str, workers: int,
 
 
 def idle_priority_kwargs() -> dict[str, Any]:
-    """subprocess kwargs that start the job at IDLE priority (Windows) or nice 19 (elsewhere)."""
+    """subprocess kwargs that start a CI job at BELOW-NORMAL priority (Windows) or nice 10.
+
+    Not IDLE (11-26 01:45Z): on a box whose 18 cores the judge and research keep busy, an IDLE job
+    got ~60 CPU-s in 15 min and the PR checks hit their 1h caps (rc 124), so no Audit CLEAR could
+    reach LIVE. Below-normal still yields to everything at normal priority (MT5, the gateway,
+    the money path) and runs ahead of nothing that trades."""
     if os.name == "nt":
         import subprocess
-        return {"creationflags": getattr(subprocess, "IDLE_PRIORITY_CLASS", 0x40)}
-    return {"preexec_fn": lambda: os.nice(19)}
+        return {"creationflags": getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000)}
+    return {"preexec_fn": lambda: os.nice(10)}
 
 
 def prune(work: Path) -> None:
