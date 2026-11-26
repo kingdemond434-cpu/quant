@@ -83,6 +83,14 @@ MAX_PER_PASS = 16
 #: Certificates judged UNMEASURED before their family had a rule, re-judged per pass on top of the
 #: lane's share; each is one bar file and one rebuild, about a second.
 PENDING_PER_PASS = 64
+#: THE FORWARD SLOT RANKER'S PRIORITY (2026-11-25, DSR charge probe 4c). Replication is the
+#: bottleneck in front of the forward clocks (16 a pass against ~13k certificates), so the
+#: certificates the ranker scores most likely real are judged first. At most this many a pass,
+#: so `pending` keeps the other half of the lane's share; a list older than the age bound is
+#: ignored and the pass says so.
+RANKER_REPORT = DESK / "reports" / "FORWARD_SLOT_RANKER.json"
+RANKER_PRIORITY_PER_PASS = max(1, MAX_PER_PASS // 4)
+RANKER_PRIORITY_MAX_AGE_S = 6 * 3600.0
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -1892,7 +1900,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
           ledger_loader: Callable[[str, Mapping[str, Any]], list[dict[str, Any]]] = ledger_for,
           cursor_path: Path = CURSOR, quarantine_path: Path = QUARANTINE,
           report: Path = REPORT, max_per_pass: int = MAX_PER_PASS,
-          priority_certificates: Sequence[str] = ()) -> dict[str, Any]:
+          priority_certificates: Sequence[str] = (),
+          priority_from_ranker: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     deadline = t0 + max(1.0, float(budget_s))
     meta_all = dict(universe_meta) if universe_meta is not None else (
@@ -1945,6 +1954,12 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                             != certificate_fp(r)]
     no_rule = [i for i in no_rule if i not in set(pending)]
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
+    ranker_block: dict[str, Any] = {"used": False}
+    if not priority_certificates and priority_from_ranker is not None:
+        ranked, ranker_block = ranker_priority(priority_from_ranker, certs, book)
+        priority_certificates = ranked
+        if ranker_block.get("why"):
+            notes.append(f"ranker priority: {ranker_block['why']}")
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
     # THE NO-RULE BACKLOG IS NOT HELD TO THE ROTATION'S SHARE: a held certificate cannot start a
@@ -2011,10 +2026,63 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
+    doc["ranker_priority"] = ranker_block
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
                            "judged_first_this_pass": min(len(first), lane_n),
                            "pending": len(pending), "no_rule_backlog": len(no_rule)}
     return doc
+
+
+def _judged_current(row: Mapping[str, Any], entry: Mapping[str, Any]) -> bool:
+    """The book already holds a verdict on this certificate under its current spec fingerprint,
+    rule fingerprint and Sharpe metric: judging it again would only repeat the verdict."""
+    fam = str((row.get("shadow_spec") or {}).get("family") or "")
+    return bool(entry) and entry.get("fp") == certificate_fp(row) and (
+        entry.get("sharpe_metric_version") == SHARPE_METRIC_VERSION) and (
+        fam not in SPEC_BOOK or entry.get("rule_fp") == rule_fingerprint(fam))
+
+
+def ranker_priority(path: Path, certs: Sequence[Mapping[str, Any]],
+                    book: Mapping[str, Any], now: datetime | None = None
+                    ) -> tuple[list[str], dict[str, Any]]:
+    """The forward slot ranker's `replication_priority`, filtered to certificates this pass can
+    still learn something about, capped at `RANKER_PRIORITY_PER_PASS`. Never raises: an absent,
+    stale or unreadable list leaves the pass's order exactly as it was, and says why."""
+    doc = _read_json(path, None)
+    block = doc.get("replication_priority") if isinstance(doc, dict) else None
+    if not isinstance(block, dict) or not isinstance(block.get("certificates"), list):
+        return [], {"used": False, "source": str(path),
+                    "why": "no replication_priority in the ranker's artifact"}
+    try:
+        at = datetime.fromisoformat(str(block.get("at") or ""))
+        at = at if at.tzinfo else at.replace(tzinfo=UTC)
+        age = ((now or datetime.now(UTC)) - at).total_seconds()
+    except ValueError:
+        age = None
+    if age is None or age > RANKER_PRIORITY_MAX_AGE_S:
+        how_old = "undated" if age is None else f"{age / 3600:.1f} h old"
+        return [], {"used": False, "source": str(path),
+                    "why": (f"ranker list is {how_old} (limit "
+                            f"{RANKER_PRIORITY_MAX_AGE_S / 3600:.0f} h): not used")}
+    rows = {certificate_id(r): r for r in certs}
+    chosen: list[str] = []
+    skipped_judged = skipped_unknown = 0
+    for cid in (str(c) for c in block["certificates"]):
+        row = rows.get(cid)
+        if row is None:
+            skipped_unknown += 1
+            continue
+        if _judged_current(row, book.get(cid) or {}):
+            skipped_judged += 1
+            continue
+        chosen.append(cid)
+        if len(chosen) >= RANKER_PRIORITY_PER_PASS:
+            break
+    return chosen, {"used": bool(chosen), "source": str(path), "chosen": chosen,
+                    "listed": len(block["certificates"]),
+                    "skipped_already_judged": skipped_judged,
+                    "skipped_not_in_population": skipped_unknown,
+                    "per_pass": RANKER_PRIORITY_PER_PASS}
 
 
 def render(doc: Mapping[str, Any]) -> list[str]:
@@ -2042,7 +2110,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="judge an exact certificate first in this bounded pass")
     a = ap.parse_args(argv)
     doc = build(budget_s=a.budget_s, dry_run=a.dry_run, max_per_pass=a.max_per_pass,
-                priority_certificates=a.priority_certificate)
+                priority_certificates=a.priority_certificate,
+                priority_from_ranker=RANKER_REPORT)
     for line in render(doc):
         print(line)
     if a.dry_run:
