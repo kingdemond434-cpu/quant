@@ -2389,9 +2389,11 @@ def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: 
                      regrade: dict | None = None, decision: dict | None = None) -> bool:
     """Write the probe tier's decision onto the roster. Returns True when a row changed.
 
-    Admit: a probe-live key not on the roster joins it; a STANDBY row of that key that the
-    allocator has not refused on the current reading goes LIVE. Demote: a probe row the tier no
-    longer lists live goes STANDBY at 0% (probe_status DEMOTED). RETIRED rows are never touched.
+    Admit: a probe-live key not on the roster joins it, on a FRESH allocator view only: the solve
+    sizes it where it measured it, else PROMOTED_RISK_FRAC x n/(n+50). Only rows this door wrote
+    (probe=True) are ever touched again; a STANDBY probe row coming back owes the restore streak
+    when the allocator sizes it. Demote: a probe row the tier no longer lists live goes STANDBY
+    at 0% (probe_status DEMOTED). RETIRED rows are never touched.
     Every refusal door the main lane applies (cost re-grade, blind review, Tier S, executor) still
     applies here. Never raises: an unavailable tier changes nothing."""
     if decision is None:
@@ -2457,13 +2459,29 @@ def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: 
             continue
         n = float(pv.get("n") or 0)
         shrink = float(pv.get("shrink") or 0.0)
+        cur_status = str((cur or {}).get("status") or "").upper()
+        if cur is not None and not cur.get("probe"):
+            continue          # a roster row the probe did not write is never adopted (Audit MF1)
+        if not view.get("fresh"):
+            # NO FRESH READING, NOTHING ADDED OR RAISED (Audit MF2): rows stand, demotions above
+            # still apply, and the next fresh solve decides.
+            if cur is None or cur_status != "LIVE":
+                plog(f"{key}: probe live, but no fresh dE[log W] reading -- nothing added")
+            continue
+        coming_back = cur is not None and cur_status == "STANDBY"
         cap = capital_verdict(view, key, symbol=meta["symbol"], family=meta["family"],
-                              selector=meta["selector"])
+                              selector=meta["selector"],
+                              streak=int((cur or {}).get("admit_streak") or 0),
+                              # a STANDBY probe row taking capital again owes the same consecutive
+                              # readings any restored row owes (PROMOTE_ADMIT_STREAK)
+                              first_promotion=not coming_back)
+        if cur is not None:
+            cur["admit_streak"] = cap.get("streak", 0)
         if cap["status"] == "STANDBY":
             # THE ALLOCATOR LOOKED AND SAID NO: sovereignty, the probe does not overrule it.
             plog(f"{key}: probe admitted, allocator refuses on the current reading -- "
                  f"{cap.get('why')}")
-            if cur is not None and cur.get("probe") and str(cur.get("status")).upper() == "LIVE":
+            if cur is not None and cur_status == "LIVE":
                 cur.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
                             "admission": cap, "demoted_at": stamp,
                             "demote_reason": cap.get("why")})
@@ -2472,6 +2490,10 @@ def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: 
         if cap["status"] == "LIVE":
             frac, source = float(cap["risk_frac"]), "allocator_marginal"
         else:
+            if coming_back and (cur or {}).get("probe_status") not in ("DEMOTED", "REFUSED"):
+                # held by the ALLOCATOR's last refusal, not by the probe: an unmeasured reading
+                # does not overturn it
+                continue
             frac, source = round(PROMOTED_RISK_FRAC * shrink, 6), "probe_tier"
         if not frac > 0:
             continue
@@ -2485,12 +2507,9 @@ def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: 
                         "missed_growth_risk_frac": (round(PROMOTED_RISK_FRAC - frac, 6)
                                                     if source == "probe_tier" else 0.0)}
         if cur is not None:
-            if str(cur.get("status") or "").upper() == "RETIRED":
-                continue                       # the one-way door stays shut
-            if str(cur.get("status") or "").upper() == "LIVE" and not cur.get("probe"):
-                continue                       # already live on its own certificate
-            if str(cur.get("status") or "").upper() == "LIVE" \
-                    and abs(float(cur.get("risk_frac") or 0.0) - frac) <= 1e-9:
+            if cur_status not in ("LIVE", "STANDBY"):
+                continue                       # RETIRED is the one-way door
+            if cur_status == "LIVE" and abs(float(cur.get("risk_frac") or 0.0) - frac) <= 1e-9:
                 continue
             cur.update({"status": "LIVE", "risk_frac": frac, "risk_frac_source": source,
                         "admission": cap, "restored_at": stamp, **probe_fields})

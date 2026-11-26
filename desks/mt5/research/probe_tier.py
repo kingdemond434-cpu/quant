@@ -84,6 +84,8 @@ TUNE_MIN_OUTCOMES = 3
 TUNE_HISTORY = 60
 #: An artifact older than this is not a probe decision any consumer may act on.
 MAX_AGE_S = 3 * 3600
+#: A forward record older than this admits nothing (the shadow engine runs every 15 minutes).
+SHADOW_MAX_AGE_S = 6 * 3600
 
 LIVE_CLOCK_STATUSES = ("ACTIVE", "PROMOTION CANDIDATE", "PROMOTION_CANDIDATE")
 
@@ -338,8 +340,11 @@ def tune(tuning: Mapping[str, Any], history: Iterable[Mapping[str, Any]]) -> dic
 # ----------------------------------------------------------------------------- the pass
 def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
          identities: Mapping[str, Mapping[str, Any]] | None = None,
-         off: bool = False) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
-    """(artifact, new state, ledger events) for one pass. Pure."""
+         off: bool = False, freeze_admits: str | None = None
+         ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    """(artifact, new state, ledger events) for one pass. Pure. `freeze_admits` (a reason) stops
+    every admission and re-admission while demotions still run: a stale forward record may take
+    risk away, never add it."""
     stamp = now.astimezone(UTC).isoformat(timespec="seconds")
     prev_rows: dict[str, dict[str, Any]] = {
         str(k): dict(v) for k, v in (state.get("rows") or {}).items() if isinstance(v, Mapping)}
@@ -475,6 +480,10 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
             continue
         if rec.get("status") == "DEMOTED":
             continue
+        if freeze_admits:
+            if rec.get("status") == "READMIT_PENDING":
+                rec["status"] = "DEMOTED"
+            continue
         row = clocks[key]
         readmit = rec.get("status") == "READMIT_PENDING"
         n, s = _num(row.get("n")), _num(row.get("cum_r"))
@@ -520,7 +529,7 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
             head = why.split(":")[0].split(" ")[0] if why else ""
             refused[head] = refused.get(head, 0) + 1
     artifact = {
-        "generated_at": stamp, "off": bool(off),
+        "generated_at": stamp, "off": bool(off), "admits_frozen": freeze_admits,
         "rule": (f"probe = lane ceiling x n/(n+{PROBE_SHRINK_N0}); SPRT H0 mean {MU0_FRAC:.2f} "
                  f"x exp_r at admission vs H1 mean 0, plus the losing leg; demote -> forward "
                  f"only; re-admit on H0 accepted (or a winning leg) since demotion"),
@@ -569,8 +578,18 @@ def run(shadow: Mapping[str, Any] | None = None, *, now: datetime | None = None,
         _atomic(OUT, doc)
         return doc
     state = _read_json(STATE)
+    freeze = None
+    try:
+        age_s = now.timestamp() - SHADOW.stat().st_mtime
+        if age_s > SHADOW_MAX_AGE_S:
+            freeze = (f"{SHADOW.name} is {age_s / 3600:.1f}h old "
+                      f"(> {SHADOW_MAX_AGE_S / 3600:.0f}h): no admissions on a stale record; "
+                      f"demotions still run")
+    except OSError:
+        freeze = f"{SHADOW.name} unreadable on disk: no admissions; demotions still run"
     artifact, new_state, events = step(shadow, state if isinstance(state, Mapping) else {},
-                                       now=now, identities=identities, off=OFF.exists())
+                                       now=now, identities=identities, off=OFF.exists(),
+                                       freeze_admits=freeze)
     _atomic(STATE, new_state)
     _atomic(OUT, artifact)
     if events:

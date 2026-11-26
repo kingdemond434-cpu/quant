@@ -256,16 +256,39 @@ def test_tuner_moves_t_in_by_what_marginal_admits_did() -> None:
 # ---------------------------------------------------------------- I/O
 def test_run_writes_artifact_state_and_ledger(tmp_path: Path,
                                               monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("OUT", "LEDGER", "STATE", "OFF"):
+    for name in ("OUT", "LEDGER", "STATE", "OFF", "SHADOW"):
         monkeypatch.setattr(pt, name, tmp_path / name)
-    art = pt.run({"EURCHF.carry.asia": clock(30, 6.0)}, now=NOW)
+    (tmp_path / "SHADOW").write_text("{}")
+    art = pt.run({"EURCHF.carry.asia": clock(30, 6.0)}, now=datetime.now(UTC))
     assert art["n_live"] == 1
     assert json.loads((tmp_path / "STATE").read_text())["rows"]
     assert '"admit"' in (tmp_path / "LEDGER").read_text()
-    live, why = pt.load_live(tmp_path / "OUT", now=NOW + timedelta(hours=1))
+    live, why = pt.load_live(tmp_path / "OUT", now=datetime.now(UTC) + timedelta(hours=1))
     assert list(live) == ["EURCHF.carry.asia"]
-    stale, why = pt.load_live(tmp_path / "OUT", now=NOW + timedelta(hours=4))
+    stale, why = pt.load_live(tmp_path / "OUT", now=datetime.now(UTC) + timedelta(hours=4))
     assert stale == {} and "old" in why
+
+
+def test_a_frozen_record_admits_nothing_but_still_demotes() -> None:
+    shadow = {"EURCHF.carry.asia": clock(30, 6.0)}
+    art, _, _ = pt.step(shadow, {}, now=NOW, freeze_admits="stale")
+    assert art["live"] == {} and art["admits_frozen"] == "stale"
+    _, state = _admitted()
+    art, _, _ = pt.step({"EURCHF.carry.asia": clock(52, 6.0, t=1.0)}, state, now=NOW,
+                        freeze_admits="stale")
+    assert "EURCHF.carry.asia" in art["demoted"]
+
+
+def test_run_freezes_admits_on_a_stale_shadow_file(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+    for name in ("OUT", "LEDGER", "STATE", "OFF", "SHADOW"):
+        monkeypatch.setattr(pt, name, tmp_path / name)
+    (tmp_path / "SHADOW").write_text("{}")
+    old = NOW.timestamp() - 7 * 3600
+    os.utime(tmp_path / "SHADOW", (old, old))
+    art = pt.run({"EURCHF.carry.asia": clock(30, 6.0)}, now=NOW)
+    assert art["live"] == {} and "old" in art["admits_frozen"]
 
 
 def test_unreadable_shadow_is_unmeasured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -294,6 +317,11 @@ IDS = {"EURCHF.carry.asia": {"symbol": "EURCHF", "family": "carry", "selector": 
                              "params": {"timeframe": "M15"}, "side": "LONG"}}
 
 
+#: A fresh allocator view that has not priced the key: capital_verdict reads it UNMEASURED.
+FRESH = {"fresh": True, "candidates": {}, "book": {}, "zeroed": {}}
+LIVE_DEC = {"live": {"EURCHF.carry.asia": {"n": 30, "shrink": 0.375}}, "demoted": {}}
+
+
 def _decision(live: dict | None = None, demoted: dict | None = None) -> dict:
     return {"live": live or {}, "demoted": demoted or {}}
 
@@ -301,7 +329,7 @@ def _decision(live: dict | None = None, demoted: dict | None = None) -> dict:
 def test_promoter_writes_probe_live_at_probe_size_when_unmeasured(promoter) -> None:
     sleeves: list[dict] = []
     dec = _decision({"EURCHF.carry.asia": {"n": 30, "shrink": 0.375}})
-    assert promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=dec)
+    assert promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=dec)
     row = sleeves[0]
     assert row["status"] == "LIVE" and row["probe"] is True
     assert row["risk_frac"] == pytest.approx(promoter.PROMOTED_RISK_FRAC * 0.375)
@@ -326,29 +354,88 @@ def test_promoter_defers_to_a_measured_allocator(promoter, monkeypatch) -> None:
 def test_promoter_demotes_to_standby_never_retired_and_readmits(promoter) -> None:
     sleeves: list[dict] = []
     live = _decision({"EURCHF.carry.asia": {"n": 30, "shrink": 0.375}})
-    promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=live)
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=live)
     gone = _decision(demoted={"EURCHF.carry.asia": {"why": "SPRT: LLR 3 >= 2.77"}})
-    assert promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=gone)
+    assert promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=gone)
     assert sleeves[0]["status"] == "STANDBY" and sleeves[0]["probe_status"] == "DEMOTED"
     assert sleeves[0]["risk_frac"] == 0.0 and "retired_at" not in sleeves[0]
-    promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=live)
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=live)
     assert sleeves[0]["status"] == "LIVE" and sleeves[0]["probe_status"] == "LIVE"
 
 
 def test_promoter_never_reopens_a_retired_row_or_a_certified_live_one(promoter) -> None:
     sleeves = [{"name": "EURCHF.carry.asia", "status": "RETIRED"}]
     dec = _decision({"EURCHF.carry.asia": {"n": 30, "shrink": 0.375}})
-    assert not promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=dec)
+    assert not promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=dec)
     sleeves = [{"name": "EURCHF.carry.asia", "status": "LIVE", "risk_frac": 0.02}]
-    promoter.apply_probe_tier(sleeves, {}, IDS, {"fresh": False}, decision=dec)
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=dec)
     assert sleeves[0]["risk_frac"] == 0.02 and "probe" not in sleeves[0]
+
+
+def test_promoter_never_adopts_a_standby_row_it_did_not_write(promoter, monkeypatch) -> None:
+    # Audit MF1 (a): an allocator-demoted row is restored only by reconcile_capital's streak
+    monkeypatch.setattr(promoter, "capital_verdict",
+                        lambda *a, **kw: {"status": "LIVE", "risk_frac": 0.03, "why": "yes",
+                                          "streak": 1})
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "STANDBY", "risk_frac": 0.0}]
+    assert not promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=LIVE_DEC)
+    assert sleeves[0] == {"name": "EURCHF.carry.asia", "status": "STANDBY", "risk_frac": 0.0}
+
+
+def test_promoter_never_adopts_a_held_row_on_an_unmeasured_reading(promoter) -> None:
+    # Audit MF1 (b)
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "STANDBY", "gate_reason": "HELD"}]
+    assert not promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=LIVE_DEC)
+    assert "probe" not in sleeves[0] and sleeves[0]["status"] == "STANDBY"
+
+
+def test_a_standby_probe_row_coming_back_owes_the_restore_streak(promoter, monkeypatch) -> None:
+    seen: list[dict] = []
+
+    def verdict(*a, **kw):
+        seen.append(kw)
+        ok = kw.get("first_promotion") or kw.get("streak", 0) >= 1
+        return {"status": "LIVE" if ok else "STANDBY", "risk_frac": 0.02 if ok else 0.0,
+                "why": "r", "streak": kw.get("streak", 0) + 1}
+
+    monkeypatch.setattr(promoter, "capital_verdict", verdict)
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "STANDBY", "probe": True,
+                "probe_status": "DEMOTED", "admit_streak": 0}]
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=LIVE_DEC)
+    assert seen[-1]["first_promotion"] is False and seen[-1]["streak"] == 0
+    assert sleeves[0]["status"] == "STANDBY" and sleeves[0]["admit_streak"] == 1
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=LIVE_DEC)
+    assert sleeves[0]["status"] == "LIVE" and sleeves[0]["risk_frac"] == 0.02
+
+
+def test_an_allocator_held_probe_row_is_not_raised_on_an_unmeasured_reading(promoter) -> None:
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "STANDBY", "probe": True,
+                "probe_status": "LIVE"}]
+    promoter.apply_probe_tier(sleeves, {}, IDS, FRESH, decision=LIVE_DEC)
+    assert sleeves[0]["status"] == "STANDBY"
+
+
+def test_a_stale_view_adds_and_raises_nothing_but_demotions_apply(promoter) -> None:
+    # Audit MF2
+    stale = {"fresh": False}
+    sleeves: list[dict] = []
+    assert not promoter.apply_probe_tier(sleeves, {}, IDS, stale, decision=LIVE_DEC)
+    assert sleeves == []
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "STANDBY", "probe": True,
+                "probe_status": "DEMOTED"}]
+    promoter.apply_probe_tier(sleeves, {}, IDS, stale, decision=LIVE_DEC)
+    assert sleeves[0]["status"] == "STANDBY"
+    sleeves = [{"name": "EURCHF.carry.asia", "status": "LIVE", "probe": True, "risk_frac": 0.01}]
+    assert promoter.apply_probe_tier(sleeves, {}, IDS, stale,
+                                     decision=_decision(demoted={"EURCHF.carry.asia": {}}))
+    assert sleeves[0]["status"] == "STANDBY"
 
 
 def test_promoter_refuses_a_probe_with_no_identity(promoter) -> None:
     sleeves: list[dict] = []
     dec = _decision({"EURCHF.carry.asia": {"n": 30, "shrink": 0.375, "family": "carry",
                                            "symbol": "EURCHF"}})
-    promoter.apply_probe_tier(sleeves, {}, {}, {"fresh": False}, decision=dec)
+    promoter.apply_probe_tier(sleeves, {}, {}, FRESH, decision=dec)
     assert sleeves == []
 
 
@@ -361,8 +448,9 @@ def test_promoter_unmeasured_tier_changes_nothing(promoter) -> None:
 # ---------------------------------------------------------------- E8
 def test_e8_probe_rows_and_their_size(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from prop import e8_book
-    for name in ("OUT", "LEDGER", "STATE", "OFF"):
+    for name in ("OUT", "LEDGER", "STATE", "OFF", "SHADOW"):
         monkeypatch.setattr(pt, name, tmp_path / name)
+    (tmp_path / "SHADOW").write_text("{}")
     pt.run({"EURCHF.carry.asia": clock(30, 6.0)}, now=datetime.now(UTC), identities=IDS)
     rows, _ = e8_book.probe_rows()
     assert [r["key"] for r in rows] == ["EURCHF.carry.asia"]
