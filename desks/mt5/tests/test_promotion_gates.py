@@ -125,8 +125,10 @@ def test_a_forward_row_not_priced_at_the_fill_hour_is_unmeasured(registry) -> No
                                    drift=False, symbol="EURUSD") is None
 
 
-def test_the_gold_lane_is_never_held_by_the_revival_or_spread_gates(registry) -> None:
-    row = {"status": "PROMOTION CANDIDATE", "certificate_at_revival": None}
-    assert promoter.promotion_hold(row, spec=None, drift=True, symbol="XAUUSD") is None
-    st, _ = promoter.promotion_hold(row, spec=None, drift=True, symbol="EURUSD")
+def test_gold_is_gated_like_every_symbol(registry) -> None:
+    row = {"status": "PROMOTION CANDIDATE", "certificate_at_revival": None,
+           "spread_basis": "fill_hour"}
+    st, _ = promoter.promotion_hold(row, spec=None, drift=True, symbol="XAUUSD")
     assert st == promoter.HELD_REVIVED
+    assert promoter.promotion_hold(row, spec={"gate_spec": 1}, drift=False,
+                                   symbol="XAUUSD") is None

@@ -440,12 +440,11 @@ def _registry_readable() -> bool:
 #: forward_start. Otherwise it is UNMEASURED until re-certified -- held, never KILL. A forward
 #: row counts for promotion only when it was priced at the fill-hour spread
 #: (`spread_basis == "fill_hour"`, research/qquant_shadow.py); anything else is UNMEASURED.
-#: The gold lane (main shadow, scalp) is not read here: nothing in it may treat a held row as
-#: "no evidence".
+#: Every symbol, gold included (Audit HOLD on r3). A held row is UNMEASURED, never KILL; the
+#: gold windows trade through prop/e8_gold and the gateway's gold book, not through this door.
 HELD_REVIVED = "HELD_REVIVED_UNCERTIFIED"
 HELD_SPREAD = "HELD_SPREAD_UNMEASURED"
 HELD_CLASS = "HELD_LIVE_CLASS"
-GOLD_PREFIX = "XAU"
 
 
 def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
@@ -455,10 +454,6 @@ def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
     cls = _class_refusal(symbol)
     if cls:
         return HELD_CLASS, cls
-    if str(symbol or "").upper().startswith(GOLD_PREFIX):
-        # THE GOLD LANE IS NOT STRUCK (Audit ruling 2026-11-26): gold_asia is itself a revived
-        # clock, and nothing in the gold lane may read a held row as "no evidence".
-        return None
     if "certificate_at_revival" in row and not row.get("certificate_at_revival") \
             and (not spec or drift):
         return HELD_REVIVED, ("revived by heal_orphaned_clocks with no certificate at revival, "
@@ -2390,6 +2385,7 @@ def main() -> None:
     schanged = promote_scalp(sleeves, sshadow, existing, gate_authority, view=view)
     changed = changed or qchanged or schanged
 
+    _authority_logged = False
     for key, st in shadow.items():
         if not isinstance(st, dict):
             continue
@@ -2475,9 +2471,16 @@ def main() -> None:
         # THE MAIN SHADOW CARRIES THE 166 (box 2026-11-26: "PROMOTION CANDIDATE", 165 revived
         # with no certificate, none priced at the fill hour), so the gates bind here too. The
         # current authority set stands in for the spec: a gate_spec inside it is "a certificate
-        # that exists now", and drift is its absence. Gold is exempt (promotion_hold).
-        _hold = promotion_hold(st, spec={"gate_spec": gate_spec},
-                               drift=bool(st["certificate_drift"]), symbol=sym)
+        # that exists now", and drift is its absence. AN EMPTY OR UNREADABLE AUTHORITY SET JOINS
+        # NOTHING (Audit MF2 on r3): drift reads False there, so the revival gate treats it as
+        # drift -- a revived row is held -- and says so once per pass.
+        if not gate_authority and not _authority_logged:
+            plog("revival gate: the authority set is empty or unreadable -- no revived clock "
+                 "can join a current certificate this pass, so every revived row is held")
+            _authority_logged = True
+        _hold = promotion_hold(st, spec={"gate_spec": gate_spec} if gate_authority else None,
+                               drift=bool(st["certificate_drift"]) or not gate_authority,
+                               symbol=sym)
         if _hold:
             st["status"], st["gate_reason"] = _hold
             st["promotion_authority"] = False
