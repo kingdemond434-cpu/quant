@@ -1,0 +1,7 @@
+{
+ "branch": "claude/ftmo-gold-sleeves-forge",
+ "head": "09f8cba5683c83ae33c7168cce7a386963f4b71c",
+ "title": "FTMO trades its own certified gold sleeves (#1323, forge)",
+ "body": "Audit CLEAR 09f8cba5683c83ae33c7168cce7a386963f4b71c. Train after ceilings-ftmo-gold-e8-probe (7c3fbc4a2): its ceilings rows bound this PR's money-path knobs.",
+ "comments": []
+}

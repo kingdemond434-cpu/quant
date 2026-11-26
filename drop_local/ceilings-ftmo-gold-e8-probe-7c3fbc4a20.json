@@ -1,0 +1,7 @@
+{
+ "branch": "claude/ceilings-ftmo-gold-e8-probe",
+ "head": "7c3fbc4a2008dbd2af79b5ae1c31afef05436a20",
+ "title": "ceilings: bound FTMO own-gold flag and E8 session probe / speed lift knobs",
+ "body": "New max rows and source pins only (inside the delegated envelope). Merges before #1323/#1370/#1371 forge heads.",
+ "comments": []
+}
