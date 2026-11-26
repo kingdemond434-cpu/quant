@@ -73,6 +73,14 @@ PROTOCOL = 1
 #: E8 leads: in fallback mode every other lane copies E8's first fill.
 LEADER = "e8"
 KNOWN_LANES = ("e8", "fusion", "ftmo")
+#: LANES WHOSE SILENCE NEVER STOPS ANOTHER LANE'S OWN GOLD (Audit MF1 on #1325, option (b),
+#: 2026-11-26). An absent, stale, torn or key-unjoined FTMO state used to fail E8's and Fusion's
+#: gold closed every pass FTMO was down. Now such a lane is set aside for the OTHER lanes (their
+#: own inputs decide), reported in the verdict, and forces every other lane's mode to fallback for
+#: that pass; while the lane itself is unseen it may claim nothing: its own gate fails closed
+#: unless its own published state is fresh. A state that carries THIS lane's account key still
+#: fails closed (two lanes on one account is an identity fault, not silence).
+DECOUPLED_LANES = frozenset({"ftmo"})
 DEFAULT_LANES = ("e8", "fusion")
 #: Two E8-Gold passes (5 min each); see the module docstring.
 MAX_STATE_AGE_S = 600.0
@@ -730,21 +738,37 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
     jwhy = _key_join_refusal(lane, key)
     if jwhy:
         return Verdict(False, f"gold OCO: {jwhy}; fail closed")
+    if lane in DECOUPLED_LANES:
+        own, owhy = read_lane(lane, now=now)
+        if own is None:
+            return Verdict(False, f"gold OCO: {owhy}; a {lane} gold leg needs {lane}'s own fresh "
+                                  f"published state; fail closed")
     states: dict[str, dict[str, Any]] = {}
+    unseen: list[str] = []
     for other in lanes:
         if other == lane:
             continue
+        decoupled = other in DECOUPLED_LANES and lane not in DECOUPLED_LANES
         st, why = read_lane(other, now=now)
         if st is None:
+            if decoupled:
+                unseen.append(f"{other} ({why})")
+                continue
             return Verdict(False, f"gold OCO: {why}; fail closed")
+        if st.get("account_key") == key:
+            return Verdict(False, f"gold OCO: the {other} gold state carries THIS lane's account "
+                                  f"key: two lanes on one account cannot be read as two books; "
+                                  f"fail closed")
         jwhy = _key_join_refusal(other, st.get("account_key"))
-        if jwhy is None and st.get("account_key") == key:
-            jwhy = (f"the {other} gold state carries THIS lane's account key: two lanes on one "
-                    f"account cannot be read as two books")
         if jwhy:
+            if decoupled:
+                unseen.append(f"{other} ({jwhy})")
+                continue
             return Verdict(False, f"gold OCO: {jwhy}; fail closed")
         states[other] = st
     mode = configured_mode(lane, doc)
+    if unseen and mode == "oco":
+        mode = "fallback"           # nobody but E8 may lead while a declared lane is unseen
     if mode == "oco" and any(int(st.get("protocol") or 0) != PROTOCOL for st in states.values()):
         mode = "fallback"           # full OCO is not proven while any lane runs older code
     against = opposite(want)
@@ -763,12 +787,22 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
         if want != d:
             return Verdict(False, f"gold OCO: {date}'s direction is {d} (first fill on "
                                   f"{first}); no {want} gold leg on any account today", mode)
-        return Verdict(True, f"gold OCO: {date}'s direction is {d}; this leg agrees", mode)
+        return Verdict(True, f"gold OCO: {date}'s direction is {d}; this leg agrees"
+                             + _unseen_note(unseen), mode)
     if mode == "fallback":
         return Verdict(False, f"gold OCO fallback: no E8 fill yet on {date}; this lane places "
                               f"nothing until E8's first fill sets the direction ({mode_why})",
                        mode)
-    return Verdict(True, f"gold OCO: no direction yet on {date}; {mode} mode", mode)
+    return Verdict(True, f"gold OCO: no direction yet on {date}; {mode} mode"
+                   + _unseen_note(unseen), mode)
+
+
+def _unseen_note(unseen: list[str]) -> str:
+    """The verdict's record of the decoupled lanes set aside this pass (their gold is unknown)."""
+    if not unseen:
+        return ""
+    return ("; set aside (decoupled, their gold positions unknown this pass): "
+            + ", ".join(unseen))
 
 
 # ------------------------------------------------------------------ venue readers

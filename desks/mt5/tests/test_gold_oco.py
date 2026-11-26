@@ -390,7 +390,7 @@ def _tear(path: Path) -> None:
 
 
 @pytest.mark.parametrize("damage", ["absent", "stale", "torn", "unreadable", "unreadable_side",
-                                    "direction_torn", "undeclared_lane_state"])
+                                    "direction_torn"])
 def test_an_unreadable_stale_or_torn_state_places_nothing(damage: str) -> None:
     _world("oco")
     p = oco.lane_path("e8")
@@ -408,8 +408,6 @@ def test_an_unreadable_stale_or_torn_state_places_nothing(damage: str) -> None:
     elif damage == "direction_torn":
         oco.claim_fill("e8", e8_key(), "buy", date=DAY)
         _tear(oco.direction_path())
-    elif damage == "undeclared_lane_state":
-        _mode(["e8", "fusion", "ftmo"], fusion="oco")         # FTMO declared, never published
     for side in ("buy_stop", "sell_stop"):
         v = oco.gate("fusion", side, key=fu_key(), date=DAY)
         assert not v.allowed and "fail closed" in v.why, (damage, v.why)
@@ -992,7 +990,8 @@ def test_a_family_xau_send_with_an_unreadable_gold_state_fails_closed_and_bills(
         tmp_path, monkeypatch) -> None:
     mt5, ns, day = _family_xau(tmp_path, monkeypatch)
     _day_world(day, setter="e8", direction="long")
-    oco.lane_path("ftmo").write_text("{torn", "utf-8")
+    # E8's state, not FTMO's: a silent FTMO is decoupled (Audit MF1 on #1325, option (b)).
+    oco.lane_path("e8").write_text("{torn", "utf-8")
     ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
     assert mt5.sent == []
     (row,) = _oco_rail_rows()
@@ -1262,3 +1261,78 @@ def test_an_oco_lane_keeps_the_late_rule(monkeypatch, tmp_path) -> None:
     ns = _late_main(tmp_path, monkeypatch, mt5)
     assert mt5.sent == []
     assert any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+# ==================================================== decoupled FTMO (Audit MF1 on #1325, opt. b)
+
+def ft_key() -> str:
+    return oco.oco_account_key(FT_LOGIN, FT_SERVER)
+
+
+def _ftmo_world() -> None:
+    _mode(["e8", "fusion", "ftmo"], fusion="fallback", ftmo="oco")
+    _flat("e8", e8_key())
+    _flat("fusion", fu_key())
+    _flat("ftmo", ft_key())
+
+
+@pytest.mark.parametrize("damage", ["stale", "absent", "torn"])
+def test_a_silent_ftmo_never_stops_e8s_own_gold_and_blocks_ftmo_led_claims(damage: str) -> None:
+    _ftmo_world()
+    if damage == "stale":
+        _flat("ftmo", ft_key(), now=datetime.now(tz=UTC) - timedelta(
+            seconds=oco.MAX_STATE_AGE_S + 60))
+    elif damage == "absent":
+        oco.lane_path("ftmo").unlink()
+    else:
+        _tear(oco.lane_path("ftmo"))
+    v = oco.gate("e8", "buy_stop", key=e8_key(), date=DAY)
+    assert v.allowed and "set aside" in v.why and "ftmo" in v.why, v.why
+    # FTMO itself may not place (so it cannot claim a direction) while its own state is silent.
+    v = oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY)
+    assert not v.allowed and "fail closed" in v.why, v.why
+
+
+def test_a_silent_ftmo_demotes_an_oco_lane_to_fallback() -> None:
+    _ftmo_world()
+    _mode(["e8", "fusion", "ftmo"], fusion="oco", ftmo="oco")
+    oco.lane_path("ftmo").unlink()
+    v = oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and v.mode == "fallback", v.why       # no E8 fill yet: fallback waits
+
+
+def test_ftmo_publishing_again_resumes_its_claims_and_its_book_binds_e8_again() -> None:
+    _ftmo_world()
+    oco.lane_path("ftmo").unlink()
+    assert not oco.gate("ftmo", "sell_stop", key=ft_key(), date=DAY).allowed
+    _flat("ftmo", ft_key(), positions=[{"id": 5, "side": "sell"}])
+    assert oco.gate("ftmo", "sell_stop", key=ft_key(), date=DAY).allowed
+    v = oco.gate("e8", "buy_stop", key=e8_key(), date=DAY)
+    assert not v.allowed and "ftmo holds an open gold short" in v.why, v.why
+
+
+def test_e8_and_fusion_stay_coupled_to_each_other() -> None:
+    """Only FTMO is decoupled: a silent E8 still stops Fusion, and a silent Fusion stops E8."""
+    _ftmo_world()
+    oco.lane_path("e8").unlink()
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
+    _ftmo_world()
+    oco.lane_path("fusion").unlink()
+    assert not oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+
+
+def test_a_state_under_this_lanes_own_key_still_fails_closed_even_from_ftmo() -> None:
+    _ftmo_world()
+    _flat("ftmo", e8_key())
+    v = oco.gate("e8", "buy_stop", key=e8_key(), date=DAY)
+    assert not v.allowed and "THIS lane's account key" in v.why, v.why
+
+
+def test_a_declared_never_published_ftmo_no_longer_fails_fusion_closed_but_demotes_it() -> None:
+    """Was `undeclared_lane_state` in the damage matrix: FTMO declared and never published used
+    to fail every other lane closed. It is now set aside, and an oco lane waits in fallback."""
+    _world("oco")
+    _mode(["e8", "fusion", "ftmo"], fusion="oco")
+    v = oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and v.mode == "fallback" and "no E8 fill yet" in v.why, v.why
+    assert oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
