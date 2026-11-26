@@ -514,7 +514,7 @@ rem QuantForge-CI: run waiting test jobs as $ciUser (no admin, no tokens). Code 
 & icacls $ciRunner /grant "${ciUser}:(R)" | Out-Null
 $cAct = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$ciRunner`""
 $cTrg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
-$cSet = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 7) -StartWhenAvailable -Priority 9
+$cSet = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 7) -StartWhenAvailable -Priority 7
 Register-ScheduledTask -TaskName "QuantForge-CI" -Action $cAct -Trigger $cTrg -Settings $cSet `
     -User "$env:COMPUTERNAME\$ciUser" -Password $ciPass -RunLevel Limited -Force | Out-Null
 $ciPass = $null
