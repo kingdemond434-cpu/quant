@@ -117,6 +117,13 @@ def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, placed: tuple[s
              guard: dict | None = None) -> Path:
     for name in ("OUT", "INTENTS", "LOG", "KELLY_FILE", "CERT_BOOK_FILE"):
         monkeypatch.setattr(g, name, tmp_path / f"{name.lower()}.json")
+    # The session probe's state and the speed lift (2026-11-26) stay in tmp; the mechanics here
+    # size asia at the cert book's number, so the lift is off by its marker. Their own suite is
+    # tests/test_e8_session_probe.py.
+    monkeypatch.setattr(g, "SESSION_PROBE_STATE", tmp_path / "session_probe_state.json")
+    monkeypatch.setattr(g, "SESSION_PROBE_OFF", tmp_path / "session_probe_off")
+    (tmp_path / "e8_speed_lift_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(g, "E8_SPEED_LIFT_OFF", tmp_path / "e8_speed_lift_off")
     # These tests are about the guard and open-risk mechanics across all three windows, so the
     # principal's code pin of london_am/afternoon (decision_core.PRINCIPAL_ZERO["e8"], r6) is
     # lifted here; test_fusion_book_r6.py pins that the pin itself holds.

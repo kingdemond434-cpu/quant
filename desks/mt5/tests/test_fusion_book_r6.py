@@ -240,9 +240,20 @@ def test_every_promoted_lot_call_site_passes_the_cert_zero() -> None:
 # ----------------------------------------------------------------------------- E8 gold windows
 
 def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
-        principal: bool = True, venue: object = None, deferred: tuple[str, ...] = ()):
+        principal: bool = True, venue: object = None, deferred: tuple[str, ...] = (),
+        probe: bool = False, lift: bool = False):
     import test_e8_gold_guard_and_open_risk as h
     h._sandbox(monkeypatch, tmp_path)
+    # These tests pin the principal's zero itself, so the session probe (zuck 2026-11-26) is off
+    # by its revert marker unless a test asks for it.
+    monkeypatch.setattr(h.g, "SESSION_PROBE_STATE", tmp_path / "probe_state.json")
+    monkeypatch.setattr(h.g, "SESSION_PROBE_OFF", tmp_path / "probe_off")
+    monkeypatch.setattr(h.g, "STOP_EXITS", tmp_path / "stop_exits.jsonl")
+    if not probe:
+        (tmp_path / "probe_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(h.g, "E8_SPEED_LIFT_OFF", tmp_path / "lift_off")
+    if not lift:
+        (tmp_path / "lift_off").write_text("", encoding="utf-8")
     if deferred:
         _st = json.loads((tmp_path / "state.json").read_text("utf-8"))
         (tmp_path / "state.json").write_text(json.dumps({**_st, "deferred": list(deferred)}),
