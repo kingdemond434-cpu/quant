@@ -205,11 +205,14 @@ def test_the_generic_and_scalp_lanes_carry_identity_too(desk, monkeypatch) -> No
     spec = {"symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
             "condition": None, "side": "LONG"}
     monkeypatch.setattr(promoter, "load_cert_specs", lambda: {key: spec})
+    # the identity is the subject here; the live-class door has its own tests
+    monkeypatch.setattr(promoter, "_class_refusal", lambda _sym: None)
     desk.allocation([key, "xau_m5_test"])
     view = promoter.allocation_view()
     sleeves: list[dict] = []
     assert promoter.promote_generic(sleeves, {key: {"status": "PROMOTION_CANDIDATE",
-                                                    "exp_r": 0.2, "n": 55}},
+                                                    "exp_r": 0.2, "n": 55,
+                                                    "spread_basis": "fill_hour"}},
                                     set(), set(), regrade={}, view=view)
     (g,) = sleeves
     assert g["certificate"] == key and g["sleeve_id"] == "1903a4cc90212b4c29d5"

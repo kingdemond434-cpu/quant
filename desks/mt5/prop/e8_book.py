@@ -539,6 +539,29 @@ def fallback_rollover_artefact(row: Mapping[str, Any]) -> str | None:
             f"(no deployable solve to price it)")
 
 
+def fallback_filter(chosen: list[dict[str, Any]]
+                    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(kept, dropped) for the evidence-rule fallback (no deployable solve): only fill-proven or
+    principal-funded rows, and no fill-proven row that is a rollover artefact. Each drop carries
+    its missed-growth line. Pure."""
+    kept: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+    for r in chosen:
+        col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        why = None
+        if not (r.get("fill_proven") or r.get("principal_funded")):
+            why = "no deployable solve, and no fill record or principal funding"
+        elif not r.get("principal_funded"):
+            why = fallback_rollover_artefact(r)
+        if why:
+            dropped.append({"column": col, "why": why,
+                            "missed_growth_risk_frac": float(r.get("risk_frac") or 0.0),
+                            "rail": "e8_fallback_unproven"})
+            continue
+        kept.append(r)
+    return kept, dropped
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -910,21 +933,7 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
     # broker 00:00-01:59 is a recorded zero (fallback_rollover_artefact). Each drop is billed.
     fallback_dropped: list[dict[str, Any]] = []
     if not solved:
-        kept_fb: list[dict[str, Any]] = []
-        for r in chosen:
-            col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
-            why = None
-            if not (r.get("fill_proven") or r.get("principal_funded")):
-                why = "no deployable solve, and no fill record or principal funding"
-            elif not r.get("principal_funded"):
-                why = fallback_rollover_artefact(r)
-            if why:
-                fallback_dropped.append({"column": col, "why": why,
-                                         "missed_growth_risk_frac": float(r["risk_frac"]),
-                                         "rail": "e8_fallback_unproven"})
-                continue
-            kept_fb.append(r)
-        chosen = kept_fb
+        chosen, fallback_dropped = fallback_filter(chosen)
     stressed = stress.cap_book(
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
