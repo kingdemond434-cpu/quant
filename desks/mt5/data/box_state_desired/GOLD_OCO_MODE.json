@@ -1,0 +1,10 @@
+{
+ "lanes": [
+  "e8",
+  "fusion"
+ ],
+ "modes": {
+  "fusion": "fallback"
+ },
+ "note": "2026-11-26, zuck 22:51-22:52Z (project chat): \"dont let it mirror its useless\" / \"turn it off\". FTMO leaves the gold lanes: the FTMO follower's copy of E8's gold_asia places nothing (gold_oco.gate refuses an undeclared lane) and its resting gold entries are withdrawn on its next pass (ftmo_follower withdraw_check, sent even unarmed); management of open FTMO positions is unchanged (it runs on FTMO_FOLLOWER_ARMED, not on this file). FTMO trades gold again only through its own certified sleeves (#1323), re-declared in oco mode in the same change. COST: the copy's gold_asia fills on FTMO stop (missed growth = FTMO's asia risk per day, rail ftmo_lane_withdrawn). Lanes and Fusion's mode otherwise unchanged. REVERSAL, one line: add ftmo back to lanes."
+}
