@@ -124,6 +124,11 @@ TASK_DIAGNOSIS = {
         "a Python traceback or a kill (taskkill /F exits 1) -- since 2026-10-14 a terminal that "
         "is down at start no longer exits. Read the tail of desks/mt5/logs/MT5-TickRecorder.log; "
         "the contract on the tape's own newest tick restarts it while the tape is stale."),
+    ("MT5-TickIntegrity", 2): (
+        "the integrity audit's own ALARM, not a missing script: 2 means FAIL (or, since #974, "
+        "newly-failed) tick days, or no tape. If TICK_INTEGRITY.json is fresh the organ ran -- "
+        "read its verdicts and paging block and chase the named symbol-days. Never re-register "
+        "or restart for this. (Measured 2026-11-17: read as a broken registration for hours.)"),
 }
 
 

@@ -157,3 +157,10 @@ def test_the_fred_axis_is_refused_on_terms_and_opens_no_socket(monkeypatch, tmp_
     assert ai.main(["--axis", "fred", "--apply"]) == 0
     assert held.read_text(encoding="utf-8") == '{"n_series": 7}'
 
+
+def test_the_manifest_matches_the_box_s_two_hour_ingest_clock() -> None:
+    """The box runs MT5-AxisIngest every two hours; the task table says so too."""
+    manifest = Path(__file__).resolve().parents[1] / "ops" / "box_tasks.manifest"
+    line = next(ln for ln in manifest.read_text(encoding="utf-8").splitlines()
+                if 'name="MT5-AxisIngest"' in ln)
+    assert 'trigger="every 2 hours at :40"' in line

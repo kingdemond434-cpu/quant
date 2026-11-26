@@ -33,15 +33,49 @@ $LogDir = Join-Path $Root "logs"
 $Clone = Join-Path $Root "gate-repo"
 $log = Join-Path $LogDir "workflow_gate.log"
 $beat = Join-Path $LogDir "workflow_gate.json"
+# THE PUBLIC COPY (2026-11-17, Desk health + the Auditor's no-free-text rule): published with box
+# state, so it carries numbers, booleans, a phase name and at most an exception TYPE, never a
+# message. `phase` is stamped as each phase STARTS, so a run the scheduler kills at its 30-min
+# limit (267014, every run on 11-17) still says where it died; MERGE_PIPELINE.json froze at the
+# last run that finished and nothing off the box could tell how far a killed run got.
+$public = Join-Path $QuantRoot "desks\mt5\reports\WORKFLOW_GATE.json"
+$script:Phase = "start"
+$script:Merged = 0
+# THE RUN'S OWN CLOCK: the task is killed at 30 min. The sweep runs FIRST (its own 15-min budget);
+# every other phase runs only when what is left (less the watcher's reserve) covers it.
+$script:Deadline = (Get-Date).AddMinutes(27)
+$WatchReserveS = 180
 
 function Say([string] $line) {
     Add-Content -LiteralPath $log -Value ("{0} {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ssK'), $line)
 }
-function Beat([int] $rc, [string] $note, [bool] $scope, [int] $held = 0) {
-    $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; workflow_scope = $scope; note = $note; mutex_held_runs = $held }
+function Publish([object] $rc, [object] $scope, [int] $held, [string] $errType, [bool] $finished) {
+    try {
+        $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); phase = $script:Phase
+                           finished = $finished; rc = $rc; merged = $script:Merged
+                           workflow_scope = $scope; mutex_held_runs = $held; error_type = $errType }
+        $null = New-Item -ItemType Directory -Force -Path (Split-Path $public) -ErrorAction Stop
+        $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath "$public.tmp" -Encoding UTF8
+        Move-Item -LiteralPath "$public.tmp" -Destination $public -Force
+    } catch { Say "public heartbeat unwritable: $($_.Exception.GetType().Name)" }
+}
+function Beat([int] $rc, [string] $note, [bool] $scope, [int] $held = 0, [string] $errType = "") {
+    $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; workflow_scope = $scope; note = $note; mutex_held_runs = $held; phase = $script:Phase }
     $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath "$beat.tmp" -Encoding UTF8
     Move-Item -LiteralPath "$beat.tmp" -Destination $beat -Force
+    Publish $rc $scope $held $errType $true
 }
+# A PHASE STARTS: logged and stamped on the public copy only. The private heartbeat's `at` stays
+# the last FINISHED run, so SWEEP_STALE still fires when no run finishes.
+function Mark([string] $phase) {
+    $script:Phase = $phase
+    Say "phase $phase"
+    Publish $null $null 0 "" $false
+}
+# THE TIME A PHASE STILL HAS: seconds to the run's deadline less the watcher's reserve. A phase
+# that needs more than is left is skipped and says so (the next run, 10 min on, does it); nothing
+# is killed (no process kill in this script, test_box_unattended), so a phase is never cut mid-push.
+function Left { return [int](($script:Deadline - (Get-Date)).TotalSeconds) - $WatchReserveS }
 
 # The merge pipeline's clock (#521 audit MF2): queued-check ages, CLEARed or green work waiting,
 # LIVE's last code, the reviewer's false-positive rate and this sweep's own heartbeat. It runs on
@@ -77,6 +111,7 @@ if (-not $mutex.WaitOne(0)) {
     $held = 1
     try { $held = [int]((Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json).mutex_held_runs) + 1 } catch { }
     Say "the previous sweep still holds the mutex (run $held in a row)"
+    $script:Phase = "mutex-held"
     Beat 4 "mutex held by the previous sweep ($held runs in a row)" $true $held
     Watch
     exit 4
@@ -98,6 +133,7 @@ $env:GIT_CONFIG_VALUE_0 = ($Clone -replace '\\', '/')
 $env:PATH = (Split-Path -Parent $Gh) + ';' + $env:PATH
 
 try {
+    Mark "clone"
     if (-not $Python) {
         foreach ($cand in @("$env:LOCALAPPDATA\Programs\Python\Python314\python.exe", 'C:\Program Files\Python314\python.exe')) {
             if (Test-Path -LiteralPath $cand) { $Python = $cand; break }
@@ -126,6 +162,7 @@ try {
     # clone's OLD copy, so a broken merger_env.ps1 failed every git call before the fetch that
     # would have brought its fix -- a loop no merge could break. The repo is public, so the
     # sparse-checkout, fetch and checkout above need no identity.
+    Mark "identity"
     $asApp = $false
     $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
     if (Test-Path -LiteralPath $mergerEnv) {
@@ -140,17 +177,10 @@ try {
         Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
     }
 
-    # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
-    # are cancelled and re-run behind it, and runs on moved heads are cancelled. A failure here is
-    # logged and never stops the sweep.
-    try {
-        $env:GH_BIN = $Gh
-        & $Python -I -u (Join-Path $Clone "scripts\live_first_ci.py") --repo $Repo --base $Live --state (Join-Path $QuantRoot "desks\mt5\reports\LIVE_FIRST_CI.json") 2>&1 | ForEach-Object { Say "live-first $_" }
-        Say "live-first rc=$LASTEXITCODE"  # 2: a re-run was given up on; 1: it stopped on an API error
-    } catch {
-        Say "live-first failed: $($_.Exception.Message)"
-    }
-
+    # THE SWEEP FIRST (2026-11-17): it is what merges, and every run was killed at the task's
+    # 30-min limit before reaching a merge while live-first, adopt-rows and memecoin ran ahead of or
+    # around it with no clock of their own. #1244 sat green and unmerged.
+    Mark "sweep"
     Push-Location -LiteralPath $Clone
     try {
         # Streamed, one log line per gate line as it comes (2026-10-29: a sweep killed by the
@@ -163,13 +193,34 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
+    # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
+    $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
+    $script:Merged = $merged
+
+    # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
+    # are cancelled and re-run behind it, and runs on moved heads are cancelled. Capped; a failure
+    # here is logged and never stops the run.
+    Mark "live-first"
+    try {
+        $env:GH_BIN = $Gh
+        $budget = [Math]::Min(240, (Left) - 60)  # live_first stops itself at --budget-s
+        if ($budget -lt 60) { Say "live-first skipped: $(Left)s left" } else {
+            & $Python -I -u (Join-Path $Clone "scripts\live_first_ci.py") --repo $Repo --base $Live --state (Join-Path $QuantRoot "desks\mt5\reports\LIVE_FIRST_CI.json") --budget-s $budget 2>&1 | ForEach-Object { Say "live-first $_" }
+            Say "live-first rc=$LASTEXITCODE"
+        }  # 2: a re-run was given up on; 1: it stopped on an API error
+    } catch {
+        Say "live-first failed: $($_.Exception.Message)"
+    }
     # MERGE-TIME ADOPT_CLEARS ROWS (R2f): a recent LIVE merge whose exact head carries a verified
     # authority attestation or Auditor registry CLEAR gets its adoption row, pushed fast-forward as
     # a data-only commit; the adopt guard re-verifies each one. A failure here is logged and never
     # stops the sweep's heartbeat; no row means the guard stays closed, as before.
+    Mark "adopt-rows"
     try {
-        & $Python -I -u (Join-Path $Clone "ops\release\adopt_rows.py") --root $Clone --apply --report (Join-Path $QuantRoot "desks\mt5\reports\ADOPT_ROWS.json") 2>&1 | ForEach-Object { Say "adopt-rows@$at $_" }
-        Say "adopt-rows rc=$LASTEXITCODE"
+        if ((Left) -lt 180) { Say "adopt-rows skipped: $(Left)s left" } else {
+            & $Python -I -u (Join-Path $Clone "ops\release\adopt_rows.py") --root $Clone --apply --report (Join-Path $QuantRoot "desks\mt5\reports\ADOPT_ROWS.json") 2>&1 | ForEach-Object { Say "adopt-rows@$at $_" }
+            Say "adopt-rows rc=$LASTEXITCODE"
+        }
     } catch {
         Say "adopt-rows failed: $($_.Exception.Message)"
     }
@@ -178,6 +229,7 @@ try {
     # (.github/scripts/memecoin_gate.py). It runs only when MEMECOIN_AUDIT_REGISTRY is set on the
     # box, and a failure here is logged and never stops the quant sweep's heartbeat.
     if ($env:MEMECOIN_AUDIT_REGISTRY) {
+        Mark "memecoin"
         try {
             $mClone = Join-Path (Split-Path -Parent $Clone) "memecoin-gate"
             # APPENDED, never index 1: merger_env.ps1 may already hold entries 1 and 2 (the App's
@@ -189,22 +241,23 @@ try {
             if (-not (Test-Path -LiteralPath (Join-Path $mClone ".git"))) {
                 & git clone -q "https://github.com/kingdemond434-cpu/memecoin.git" $mClone 2>&1 | ForEach-Object { Say "memecoin clone: $_" }
             }
-            & $Python -I -u (Join-Path $Clone ".github\scripts\memecoin_gate.py") --box --clone $mClone 2>&1 | ForEach-Object { Say "memecoin@$at $_" }
-            Say "memecoin rc=$LASTEXITCODE"
+            if ((Left) -lt 180) { Say "memecoin skipped: $(Left)s left" } else {
+                & $Python -I -u (Join-Path $Clone ".github\scripts\memecoin_gate.py") --box --clone $mClone 2>&1 | ForEach-Object { Say "memecoin@$at $_" }
+                Say "memecoin rc=$LASTEXITCODE"
+            }
         } catch {
             Say "memecoin sweep failed: $($_.Exception.Message)"
         }
     }
-    # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
-    $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
+    Mark "watch"
     Beat $rc $note $scope
     Watch
     exit $rc
 } catch {
     Say "FAILED: $($_.Exception.Message)"
-    Beat 1 "FAILED: $($_.Exception.Message)" $false
+    Beat 1 "FAILED: $($_.Exception.Message)" $false 0 $_.Exception.GetType().Name
     Watch  # a sweep that fails every run still writes its RED (#521 audit MF-A)
     exit 1
 } finally {

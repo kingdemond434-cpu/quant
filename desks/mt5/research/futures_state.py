@@ -13,7 +13,10 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record
      (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
-     totals stamped at their release). Every other
+     totals stamped at their release), and the EVENT STATES of `research/event_states.py`
+     (backlog ideas N4..N12: TIC flows, SLOOS, Treasury buybacks, EIA gas storage against its
+     five-year norm, JOLTS quits; the BoJ, SNB, USDA and Chicago Fed rows are fenced by their
+     terms or access and named in the gaps). Every other
      venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
@@ -40,7 +43,7 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      spread or z-gap (copper vs gold managed money, crude curve vs speculative length, ...).
 
   5. CELLS. Each feature series lands in `data/lake/series/<id>.parquet`, the id prefixed by
-     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`), and every
+     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`, `evt_`), and every
      (column x transform x target x chart) becomes ONE `exogenous_conditioner` candidate through
      `libs.moat.registry.enqueue_candidate`, the same door `pack_cells` uses. A cell is enqueued
      ONCE in its life (state keeps the hash), so a pass never bumps another search_count: trials
@@ -140,6 +143,18 @@ def _polite(url: str, accept: str, timeout: float) -> str:
     if not r.ok:
         raise FetchError(r.status, url, r.error or f"HTTP {r.status}")
     return r.text
+
+
+def fetch_bytes(url: str, timeout: float = 60.0) -> bytes:
+    """One honest GET of a binary file (a zip package). Same rules: no retry, hard stop."""
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, headers={"User-Agent": UA, "Accept": "application/zip,*/*;q=0.8"},
+                         timeout=timeout, retries=0, leg="futures_state")
+    if r.status in HARD_STOP:
+        raise HardStop(int(r.status or 0), url)
+    if not r.ok:
+        raise FetchError(r.status, url, r.error or f"HTTP {r.status}")
+    return gzip.decompress(r.body) if r.body[:2] == b"\x1f\x8b" else r.body
 
 
 def fetch_json(url: str, timeout: float = 40.0) -> Any:
@@ -718,10 +733,7 @@ def release_shock(prints: pd.DataFrame, transform: str = "diff",
     """
     v = prints["value"].astype(float).reset_index(drop=True)
     per = pd.to_datetime(prints["period"]).reset_index(drop=True)
-    if transform == "logdiff":
-        chg = np.log(v.where(v > 0)).diff() * 100.0
-    else:
-        chg = v.diff()
+    chg = np.log(v.where(v > 0)).diff() * 100.0 if transform == "logdiff" else v.diff()
     step = per.diff()
     typical = step.median() if step.notna().any() else pd.NaT
     if pd.notna(typical):
@@ -1163,7 +1175,8 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
 def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any] | None,
                         state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None],
                         get_text: Callable[[str], str] | None = None,
-                        now: datetime | None = None, budget: float | None = None
+                        now: datetime | None = None, budget: float | None = None,
+                        get_bytes: Callable[[str], bytes] | None = None
                         ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame],
                                     list[dict[str, Any]]]:
     """Every OPEN source -> stamped feature frames. `get=None` means offline (held raw only)."""
@@ -1325,6 +1338,18 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
                           "why": "no historical CSV held yet"})
 
+    # Event and regime states (backlog ideas N4..N12): rows under `event_states`, read through
+    # this organ's fetch door and robots check, stamped and minted like every series above.
+    if registry.get("event_states"):
+        from research import event_states
+        late = budget is not None and time.monotonic() > budget   # past it, serve what is held
+        ev_built, ev_frames = event_states.build(
+            sys.modules[__name__], registry, state, notes, now=now,
+            get_text=None if late else get_text, get=None if late else get,
+            get_bytes=None if late else get_bytes)
+        built.update(ev_built)
+        frames.update(ev_frames)
+
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
         ca = str(tr.get("column_a") or tr.get("column"))
@@ -1363,7 +1388,9 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
+             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross",
+             "tic_vs_med12", "sloos_ci_shock", "bb_takeup", "bb_accepted", "ng_stor_vs5y",
+             "jolts_quits_vs3m", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 
@@ -1456,6 +1483,10 @@ def gaps(registry: Mapping[str, Any], built: Mapping[str, Any],
     held = [{"id": s["id"], "terms": s.get("terms"), "note": s.get("note", "")}
             for s in registry.get("sources") or []
             if s.get("terms") != "OPEN" or s.get("adapter") == "none"]
+    held += [{"id": s["id"], "idea": s.get("idea"), "terms": s.get("terms"),
+              "note": s.get("terms_clause") or s.get("note", "")}
+             for s in registry.get("event_states") or []
+             if s.get("terms") != "OPEN" or s.get("adapter") == "none"]
     missed = [s["id"] for s in registry.get("sources") or [] if s.get("missed_growth")]
     missing = [n.get("market") for n in notes if n.get("market") and
                f"cot_{n['market']}" not in built]
@@ -1527,6 +1558,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     built, frames, notes = build_market_series(
         registry, get=None if offline else fetch_json, state=state, bars=bars,
         get_text=None if offline else fetch_text, now=now,
+        get_bytes=None if offline else fetch_bytes,
         budget=time.monotonic() + FETCH_BUDGET_S)
     for sid, why in stale_series(built, frames, registry, now).items():
         built.pop(sid, None)

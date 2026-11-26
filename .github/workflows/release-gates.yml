@@ -97,6 +97,9 @@ jobs:
             /data/*.json
             # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
             /desks/mt5/research/admission_integrity.py
+            # the research-input leg (replay_child.research_step): orthogonal_sweep, pf_allocator
+            # and what they import from research/
+            /desks/mt5/research/*.py
             /pyproject.toml
           persist-credentials: false
 
@@ -116,6 +119,9 @@ jobs:
             /data/*.json
             # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
             /desks/mt5/research/admission_integrity.py
+            # the research-input leg (replay_child.research_step): orthogonal_sweep, pf_allocator
+            # and what they import from research/
+            /desks/mt5/research/*.py
           persist-credentials: false
 
       - uses: actions/setup-python@v5

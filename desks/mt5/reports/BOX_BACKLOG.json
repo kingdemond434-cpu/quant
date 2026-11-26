@@ -209,7 +209,7 @@
   ],
   "code_paths_touched": 2549,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-17T21:53:29+00:00",
+  "measured_at": "2026-11-18T22:23:35+00:00",
   "code_paths_differing": 8,
   "code_paths": [
     "desks/mt5/mt5desk/tape.py",
@@ -232,6 +232,10 @@
     },
     {
       "path": ".github/workflows/audit-gate.yml",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -263,6 +267,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/mt5desk/live_policy.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/mt5desk/markout.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -275,6 +283,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/ops/components.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/prop/e8_book.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -283,7 +295,15 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/prop/e8_guard.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/prop/ftmo_follower.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/prop/tradelocker_venue.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -447,6 +467,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/research/forward_enrolment.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/research/forward_exploitation.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -523,6 +547,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/research/loss_learner.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/research/math_lab.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -551,7 +579,15 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/research/orthogonal_sweep.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/research/pf_allocator.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/physics_lab.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -564,6 +600,10 @@
     },
     {
       "path": "desks/mt5/research/promoter.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/prop_barrier.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -771,6 +811,14 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/tests/test_e8_gold_guard_and_open_risk.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_e8_reconnect.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/tests/test_execution_attribution.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -843,7 +891,19 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/tests/test_loss_learner.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/tests/test_math_lab.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_mathlab_institution.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_mathlab_physics.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -931,6 +991,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "libs/ops/write_or_explain.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "libs/research/bandit.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -963,7 +1027,15 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "ops/migrate_to_new_box.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "ops/money_closure.txt",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/never_stale.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -1055,11 +1127,23 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "scripts/check_forward_enrolment.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "scripts/check_judge_coverage.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "scripts/check_mt5_purity.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "scripts/check_own_clock_legs.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_placement_interlock.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -1143,6 +1227,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "tests/governance/test_placement_interlock_fence.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "tests/libs/test_leg_rotation.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -1167,7 +1255,15 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "tests/ops/test_live_infrastructure_is_not_published.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "tests/ops/test_memecoin_gate.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_process_health_schtasks.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -1184,6 +1280,10 @@
     },
     {
       "path": "tests/research/test_runtime_attestation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/scripts/test_check_forward_enrolment.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {

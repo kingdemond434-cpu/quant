@@ -434,11 +434,18 @@ geometric growth, never forced into a position every second.
 
 ## 5e. THE ACCESS ROUTING LAW (principal's standing order, 2026-09-23, permanent — REPLACES the 2026-09-17 text in full)
 
+> **AMENDED 2026-11-17 (Governance): ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES.** The body
+> below is edited in place to say so: the sixth refused act, the permission route, and the brakes
+> restored as refusals. Where the 2026-09-23 text said robots and terms were labels only, it is
+> struck. No session may read this section as a licence to fetch past robots or terms.
+
 **THE DESK MINES AND TESTS EVERYTHING IT CAN SEE ON THE OPEN INTERNET.** Things published on the
-open internet are lawful to read. Licence, robots, source class and credibility are **ROUTING AND
-PROVENANCE LABELS on the row**: they describe what the desk may **REDISTRIBUTE or publish**, and
-**how much weight the evidence carries**. They **NEVER** stop discovery, ingestion, representation
-or testing. Classification routes USE; it never gates MINING.
+open internet are lawful to read, **within what the host's robots.txt and terms allow an
+automated client (refused act 6 below)**. On content the desk may fetch, licence, source class and
+credibility are **ROUTING AND PROVENANCE LABELS on the row**: they describe what the desk may
+**REDISTRIBUTE or publish**, and **how much weight the evidence carries**. They never stop
+ingestion, representation or testing of that content. Classification routes USE; it never gates
+MINING of what the desk may fetch.
 
 The pipeline on every source is DISCOVER -> CAPTURE METADATA -> ACCESS/PROVENANCE LABELLING ->
 EVIDENCE CLASSIFICATION -> RESEARCH, and every source walks all five. There is no "looks risky ->
@@ -452,9 +459,14 @@ Every source carries THREE INDEPENDENT labels, never collapsed into one:
 - `predictive_state`: UNTESTED, PREDICTIVE, NOT_PREDICTIVE, NARRATIVE_FEATURE.
 
 Behaviour by access label: **every label but the refused three is mined, ingested, represented and
-tested in full.** PUBLIC_WITH_TERMS (terms present, a robots Disallow, a declared
-`machine_use_allowed=false`, or a paywalled domain) is **mined and tested in full**; the label
-withholds `redistribute` and nothing else, and the fact is carried on the row as `terms_note`.
+tested in full, within refused act 6.** PUBLIC_WITH_TERMS whose robots and terms allow automated
+reading (terms present that restrict only republication, or a paywalled domain's open surface) is
+**mined and tested in full**; the label withholds `redistribute`, and the fact is carried on the
+row as `terms_note`. PUBLIC_WITH_TERMS where robots disallows the path, the terms forbid
+automated access, scraping or data mining, `machine_use_allowed=false`, or the terms are unread or
+unreadable, is **CATALOGUED from what the desk lawfully saw elsewhere (name, URL, a search
+result's snippet) and never fetched** ("registered, never scraped") until the permission route
+below admits it.
 LICENSED is used per its licence and its licence bears on republication, not on reading.
 **ACCESS_UNCLEAR IS MINED AND TESTED WITH ITS LABEL ATTACHED — there is no quarantine.**
 PUBLIC_SOCIAL, USER_SUBMITTED, PUBLIC_ARCHIVE and machine-translated ground are **first-class
@@ -464,13 +476,15 @@ permission.
 
 **THE BRAKES THAT ARE DELETED, NAMED SO A LATER SESSION CANNOT RE-DERIVE THEM FROM SILENCE**
 (`libs.research.access_classifier.REMOVED_BRAKES` carries the same list as data): the
-ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS; robots.txt Disallow
-read as a refusal; `machine_use_allowed=false` read as "registered, never scraped"; any
-"public/licensed sources only" pre-filter on discovery; and source class or credibility used to
+ACCESS_UNCLEAR quarantine; any "public/licensed sources only" pre-filter on discovery; and source
+class or credibility used to
 DROP a row rather than WEIGHT it. None of these was ever a legal requirement. Each was a discovery
 brake the desk imposed on itself, and each cost it ground it never measured. **No session may
 re-introduce one, in any form, under any name.** A new cap, veto, gate or refusal on research
 input is a violation of this section and of the growth governance rules (§ GROWTH GOVERNANCE).
+(AMENDED 2026-11-17: three items once listed here are NOT brakes and are RESTORED as refusals under
+act 6: robots.txt Disallow read as a refusal, the machine-extraction veto, and
+`machine_use_allowed=false` read as "registered, never scraped".)
 
 **Legality, credibility and predictive value are independent dimensions.** An anonymous forum post
 is perfectly lawful and unreliable; a government release is lawful, authoritative and frequently
@@ -480,26 +494,53 @@ delete it"; it asks "what does it represent, and does its existence predict anyt
 low-confidence, contradictory and fringe information is preserved as an evidence object.
 **Do not over-normalise the world.**
 
-**WHAT REMAINS REFUSED IS ABOUT ACTS, NOT ABOUT CONTENT, AND IT IS EXACTLY FIVE.** These are the
-principal's own recorded hard boundary; they describe things the desk does not **DO**, never
-subjects it may not read:
+**WHAT REMAINS REFUSED IS ABOUT ACTS, NOT ABOUT CONTENT, AND IT IS EXACTLY SIX.** Acts 1-5 are the
+principal's own recorded hard boundary; act 6 is the Governance amendment of 2026-11-17, which
+applies the terms rulings of 2026-11-13 and 2026-11-14 (FRED, the Wayback/YouTube mirrors, the prop
+showcases). They describe things the desk does not **DO**, never subjects it may not read:
 
 1. **no credential theft or logging in as someone else**
 2. **no bypassing an access control or a paywall**
 3. **no material non-public information**
 4. **no stolen or leaked private data**
 5. **no personal data harvesting or doxxing**
+6. **no automated fetch that the host's robots.txt or terms refuse.** Before any automated fetch,
+   `robots_gate` reads robots.txt with an honest user agent. A `Disallow` on the path refuses. A
+   robots.txt the desk cannot read refuses, as `robots_gate` enforces it (#819, Governance
+   2026-11-10): 404 or 410 means no robots.txt and the fetch may proceed; 401, 403, 5xx, a
+   timeout, a bot wall or a parse failure refuses. Terms that forbid automated access, scraping or
+   data mining refuse, and so do terms the desk has not read or cannot read (walled, JS-only,
+   error): unread terms are not "no ban", and the host stays refused until they are read
+   (`prop_showcase_grounds` `to_confirm`; the #582 ruling). A mirror, cache or archive of a refused
+   page is the same refusal. A bot wall or challenge is never worked around.
 
 If a page is behind a login or a paywall the desk does not break in — and the **open surface of
 that same domain is mined like any other**. Everything reachable without breaking in is mined.
-Those five acts are the whole of the restriction: **there is no sixth, and the absence of a rule
+Those six acts are the whole of the restriction: **there is no seventh, and the absence of a rule
 is a permission, not a reason for caution.** The labels PRIVATE, CONFIDENTIAL_MNPI and
-STOLEN_UNAUTHORIZED carry these five acts, are refused with the reason recorded, and are the only
-refusals in the desk.
+STOLEN_UNAUTHORIZED carry acts 1-5 and are refused with the reason recorded; act 6 is carried on
+the row as PUBLIC_WITH_TERMS with its reason in `terms_note` (catalogued, never fetched).
+
+**THE PERMISSION ROUTE (act 6 only; acts 1-5 have none).** A source act 6 refuses is fetched only
+when a governance ruling names it, source by source, with its conditions, and one of these holds:
+(a) the host has given written permission, recorded in the ruling with its evidence (URL, date and
+the quoted grant) and accepted by the principal; or (b) the principal rules an override himself,
+in his own words, with the conditions it carries. The fetch stays inside those conditions. **An
+override lifts a TERMS refusal only.** It never reaches past a robots `Disallow`, a robots.txt that
+cannot be read, or any anti-bot, WAF or challenge measure, and it sets no precedent for any source
+it does not name. (Scope, not an exception: robots.txt governs crawling and fetching of a host's
+pages and files. A call to a service's documented API, under an account and key the principal
+holds, is governed by that API's terms; it is still refused outright the moment the API path
+returns a bot wall or challenge.) Standing rulings, vendored so a clone can open them:
+`docs/policy/owner-permission-attestation-2026-11-17.md` and
+`docs/policy/llm-relays-terms-ruling-2026-11-17.md` (owner override section).
 
 Enforced by `libs/research/access_classifier.py` (`PRINCIPLE`, `HARD_BOUNDARY`,
 `HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`), `desks/mt5/research/evidence_router.py`, the
-ingestion law (§5c) and `tests/research/test_access_routing.py`.
+ingestion law (§5c), `robots_gate` and `tests/research/test_access_routing.py`. **OWED (2026-11-17,
+Global data):** `access_classifier.py` (`HARD_BOUNDARY`/`_COUNT` to six, `REMOVED_BRAKES` without
+the three restored refusals, `ROUTING` for PUBLIC_WITH_TERMS) and `test_access_routing.py` still
+encode the 2026-09-23 text; until they are changed, this text governs and the code is the defect.
 
 ## 5f. THE MAXIMUM FORM (principal's standing order, 2026-09-17, permanent)
 
