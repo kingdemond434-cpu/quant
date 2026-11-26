@@ -24,10 +24,11 @@ DEMOTION (`sprt_llr`). A Gaussian sequential probability ratio test on the R the
 SINCE IT WENT LIVE, against its own expectation: H0 mean R = MU0_FRAC x exp_r at admission
 (the row is still earning) vs H1 mean R = 0 (the edge is gone), sigma from the row's own sum of
 squares. The sum is sufficient, so no per-trade replay is needed. LLR >= log((1-beta)/alpha)
-demotes. A demoted row goes back to FORWARD ONLY -- its clock keeps running, nothing is retired
+demotes; so does the LOSING leg, a live mean below zero at the same alpha over at least
+LOSING_MIN_N trades, because the SPRT alone is slow on a row that is plainly losing. A demoted row goes back to FORWARD ONLY -- its clock keeps running, nothing is retired
 -- and is re-admitted once the R it produced since the demotion accepts H0
-(LLR <= log(beta/(1-alpha)) over at least READMIT_MIN_N trades) AND it is eligible again: the
-hysteresis.
+(LLR <= log(beta/(1-alpha)) over at least READMIT_MIN_N trades, or a since-demotion mean above
+zero at the same alpha) AND it is eligible again: the hysteresis.
 
 FALSE AND LATE DEMOTES ARE BILLED (`score_outcomes`, `tune`). Every demote is logged with what
 the row did next. A false demote's cost is the R it made after it was demoted (growth forgone); a
@@ -48,6 +49,7 @@ import sys
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from statistics import NormalDist
 from typing import Any
 
 DESK = Path(__file__).resolve().parent.parent
@@ -72,6 +74,7 @@ MU0_FRAC = 0.5
 MU0_FLOOR = 0.02
 SIGMA_FLOOR = 0.25
 READMIT_MIN_N = 5
+LOSING_MIN_N = 8
 OUTCOME_N = 10
 COMOVE_RHO = 0.7
 COMOVE_MIN_OVERLAP = 8
@@ -142,6 +145,15 @@ def sprt_llr(post_n: float, post_sum: float, mu0: float, sigma: float) -> float:
     if post_n <= 0:
         return 0.0
     return (post_n * mu0 * mu0 - 2.0 * mu0 * post_sum) / (2.0 * sigma * sigma)
+
+
+def losing_z(post_n: float, post_sum: float, sigma: float) -> float | None:
+    """The z of the live mean against ZERO, once LOSING_MIN_N live trades exist. The SPRT above
+    separates 'still earning' from 'flat' and is slow on a row that is plainly losing; this leg
+    demotes a row whose live mean is below zero at the same alpha, so a loser leaves fast."""
+    if post_n < LOSING_MIN_N:
+        return None
+    return post_sum / (sigma * math.sqrt(post_n))
 
 
 def bounds(alpha: float, beta: float = BETA) -> tuple[float, float]:
@@ -373,10 +385,16 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
                 cls = _class_refusal(metas[key]["symbol"])
                 if cls:
                     hard = cls
-            if hard or llr >= a_bound:
-                why = hard or (f"SPRT: LLR {llr:.2f} >= {a_bound:.2f} on {int(post_n)} live "
-                               f"trades summing {post_s:+.2f}R vs H0 mean "
-                               f"{_num(rec.get('mu0')):.3f}R")
+            z = losing_z(post_n, post_s, _num(rec.get("sigma"), 1.0))
+            z_bar = -NormalDist().inv_cdf(1.0 - tuning["alpha"])
+            rec["z_live"] = None if z is None else round(z, 4)
+            if hard or llr >= a_bound or (z is not None and z <= z_bar):
+                why = hard or (
+                    f"SPRT: LLR {llr:.2f} >= {a_bound:.2f} on {int(post_n)} live trades summing "
+                    f"{post_s:+.2f}R vs H0 mean {_num(rec.get('mu0')):.3f}R"
+                    if llr >= a_bound else
+                    f"losing leg: z {z:.2f} <= {z_bar:.2f} on {int(post_n)} live trades "
+                    f"summing {post_s:+.2f}R (mean below zero at alpha {tuning['alpha']:.3f})")
                 rec.update(status="DEMOTED", demoted_at=stamp, demote_why=why, nd=n, cumd=s,
                            late_r=round(max(0.0, -post_s), 4),
                            demotes=int(_num(rec.get("demotes"))) + 1, outcome_open=True)
@@ -398,7 +416,10 @@ def step(shadow: Mapping[str, Any], state: Mapping[str, Any], *, now: datetime,
                 rec["outcome_open"] = False
             llr_d = sprt_llr(dn, ds, _num(rec.get("mu0"), MU0_FLOOR), _num(rec.get("sigma"), 1.0))
             rec["llr_since_demote"] = round(llr_d, 4)
-            if dn >= READMIT_MIN_N and llr_d <= b_bound and verdict.get(key) is None:
+            zd = losing_z(dn, ds, _num(rec.get("sigma"), 1.0))
+            z_up = NormalDist().inv_cdf(1.0 - tuning["alpha"])
+            proven = llr_d <= b_bound or (zd is not None and zd >= z_up)
+            if dn >= READMIT_MIN_N and proven and verdict.get(key) is None:
                 rec.update(status="READMIT_PENDING")
         if rec.get("status") == "LIVE" and rec.get("admit_outcome_open"):
             if _num(rec.get("post_n")) >= OUTCOME_N:

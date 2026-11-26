@@ -164,10 +164,17 @@ def test_losing_after_admission_demotes_to_forward_never_retires() -> None:
     art, state2, events = pt.step(later, state, now=NOW + timedelta(days=5))
     assert "EURCHF.carry.asia" not in art["live"]
     d = art["demoted"]["EURCHF.carry.asia"]
-    assert "SPRT" in d["why"]
+    assert "losing leg" in d["why"]
     assert state2["rows"]["EURCHF.carry.asia"]["status"] == "DEMOTED"
     assert any(e["event"] == "demote" and e["statistical"] for e in events)
     assert rec["status"] == "LIVE"
+
+
+def test_a_flat_row_is_demoted_by_the_sprt() -> None:
+    _, state = _admitted()
+    later = {"EURCHF.carry.asia": clock(40 + 300, 12.0 + 0.5, t=1.0)}
+    art, _, _ = pt.step(later, state, now=NOW + timedelta(days=20))
+    assert "SPRT" in art["demoted"]["EURCHF.carry.asia"]["why"]
 
 
 def test_earning_after_admission_stays_live() -> None:
