@@ -133,3 +133,41 @@ def test_the_loop_runs_the_lead_time_stage_last():
     import inspect
     src = inspect.getsource(box_loop.tick)
     assert src.index('"promote"') < src.index('"leadtime"')
+
+
+def _c(body: str, h: float, login: str) -> dict:
+    return {"body": body, "created_at": _t(h), "user": {"login": login}}
+
+
+def test_pr_view_matches_the_pr_stage_reading_of_verdicts():
+    from ops.box_git import forge_api
+    a, b = "a" * 40, "b" * 40
+    cases = [
+        [],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "auditor")],
+        [_c(f"AUDIT CLEAR {b} merge", 1, "auditor"), _c(f"AUDIT CLEAR {a} merge", 2, "auditor")],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "auditor"), _c(f"AUDIT CLEAR {b} merge", 2, "auditor")],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "auditor"), _c(f"AUDIT HOLD {a} merge", 2, "claude")],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "claude")],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "auditor"), _c(f"AUDIT CLEAR {b} merge", 2, "claude")],
+        [_c(f"AUDIT CLEAR {a} merge", 1, "quant-admin")],
+        [_c(f"note\nAUDIT HOLD {a}\n", 1, "auditor"), _c(f"AUDIT CLEAR {a} squash", 2, "auditor")],
+    ]
+    for cs in cases:
+        want = box_loop.audited_clear([forge_api._comment(c) for c in cs], a)
+        assert dl.pr_view(cs, a)["clear_at_head"] is want, cs
+
+
+def test_pr_view_names_the_line_that_blocks_a_clear_pr():
+    a, b = "a" * 40, "b" * 40
+    v = dl.pr_view([_c(f"AUDIT CLEAR {a} merge", 1, "auditor"),
+                    _c(f"AUDIT CLEAR {b} merge", 2, "auditor")], a)
+    assert v["clear_at_head"] is False and v["verdict_lines"] == 2
+    assert v["last_verdict"]["kind"] == "CLEAR" and v["last_verdict"]["sha"] == b[:12]
+
+
+def test_rows_carry_the_pr_view_and_the_box_ci_status_count():
+    doc = _doc()
+    for r in doc["changes"]:
+        assert set(r["pr_view"]) == {"verdict_lines", "last_verdict", "clear_at_head",
+                                     "box_ci_statuses"}

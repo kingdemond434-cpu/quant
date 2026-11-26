@@ -43,6 +43,9 @@ UNMEASURED_STAGES = {"gateway_restart": "no box artifact stamps a gateway restar
 CLEARERS = frozenset({"auditor", "quant-admin"})
 BOX_CI_USER = "box-ci"
 _CLEAR = re.compile(r"^AUDIT CLEAR ([0-9a-f]{40})\b", re.M)
+#: The pr stage's own verdict reading (box_loop._VERDICT over forge_api._comment): the LAST
+#: verdict line on the PR decides, a HOLD from any account counts, a CLEAR only from a clearer.
+_VERDICT = re.compile(r"^AUDIT (CLEAR|HOLD) ([0-9a-f]{40})(?: (merge|squash))?[ \t]*$", re.M)
 #: Failure causes, first match wins. "env" mirrors box_loop._ENV_RED (a box defect, not the code).
 CAUSES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("env", re.compile(r"exit status 128|\+\+\+ Timeout \+\+\+|did not answer in time"
@@ -114,6 +117,24 @@ def first_containing(sha: str | None, rows: Sequence[tuple[datetime, str]],
     return None
 
 
+def pr_view(comments: Sequence[Mapping[str, Any]], head: str) -> dict[str, Any]:
+    """What the pr stage sees on this PR (11-26: CLEAR PRs #53/#147/#148 never got a box-ci
+    status while later PRs did). Read only; mirrors box_loop.audited_clear exactly (tested)."""
+    last: tuple[str, str, str, str | None] | None = None
+    n = 0
+    for c in comments:
+        login = str((c.get("user") or {}).get("login") or "")
+        for m in _VERDICT.finditer(str(c.get("body") or "")):
+            if m.group(1) == "CLEAR" and login not in CLEARERS:
+                continue  # forge_api._comment rewrites it to UNCOUNTED CLEAR
+            n += 1
+            last = (m.group(1), m.group(2), login, _iso(_ts(c.get("created_at"))))
+    return {"verdict_lines": n,
+            "last_verdict": None if last is None else
+            {"kind": last[0], "sha": last[1][:12], "by": last[2], "at": last[3]},
+            "clear_at_head": last is not None and last[:2] == ("CLEAR", head)}
+
+
 def row(pr: Mapping[str, Any], comments: Sequence[Mapping[str, Any]],
         statuses: Sequence[Mapping[str, Any]], greens: Sequence[tuple[datetime, str]],
         production: Sequence[tuple[datetime, str]], adopted: Sequence[tuple[datetime, str]],
@@ -130,7 +151,10 @@ def row(pr: Mapping[str, Any], comments: Sequence[Mapping[str, Any]],
         "adopted": first_containing(merge, adopted, is_ancestor) if live else None}
     return {"pr": pr.get("number"), "head": head, "title": str(pr.get("title") or "")[:120],
             "state": pr.get("state"), "ci_causes": causes,
-            "stages": {k: _iso(st[k]) for k in STAGES}}
+            "stages": {k: _iso(st[k]) for k in STAGES},
+            "pr_view": {**pr_view(comments, head), "box_ci_statuses": len(
+                [s for s in statuses
+                 if str((s.get("creator") or {}).get("login") or "") == BOX_CI_USER])}}
 
 
 def _hours(a: datetime | None, b: datetime | None) -> float | None:
