@@ -152,3 +152,23 @@ def test_a_job_gets_the_workers_own_home_and_never_one_the_job_file_names(tmp_pa
     out = json.loads((jobs / "done" / "j1.json").read_text(encoding="utf-8"))
     assert out["rc"] == 0, out
     assert out["out"].split() == [str(tmp_path / "worker"), str(tmp_path)]
+
+
+def test_a_replay_red_at_the_old_600s_cap_is_rerun_and_still_blocks_until_it_passes() -> None:
+    """Boot r15 (box 2026-11-26): every fast-path replay hit the 600 s cap, the PR counted as
+    checked after two env re-runs and 0 of 148 CLEAR PRs ever merged. A red that measured a cap
+    smaller than the job has now is run again at once, however many times it already ran."""
+    old = "box: replay-shadow rc=124: timed out after 600s"
+    reds = [_run("replay-shadow", "failure", old, h, i) for i, h in enumerate((30, 20, 10))]
+    assert not L.checked(reds, NOW)                       # three old-cap reds: run it again
+    assert not L.checked([_run("replay-shadow", "failure", old, 0.1, 9)], NOW)   # no hour wait
+    now_cap = f"box: replay-shadow rc=124: timed out after {L.FAST_REPLAY_TIMEOUT_S}s"
+    assert L.checked([*reds, _run("replay-shadow", "failure", now_cap, 0.1, 10)], NOW)
+    assert L.checked([*reds, _run("replay-shadow", "success", "ok", 0.1, 11)], NOW)
+    # a risk timeout at its own (unchanged) cap is no old-cap red
+    risk = "box: risk suites rc=124: timed out after 600s"
+    assert L.checked([_run("risk-invariants", "failure", risk, h, i)
+                      for i, h in enumerate((9, 6, 3))], NOW)
+    # a real code red in another context decides the head: no hour of replay is spent on it
+    code = _run("risk-invariants", "failure", "risk suites rc=1: 2 failed", 5, 20)
+    assert L.checked([code, *reds], NOW)

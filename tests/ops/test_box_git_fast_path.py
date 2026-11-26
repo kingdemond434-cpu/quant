@@ -1,5 +1,6 @@
 """The fast path (zuck 2026-11-25 18:53Z; Audit HOLD H1/H2 19:08Z): a CLEARed PR waits only on the
-kept money gates, risk suites and replay-shadow (10 min cap each); only a pure box defect passes,
+kept money gates, risk suites (10 min cap) and replay-shadow (60 min since boot r15); only a
+pure box defect passes,
 a real red or a hang blocks; other pre-merge checks are informational unless
 QUANT_FORGE_FULL_GATING=1."""
 from __future__ import annotations
@@ -50,7 +51,8 @@ def test_replay_shadow_still_runs_capped_on_the_fast_path(monkeypatch):
 
     monkeypatch.setattr(box_loop, "replay_job", fake)
     assert box_loop.fast_replay(None, "b", "h", ["x.py"])[0] is False
-    assert seen["t"] == 600
+    # boot r15: 600 s never fit 180 replay children
+    assert seen["t"] == box_loop.FAST_REPLAY_TIMEOUT_S == 3600
 
 
 def test_the_merge_gate_needs_the_risk_job_and_replay_shadow_on_the_forge():

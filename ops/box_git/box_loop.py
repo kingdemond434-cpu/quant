@@ -479,6 +479,23 @@ def _at(r: Mapping[str, Any]) -> datetime | None:
         return None
 
 
+#: (boot r15) "timed out after N s" with N below the cap that job has NOW measured the old
+#: budget, not the code. It does not count toward ENV_RERUNS and is re-run at once (it stays a
+#: red until a run at the current cap passes), unless another context holds a real code red.
+_TIMED_OUT = re.compile(r"timed out after (\d+)\s*s")
+
+
+def _cap_now(name: str) -> int:
+    return FAST_REPLAY_TIMEOUT_S if name == REPLAY_CONTEXT else FAST_RISK_TIMEOUT_S
+
+
+def _undercap(r: Mapping[str, Any]) -> bool:
+    out = r.get("output")
+    m = _TIMED_OUT.search(str(out.get("summary") or "") if isinstance(out, Mapping) else "")
+    return (r.get("status") == "completed" and r.get("conclusion") == "failure" and m is not None
+            and int(m.group(1)) < _cap_now(str(r.get("name") or "")))
+
+
 def _env_red(r: Mapping[str, Any]) -> bool:
     out = r.get("output") if isinstance(r.get("output"), Mapping) else {}
     return (r.get("status") == "completed" and r.get("conclusion") == "failure"
@@ -494,9 +511,14 @@ def checked(runs: Sequence[Mapping[str, Any]], now: datetime | None = None) -> b
         for r in sorted(done, key=lambda r: (_at(r) or datetime.min.replace(tzinfo=UTC),
                                              int(r.get("id") or 0))):
             latest[str(r.get("name") or "")] = r
+        if any(_undercap(r) for r in latest.values()):
+            # (r15) a red at an old, smaller cap: run it again now -- unless another context
+            # already holds a real code red, which decides the head on its own
+            return any(r.get("conclusion") == "failure" and not _env_red(r)
+                       for r in latest.values())
         reds = [r for r in latest.values() if _env_red(r)]
-        rounds = max((sum(1 for r in done if r.get("name") == n and _env_red(r))
-                      for n in latest), default=0)
+        rounds = max((sum(1 for r in done if r.get("name") == n and _env_red(r)
+                           and not _undercap(r)) for n in latest), default=0)
         newest = max((a for r in reds if (a := _at(r)) is not None), default=None)
         code_red = any(r.get("conclusion") == "failure" and not _env_red(r)
                        for r in latest.values())
@@ -539,6 +561,12 @@ RISK_CONTEXT = "risk-invariants"
 REPLAY_CONTEXT = "replay-shadow"
 FAST_TIMEOUT_S = 600
 FAST_RISK_TIMEOUT_S = FAST_TIMEOUT_S
+#: (boot r15, 2026-11-26) replay-shadow is 90 scenarios x 2 trees = 180 fresh child processes.
+#: Measured 172 s on a Linux build box with its research legs failing fast; on the trading box
+#: every fast-path replay today (#4, #9, #13, #126, #127, #128) hit the 600 s cap, so no CLEARed
+#: PR could go green and 0 of 148 merged. The cap is replay_job's own pre-fast-path default.
+#: The gate is unchanged: a replay that times out still blocks; only its budget is realistic.
+FAST_REPLAY_TIMEOUT_S = 3600
 _RESULT_LINE = re.compile(r"\b\d+ (passed|failed|errors?)\b")
 _RC = re.compile(r"rc=(\d+)")
 
@@ -565,7 +593,7 @@ def fast_risk(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]
 
 
 def fast_replay(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tuple[bool, str]:
-    return _fast(*replay_job(cfg, base, head, changed, timeout_s=FAST_TIMEOUT_S))
+    return _fast(*replay_job(cfg, base, head, changed, timeout_s=FAST_REPLAY_TIMEOUT_S))
 
 
 def pr_order(prs: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
