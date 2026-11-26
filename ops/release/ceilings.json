@@ -8,7 +8,8 @@
     "desks/mt5/prop/ftmo_executor.py": {
       "REQUEST_BUDGET": 200,
       "REQUEST_HARD_CAP": 1950,
-      "STALE_GRACE_S": 60.0
+      "STALE_GRACE_S": 60.0,
+      "GOLD_SLEEVES": 1
     },
     "desks/mt5/prop/ftmo_follower.py": {
       "TICK_SKEW_S": 300.0,
@@ -17,6 +18,14 @@
       "MAX_LOSS_FRAC": 0.1,
       "MAX_NOTIONAL_X": 5.0,
       "REQUEST_BUDGET": 1500
+    },
+    "desks/mt5/prop/e8_gold.py": {
+      "E8_SPEED_RISK": 0.0075,
+      "E8_SPEED_OTHERS_MAX": 0.0015,
+      "E8_GOLD_SUM_MAX": 0.009,
+      "SESSION_PROBE_DEMOTE_STOPS": 5,
+      "SESSION_PROBE_N_LONDON_AM": 7,
+      "SESSION_PROBE_N_AFTERNOON": 5
     }
   },
   "equal": {
@@ -87,7 +96,15 @@
     },
     "desks/mt5/prop/e8_gold.py": {
       "_retry_failed_legs(news_why=)": "None",
-      "_retry_failed_legs(news_shadow_why=)": "None"
+      "_retry_failed_legs(news_shadow_why=)": "None",
+      "SESSION_PROBE_OFF": "DESK / 'data' / 'GOLD_SESSION_PROBE_OFF'",
+      "SESSION_PROBE_STATE": "DESK / 'data' / 'GOLD_SESSION_PROBE_STATE.json'",
+      "E8_SPEED_LIFT_OFF": "DESK / 'data' / 'E8_SPEED_LIFT_OFF'",
+      "session_probe(state_path=)": "None",
+      "session_probe(stops_path=)": "None",
+      "session_probe(off=)": "None",
+      "probe_stop_count(path=)": "None",
+      "e8_speed_lift(off=)": "None"
     },
     "desks/mt5/mt5desk/calendar_us.py": {
       "NFP_MOVED": "{(2026, 7): (7, 2)}"
