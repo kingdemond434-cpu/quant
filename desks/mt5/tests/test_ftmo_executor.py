@@ -232,7 +232,7 @@ def test_a_certified_gold_sleeve_is_this_lanes_and_the_followers_copy_never(worl
 
 
 def test_the_gold_revert_switch_makes_gold_the_followers_alone(world, monkeypatch) -> None:
-    monkeypatch.setattr(fx, "GOLD_SLEEVES", False)
+    monkeypatch.setattr(fx, "GOLD_SLEEVES", 0)
     assert _gold_book("XAUUSD_x_asia") == []
 
 
@@ -328,7 +328,7 @@ def test_an_unreadable_direction_state_flattens_nothing(gold_world, monkeypatch)
 
 def test_the_two_gold_switches_move_together() -> None:
     import prop_challenge_allocator as pca
-    assert fx.GOLD_SLEEVES == ("XAUUSD" not in pca.EXECUTOR_SKIP_SYMBOLS)
+    assert fx.gold_sleeves_on() == ("XAUUSD" not in pca.EXECUTOR_SKIP_SYMBOLS)
     assert pca.FTMO_EXECUTABLE <= fx._FOLLOWER_KEYS
 
 
@@ -613,3 +613,11 @@ def test_a_position_certified_with_no_time_exit_is_not_paged(world) -> None:
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert not [a for a in doc["alerts"] if "#56" in a]
     assert doc["manage_stop_target_only"] == ["AUDNZD #56"]
+
+
+def test_gold_sleeves_is_an_int_flag_read_as_at_least_one(monkeypatch) -> None:
+    """The release ceilings bound GOLD_SLEEVES with a `max` row, so it is an int, not a bool."""
+    assert type(fx.GOLD_SLEEVES) is int and fx.GOLD_SLEEVES == 1 and fx.gold_sleeves_on()
+    for off in (0, -1, None, "x"):
+        monkeypatch.setattr(fx, "GOLD_SLEEVES", off)
+        assert fx.gold_sleeves_on() is False

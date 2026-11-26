@@ -95,9 +95,20 @@ SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: A gold key the allocator funds that is NOT the follower's copy trades here under the same doors,
 #: the same FTMO rails on the whole book, the same cross-account opposite fence and the same
 #: one-position-per-symbol rule (`ALREADY_OPEN`, which reads every magic). The follower refuses any
-#: gold against its side from any source, so the two lanes can never hold gold both ways. False is
-#: the revert path: gold is the follower's alone again, nothing else changes.
-GOLD_SLEEVES = True
+#: gold against its side from any source, so the two lanes can never hold gold both ways. 0 is
+#: the revert path: gold is the follower's alone again, nothing else changes. An int flag (1 on,
+#: 0 off, read as >= 1) so the release ceilings can bound it with a plain `max` row.
+GOLD_SLEEVES = 1
+
+
+def gold_sleeves_on() -> bool:
+    """GOLD_SLEEVES read as a flag: on at 1 or more, off at 0 or anything unreadable."""
+    try:
+        return int(GOLD_SLEEVES) >= 1
+    except (TypeError, ValueError):
+        return False
+
+
 #: Hourly bars fetched per sleeve: the E8 executor's lookback.
 LOOKBACK_BARS = 900
 MIN_BARS = 60
@@ -196,7 +207,7 @@ def book_sleeves(alloc: Any, cert: dict[str, float] | None, now: datetime
         if not (frac > 0) or not isinstance(spec, dict):
             continue
         if str(spec.get("symbol") or "").upper() in SKIP_SYMBOLS and \
-                (not GOLD_SLEEVES or key in _FOLLOWER_KEYS):
+                (not gold_sleeves_on() or key in _FOLLOWER_KEYS):
             continue
         out.append((key, frac, spec))
     return out, f"{len(out)} funded sleeve(s) with a spec (the follower's gold copy excluded)"
