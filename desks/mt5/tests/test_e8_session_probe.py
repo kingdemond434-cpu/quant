@@ -7,9 +7,8 @@ gold_asia is lifted to E8_SPEED_RISK while the other windows carry at most probe
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
-
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _DESK = Path(__file__).resolve().parents[1]
