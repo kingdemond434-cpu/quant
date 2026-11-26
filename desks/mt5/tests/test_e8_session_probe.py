@@ -9,9 +9,17 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from mt5desk import decision_core as dc
-from prop import e8_gold as g
-from test_fusion_book_r6 import AFTERNOON_H, ASIA_H, LONDON_H, VALID, _e8, _placed
+import sys
+from pathlib import Path
+
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK), str(_DESK.parent.parent), str(_DESK / "tests")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from mt5desk import decision_core as dc  # noqa: E402
+from prop import e8_gold as g  # noqa: E402
+from test_fusion_book_r6 import AFTERNOON_H, ASIA_H, LONDON_H, VALID, _e8, _placed  # noqa: E402
 
 NOW = datetime(2026, 11, 27, 12, tzinfo=UTC)
 
