@@ -403,7 +403,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-26T10:20:19+00:00",
+ "heartbeat_utc": "2026-11-26T10:35:24+00:00",
  "sweep_phase": {
   "pid": 18528,
   "sweep_started_utc": "2026-11-25T04:27:14+00:00",
@@ -637,7 +637,7 @@
      }
     },
     "merge_and_publish": {
-     "samples": 912,
+     "samples": 918,
      "top": [
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__lt__:48 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__lt__:48 < common.py:new_method:76",
@@ -652,27 +652,27 @@
       {
        "stack": "external_gauntlet.py:run_gauntlet:3034 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 48,
-       "share": 0.053
+       "share": 0.052
       },
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__ge__:60 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__ge__:60 < common.py:new_method:76",
        "n": 38,
-       "share": 0.042
+       "share": 0.041
       },
       {
        "stack": "_methods.py:_var:168 < _methods.py:_std:219 < dsr.py:sharpe_ratio:24 < dsr.py:probabilistic_sharpe_ratio:34 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
-       "n": 34,
-       "share": 0.037
+       "n": 35,
+       "share": 0.038
       }
      ],
      "process": {
-      "cpu_s": 3171.4,
-      "page_faults": 78260069.0,
+      "cpu_s": 3220.8,
+      "page_faults": 78442567.0,
       "read_bytes": 2371343410.0,
-      "write_bytes": 1829539.0,
-      "sampled_s": 9110.0,
+      "write_bytes": 1848353.0,
+      "sampled_s": 9170.0,
       "rss_mb_max": 8072.2,
-      "cpu_share_of_wall": 0.348
+      "cpu_share_of_wall": 0.351
      }
     }
    }
