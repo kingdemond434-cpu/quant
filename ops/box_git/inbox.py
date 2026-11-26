@@ -114,6 +114,24 @@ def _file_away(bundle: Path, manifest: Path, where: Path, why: str) -> None:
 
 Git = Callable[..., tuple[int, str]]   # git(*args, push_as=None) -> (rc, output)
 Api = Callable[[str, str, Any], Any]   # api(method, path, body) as the `claude` account
+MAX_PAGES = 40
+
+
+def get_all(api: Api, path: str) -> list[Any]:
+    """Every row of a paged forge list. The forge returns at most `limit` rows a page; with 86
+    open PRs on 11-26 a first-page-only read missed the existing PR, so the import POSTed a
+    duplicate (HTTP 409, deep-forest-grounds-widened refused) and a verdict waited forever for a
+    PR it could not see."""
+    sep = "&" if "?" in path else "?"
+    out: list[Any] = []
+    for page in range(1, MAX_PAGES + 1):
+        got = api("GET", f"{path}{sep}limit=50&page={page}", None) or []
+        if not isinstance(got, list):
+            break
+        out.extend(got)
+        if len(got) < 50:
+            break
+    return out
 
 
 def import_one(bundle: Path, manifest_path: Path, *, git: Git, api: Api) -> tuple[bool, str]:
@@ -142,7 +160,7 @@ def import_one(bundle: Path, manifest_path: Path, *, git: Git, api: Api) -> tupl
     rc, out = git("push", m.head, f"refs/heads/{m.branch}", push_as="claude")
     if rc != 0:
         return False, f"the forge refused the push (repository hook or protection): {out[-400:]}"
-    prs = api("GET", f"/repos/{REPO}/pulls?state=open&limit=50", None) or []
+    prs = get_all(api, f"/repos/{REPO}/pulls?state=open")
     pr = next((p for p in prs if (p.get("head") or {}).get("ref") == m.branch
                and (p.get("base") or {}).get("ref") == LIVE), None)
     if pr is None:
@@ -152,7 +170,7 @@ def import_one(bundle: Path, manifest_path: Path, *, git: Git, api: Api) -> tupl
     if not n:
         return False, "pushed, but the forge returned no pull request number"
     have = {str(c.get("body") or "").strip()
-            for c in api("GET", f"/repos/{REPO}/issues/{n}/comments?limit=50", None) or []}
+            for c in get_all(api, f"/repos/{REPO}/issues/{n}/comments")}
     posted = 0
     for c in m.comments:
         if c.strip() not in have:
@@ -218,14 +236,14 @@ def import_verdict(path: Path, *, api: Api) -> tuple[bool, str]:
     if v is None:
         return False, why
     branch, line = v
-    prs = api("GET", f"/repos/{REPO}/pulls?state=open&limit=50", None) or []
+    prs = get_all(api, f"/repos/{REPO}/pulls?state=open")
     pr = next((p for p in prs if (p.get("head") or {}).get("ref") == branch
                and (p.get("base") or {}).get("ref") == LIVE), None)
     if pr is None:
         return False, f"no open PR for {branch} yet (its packet comes first)"
     n = int(pr.get("number") or 0)
     have = {str(c.get("body") or "").strip()
-            for c in api("GET", f"/repos/{REPO}/issues/{n}/comments?limit=50", None) or []}
+            for c in get_all(api, f"/repos/{REPO}/issues/{n}/comments")}
     if line not in have:
         api("POST", f"/repos/{REPO}/issues/{n}/comments", {"body": line})
     return True, f"{line[:60]} on PR #{n}"

@@ -147,6 +147,21 @@ def refresh(folder: Path, git: Callable[..., str], ref: str, policy: Mapping[str
 
 
 # ------------------------------------------------------------------------- the forge (read only)
+def forge_all(forge: Any, path: str, pages: int = 40) -> list[Any]:
+    """Every row of a paged forge list (at most 50 a page). A first-page-only read never saw an
+    owner AUTHORIZE TRUST on the 51st open PR (86 open on 2026-11-26)."""
+    sep = "&" if "?" in path else "?"
+    out: list[Any] = []
+    for page in range(1, pages + 1):
+        got = forge(f"{path}{sep}limit=50&page={page}") or []
+        if not isinstance(got, list):
+            break
+        out.extend(got)
+        if len(got) < 50:
+            break
+    return out
+
+
 def forge_get(cfg: Mapping[str, Any], path: str) -> Any:
     import ssl
     token = (Path(cfg["tokens"]) / "adopt.token").read_text(encoding="utf-8").strip()
@@ -302,7 +317,7 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
     if forge is None:
         def forge(path: str) -> Any:
             return forge_get(cfg, path)
-    prs = forge("/repos/quant/quant/pulls?state=open&limit=50") or []
+    prs = forge_all(forge, "/repos/quant/quant/pulls?state=open")
     for p in prs:
         if (p.get("base") or {}).get("ref") != LIVE:
             continue
@@ -325,7 +340,7 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
             log(rlog, {"class": "CONTRACT", "pr": n, "head": head, "t_hash": ht,
                        "areas": areas, "ok": passed, "evidence": what[-200:]})
         if cls in ("TRUST", "CONTRACT") and ht not in (pin.get("authorized") or {}):
-            c = owner_typed(forge(f"/repos/quant/quant/issues/{n}/comments?limit=50") or [], head)
+            c = owner_typed(forge_all(forge, f"/repos/quant/quant/issues/{n}/comments"), head)
             if c:
                 pin.setdefault("authorized", {})[ht] = {"head": head, "pr": n,
                                                         "comment": c.get("id"), "at": _now()}
