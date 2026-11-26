@@ -1,7 +1,0 @@
-{
- "branch": "claude/dash-feed-leg",
- "head": "1591a1584917733e2a6bff0a1698e299b2266ac7",
- "title": "Dashboard feed: hourly core leg builds reports/DASHBOARD_FEED.json",
- "body": "Autonomy packet, Audit CLEAR 1591a1584. Box proof: desks/mt5/reports/DASHBOARD_FEED.json rewritten by the hourly dashboard_feed leg (built_at within the hour).",
- "comments": []
-}
