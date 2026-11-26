@@ -47,6 +47,8 @@ SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG_PATH = BASE / "logs" / "shadow.log"
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
+#: Forward trades kept per clock for measured co-movement (research/probe_tier.comove_groups).
+R_TAIL_N = 60
 
 
 def _write_state(path: Path, state: dict) -> None:
@@ -2168,6 +2170,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json",
                     "max_dd_r": float(max_dd),
                     "first_entry": str(trades[0].entry_time),
                     "last_entry": str(trades[-1].entry_time),
+                    # THE PROBE TIER'S INPUTS (research/probe_tier.py): the sum of squares gives
+                    # the row's own R variance for its SPRT, and the recent tail lets co-movement
+                    # be MEASURED between clocks rather than assumed from a shared symbol.
+                    "sum_r2": float(sum(r * r for r in rs)),
+                    "r_tail": [[str(t.entry_time)[:16], round(float(t.r_multiple), 4)]
+                               for t in trades[-R_TAIL_N:]],
                 })
             else:
                 # ZERO FORWARD OBSERVATIONS IS A MEASUREMENT, NOT A REASON TO KEEP THE OLD NUMBER.
@@ -2178,7 +2186,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json",
                 # honest zero and the historical arm is reported separately (L1.28a: unmeasured is
                 # never a verdict, and neither is inherited).
                 st.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
-                           "first_entry": None, "last_entry": None})
+                           "first_entry": None, "last_entry": None,
+                           "sum_r2": 0.0, "r_tail": []})
             # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
             # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
             # before its hypothesis was frozen arrived at the gate already 8/14 of the way through

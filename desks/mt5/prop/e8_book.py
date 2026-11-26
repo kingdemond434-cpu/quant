@@ -206,6 +206,39 @@ def _load_survivors() -> list[dict[str, Any]]:
     return rows
 
 
+def probe_rows(now: datetime | None = None) -> tuple[list[dict[str, Any]], str]:
+    """THE PROBE TIER'S LIVE ROWS, shaped as survivor rows (research/probe_tier.py, zuck
+    2026-11-26 22:50Z: every promising strategy flows into E8 directly, sized by its own forward
+    record). Only rows whose enrolment identity is known (their params travel) are offered; the
+    integrity door, the venue, the duplicate and block rules, the stress cap and a solve, where
+    one exists, judge them exactly as they judge a certificate. ([], why) when the artifact is
+    absent or stale: nothing is added, nothing is removed."""
+    try:
+        from research import probe_tier
+    except Exception:
+        try:
+            import probe_tier  # type: ignore[no-redef]
+        except Exception as exc:
+            return [], f"probe tier unavailable ({type(exc).__name__})"
+    live, why = probe_tier.load_live(now=now)
+    out: list[dict[str, Any]] = []
+    for key, v in sorted(live.items()):
+        params = v.get("params")
+        sym, fam = str(v.get("symbol") or "").upper(), str(v.get("family") or "")
+        if not sym or not fam or not isinstance(params, dict) or _family_banned(fam):
+            continue
+        out.append({
+            "key": key, "symbol": sym, "family": fam,
+            "selector": v.get("selector") or "asia",
+            "fingerprint": f"probe:{key}", "params": dict(params),
+            "ev": v.get("exp_r"), "exp_x3": None, "lockbox": None, "days": None,
+            "n_trials": None, "tier_s": False, "private_lineage": False,
+            "probe": {"n": int(v.get("n") or 0), "shrink": float(v.get("shrink") or 0.0),
+                      "forward_t": v.get("forward_t")},
+        })
+    return out, f"{why}; {len(out)} offered to E8"
+
+
 def _spec_fingerprint(spec: dict[str, Any]) -> str:
     from admission_integrity import spec_fingerprint
     return spec_fingerprint(spec.get("symbol"), spec.get("family"),
@@ -484,6 +517,14 @@ def sleeve_risk(row: Mapping[str, Any]) -> float:
     """RISK_FRAC x n/(n+N0) for the sleeve's fill-proven depth, x TIER_S_MULT when Tier S. A
     sleeve admitted on a principal-funded key alone (no fill record) keeps RISK_FRAC."""
     fp = row.get("fill_proven")
+    probe = row.get("probe")
+    if isinstance(probe, Mapping) and not fp and not row.get("principal_funded"):
+        # A PROBE ROW IS SIZED BY ITS OWN FORWARD RECORD: n/(n+N0) of RISK_FRAC on its forward n,
+        # in place of the certificate prior, with every priced doubt kept (evidence_mult over the
+        # prior's own shrink is the product of the doubt multipliers).
+        doubt = (float(row["evidence_mult"]) / fill_shrink(float(CERT_PRIOR_N))
+                 if "evidence_mult" in row else 1.0)
+        return round(RISK_FRAC * fill_shrink(float(probe.get("n") or 0)) * min(doubt, 1.0), 6)
     if "evidence_mult" in row:
         base = RISK_FRAC * float(row["evidence_mult"])
     else:
@@ -522,8 +563,8 @@ def fallback_filter(chosen: list[dict[str, Any]]
     for r in chosen:
         col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
         why = None
-        if not (r.get("fill_proven") or r.get("principal_funded")):
-            why = "no deployable solve, and no fill record or principal funding"
+        if not (r.get("fill_proven") or r.get("principal_funded") or r.get("probe")):
+            why = "no deployable solve, and no fill record, principal funding or live probe"
         if why:
             dropped.append({"column": col, "why": why,
                             "missed_growth_risk_frac": float(r.get("risk_frac") or 0.0),
@@ -1022,11 +1063,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        eligible, integrity_blocked = live_admissible(_load_survivors())
+        _probes, probe_why = probe_rows()
+        eligible, integrity_blocked = live_admissible(_load_survivors() + _probes)
     except (OSError, ValueError, ImportError) as exc:
         print(f"REFUSING to write E8 book: integrity authority unavailable ({type(exc).__name__}: {exc})")
         return 1
     doc = select(tradeable, rows=eligible)
+    doc["probe_tier"] = {"why": probe_why, "offered": len(_probes),
+                         "selected": sum(1 for r in doc.get("sleeves") or []
+                                         if isinstance(r, dict) and r.get("probe"))}
     doc["blocked_by_integrity"] = integrity_blocked
     doc["n_blocked_by_integrity"] = len(integrity_blocked)
     from kelly_survival import terms_fence_state

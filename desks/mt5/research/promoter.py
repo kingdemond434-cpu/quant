@@ -2137,6 +2137,8 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             continue                                    # RETIRED is a one-way door
         if only is not None and str(s.get("name") or "") not in only:
             continue
+        if s.get("probe") and s.get("probe_status") == "DEMOTED":
+            continue          # the probe tier's demotion stands until its own re-admit test
         # EVERY READING IS RECORDED, not only the ones that move a row. The streak that governs
         # restoration lives ON the row, so a pass whose verdict changed nothing but whose count
         # advanced still has to be written -- otherwise "two consecutive readings" silently
@@ -2351,6 +2353,171 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             key, door="PROMOTED", from_status="", to_status=_door_status(cap),
             evidence=door_evidence(key, cap, n=row.get("n"), exp_r=row.get("exp_r"),
                                    days=row.get("days"), lane="qquant"))
+        changed = True
+    return changed
+
+
+# ------------------------------------------------------------------ THE PROBE TIER (2026-11-26)
+#: zuck 2026-11-26 22:50Z: every promising forward clock trades live at probe size and the losers
+#: are demoted fast, automatically. The decision is research/probe_tier.py's; this is the one door
+#: that writes it onto the roster. A row the allocator MEASURED sizes itself (sovereignty); a row
+#: it has not measured trades at PROMOTED_RISK_FRAC x n/(n+50). A probe demotion is STANDBY, never
+#: RETIRED, and the retirement rules skip probe rows: back to forward test, re-admitted by the test.
+PROBE_TIER_OFF = BASE / "data" / "PROBE_TIER_OFF"
+
+
+def _probe_rail(rail: str, dedupe: str, **fields: object) -> None:
+    """The missed-growth line every shrink and demotion owes (GROWTH_GOVERNANCE). Never raises."""
+    with suppress(Exception):
+        from mt5desk import fusion_rails
+        fusion_rails.line_once(rail, dedupe, **fields)
+
+
+def _probe_executor_gap(meta: dict, params: dict) -> str | None:
+    if meta.get("family") == "session_range_breakout":
+        return (None if meta.get("selector") in GOLD_WINDOWS
+                else f"bracket window {meta.get('selector')!r} is not one the gateway runs")
+    try:
+        from mt5desk import executables
+        return (executables.executor_gap(meta["family"]) if _sleeve_timeframe(params) == "H1"
+                else executables.executor_gap(meta["family"], _sleeve_timeframe(params)))
+    except Exception as exc:
+        return f"executor registry unavailable ({type(exc).__name__}: {exc})"
+
+
+def apply_probe_tier(sleeves: list[dict], shadow: dict, identities: dict, view: dict, *,
+                     regrade: dict | None = None, decision: dict | None = None) -> bool:
+    """Write the probe tier's decision onto the roster. Returns True when a row changed.
+
+    Admit: a probe-live key not on the roster joins it; a STANDBY row of that key that the
+    allocator has not refused on the current reading goes LIVE. Demote: a probe row the tier no
+    longer lists live goes STANDBY at 0% (probe_status DEMOTED). RETIRED rows are never touched.
+    Every refusal door the main lane applies (cost re-grade, blind review, Tier S, executor) still
+    applies here. Never raises: an unavailable tier changes nothing."""
+    if decision is None:
+        try:
+            try:
+                import probe_tier as _pt
+            except ImportError:
+                from research import probe_tier as _pt
+            decision = _pt.run(shadow, identities=identities)
+        except Exception as exc:
+            plog(f"probe tier unavailable ({type(exc).__name__}: {exc}) -- roster unchanged")
+            return False
+    live = decision.get("live") if isinstance(decision.get("live"), dict) else {}
+    if decision.get("status") == "UNMEASURED":
+        plog(f"probe tier UNMEASURED ({decision.get('why')}) -- roster unchanged")
+        return False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    by_name = {str(s.get("name") or ""): s for s in sleeves}
+    changed = False
+    # DEMOTE FIRST: a probe row the tier no longer lists live holds nothing.
+    for s in sleeves:
+        if not s.get("probe") or str(s.get("status") or "").upper() != "LIVE":
+            continue
+        name = str(s.get("name") or "")
+        if name in live:
+            continue
+        why = ((decision.get("demoted") or {}).get(name) or {}).get("why") \
+            or "no longer live in the probe tier"
+        s.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "probe_status": "DEMOTED", "demoted_at": stamp, "demote_reason": why})
+        plog(f"PROBE DEMOTED {name} -> STANDBY (forward test, NOT retired) -- {why}")
+        _probe_rail("probe_demote", f"{name}/{stamp[:10]}", sleeve=name, why=why,
+                    risk_frac=0.0)
+        note_door(name, door="DEMOTED", from_status="LIVE", to_status="STANDBY", reason=why,
+                  evidence=door_evidence(name, s.get("admission"), lane="probe_tier"))
+        changed = True
+    for key, pv in sorted(live.items()):
+        st = shadow.get(key) if isinstance(shadow.get(key), dict) else {}
+        ident = identities.get(key) or {}
+        meta = {"symbol": str(ident.get("symbol") or pv.get("symbol") or ""),
+                "family": str(ident.get("family") or pv.get("family") or ""),
+                "selector": str(ident.get("selector") or pv.get("selector") or "")}
+        params = ident.get("params") or {}
+        refusal = None
+        if not ident and meta["family"] != "session_range_breakout":
+            refusal = ("no enrolment identity for this clock: its params are unknown, so the "
+                       "gateway would trade a different strategy under its name")
+        bad = regrade_block(key, regrade or {})
+        refusal = refusal or (bad and ("fails its own ten gates at the current cost model: "
+                                       + ", ".join(bad.get("gates_failing_now")
+                                                   or ["unspecified"]))) \
+            or (blind_review_veto(key) and "blind review VETO") \
+            or tier_s_block(key) or _class_refusal(meta["symbol"]) \
+            or _probe_executor_gap(meta, params)
+        cur = by_name.get(key)
+        if refusal:
+            if cur is not None and cur.get("probe") and str(cur.get("status")).upper() == "LIVE":
+                cur.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                            "probe_status": "REFUSED", "demoted_at": stamp,
+                            "demote_reason": refusal})
+                changed = True
+            plog(f"{key}: probe refused -- {refusal}")
+            continue
+        n = float(pv.get("n") or 0)
+        shrink = float(pv.get("shrink") or 0.0)
+        cap = capital_verdict(view, key, symbol=meta["symbol"], family=meta["family"],
+                              selector=meta["selector"])
+        if cap["status"] == "STANDBY":
+            # THE ALLOCATOR LOOKED AND SAID NO: sovereignty, the probe does not overrule it.
+            plog(f"{key}: probe admitted, allocator refuses on the current reading -- "
+                 f"{cap.get('why')}")
+            if cur is not None and cur.get("probe") and str(cur.get("status")).upper() == "LIVE":
+                cur.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                            "admission": cap, "demoted_at": stamp,
+                            "demote_reason": cap.get("why")})
+                changed = True
+            continue
+        if cap["status"] == "LIVE":
+            frac, source = float(cap["risk_frac"]), "allocator_marginal"
+        else:
+            frac, source = round(PROMOTED_RISK_FRAC * shrink, 6), "probe_tier"
+        if not frac > 0:
+            continue
+        if source == "probe_tier":
+            _probe_rail("probe_shrink", f"{key}/{stamp[:10]}", sleeve=key, shrink=shrink,
+                        risk_frac=round(PROMOTED_RISK_FRAC - frac, 6),
+                        why=f"probe size {frac:.4%} = {PROMOTED_RISK_FRAC:.2%} x n/(n+50), n={int(n)}")
+        probe_fields = {"probe": True, "probe_status": "LIVE", "probe_n": int(n),
+                        "probe_shrink": shrink, "probe_admitted_at": pv.get("admitted_at"),
+                        "missed_growth_risk_frac": (round(PROMOTED_RISK_FRAC - frac, 6)
+                                                    if source == "probe_tier" else 0.0)}
+        if cur is not None:
+            if str(cur.get("status") or "").upper() == "RETIRED":
+                continue                       # the one-way door stays shut
+            if str(cur.get("status") or "").upper() == "LIVE" and not cur.get("probe"):
+                continue                       # already live on its own certificate
+            if str(cur.get("status") or "").upper() == "LIVE" \
+                    and abs(float(cur.get("risk_frac") or 0.0) - frac) <= 1e-9:
+                continue
+            cur.update({"status": "LIVE", "risk_frac": frac, "risk_frac_source": source,
+                        "admission": cap, "restored_at": stamp, **probe_fields})
+            cur.pop("demoted_at", None)
+            cur.pop("demote_reason", None)
+            plog(f"PROBE LIVE {key} at {frac:.3%} ({source}; n={int(n)}, shrink {shrink:.3f})")
+            changed = True
+            continue
+        fam = meta["family"]
+        row = {"name": key, "symbol": meta["symbol"], "lot": PROMOTED_LOT, "risk_frac": frac,
+               "risk_frac_source": source, "admission": cap, "status": "LIVE",
+               "promoted_at": stamp, "shadow_exp": st.get("exp_r", 0.0), "family": fam,
+               "side": str(ident.get("side") or "LONG"), "certificate": key,
+               "sleeve_id": registry_sleeve_id(key), **probe_fields}
+        if fam == "session_range_breakout":
+            parts = key.split("#", 1)[0].split(".")
+            row.update({"window": meta["selector"],
+                        "state": parts[2] if len(parts) > 2 else None})
+        else:
+            row.update({"selector": meta["selector"], "state": None, "params": params,
+                        "exec": "family_market", "lot": "auto_ramp"})
+        sleeves.append(row)
+        by_name[key] = row
+        plog(f"PROBE PROMOTED {key} -> LIVE at {frac:.3%} ({source}; n={int(n)}, shrink "
+             f"{shrink:.3f}, t={pv.get('forward_t')})")
+        note_door(key, door="PROMOTED", from_status="", to_status="LIVE",
+                  evidence=door_evidence(key, cap, n=st.get("n"), exp_r=st.get("exp_r"),
+                                         days=st.get("days_active"), lane="probe_tier"))
         changed = True
     return changed
 
@@ -2588,6 +2755,9 @@ def main() -> None:
     changed = changed or principal_changed
     if reconcile_capital(sleeves, view, only=existing - principal_held):
         changed = True
+    # THE PROBE TIER, after the solve's reading so its demotions are the last word on a probe row.
+    if apply_probe_tier(sleeves, shadow, identities, view, regrade=regrade_fails):
+        changed = True
 
     for s in sleeves:
         # RETIREMENT JUDGES STANDBY ROWS TOO. A sleeve demoted to 0% keeps its live record, and a
@@ -2595,6 +2765,8 @@ def main() -> None:
         # be a way to escape the one-way door and be restored months later on a stale certificate.
         if str(s.get("status") or "").upper() not in ("LIVE", "STANDBY"):
             continue
+        if s.get("probe"):
+            continue          # a probe row is demoted to forward test by its SPRT, never retired
         why_not = degenerate_evidence(ledger, s["name"])
         if why_not:
             plog(f"RETIRE-REFUSED {s['name']}: {why_not}")
