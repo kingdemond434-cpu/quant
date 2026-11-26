@@ -41,9 +41,14 @@ which is a verdict and never a pass):
 
 THE ENGINE CONTRACT (restated from `mt5desk.engine.run_backtest`'s docstring and Signal fields):
     * a signal at bar t is acted on from bar t+1: market entries fill at bar t+1's OPEN
-    * a trigger (stop/limit entry) rests from bar t+1 for `wait_bars` bars and fills AT the trigger
-      on the first bar whose [low, high] contains it; it is a LIMIT when it sits on the favourable
-      side of bar t+1's open, and a limit fill bar may not also pay the target
+    * a trigger (stop/limit entry) rests from bar t+1 for `wait_bars` bars. It is a LIMIT when it
+      sits on the favourable side of bar t's CLOSE (the price known when it was placed), else a
+      STOP. A limit fills AT the trigger on the first bar whose [low, high] contains it, and a
+      limit fill bar may not also pay the target. A stop fills on the first bar that reaches it,
+      at the trigger, or at that bar's OPEN when the bar opens through it (fill-2026-11-25-a)
+    * bars are BID: a long's stop and target are read off the bars; a short's trigger on the ASK,
+      bar + spread (the round trip's spread term below), and exit at that level less the spread
+      (its bid equivalent), so the round trip is charged once and unchanged
     * stop and target are checked intrabar from the fill bar; if both are touched the STOP wins
     * a bar after the fill bar that OPENS through the stop exits at that open, not at the stop
     * after `ttl_bars` bars from the fill the position closes at the OPEN of bar fill+ttl
@@ -299,6 +304,14 @@ def signals_for(family: str, df: pd.DataFrame, params: Mapping[str, Any]
 
 
 # ------------------------------------------------------------------------------- costs
+def spread_price(meta: Mapping[str, Any]) -> float:
+    """The spread in price units: what the ask stands above the bid bars."""
+    cs = float(meta.get("contract_size", 1e5) or 1e5)
+    ts = float(meta.get("tick_size", 0.0) or 0.0)
+    pts = float(meta.get("median_spread_pts", 0.0) or 0.0)
+    return max(pts * ts * cs, MIN_SPREAD_PER_LOT) / cs
+
+
 def round_trip_price(meta: Mapping[str, Any]) -> float:
     cs = float(meta.get("contract_size", 1e5) or 1e5)
     ts = float(meta.get("tick_size", 0.0) or 0.0)
@@ -341,6 +354,8 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
     ix = df.index
     pos = {t: i for i, t in enumerate(ix)}
     rt = round_trip_price(meta)
+    ask = spread_price(meta)
+    cl = df["close"].to_numpy(float) if "close" in df.columns else o
     swap = swap_price_per_night(meta)
     busy = -1
     out: list[Fill] = []
@@ -358,12 +373,21 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
             continue
         fill_i, entry, limit = i, ref, False
         if s.trigger is not None:
-            limit = (s.side > 0 and s.trigger < ref) or (s.side < 0 and s.trigger > ref)
-            hit = next((j for j in range(i, min(i + s.wait, len(ix)))
-                        if lo[j] <= s.trigger <= h[j]), None)
+            placed = cl[i0] if cl[i0] == cl[i0] else ref
+            trig = float(s.trigger)
+            limit = (s.side > 0 and trig < placed) or (s.side < 0 and trig > placed)
+            window = range(i, min(i + s.wait, len(ix)))
+            if limit:
+                hit = next((j for j in window if lo[j] <= trig <= h[j]), None)
+            elif s.side > 0:
+                hit = next((j for j in window if h[j] >= trig), None)
+            else:
+                hit = next((j for j in window if lo[j] <= trig), None)
             if hit is None:
                 continue
-            fill_i, entry = hit, float(s.trigger)
+            fill_i, entry = hit, trig
+            if not limit:
+                entry = max(float(o[hit]), trig) if s.side > 0 else min(float(o[hit]), trig)
         # A venue fill needs a finite bracket in the position's direction.
         # A machine-rounding residual cannot define a unit of economic risk.
         levels = (entry, float(s.stop), float(s.target))
@@ -376,17 +400,20 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
         exit_px: float | None = None
         exit_i = -1
         why = "ttl"
+        # The quote a position EXITS on: the bid bars for a long, bid + spread for a short.
+        add = 0.0 if s.side > 0 else ask
         for j in range(fill_i, min(len(ix), fill_i + s.ttl)):
-            if j > fill_i and (o[j] <= s.stop if s.side > 0 else o[j] >= s.stop):
-                exit_px, exit_i, why = float(o[j]), j, "stop"
+            qo, qh, ql = o[j] + add, h[j] + add, lo[j] + add
+            if j > fill_i and (qo <= s.stop if s.side > 0 else qo >= s.stop):
+                exit_px, exit_i, why = float(qo) - add, j, "stop"
                 break
-            stopped = lo[j] <= s.stop if s.side > 0 else h[j] >= s.stop
+            stopped = ql <= s.stop if s.side > 0 else qh >= s.stop
             if stopped:
-                exit_px, exit_i, why = s.stop, j, "stop"
+                exit_px, exit_i, why = s.stop - add, j, "stop"
                 break
-            reached = h[j] >= s.target if s.side > 0 else lo[j] <= s.target
+            reached = qh >= s.target if s.side > 0 else ql <= s.target
             if reached and not (limit and j == fill_i):
-                exit_px, exit_i, why = s.target, j, "target"
+                exit_px, exit_i, why = s.target - add, j, "target"
                 break
         if exit_px is None:
             exit_i = min(fill_i + s.ttl, len(ix) - 1)

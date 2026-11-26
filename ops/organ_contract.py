@@ -524,6 +524,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/EXOTIC_STATE_FEATURES.json", 1440,
         "per exotic certificate: its post-sample firing state as a look-ahead-probed lake series, "
         "and the declared conditioned-cell set on non-exotic bloc targets with its trial charge"),
+    # THE TWO CACHE-ONLY FILL PROBES (2026-11-25): steps `entry_timing_probe` and
+    # `asia_bracket_refill` of daily_cycle.py, run once a UTC day by MT5-Hourly's `daily` leg.
+    # 1,500 min = a day plus an hour's slack: one late chain is not a defect, a missed day is.
+    "MT5-Hourly (entry timing probe)": (
+        "desks/mt5/reports/ENTRY_TIMING_PROBE.json", 1500,
+        "the judge's fill against a bid/ask reference and a close-fill counterfactual, per "
+        "sampled forward clock, from the bar cache only"),
+    "MT5-Hourly (asia bracket refill)": (
+        "desks/mt5/reports/ASIA_BRACKET_REFILL.json", 1500,
+        "each XAUUSD.asia clock's forward n, exp_r and t under the pre-fix and fixed engine, "
+        "with its gap days, from the bar cache only"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),

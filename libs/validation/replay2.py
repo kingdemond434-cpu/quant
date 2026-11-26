@@ -12,6 +12,9 @@ THE CONTRACT, restated from `run_backtest`'s docstring and nothing else:
       high against target; if both are touched in one bar the STOP is assumed first
     * after `ttl_bars` bars without a stop or target the position closes at the next open
     * one position at a time: a signal inside a live trade is ignored
+    * bars are BID; a short buys back at the ASK, so its stop and target trigger when
+      bar + `ask_price_units` reaches them and it exits at that level less the spread (the
+      round trip still carries the spread, once). 0.0 reads both sides off the bars, as before
     * R = (exit - entry) * side / (entry - stop) * side, i.e. distance to stop is 1R, and the
       round-trip cost is subtracted in price units
 
@@ -44,7 +47,8 @@ class Trade2:
     reason: str
 
 
-def replay(df: pd.DataFrame, signals: Sequence[Any], cost_price_units: float = 0.0) -> list[Trade2]:
+def replay(df: pd.DataFrame, signals: Sequence[Any], cost_price_units: float = 0.0,
+           ask_price_units: float = 0.0) -> list[Trade2]:
     o = df["open"].astype(float).to_numpy()
     h = df["high"].astype(float).to_numpy()
     lo = df["low"].astype(float).to_numpy()
@@ -81,11 +85,12 @@ def replay(df: pd.DataFrame, signals: Sequence[Any], cost_price_units: float = 0
                     exit_i, exit_px, reason = j, float(s.target), "target"
                     break
             else:
-                if h[j] >= s.stop:
-                    exit_i, exit_px, reason = j, float(s.stop), "stop"
+                a = float(ask_price_units)
+                if h[j] + a >= s.stop:
+                    exit_i, exit_px, reason = j, float(s.stop) - a, "stop"
                     break
-                if lo[j] <= s.target:
-                    exit_i, exit_px, reason = j, float(s.target), "target"
+                if lo[j] + a <= s.target:
+                    exit_i, exit_px, reason = j, float(s.target) - a, "target"
                     break
         if exit_i is None or exit_px is None:
             j = min(entry_i + ttl, len(o) - 1)

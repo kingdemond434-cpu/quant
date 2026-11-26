@@ -85,7 +85,9 @@ def test_both_sides_retest_the_protect_stop_on_the_bar_that_banked() -> None:
     short_df = _frame([(100, 100, 100, 100), (100, 100.5, 99.5, 100), (100, 100.2, 97.5, 100),
                        (100, 100, 95, 95), (95, 95, 95, 95)])
     st = _one(short_df, side=-1, stop=101.0, target=98.0, bank_frac=0.5, bank_protect_k=0.1)
-    assert lt.exit == 100.1 and st.exit == 99.9, (lt, st)
+    # A short's runner exits on the ASK (fill-2026-11-25-a); FREE's 0.05/lot floor over a 1e9
+    # contract puts the recorded bid equivalent 5e-11 under the 99.9 protect level.
+    assert lt.exit == 100.1 and abs(st.exit - 99.9) < 1e-9, (lt, st)
     assert abs(lt.r_multiple - st.r_multiple) < 1e-9
 
 

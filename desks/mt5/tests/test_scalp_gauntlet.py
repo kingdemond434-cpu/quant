@@ -168,8 +168,14 @@ def test_adapter_tracks_the_replay_within_the_stated_tolerance(choice, seed: int
     engine = np.array([t.r_multiple for t in run_backtest(df, sigs, _matched_costs()).trades])
     assert len(study) > 150 and len(engine) > 150           # positive control: not vacuous
     assert abs(len(engine) - len(study)) <= 0.12 * len(study)
-    assert abs(engine.sum() - study.sum()) <= 0.06 * max(len(engine), len(study))
-    assert abs(engine.mean() - aligned.mean()) <= 0.05
+    # ONE-SIDED SINCE fill-2026-11-25-a. The engine's shorts now stop and take profit on the ASK
+    # (bid + spread); `simulate` still reads a short's exits off the BID bars, the optimistic
+    # rule the engine shed. Measured on these six cases the engine moved DOWN against the study by
+    # up to 0.039R per trade (total -0.035 -> -0.074, mean-vs-aligned -0.037 -> -0.074 on the
+    # worst seed) and never up, so the engine may now sit further BELOW the study, never above.
+    gap = (engine.sum() - study.sum()) / max(len(engine), len(study))
+    assert -0.10 <= gap <= 0.06, gap
+    assert -0.09 <= engine.mean() - aligned.mean() <= 0.05
 
 
 def test_each_signal_is_the_bracket_plan_entry_would_place() -> None:

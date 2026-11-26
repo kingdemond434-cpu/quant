@@ -801,7 +801,12 @@ $relPaths = @(
     # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
     "desks/mt5/reports/TAPE_FRESHNESS.json",
     # CERTIFICATE LINEAGE OF EVERY LIVE WINDOW (2026-10-20, scripts/check_cert_lineage.py).
-    "desks/mt5/reports/CERT_LINEAGE.json"
+    "desks/mt5/reports/CERT_LINEAGE.json",
+    # THE TWO CACHE-ONLY FILL PROBES (2026-11-25), daily_cycle steps entry_timing_probe and
+    # asia_bracket_refill: read-only measurements from the bar cache, published so the engine
+    # fix's effect can be read off the box day by day.
+    "desks/mt5/reports/ENTRY_TIMING_PROBE.json",
+    "desks/mt5/reports/ASIA_BRACKET_REFILL.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
