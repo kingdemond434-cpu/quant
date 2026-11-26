@@ -33,8 +33,9 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -91,9 +92,65 @@ class Config:
         return f"{self.forge_url.rstrip('/')}/quant/quant.git"
 
 
+class StallGuard:
+    """THE PASS NEVER HANGS SILENTLY (box 2026-11-26: the 04:39Z pass sat at 0 CPU with no child
+    and no socket from ~06:03Z, inside Python cleanup of a half-removed checkout, and only the
+    task's 8 h limit would have ended it -- adoption stalled all night behind one stuck call).
+
+    Every stage start and every job poll is a beat; a child process is alive until its own
+    timeout. When neither has moved for `stall_s`, the guard writes LOOP_STALL.json and ends the
+    process, so the next 5-minute trigger starts a clean pass (sweep_stale then removes the
+    half-made checkout). It never touches a child that is still inside its timeout."""
+
+    def __init__(self, stall_s: float = 2700.0, *, clock: Callable[[], float] = time.monotonic,
+                 on_stall: Callable[[dict[str, Any]], None] | None = None) -> None:
+        self.stall_s, self.clock, self.on_stall = stall_s, clock, on_stall
+        self.stage, self.last, self.until = "start", clock(), 0.0
+        self._lock = threading.Lock()
+
+    def beat(self, stage: str | None = None) -> None:
+        with self._lock:
+            if stage:
+                self.stage = stage
+            self.last = self.clock()
+
+    def child(self, timeout: float) -> None:
+        with self._lock:
+            self.until = max(self.until, self.clock() + timeout + 60.0)
+
+    def child_done(self) -> None:
+        with self._lock:
+            self.until, self.last = 0.0, self.clock()
+
+    def stalled(self) -> dict[str, Any] | None:
+        with self._lock:
+            now = self.clock()
+            if now <= max(self.last + self.stall_s, self.until):
+                return None
+            return {"stage": self.stage, "silent_s": round(now - self.last),
+                    "stall_s": self.stall_s}
+
+    def watch(self, every_s: float = 30.0) -> threading.Thread:
+        def loop() -> None:
+            while True:
+                time.sleep(every_s)
+                why = self.stalled()
+                if why is not None and self.on_stall is not None:
+                    self.on_stall(why)
+                    return
+        t = threading.Thread(target=loop, name="stall-guard", daemon=True)
+        t.start()
+        return t
+
+
+GUARD: StallGuard | None = None
+
+
 def _run(argv: Sequence[str], *, cwd: Path | None = None, env: Mapping[str, str] | None = None,
          timeout: float = 3600, idle: bool = False) -> tuple[int, str]:
     kw: dict[str, Any] = box_ci.idle_priority_kwargs() if idle else {}
+    if GUARD is not None:
+        GUARD.child(timeout)
     try:
         p = subprocess.run(list(argv), cwd=cwd, env=dict(env) if env else None,
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -102,6 +159,9 @@ def _run(argv: Sequence[str], *, cwd: Path | None = None, env: Mapping[str, str]
         return 124, f"timed out after {timeout:.0f}s"
     except OSError as exc:
         return 127, f"{type(exc).__name__}: {exc}"
+    finally:
+        if GUARD is not None:
+            GUARD.child_done()
     return p.returncode, (p.stdout + p.stderr)[-4000:]
 
 
@@ -238,6 +298,8 @@ def _run_untrusted(cfg: Config, argv: Sequence[str], *, cwd: Path,
                 return int(doc.get("rc", 1)), str(doc.get("out", ""))[-4000:]
             except (OSError, ValueError):
                 pass  # the worker is still writing it
+        if GUARD is not None:
+            GUARD.child(JOB_POLL_S)  # waiting on the worker inside the job's own deadline
         time.sleep(JOB_POLL_S)
     (pending / f"{jid}.json").unlink(missing_ok=True)
     return 124, "the CI worker did not answer in time"
@@ -928,6 +990,8 @@ def tick(cfg: Config) -> dict[str, Any]:
                      ("full", lambda: full_tick(cfg, live_head(cfg))),
                      ("promote", lambda: promote_tick(cfg)),
                      ("leadtime", lambda: leadtime_tick(cfg))):
+        if GUARD is not None:
+            GUARD.beat(name)
         try:
             out[name] = fn()
         except Exception as exc:  # one stage failing never stops the others
@@ -985,6 +1049,19 @@ def main(argv: list[str] | None = None) -> int:
                                      branch=raw["drop"].get("branch") or "main")
                  if raw.get("drop") else None,
                  state_outbox=Path(raw["state_outbox"]) if raw.get("state_outbox") else None)
+    global GUARD
+    stall_file = cfg.state.with_name("LOOP_STALL.json")
+
+    def _stalled(why: dict[str, Any]) -> None:
+        why["at"] = datetime.now(UTC).isoformat(timespec="seconds")
+        with contextlib.suppress(OSError):
+            box_ci.save_state(stall_file, why)
+        print(f"STALL: {json.dumps(why)}; ending this pass so the next trigger starts clean",
+              file=sys.stderr, flush=True)
+        os._exit(75)
+
+    GUARD = StallGuard(float(raw.get("stall_s") or 2700.0), on_stall=_stalled)
+    GUARD.watch()
     doc = tick(cfg)
     doc["trust"] = trust_status(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
