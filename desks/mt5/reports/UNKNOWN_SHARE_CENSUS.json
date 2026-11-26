@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-11-26",
   "started_at": "2026-11-26T09:01:14+00:00",
-  "written_at": "2026-11-26T09:03:35+00:00",
+  "written_at": "2026-11-26T09:18:31+00:00",
   "cells_planned": 6000,
-  "cells_visited": 0,
+  "cells_visited": 1006,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 62150,
     "rss_cap_mb": 15537,
-    "peak_rss_mb": 538
+    "peak_rss_mb": 980
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 130.2,
+  "lockbox_cut": "2023-01-04",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 130,
+  "elapsed_s": 1026.6,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 21,
@@ -39,38 +39,120 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 1006,
+    "gate0_rejected": {
+      "symbol_eligibility": 41
+    },
+    "preflight_refused": 465,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 500,
+    "unknown": 47,
+    "unknown_share_of_judged": 0.094,
+    "wilson95": [
+      0.0714,
+      0.1228
+    ],
+    "unknown_by_reason": {
+      "no_signals": 35,
+      "too_rare": 8,
+      "lockbox_consumed_history": 3,
+      "short_history_after_cut": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 18,
+      "session_range_breakout": 9,
+      "htf_anchor_trend": 3,
+      "comex_settlement": 3,
+      "regime_split": 2,
+      "overnight_drift": 2,
+      "london_close_momentum": 2,
+      "execution_state": 2,
+      "asia_momentum": 1,
+      "joint_genome": 1,
+      "hedging_demand_close": 1,
+      "session_handoff": 1,
+      "liquidity_regime": 1,
+      "alt_conditioned": 1
+    },
+    "unknown_by_chart": {
+      "H1": 20,
+      "M30": 9,
+      "M5": 6,
+      "M15": 5,
+      "M1": 3,
+      "D1": 3,
+      "H4": 1
+    },
+    "judged_by_chart": {
+      "H1": 218,
+      "M30": 102,
+      "M15": 80,
+      "M5": 67,
+      "M1": 18,
+      "H4": 12,
+      "D1": 3
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 1006,
+    "gate0_rejected": {
+      "symbol_eligibility": 41
+    },
+    "preflight_refused": 465,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 500,
+    "unknown": 47,
+    "unknown_share_of_judged": 0.094,
+    "wilson95": [
+      0.0714,
+      0.1228
+    ],
+    "unknown_by_reason": {
+      "no_signals": 35,
+      "too_rare": 8,
+      "lockbox_consumed_history": 3,
+      "short_history_after_cut": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 18,
+      "session_range_breakout": 9,
+      "htf_anchor_trend": 3,
+      "comex_settlement": 3,
+      "regime_split": 2,
+      "overnight_drift": 2,
+      "london_close_momentum": 2,
+      "execution_state": 2,
+      "asia_momentum": 1,
+      "joint_genome": 1,
+      "hedging_demand_close": 1,
+      "session_handoff": 1,
+      "liquidity_regime": 1,
+      "alt_conditioned": 1
+    },
+    "unknown_by_chart": {
+      "H1": 20,
+      "M30": 9,
+      "M5": 6,
+      "M15": 5,
+      "M1": 3,
+      "D1": 3,
+      "H4": 1
+    },
+    "judged_by_chart": {
+      "H1": 218,
+      "M30": 102,
+      "M15": 80,
+      "M5": 67,
+      "M1": 18,
+      "H4": 12,
+      "D1": 3
+    }
   },
   "siblings_only": {
     "cells": 0,
