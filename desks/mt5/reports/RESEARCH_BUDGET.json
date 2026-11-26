@@ -1,5 +1,5 @@
 {
- "at": "2026-11-26T22:40:11+00:00",
+ "at": "2026-11-26T22:56:46+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -66,9 +66,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-11-26T03:40:01+00:00",
+   "at": "2026-11-26T22:56:46+00:00",
    "bandit_at": "2026-11-25T23:25:31.136870+00:00",
-   "hour": "2026-11-26T03",
+   "hour": "2026-11-26T22",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
