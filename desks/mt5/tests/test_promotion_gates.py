@@ -132,3 +132,12 @@ def test_gold_is_gated_like_every_symbol(registry) -> None:
     assert st == promoter.HELD_REVIVED
     assert promoter.promotion_hold(row, spec={"gate_spec": 1}, drift=False,
                                    symbol="XAUUSD") is None
+
+
+@pytest.mark.parametrize(("basis", "ok"), [
+    ("fill_hour", True), ("fill_hour_02", True), ("fill_hour_23", True),
+    ("pooled_median", False), (None, False), ("fill_hour_", False), ("fill_hour_xx", False)])
+def test_both_lanes_fill_hour_bases_count_and_nothing_else(registry, basis, ok) -> None:
+    row = {"status": "PROMOTION CANDIDATE", "spread_basis": basis}
+    held = promoter.promotion_hold(row, spec=SPEC, drift=False, symbol="EURUSD")
+    assert (held is None) is ok
