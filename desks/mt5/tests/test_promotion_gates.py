@@ -5,8 +5,8 @@
 (a) exotic or unclassified symbols hold no live capital: promoter.save_sleeves, the gateway's
     roster and the allocator's columns; (b) the E8 evidence-rule fallback admits only
     fill-proven or principal-funded rows (rollover hours stay gated by rollover_block); (c) a
-    revived clock with no certificate at revival, and a forward row not priced at the fill-hour spread, are held
-    UNMEASURED -- never KILL.
+    revived clock with no certificate at revival, and a forward row not priced at the fill-hour
+    spread, are held UNMEASURED -- never KILL.
 """
 from __future__ import annotations
 
