@@ -401,6 +401,12 @@ def e8_speed_lift(kelly: dict[str, float], sources: dict[str, str], *, ceiling: 
     if not asia > 0 or sources.get("asia") != "cert_book":
         return None, {**doc, "status": "NOT_SIZED",
                       "why": "asia is not sized by the cert book this pass; nothing to lift"}
+    if asia < float(ceiling) - 1e-12:
+        # AUDIT MF1 on 0b17a9f245: the evidence moves the CEILING 0.006 -> 0.0075. A book that
+        # sizes asia below the ceiling has its own reason; the lift never overrides it.
+        return None, {**doc, "status": "NOT_AT_CEILING",
+                      "why": (f"the cert book sizes asia at {asia:g}, below the ceiling "
+                              f"{float(ceiling):g}; unchanged")}
     if others > E8_SPEED_OTHERS_MAX + 1e-12 or E8_SPEED_RISK + others > E8_GOLD_SUM_MAX + 1e-12:
         return None, {**doc, "status": "DROPPED",
                       "why": (f"london_am + afternoon carry {others:g} (limit "
@@ -495,10 +501,16 @@ def session_probe(*, now: datetime, cert_void: bool, cert: dict[str, float] | No
                 started = started.replace(tzinfo=UTC)
             since = max(started, now - timedelta(days=SESSION_PROBE_DEMOTE_DAYS))
             stops = probe_stop_count(w, since=since, path=stops_path)
-            row.update(started_at=ws["started_at"], stops=stops)
             if stops is None:
-                row["status"] = "UNMEASURED"
+                row.update(started_at=ws["started_at"], stops=None, status="UNMEASURED")
                 continue
+            # MONOTONE (Audit nit): a journal deleted or truncated before a demotion never resets
+            # the count; the state keeps the most stops ever seen for this probe.
+            if stops > int(ws.get("max_stops") or 0):
+                ws["max_stops"] = stops
+                changed = True
+            stops = max(stops, int(ws.get("max_stops") or 0))
+            row.update(started_at=ws["started_at"], stops=stops)
             if stops >= SESSION_PROBE_DEMOTE_STOPS:
                 ws.update(demoted_at=now.isoformat(timespec="seconds"), stops=stops)
                 changed = True

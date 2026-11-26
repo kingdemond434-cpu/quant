@@ -169,3 +169,25 @@ def test_the_exception_is_scoped_to_exactly_two_e8_windows() -> None:
     """Audit condition (a): the n<10 exception names london_am and afternoon only, on E8 only."""
     assert set(g.SESSION_PROBE_PRIOR_N) == {"london_am", "afternoon"}
     assert dc.PRINCIPAL_ZERO["fusion"] >= dc.GOLD_ASIA_ONLY_ZERO     # Fusion keeps its pin
+
+
+def test_the_lift_moves_only_a_ceiling_sized_asia(tmp_path) -> None:
+    """Audit MF1 on 0b17a9f245: a book sizing asia below the ceiling is left alone."""
+    off = tmp_path / "off"
+    lift, doc = g.e8_speed_lift({"asia": 0.001}, {"asia": "cert_book"}, ceiling=0.006, off=off)
+    assert lift is None and doc["status"] == "NOT_AT_CEILING"
+    lift, doc = g.e8_speed_lift({"asia": 0.006}, {"asia": "cert_book"}, ceiling=0.006, off=off)
+    assert lift == g.E8_SPEED_RISK and doc["status"] == "LIFTED"
+
+
+def test_a_truncated_journal_never_resets_the_stop_count(tmp_path) -> None:
+    _probe(tmp_path)
+    later = (NOW + timedelta(hours=1)).isoformat()
+    rows = [{"at": later, "window": "london_am"}] * (g.SESSION_PROBE_DEMOTE_STOPS - 1)
+    day2 = NOW + timedelta(days=1)
+    out, doc = _probe(tmp_path, stops=rows, now=day2)
+    assert "london_am" in out and doc["windows"]["london_am"]["stops"] == 4
+    (tmp_path / "stops.jsonl").write_text(
+        json.dumps({"at": later, "window": "london_am"}) + "\n", encoding="utf-8")
+    out, doc = _probe(tmp_path, now=day2)
+    assert doc["windows"]["london_am"]["stops"] == 4          # the max, not the truncated 1
