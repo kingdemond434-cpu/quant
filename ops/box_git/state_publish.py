@@ -28,6 +28,7 @@ from ops.box_git import state_fence
 BRANCH = "claude/box-state"
 PENDING_REF = "refs/publish/pending"
 BUNDLE = "pending.bundle"
+INFLIGHT = "inflight.bundle"
 STATUS = "STATE_PUBLISH.json"
 Git = Callable[[Sequence[str]], tuple[int, str]]
 Push = Callable[[str, str], tuple[int, str]]          # push(sha, ref) as `claude`
@@ -60,9 +61,16 @@ def publish(outbox: Path, status: Path, *, git: Git, push: Push, remote_tip: Rem
             live: str, now: datetime | None = None) -> str:
     t = now or datetime.now(UTC)
     stamp = t.strftime("%Y%m%dT%H%M%SZ")
-    bundle = outbox / BUNDLE
-    if not bundle.is_file():
-        return "no box state pending"
+    # Take the bundle under a private name first (Audit nit, 2026-11-26): ShadowSync renames a
+    # newer pending.bundle in at any time, and that must never replace the file being judged.
+    pending, bundle = outbox / BUNDLE, outbox / INFLIGHT
+    if not bundle.is_file():                 # an in-flight one left by a crash is judged first
+        if not pending.is_file():
+            return "no box state pending"
+        try:
+            os.replace(pending, bundle)
+        except OSError as exc:
+            return f"box state not taken ({type(exc).__name__}); next pass"
 
     def refuse(why: str) -> str:
         try:
@@ -109,12 +117,16 @@ def publish(outbox: Path, status: Path, *, git: Git, push: Push, remote_tip: Rem
         if rc != 0 or len(made.strip()) != 40:  # transient (objects not here yet): kept
             _status(status, {"at": t.isoformat(), "ok": False, "commit": commit,
                              "why": f"fast-forward commit not built: {made[-200:]}"})
+            if pending.is_file():
+                _file(bundle, outbox / "superseded", "not built; a newer bundle is pending", stamp)
             return "box state kept for the next pass: fast-forward commit not built"
         head = made.strip()
     rc, out = push(head, f"refs/heads/{BRANCH}")
-    if rc != 0:  # the bundle stays for the next pass; the door refuses anything but a ff
+    if rc != 0:  # kept for the next pass unless ShadowSync has handed over a newer one
         _status(status, {"at": t.isoformat(), "ok": False, "commit": commit,
                          "why": f"push refused: {out[-300:]}"})
+        if pending.is_file():
+            _file(bundle, outbox / "superseded", "push refused; a newer bundle is pending", stamp)
         return f"box state push refused (kept for the next pass): {out[-200:]}"
     _file(bundle, outbox / "done", "", stamp)
     _status(status, {"at": t.isoformat(), "ok": True, "commit": commit, "published": head})

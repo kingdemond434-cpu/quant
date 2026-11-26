@@ -185,3 +185,35 @@ def test_the_door_refuses_a_non_fast_forward_of_box_state():
 def test_state_fence_is_byte_pinned_by_the_immutable_manifest():
     src = (ROOT / "scripts" / "check_immutable_evaluator.py").read_text(encoding="utf-8")
     assert '"ops/box_git/state_fence.py"' in src
+
+
+def test_a_newer_hand_over_never_replaces_the_bundle_being_judged(world, tmp_path):
+    """Audit nit: the stage takes pending.bundle under a private name before judging it, so a
+    bundle ShadowSync renames in mid-pass waits for the next pass instead of being filed away."""
+    box, bare, live = world
+    outbox, status = tmp_path / "outbox", tmp_path / "STATE_PUBLISH.json"
+    c1 = _state_commit(box, live, {"desks/mt5/reports/A.json": "1\n"})
+    _bundle(box, c1, live, outbox)
+    c2 = _state_commit(box, live, {"desks/mt5/reports/A.json": "2\n"})
+    git = _runner(bare)
+    real = git
+
+    def git_with_handover(args):
+        if args[:2] == ["bundle", "list-heads"]:          # ShadowSync renames a newer one in
+            _bundle(box, c2, live, outbox)
+        return real(args)
+
+    def push(sha, ref):
+        return git(["update-ref", ref, sha])
+
+    def remote_tip(ref):
+        rc, out = git(["rev-parse", "--verify", "-q", ref])
+        return out.strip() if rc == 0 and out.strip() else None
+
+    out = P.publish(outbox, status, git=git_with_handover, push=push, remote_tip=remote_tip,
+                    live=LIVE)
+    assert "published" in out and _g(bare, "rev-parse", f"refs/heads/{P.BRANCH}") == c1
+    assert (outbox / P.BUNDLE).is_file() and not (outbox / P.INFLIGHT).exists()
+    assert "published" in _publish(bare, outbox, status)                 # the next pass
+    tip = _g(bare, "rev-parse", f"refs/heads/{P.BRANCH}")
+    assert _g(bare, "rev-parse", f"{tip}^{{tree}}") == _g(bare, "rev-parse", f"{c2}^{{tree}}")
