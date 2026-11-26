@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-26T16:15:02.930850+00:00",
+  "swept_at": "2026-11-26T16:30:03.307289+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -196,7 +196,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0091,
+      "shadow_exp_r": 0.0618,
       "woke_on_shadow": false
     },
     "CADCHF|formula_asia": {
@@ -746,7 +746,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2859,
+      "shadow_exp_r": -0.2592,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1197,7 +1197,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.377,
+      "shadow_exp_r": -0.3911,
       "woke_on_shadow": false
     },
     "NZDCAD|overnight_gap_decay_asia": {
@@ -1230,7 +1230,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4838,
+      "shadow_exp_r": -0.4852,
       "woke_on_shadow": false
     },
     "NZDJPY|clock_transition_asia": {
@@ -1395,7 +1395,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 71,
-      "shadow_exp_r": 0.2118,
+      "shadow_exp_r": 0.2091,
       "woke_on_shadow": false
     },
     "USDMXN|carry_asia": {
@@ -1428,7 +1428,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.3854,
+      "shadow_exp_r": 0.3933,
       "woke_on_shadow": false
     },
     "USDMXN|overnight_gap_decay_asia": {
@@ -1450,7 +1450,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2671,
+      "shadow_exp_r": -0.2585,
       "woke_on_shadow": false
     },
     "USDNOK|clock_transition_asia": {
@@ -1505,7 +1505,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0525,
+      "shadow_exp_r": 0.0638,
       "woke_on_shadow": false
     },
     "USDSEK|formula_asia": {
@@ -1582,7 +1582,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1088,
+      "shadow_exp_r": -0.4147,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_gap_decay_asia": {
@@ -1615,7 +1615,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2622,
+      "shadow_exp_r": -0.2461,
       "woke_on_shadow": false
     },
     "USDTHB|pca_residual_asia": {
@@ -1637,7 +1637,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3307,
+      "shadow_exp_r": -0.3491,
       "woke_on_shadow": false
     },
     "USDZAR|cross_asset_residual_asia": {
@@ -1670,7 +1670,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1192,
+      "shadow_exp_r": 0.0851,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
@@ -1780,7 +1780,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2365,
+      "shadow_exp_r": 0.2399,
       "woke_on_shadow": false
     },
     "XAUEUR|range_reversion_asia": {
