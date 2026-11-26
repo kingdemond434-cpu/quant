@@ -328,6 +328,10 @@ def null_factory(panel: Panel, rng: np.random.Generator, *, n: int = 6, permutat
 
 
 # =========================================================================== theorem memory
+#: Bytes read per tail row requested: a card row is a few hundred bytes; 4 KB is generous.
+TAIL_BYTES_PER_ROW = 4096
+
+
 class TheoremMemory:
     """Proven, failed and negative knowledge as append-only jsonl; a knowledge graph of
     lineage edges beside them. Reads are bounded to the tail so a year costs nothing."""
@@ -354,8 +358,21 @@ class TheoremMemory:
         p = self.path(name)
         if not p.exists():
             return []
+        # THE TAIL IS READ, NOT THE FILE. "Reads are bounded to the tail" was true of the parse
+        # and false of the read: `read_text()` loaded the whole append-only file on every call,
+        # and `graph()` makes four of them a pass, so the cost grew with every card ever filed.
+        # Only the last `limit * TAIL_BYTES_PER_ROW` bytes are read now (a partial first line is
+        # dropped), so the cost is flat in the file's age.
         try:
-            lines = p.read_text("utf-8").splitlines()[-limit:]
+            size = p.stat().st_size
+            span = max(1, int(limit)) * TAIL_BYTES_PER_ROW
+            with p.open("rb") as fh:
+                if size > span:
+                    fh.seek(size - span)
+                    raw = fh.read().split(b"\n", 1)[-1]
+                else:
+                    raw = fh.read()
+            lines = raw.decode("utf-8", errors="replace").splitlines()[-limit:]
         except OSError:
             return []
         out: list[dict[str, Any]] = []

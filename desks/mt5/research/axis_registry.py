@@ -74,6 +74,13 @@ INTAKE = BASE / "data" / "intelligence" / "axis_registry"
 #: dozen resident python processes; the report says TOO_LARGE rather than pretending it was absent.
 MAX_INPUT_BYTES = 64 * 1024 * 1024
 MAX_LEDGER_LINES = 500_000
+#: Seconds kept in hand, once the harness's kill instant is known, for everything after the reads
+#: (prior, regions, selection, three atomic writes). THE 2026-11-25 PRODUCER TRIAGE: this leg and
+#: qd_frontier (which reads through `_read_jsonl`) ran to the 720 s cycle cap on the box and were
+#: killed having written NOTHING -- the whole pass is a read followed by one write at the end. A
+#: ledger read now stops at the soft deadline (libs/ops/leg_deadline.py) and says so in `inputs`,
+#: so a long ledger costs the pass some evidence, never the pass.
+READ_MARGIN_S = 150.0
 MAX_PROPOSALS = 60
 PROPOSAL_SYMBOLS = 3
 EMPTY_REGIONS = 50
@@ -305,6 +312,15 @@ def _read_json(path: Path, note: dict[str, str]) -> Any:
     return doc
 
 
+def _deadline_near() -> bool:
+    """True once fewer than READ_MARGIN_S seconds remain before the harness kills the leg."""
+    try:
+        from libs.ops.leg_deadline import expired
+        return expired(READ_MARGIN_S)
+    except Exception:
+        return False
+
+
 def _read_jsonl(path: Path, note: dict[str, str]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     try:
@@ -312,6 +328,9 @@ def _read_jsonl(path: Path, note: dict[str, str]) -> list[dict[str, Any]]:
             for i, raw in enumerate(fh):
                 if i >= MAX_LEDGER_LINES:
                     note[path.name] = f"TRUNCATED({MAX_LEDGER_LINES})"
+                    return rows
+                if not i % 5000 and i and _deadline_near():
+                    note[path.name] = f"DEADLINE_TRUNCATED({i})"
                     return rows
                 line = raw.strip()
                 if not line:

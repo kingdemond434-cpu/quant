@@ -48,6 +48,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -261,6 +262,51 @@ REPLACEMENTS: dict[str, str] = {
 }
 
 
+_SOURCE_RE = re.compile(r'^SOURCE\s*=\s*"([A-Za-z0-9_.:-]+)"', re.MULTILINE)
+
+
+#: producer -> (seat directory, filename prefix) for a producer that writes into another's seat.
+SHARED_SEAT_PREFIXES: dict[str, tuple[str, str]] = {
+    "deep_forest_miner": ("world", "discoveries_deepforest_"),
+}
+
+
+def _prefixed_output(window_days: float, seat: str, prefix: str) -> int | None:
+    """Rows in `seat` files named `prefix*` inside the window; None when no such file exists."""
+    cutoff = time.time() - window_days * 86400.0
+    found, rows = False, 0
+    for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
+        for f in glob.glob(str(root / seat / f"{prefix}*.json*")):
+            found = True
+            try:
+                if os.path.getmtime(f) < cutoff:
+                    continue
+                with open(f, encoding="utf-8", errors="replace") as fh:
+                    rows += max(sum(1 for _ in fh), 1)
+            except OSError:
+                continue
+    return rows if found else None
+
+
+def declared_seats(producers: list[str] | set[str],
+                   research: Path | None = None) -> dict[str, str]:
+    """producer -> the seat directory its module declares (`SOURCE = "..."`), where it differs.
+
+    A module that declares no SOURCE, or one equal to its own name, maps to nothing: there is no
+    alias to resolve. Never raises -- an unreadable module simply declares no seat."""
+    base = research or (DESK / "research")
+    out: dict[str, str] = {}
+    for name in sorted(set(producers)):
+        try:
+            text = (base / f"{name}.py").read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        m = _SOURCE_RE.search(text)
+        if m and m.group(1) != name:
+            out[name] = m.group(1)
+    return out
+
+
 def replacement_target(text: Any) -> str:
     """The producer a free-text replacement names first (`"mathlab -- the ..."` -> mathlab)."""
     head = str(text or "").split("--", 1)[0].strip()
@@ -332,6 +378,24 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
                            ("deep_forest_miner", "deep_forest")):
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
+    # AND THE ALIAS IS READ FROM THE PRODUCER ITSELF (2026-11-25 producer triage). Nine daily
+    # proposers read UNMEASURED on the box census because each donates under its module's own
+    # `SOURCE` constant -- plumbing_miner as `plumbing`, microstructure_miner as `microstructure`,
+    # style_premia_sweep as `style_premia`, tail_alpha_search as `tail_alpha`,
+    # weak_signal_compiler as `weak_signal_ensemble` -- and a hand list of three could never keep
+    # up. The constant is the producer's own declaration of its seat, so it is read, not copied.
+    for producer, seat in declared_seats(proposers).items():
+        if producer not in seats and seat in seats:
+            seats[producer] = seats[seat]
+    # A PRODUCER THAT SHARES A SEAT IS COUNTED BY ITS OWN FILES. deep_forest_miner donates into
+    # `intelligence/world/` beside the world crawler, as `discoveries_deepforest_*`
+    # (deep_forest_miner.py WORLD), so neither the module name nor its SOURCE names a seat of its
+    # own and the census read it UNMEASURED; its file prefix is its signature.
+    for producer, (seat, prefix) in SHARED_SEAT_PREFIXES.items():
+        if producer not in seats:
+            n = _prefixed_output(window_days, seat, prefix)
+            if n is not None:
+                seats[producer] = n
 
     universe = list(seats.values())
     median = sorted(universe)[len(universe) // 2] if universe else 0

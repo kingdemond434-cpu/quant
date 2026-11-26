@@ -53,6 +53,15 @@
    "status": "ACTIVE",
    "template": "critic_v1",
    "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:mathlab-llm-proposer",
+   "kind": "math_proposer",
+   "name": "math_proposer",
+   "status": "ACTIVE",
+   "template": "math_proposer_v1",
+   "weight": 1.0
   }
  ],
  "kinds": [
@@ -60,6 +69,7 @@
   "critic",
   "data_discovery",
   "feedback",
+  "math_proposer",
   "near_miss",
   "translate"
  ],
@@ -70,6 +80,7 @@
   "critic_v1": "critic",
   "data_discovery_v1": "data_discovery",
   "feedback_v1": "feedback",
+  "math_proposer_v1": "math_proposer",
   "near_miss_v1": "near_miss",
   "translate_v1": "translate"
  }

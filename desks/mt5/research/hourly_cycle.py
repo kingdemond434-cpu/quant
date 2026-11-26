@@ -218,7 +218,8 @@ def _hunt12_resident_health() -> dict:
         cpu = proc.cpu_times()
         if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
                 or proc.children() or proc.open_files()):
-            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+            return {**result,
+                    "note": "stopped resident requires review; active ownership preserved"}
         proc.resume()
         after = proc.status()
         return {**result, "alive": after != psutil.STATUS_STOPPED,
@@ -1509,7 +1510,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
-                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep",
+                     "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -1633,7 +1635,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     "forest_japan": "japan",
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
-    # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
+    # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident,
+    # and since 2026-11-25 its own RESERVED SLOT (department_resident.RESERVED_DEPTS): measured on
+    # the box it ran ~2 passes a day queued FIFO behind every department for three shared slots.
     **dict.fromkeys(("math_lab", "expression_factory", "formula_library", "physics_lab",
                      "coevolution"), "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
@@ -1846,7 +1850,9 @@ def _auto_leg(entry: dict, leg: str | None = None) -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target),
                        *[str(a) for a in (entry.get("argv") or [])]],
                            capture_output=True, text=True, cwd=str(cwd), timeout=budget,
-                           check=False)
+                           check=False,
+                           env={**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget)),
+                                "QUANT_LEG_DEADLINE_TS": f"{time.time() + budget:.3f}"})
         # STDERR IS KEPT SEPARATELY, and that is not cosmetic. `tail` is `stdout or stderr`, so a
         # leg that printed ANYTHING to stdout before dying lost its traceback entirely -- which is
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
@@ -2044,6 +2050,7 @@ def _costed(name: str, fn):
     # nothing was, until this line, indistinguishable from a leg with nothing to write.
     _woe = _woe_before(name)
     _woe_t0 = time.monotonic()
+    _hb_t0 = datetime.now(UTC)
     try:
         out = fn()
     except (KeyboardInterrupt, SystemExit):
@@ -2061,9 +2068,12 @@ def _costed(name: str, fn):
         _close(detail[:200])
         print(f"  LEG FAILED {name}: {detail}", flush=True)
         _emit_leg(name, detail[:200])
-        _woe_after(name, _woe, None, raised=detail, wall_s=time.monotonic() - _woe_t0)
-        return {"error": detail[:300], "status": "LEG_FAILED",
-                "at": datetime.now(UTC).isoformat()}
+        _failed = {"error": detail[:300], "status": "LEG_FAILED",
+                   "at": datetime.now(UTC).isoformat()}
+        _heartbeat(name, _hb_t0, _failed,
+                   _woe_after(name, _woe, None, raised=detail,
+                              wall_s=time.monotonic() - _woe_t0))
+        return _failed
     # A LEG THAT FAILS WITHOUT RAISING WAS RECORDED AS "ok" (theirs, 2026-09-10 -- and it is the
     # defect this desk has paid most for). `_producer` returns a DICT: a non-zero exit, a MISSING
     # script or a timeout come back as data, nothing is raised, and the ledger wrote `ok`.
@@ -2106,8 +2116,9 @@ def _costed(name: str, fn):
     _close(outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
-    _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,
-               verdict_exits=VERDICT_EXITS.get(name, ()))
+    _heartbeat(name, _hb_t0, out,
+               _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,
+                          verdict_exits=VERDICT_EXITS.get(name, ())))
     return out
 
 
@@ -2121,7 +2132,7 @@ def _woe_before(name: str) -> dict:
 
 
 def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
-               wall_s: float | None = None, verdict_exits: tuple = ()) -> None:
+               wall_s: float | None = None, verdict_exits: tuple = ()) -> dict:
     """THE WRITE-OR-EXPLAIN VERDICT: did the leg write what it declared, or say why not?
 
     PRINTS THE DEFECT, which is the entire point -- SILENT_NO_OP had no name and no line of
@@ -2141,9 +2152,23 @@ def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
             tail = str(rec.get("stderr_tail") or "").strip()
             for line in tail.splitlines()[-5:]:
                 print(f"      stderr| {line[:160]}", flush=True)
+        return rec if isinstance(rec, dict) else {}
     except Exception as exc:
         print(f"  write-or-explain not recorded for {name}: {type(exc).__name__}: {exc}",
               flush=True)
+        return {}
+
+
+def _heartbeat(name: str, started: datetime, out: object, woe: dict | None) -> None:
+    """THE PRODUCER HEARTBEAT (2026-11-25 producer triage): one row per leg run -- start, end,
+    status, rows_out, artifacts_moved -- in `desks/mt5/data/producer_heartbeat.jsonl`, and the
+    throttled per-producer summary `reports/PRODUCER_HEARTBEAT.json`, so no producer is ever
+    UNMEASURED. Never fails the leg (see `libs/ops/producer_heartbeat.py`)."""
+    try:
+        from libs.ops.producer_heartbeat import beat
+        beat(name, started=started, result=out, woe=woe or {})
+    except Exception as exc:
+        print(f"  heartbeat for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
 def _advance_watermark(name: str, outcome: str) -> None:
@@ -2885,6 +2910,9 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
         # deep_forest_miner (and anything else that wants to self-stop before the kill).
         _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget)),
+                # THE ABSOLUTE KILL INSTANT (libs/ops/leg_deadline.py): what a producer needs to
+                # stop between units and publish a partial, whatever its interpreter start cost.
+                "QUANT_LEG_DEADLINE_TS": f"{time.time() + budget:.3f}",
                 **_LEG_ENV.get(name, {})}
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),

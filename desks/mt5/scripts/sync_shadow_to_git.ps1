@@ -862,6 +862,12 @@ $reportPaths = @(
     # producer, class and family, the weakest stage and the floors; and the floors themselves
     "desks/mt5/reports/FUNNEL.json",
     "desks/mt5/data/funnel_floors.json",
+    # the producer heartbeat (libs/ops/producer_heartbeat.py): every leg, contracted box task and
+    # intelligence seat with ONE named status and its evidence -- the off-box proof of production
+    "desks/mt5/reports/PRODUCER_HEARTBEAT.json",
+    # MT5-LocalConvert's output (2026-11-25 triage: the box rewrites it hourly and the published
+    # copy was frozen at 2026-09-12, so the census could only read it PUBLISH_STALE)
+    "desks/mt5/data/hypotheses/local_candidates.json",
     # the free-model conversion lanes (research/conversion_lanes.py, leg conversion_lanes): the
     # pass report, the generators' judge-feedback block and the job registry with its weights
     "desks/mt5/reports/CONVERSION_LANES.json",

@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 import time
@@ -640,6 +641,16 @@ def _central_bank_currency(text: str) -> str | None:
     return None
 
 
+#: A BARS-FILE STEM IS AN INSTRUMENT ON A CHART (2026-11-25 producer triage). The seasonality seat
+#: names its instrument the way the bars file does -- `3M_H1`, `EURUSD_H1` -- and this resolver
+#: matched only the bare symbol, so 1,078 of the seat's committed rows (month, direction and
+#: instrument all on the row: a complete `calendar_month` recipe) compiled as
+#: NEEDS_SYMBOL_EXTRACTION and were queued for an LLM to recover an instrument the row already
+#: named. The chart suffix is stripped before the registry lookup; the chart itself is an axis the
+#: compiler fans out over, never part of the symbol.
+_CHART_SUFFIX = re.compile(r"_(?:M1|M5|M15|M30|H1|H4|D1|W1|MN1)$", re.IGNORECASE)
+
+
 def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
     """Resolve exact symbols and currency-wide evidence against the live Fusion registry.
 
@@ -672,7 +683,7 @@ def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
     folded = {s.upper(): s for s in universe}
     out: set[str] = set()
     for value in raw:
-        token = str(value).replace("/", "").strip()
+        token = _CHART_SUFFIX.sub("", str(value).replace("/", "").strip())
         if token in universe:
             out.add(token)
             continue
@@ -1475,8 +1486,10 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     month = row.get("month")
     direction = str(row.get("direction") or "").lower()
     if source_l == "seasonality" and symbols and isinstance(month, int) and 1 <= month <= 12 \
-            and direction in {"up", "down", "long", "short"}:
-        side = 1 if direction in {"up", "long"} else -1
+            and direction in {"up", "down", "long", "short", "bullish", "bearish"}:
+        # `bullish` / `bearish` are the seasonality seat's OWN words for the same two directions
+        # (2026-11-25 triage: every committed row says one of them, so none matched `up`/`down`).
+        side = 1 if direction in {"up", "long", "bullish"} else -1
         return ([_candidate(s, "calendar_month", {"active_month": month, "side_bias": side},
                             source, row,
                             "calendar-linked allocation and hedging flows can create "

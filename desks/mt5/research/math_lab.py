@@ -63,6 +63,7 @@ from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
 from research.mathlab import hypothesis_router as HR  # noqa: E402
 from research.mathlab import institution as I  # noqa: E402
+from research.mathlab import llm_proposer as LLMP  # noqa: E402
 from research.mathlab import scientists as S  # noqa: E402
 from research.mathlab.objects import REGISTRY_KIND, MathObject, Panel, Variable  # noqa: E402
 from research.mathlab.physics import PHYSICS_CORE_REGISTRY  # noqa: E402
@@ -551,6 +552,8 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
                                  if v.source == "axis"})
     status["representations"] = sorted({v.dataset for p in panels for v in p.meta.values()
                                         if v.source == "representation"})
+    # Column NAMES only (no value): the vocabulary the math_proposer job shows a free model.
+    status["columns"] = sorted({c for p in panels for c in p.columns})
     return panels, status
 
 
@@ -671,8 +674,11 @@ def read_allocation() -> dict[str, Any]:
 
 
 def all_traditions() -> tuple[str, ...]:
-    """Every tradition this leg runs: the mathematical cohorts, then the physics wing."""
-    return (*S.TRADITIONS, *[t for t in PHYSICS_TRADITIONS if t not in S.TRADITIONS])
+    """Every tradition this leg runs: the mathematical cohorts, the free models' proposals
+    (`math:llm_proposer`, a mathematics tradition fed by the conversion_lanes `math_proposer`
+    job), then the physics wing."""
+    return (*S.TRADITIONS, *LLMP.LLM_TRADITIONS,
+            *[t for t in PHYSICS_TRADITIONS if t not in S.TRADITIONS])
 
 
 def department_of(tradition: str) -> str:
@@ -1066,6 +1072,77 @@ def _entry_exit(params: dict[str, Any]) -> dict[str, str]:
 
 DONATED_LEDGER_VERSION = 2
 
+#: THE PASS STOPS ITSELF INSIDE THE LEG CAP (2026-11-25). The box measured `math_lab` killed at
+#: 721 s on both 11-25 passes with "0 of 3 declared artifact(s) moved", on code unchanged since
+#: 11-10. The shares below were all fractions of `--budget-s` and NOTHING after the judge was
+#: bounded: the proposer seat's mechanism-naming ask rotated the free panel with no overall
+#: deadline (thirteen models x 180 s), and the registry write and the engines ran unbounded after
+#: it. The effective budget is now the smaller of `--budget-s` and the cycle's cap
+#: (QUANT_LEG_BUDGET_S) less this margin; every phase reads the remaining clock; the report is
+#: checkpointed after the panels, after the donation and at the end; and what the deadline left
+#: unwritten in the registry is carried in REGISTRY_PENDING and written FIRST next pass.
+LEG_MARGIN_S = 60.0
+#: The cursor files live BESIDE the donation ledger (resolved at call time, so whatever moves the
+#: ledger -- a test's tmp_path, another desk root -- moves them with it).
+CURSOR_NAME = "mathlab_cursor.json"
+REGISTRY_PENDING_NAME = "mathlab_registry_pending.json"
+#: The most rows the registry cursor carries (oldest dropped first, and counted when it is).
+PENDING_KEEP = 20_000
+#: The seat's mechanism-naming ask gets at most this, and never more than a third of what is left.
+SEAT_TIMEOUT_S = 90.0
+
+
+def effective_budget(budget_s: float, leg_cap: str | None = None) -> float:
+    """`budget_s`, or the cycle's cap less LEG_MARGIN_S when that is shorter."""
+    raw = os.environ.get("QUANT_LEG_BUDGET_S") if leg_cap is None else leg_cap
+    try:
+        cap = float(raw) if raw else 0.0
+    except ValueError:
+        cap = 0.0
+    return min(float(budget_s), max(30.0, cap - LEG_MARGIN_S)) if cap > 0 else float(budget_s)
+
+
+def bounded(fn: Any, timeout_s: float, default: Any) -> tuple[Any, str]:
+    """`fn()` on a daemon thread, waited on for at most `timeout_s`; (result, status).
+
+    A daemon thread cannot hold the process open at exit, so a call that ignores its own timeout
+    (a socket read that trickles) costs this pass the wait and nothing more."""
+    import threading
+    box: dict[str, Any] = {}
+
+    def target() -> None:
+        try:
+            box["value"] = fn()
+        except Exception as exc:                              # pragma: no cover - defensive
+            box["error"] = type(exc).__name__
+
+    if timeout_s <= 0:
+        return default, "SKIPPED: no time left in the pass"
+    t = threading.Thread(target=target, daemon=True, name="math_lab_bounded")
+    t.start()
+    t.join(timeout_s)
+    if t.is_alive():
+        return default, f"TIMED_OUT after {timeout_s:.0f}s"
+    if "error" in box:
+        return default, f"FAILED: {box['error']}"
+    return box.get("value", default), "OK"
+
+
+def state_path(name: str) -> Path:
+    return Path(DONATED).parent / name
+
+
+def read_cursor(path: Path | None = None) -> dict[str, Any]:
+    doc = _read_json(path or state_path(CURSOR_NAME))
+    return doc if isinstance(doc, dict) else {}
+
+
+def order_by_cursor(chosen: list[str], cursor: dict[str, Any]) -> list[str]:
+    """Traditions the last pass could not finish go FIRST, so a stopped pass resumes where it
+    stopped instead of re-treading the same prefix (the shape `shadow_forward` paid for)."""
+    first = [t for t in cursor.get("unfinished") or [] if t in chosen]
+    return first + [t for t in chosen if t not in first]
+
 #: THE SCIENTISTS GET THIS SHARE OF THE WALL CLOCK, MEASURED FROM THE START OF THE PASS.
 #: MEASURED ON THE BOX 2026-10-29 (Desk health): with every core saturated, math_lab and
 #: physics_lab hit their 720 s / 700 s leg caps on every pass since 10-10 -- LEG_TIMEOUT, 0 of
@@ -1159,7 +1236,17 @@ def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
     with contextlib.suppress(OSError):
         _atomic(path, {"at": now_iso(), "partial": True, "phase": phase, "dry_run": False,
                        "elapsed_s": round(time.monotonic() - started, 2),
-                       "objects": {"admitted": admitted}, "donation": donation})
+                       "objects": {"admitted": admitted}, "donation": donation,
+                       **last_completed(path)})
+
+
+def last_completed(path: Path) -> dict[str, Any]:
+    """The previous FINISHED pass's `completed_at`, carried on a partial checkpoint, so the
+    organ contract (which reads that stamp) keeps the last completion's age through a running
+    pass and reads STALE only when no pass has finished -- never flapping mid-pass."""
+    prev = _read_json(path)
+    stamp = prev.get("completed_at") if isinstance(prev, dict) else None
+    return {"completed_at": stamp} if stamp else {}
 
 
 def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
@@ -1237,6 +1324,29 @@ def donation_status(rows: int, donated: int, already: int, refused: int) -> str:
     return "NOTHING_TRADEABLE" if refused else "NO_SURVIVORS"
 
 
+def refusal_class(why: str) -> str:
+    """The named class of a `G.tradeable` refusal -- what would have to exist for it to trade."""
+    w = str(why or "")
+    if w.startswith("reads "):
+        return "NON_BAR_SERIES"          # a minted representation / dataset leaf: no frame exists
+    if w.startswith("uses "):
+        return "NO_TRADE_OPERATOR"       # log / sqrt / gt / lt: alpha_grammar has no operator
+    if "is_valid refuses" in w:
+        return "UNIT_ALGEBRA_OR_DEPTH"   # the trade grammar's unit algebra or MAX_DEPTH
+    if "constant" in w:
+        return "CONSTANT_LEAF"
+    return "OTHER"
+
+
+def refusal_classes(refused: list[dict[str, str]]) -> dict[str, int]:
+    """Every refusal counted by class -- the whole list, not the first twenty the report keeps."""
+    out: dict[str, int] = {}
+    for r in refused:
+        k = refusal_class(r.get("why", ""))
+        out[k] = out.get(k, 0) + 1
+    return out
+
+
 def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[dict[str, Any]],
                                                                         list[dict[str, str]]]:
     """Executable candidates for the compiler's EXACT_RECIPE door, plus what could not be one."""
@@ -1269,6 +1379,8 @@ def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[di
         row["kind"] = "hypothesis"
         row["symbols"] = [obj.target]
         row["mathlab_object_id"] = obj.object_id
+        if obj.tradition == LLMP.TRADITION:
+            row["lane"] = LLMP.LANE          # FUNNEL by_lane scores the free-model job by it
         rows.append(row)
     return rows, refused
 
@@ -1320,19 +1432,56 @@ def representation_manifest(minted: list[tuple[str, Panel, MathObject]], dry_run
             "path": _published_path(MATHLAB_REPRESENTATIONS)}
 
 
+def registry_entry(obj: MathObject) -> dict[str, Any]:
+    """Everything `record_registry` writes for one object, as JSON -- so an entry the pass's
+    deadline did not reach can be carried to the next pass exactly as it would have been
+    written now (REGISTRY_PENDING)."""
+    return {
+        "kwargs": {
+            "source_id": f"mathlab:{obj.tradition}", "source_type": "mathematics",
+            "mechanism": (obj.interpretation.rationale or obj.statement)[:800],
+            "origin": "DESK", "generator": f"math:{obj.tradition}",
+            "discovery_id": obj.object_id, "kind": REGISTRY_KIND[obj.kind],
+            "assets": [obj.target], "horizons": [obj.horizon], "sessions": [], "regimes": [],
+            "information": "mathematics", "economic_rationale": obj.statement[:800],
+            "exact_rule": obj.canonical,
+            "required_data": sorted({v.dataset for v in obj.variables}),
+            "novelty": 1.0, "confidence": round(float(obj.interpretation.prior), 3),
+            "falsifier": obj.interpretation.falsifier, "payload": obj.to_row()},
+        "tradition": obj.tradition,
+        "residual_discovery_id": obj.provenance.residual_discovery_id or "",
+        "representation": ({"key": f"mathlab:{obj.tradition}:{obj.target}:{obj.canonical[:60]}",
+                            "dataset": f"mathlab:{obj.tradition}",
+                            "transform": obj.canonical[:200], "family": obj.tradition,
+                            "params": {"target": obj.target}}
+                           if obj.kind == "representation" else None)}
+
+
 def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str, Any]],
-                    donated: dict[str, int]) -> dict[str, Any]:
+                    donated: dict[str, int], *, deadline: float | None = None,
+                    pending_path: Path | None = None) -> dict[str, Any]:
     """Discoveries, provenance edges, representation rows and per-tradition credit.
 
     NEVER FATAL. A registry that can take down the search it records would be removed within a
     week, correctly -- every failure is reported in the artifact and nothing else.
+
+    ANYTIME (2026-11-25). Entries carried from the last pass are written FIRST, then this pass's;
+    at `deadline` (monotonic) the loop stops and what is left is carried in `pending_path` for
+    the next pass -- a cursor, never a drop. Each write can wait out the registry's busy timeout
+    while another process holds the write lock, so an unbounded loop here is what turns a busy
+    registry into a killed leg.
     """
+    pending_path = pending_path or state_path(REGISTRY_PENDING_NAME)
     out: dict[str, Any] = {"discoveries": 0, "new": 0, "links": 0, "representations": 0,
                            "generator_yield": 0, "trials": []}
     #: What each tradition actually put in front of the judge this pass. The trial charge is
     #: taken off THIS, not off the lab's internal pass count: charging fewer trials than were
     #: queued would understate the multiplicity the gauntlet now has to deflate.
     queued_by_tradition: dict[str, int] = {}
+    carried = [e for e in ((_read_json(pending_path) or {}).get("entries") or [])
+               if isinstance(e, dict) and isinstance(e.get("kwargs"), dict)]
+    entries = carried + [registry_entry(o) for o in objects]
+    out["carried_from_previous_pass"] = len(carried)
     try:
         from libs.moat import registry as reg
     except Exception as exc:
@@ -1341,25 +1490,17 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
         conn = reg.connect()
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"registry unopenable: {type(exc).__name__}"}
+    left: list[dict[str, Any]] = []
     try:
-        for obj in objects:
+        for i, entry in enumerate(entries):
+            if deadline is not None and time.monotonic() >= deadline:
+                left = entries[i:]
+                break
             try:
-                did, created = reg.record_discovery(
-                    source_id=f"mathlab:{obj.tradition}", source_type="mathematics",
-                    mechanism=(obj.interpretation.rationale or obj.statement)[:800],
-                    origin="DESK", generator=f"math:{obj.tradition}",
-                    discovery_id=obj.object_id, kind=REGISTRY_KIND[obj.kind],
-                    assets=[obj.target], horizons=[obj.horizon],
-                    sessions=[], regimes=[],
-                    information="mathematics",
-                    economic_rationale=obj.statement[:800],
-                    exact_rule=obj.canonical,
-                    required_data=sorted({v.dataset for v in obj.variables}),
-                    novelty=1.0, confidence=round(float(obj.interpretation.prior), 3),
-                    falsifier=obj.interpretation.falsifier,
-                    payload=obj.to_row(), conn=conn)
+                did, created = reg.record_discovery(**entry["kwargs"], conn=conn)
             except Exception:
                 continue
+            tradition = str(entry.get("tradition") or "")
             out["discoveries"] += 1
             out["new"] += int(created)
             # THE LAB PROPOSES; THE ONE JUDGE DECIDES (principal, 2026-09-23: "make all maths and
@@ -1374,24 +1515,34 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
             # what was queued rather than what the lab liked.
             with contextlib.suppress(Exception):
                 reg.set_discovery_state(did, "QUEUED", conn=conn)
-            queued_by_tradition[obj.tradition] = queued_by_tradition.get(obj.tradition, 0) + 1
-            if obj.provenance.residual_discovery_id:
+            queued_by_tradition[tradition] = queued_by_tradition.get(tradition, 0) + 1
+            if entry.get("residual_discovery_id"):
                 try:
-                    reg.link("discovery", obj.provenance.residual_discovery_id, "discovery", did,
+                    reg.link("discovery", entry["residual_discovery_id"], "discovery", did,
                              "motivated", conn=conn)
                     out["links"] += 1
                 except Exception:
                     pass
-            if obj.kind == "representation":
+            rep = entry.get("representation")
+            if isinstance(rep, dict):
                 try:
                     reg.representation_upsert(
-                        f"mathlab:{obj.tradition}:{obj.target}:{obj.canonical[:60]}",
-                        dataset=f"mathlab:{obj.tradition}", transform=obj.canonical[:200],
-                        family=obj.tradition, params={"target": obj.target},
+                        rep["key"], dataset=rep["dataset"], transform=rep["transform"],
+                        family=rep["family"], params=rep["params"],
                         pit={"rule": "carried from the inputs"}, conn=conn)
                     out["representations"] += 1
                 except Exception:
                     pass
+        dropped = max(0, len(left) - PENDING_KEEP)
+        if left or carried:
+            with contextlib.suppress(OSError):
+                _atomic(pending_path, {"at": now_iso(), "entries": left[dropped:],
+                                       "dropped_oldest": dropped,
+                                       "rule": "registry entries a pass's deadline left "
+                                               "unwritten; the next pass writes these first"})
+        out["pending_for_next_pass"] = len(left) - dropped
+        if dropped:
+            out["pending_dropped_oldest"] = dropped
         for tradition, row in per_tradition.items():
             if row.get("yield_measured") is False:
                 # A scientist that never returned has no measured yield: writing its 0 would
@@ -1453,9 +1604,16 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         permutations: int = B.PERMUTATIONS) -> dict[str, Any]:
     """One pass of the mathematics civilization. Returns the report it also writes."""
     started = time.monotonic()
+    budget_s = effective_budget(budget_s)
+    hard_deadline = started + budget_s
+    LLMP.CONSUME = not dry_run         # a dry run reads the proposal queue, never consumes it
     chosen = [t for t in (traditions or list(all_traditions())) if t in S.REGISTRY]
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
+    cursor = read_cursor()
+    chosen = order_by_cursor(chosen, cursor)
     panels, panel_status = build_panels(max_targets)
+    checkpoint(OUT, started, "panels", {"status": "NOT_YET: the pass is past its panels"},
+               0, dry_run)
     workers, memory = max_workers()
     routing = panel_status.get("routing") or {}
     # One registry read per pass: the routing already priced the traditions to rank them.
@@ -1463,12 +1621,18 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     previous = read_allocation()
     plan = department_plan(roi, previous, budget_s, zero_yield=roi_detail.get("zero_yield") or (),
                            demand=routing.get("demand") or None)
+    if not dry_run:
+        # The allocation is the pass's plan; written now so a stop later still moves it. The
+        # lifetime-trial update below rewrites it at the end.
+        with contextlib.suppress(OSError):
+            _atomic(ALLOCATION, plan)
 
     if not panels:
         report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
                          {}, [], {}, {}, {}, {}, dry_run,
                          ["panel: no target produced a usable residual panel this pass"])
         if not dry_run:
+            report["completed_at"] = now_iso()
             _atomic(OUT, report)
         return report
 
@@ -1485,6 +1649,11 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         futures, science_deadline,
         lambda t, status, why: unfinished_row(started, status, why, tradition=t, minted=[]))
     pool.shutdown(wait=not timed_out, cancel_futures=True)
+    if not dry_run and (timed_out or cursor.get("unfinished")):
+        with contextlib.suppress(OSError):
+            _atomic(state_path(CURSOR_NAME),
+                    {"at": now_iso(), "unfinished": list(timed_out),
+                     "rule": "traditions a pass stopped waiting for run first next pass"})
 
     rng = np.random.default_rng(SEED)
     # THE WALL CLOCK GOVERNS THE JUDGE TOO (2026-09-23). `budgets` above bounds the SCIENTISTS;
@@ -1570,9 +1739,12 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     try:
         from libs.research import proposer_seat as _ps
         _open = [o for o in admitted if o.interpretation.status != "interpreted"][:12]
-        _names = _ps.names_for("math_lab",
-                               [{"key": o.object_id, "claim": o.statement[:200],
-                                 "tradition": o.tradition, "target": o.target} for o in _open])
+        _left = min(SEAT_TIMEOUT_S, (started + 0.85 * budget_s - time.monotonic()) / 3.0)
+        _records = [{"key": o.object_id, "claim": o.statement[:200],
+                     "tradition": o.tradition, "target": o.target} for o in _open]
+        _names, _seat_status = bounded(
+            lambda: _ps.names_for("math_lab", _records, timeout=max(1.0, _left)) if _records
+            else {}, _left + 5.0, {})
         for _o in _open:
             _hit = _names.get(_o.object_id)
             if _hit:
@@ -1609,6 +1781,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                 ordering="G.tradeable(expression) is not None -- the formula executor must be "
                          "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
+                                "refusal_classes": refusal_classes(refused),
+                                "offered_rows": len(rows),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in survivors if o.object_id in already]),
@@ -1639,13 +1813,16 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     checkpoint(OUT, started, "donated", donation, len(admitted), dry_run)
     representations = representation_manifest(minted, dry_run)
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run
-                else record_registry(admitted, per_tradition, donated_by_tradition))
+                else record_registry(admitted, per_tradition, donated_by_tradition,
+                                     deadline=hard_deadline - 0.06 * budget_s))
     if not dry_run:
         for tradition, row in per_tradition.items():
             plan["traditions"][tradition]["lifetime_trials"] = (
                 lifetime.get(tradition, 0) + int(row.get("distinct", 0)))
         _atomic(ALLOCATION, plan)
-    engines = run_engines(panels[0], admitted, max(4.0, budget_s * ENGINE_SHARE))
+    room = hard_deadline - 0.03 * budget_s - time.monotonic()
+    engines = (run_engines(panels[0], admitted, min(max(4.0, budget_s * ENGINE_SHARE), room))
+               if room >= 4.0 else {})
     wiring = I.wiring_proof(
         {t: {**row, "passed": row.get("passed_burden", 0)} for t, row in per_tradition.items()},
         engines, chosen, list(MATHLAB_ENGINES))
@@ -1665,6 +1842,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                      simplified_away=simplified_away, engines=engines,
                      wiring=wiring)
     if not dry_run:
+        report["completed_at"] = now_iso()
         _atomic(OUT, report)
     return report
 

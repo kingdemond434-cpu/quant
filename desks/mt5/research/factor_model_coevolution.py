@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import warnings
@@ -903,7 +904,14 @@ def main() -> int:
     ap.add_argument("--no-heavy", action="store_true",
                     help="refuse every heavy backend; the pure-Python fallbacks carry the run")
     a = ap.parse_args()
-    doc = run_all(symbols=a.symbol, budget_s=a.budget_s, seed=a.seed, pop=a.pop, gens=a.gens,
+    # INSIDE THE LEG CAP (2026-11-25, the math lab's timeouts): the cycle exports its cap as
+    # QUANT_LEG_BUDGET_S; the pass plans a minute inside it so its report is always written.
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except ValueError:
+        cap = 0.0
+    budget_s = min(a.budget_s, max(30.0, cap - 60.0)) if cap > 0 else a.budget_s
+    doc = run_all(symbols=a.symbol, budget_s=budget_s, seed=a.seed, pop=a.pop, gens=a.gens,
                   write_queue=not a.no_queue, closure=not a.no_closure,
                   allow_heavy=not a.no_heavy, worlds=not a.no_worlds)
     print(f"COEVOLUTION  {doc.get('symbols_swept', 0)} symbols "
