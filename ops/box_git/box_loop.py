@@ -33,6 +33,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -505,12 +506,31 @@ def fast_replay(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tu
     return _fast(*replay_job(cfg, base, head, changed, timeout_s=FAST_TIMEOUT_S))
 
 
-def pr_tick(cfg: Config) -> str:
+def pr_order(prs: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """Release trains first (they gate adoption), then OLDEST FIRST: the forge lists newest
+    first, so a steady inflow of new packets would keep the first-queued fix (11-20: the drop
+    pull, PR #1) waiting behind every later one."""
+    def key(p: Mapping[str, Any]) -> tuple[int, int]:
+        ref = str((p.get("head") or {}).get("ref") or "")
+        return (0 if _TRAIN.search(ref) else 1, int(p.get("number") or 0))
+    return sorted(prs, key=key)
+
+
+#: ONE PR per pass (11-20..11-26) at 1-2 h a pass left 86 open PRs days from their checks:
+#: the stage now checks PRs until this budget is spent (the PR in hand always finishes).
+PR_TICK_BUDGET_S = 1500
+_TRAIN = re.compile(r"(^|/)(release[-_])?train[-_]?\d", re.I)
+
+
+def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S) -> str:
     f = _forge(cfg, forge_api.BOX_CI_USER)
     prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
-    # OLDEST FIRST: the forge lists newest first, so a steady inflow of new packets would keep
-    # the first-queued fix (11-20: the drop pull, PR #1) waiting behind every later one.
-    for p in sorted(prs or [], key=lambda p: int(p.get("number") or 0)):
+    done: list[str] = []
+    until = time.monotonic() + budget_s
+    for p in pr_order(prs or []):
+        if done and time.monotonic() >= until:
+            done.append("budget spent; the rest wait for the next pass")
+            break
         head = str((p.get("head") or {}).get("sha") or "")
         if not head or checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue
@@ -525,18 +545,21 @@ def pr_tick(cfg: Config) -> str:
                 sok, swhy = fast_replay(cfg, base, head, changed)
                 post(cfg, head, "success" if sok else "failure", f"box: {swhy}",
                      (REPLAY_CONTEXT,))
-                return (f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}; "
-                        f"replay {'ok' if sok else 'FAIL'}")
+                done.append(f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}; "
+                            f"replay {'ok' if sok else 'FAIL'}")
+                continue
             sel = impacted.select(root, changed)
             if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
                 why = "box CI: documents and images only (fast lane)"
                 post(cfg, head, "success", why, (*GATING, "risk-invariants", "replay-shadow"))
-                return f"PR #{p.get('number')}: fast lane"
+                done.append(f"PR #{p.get('number')}: fast lane")
+                continue
             if sel == []:
                 post(cfg, head, "success", "box CI: no change any test can observe")
             ok, n, why = _resources(cfg)
             if not ok:
-                return f"PR #{p.get('number')} waits: {why}"
+                done.append(f"PR #{p.get('number')} waits: {why}")
+                break
             passed, scope = True, "no observable test"
             if sel != []:
                 post(cfg, head, "pending", f"box CI running on {n} idle cores")
@@ -550,9 +573,9 @@ def pr_tick(cfg: Config) -> str:
             post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", ("risk-invariants",))
             sok, swhy = replay_job(cfg, base, head, changed)
             post(cfg, head, "success" if sok else "failure", f"box: {swhy}", ("replay-shadow",))
-        return (f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
-                f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
-    return "no PR waiting for checks"
+        done.append(f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
+                    f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
+    return "; ".join(done)[:2000] if done else "no PR waiting for checks"
 
 
 def full_tick(cfg: Config, live: str) -> str:
