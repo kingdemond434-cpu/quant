@@ -186,6 +186,10 @@ def run_check(root: Path, c: Mapping[str, Any], now: datetime) -> str | None:
         return "refused: a secrets path"
     p = root / rel
     try:
+        p.resolve().relative_to(root.resolve())
+    except ValueError:
+        return "refused: outside the repository"
+    try:
         st = p.stat()
     except OSError:
         return "missing"

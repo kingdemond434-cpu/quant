@@ -140,3 +140,9 @@ def test_coverage_floor_only_rises(tmp_path: Path) -> None:
     assert "COVERAGE_BELOW_FLOOR" in d["faults"]["coverage"]
     cov = json.loads((tmp_path / gs.COVERAGE_REL).read_text())
     assert cov["below_floor"] is True and cov["coverage_pct"] == d["coverage_pct"]
+
+
+def test_checks_are_confined_to_the_repository(tmp_path: Path) -> None:
+    c = {"id": "x", "path": "../outside.json"}
+    (tmp_path.parent / "outside.json").write_text("{}")
+    assert gs.run_check(tmp_path, c, T0) == "refused: outside the repository"

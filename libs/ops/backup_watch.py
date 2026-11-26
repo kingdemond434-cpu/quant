@@ -12,6 +12,8 @@ desks/mt5/reports/OFFSITE_BACKUP.json every 15 minutes and judges it:
     DRILL_STALE     no passing restore drill in 8 days
     LOCAL_ONLY      snapshots exist only on this box (repaged daily, not every 6h)
     KEY_NOT_ESCROWED the repository password is not attested as held off the box
+    OFFSITE_KEY_UNREGISTERED  GitLab refused the box's own deploy key (register
+                    desks/mt5/reports/BACKUP_DEPLOY_KEY.pub on the drop project, push allowed)
 
 Repair (bounded, at most every 2h): `schtasks /Run MT5-OffsiteBackup`; if the task does not exist,
 the installer (desks/mt5/scripts/install_offsite_backup_task.ps1, no switches: the job arms
@@ -43,6 +45,8 @@ REPAGE_SOFT = timedelta(hours=24)
 SOFT = frozenset({"LOCAL_ONLY", "KEY_NOT_ESCROWED"})
 #: Flags the guardian repairs by starting the job.
 REPAIRABLE = frozenset({"NO_REPORT", "NOT_ARMED", "NO_RESTIC", "FAIL", "STALE"})
+#: OFFSITE_OVER_CAP: the off-site restic repository outgrew its cap; nothing is pushed until the
+#: cap or the off-site tier is changed (page, never repair).
 
 
 def _ts(v: Any) -> datetime | None:
@@ -84,6 +88,15 @@ def judge(doc: dict[str, Any], now: datetime) -> list[str]:
         flags.append("DRILL_STALE")
     if doc.get("offsite") is not True:
         flags.append("LOCAL_ONLY")
+    raw_og = doc.get("offsite_git")
+    og: dict[str, Any] = raw_og if isinstance(raw_og, dict) else {}
+    if og.get("key_unregistered"):
+        # the box made its deploy key and published BACKUP_DEPLOY_KEY.pub; GitLab refuses it
+        # until it is registered on the drop project with push
+        flags.append("OFFSITE_KEY_UNREGISTERED")
+    push = og.get("push") if isinstance(og.get("push"), dict) else {}
+    if og.get("over_cap") or (isinstance(push, dict) and push.get("over_cap")):
+        flags.append("OFFSITE_OVER_CAP")
     if not doc.get("key_escrowed_off_box"):
         flags.append("KEY_NOT_ESCROWED")
     return flags
