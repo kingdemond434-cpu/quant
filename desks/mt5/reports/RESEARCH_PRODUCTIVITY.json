@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-25T22:55:31.603228+00:00",
+ "generated_utc": "2026-11-26T05:49:49.946227+00:00",
  "stages": {
   "intake": {
-   "files": 63494,
-   "files_7d": 2734,
+   "files": 63632,
+   "files_7d": 2755,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 711,
-   "decided_total": 70618,
+   "queued": 750,
+   "decided_total": 70823,
    "backlog": 0
   },
   "judged": {
@@ -55,8 +55,8 @@
    "clock_rows": 1023,
    "clocks_ticked_24h": 1005,
    "clocks_ticked_7d": 1008,
-   "last_tick": "2026-11-25T22:43:46+00:00",
-   "engine_silent_hours": 0.2,
+   "last_tick": "2026-11-26T05:30:06+00:00",
+   "engine_silent_hours": 0.3,
    "n_certificates": 13452,
    "n_enrolled": 1027,
    "n_accruing": 456,
