@@ -378,12 +378,14 @@ def risk_job(cfg: Config, root: Path, base: str, head: str,
         return False, "risk-invariants: could not take the risk suites from the base"
     rc, out = _run_untrusted(cfg, [cfg.python, "-I", "ops/release/risk_invariants.py",
                                    "--head", head, "--base", base], cwd=root, timeout=1800)
+    keep_log(cfg, f"risk-static-{head[:12]}", out)   # (r19) a red keeps its whole output
     if rc != 0:
         return False, f"risk-invariants static rc={rc}: {out.strip()[-160:]}"
     if suites:
         rc, out = _run_untrusted(cfg, [cfg.python, "-m", "pytest", "-q", "-p", "no:randomly",
                                        "-p", "no:cacheprovider", "--timeout=600", *suites],
                                  cwd=root, timeout=suite_timeout_s)
+        keep_log(cfg, f"risk-suites-{head[:12]}", out)
         if rc != 0:
             return False, f"risk suites rc={rc}: {out.strip()[-160:]}"
     return True, f"risk-invariants passed ({len(suites)} suite file(s))"
@@ -404,9 +406,17 @@ def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str],
                                        "--base", str(b), "--head", str(h), "--changed", str(lst),
                                        "--report", str(report)],
                                  cwd=cfg.work, extra_env=extra, timeout=timeout_s)
+        try:
+            rep = report.read_text(encoding="utf-8")
+        except OSError:
+            rep = ""
+        # (r19) the whole run is kept: PR #127 went red at 21:35Z on a 160-char tail cut mid-JSON
+        # and its report was deleted, so the reason was unrecoverable on the box.
+        kept = keep_log(cfg, f"replay-{head[:12]}", f"{out}\n--- report ---\n{rep}\n")
         lst.unlink(missing_ok=True)
         report.unlink(missing_ok=True)
-    return rc == 0, f"replay-shadow rc={rc}: {out.strip()[-160:]}"
+    where = f" [log ci_logs/{kept.name}]" if kept else ""
+    return rc == 0, f"replay-shadow rc={rc}: {out.strip()[-140:]}{where}"
 
 
 # ------------------------------------------------------------------------------ the stages
