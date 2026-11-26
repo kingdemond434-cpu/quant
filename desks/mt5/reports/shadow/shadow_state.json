@@ -42015,7 +42015,8 @@
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
     "revived_at": "2026-11-20T18:48:04+00:00",
     "revived_by": "heal_orphaned_clocks",
-    "certificate_at_revival": null
+    "certificate_at_revival": null,
+    "certificate_drift": true
   },
   "XBRUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8": {
     "n": 21,
