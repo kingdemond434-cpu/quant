@@ -38,6 +38,11 @@ REPORT = "DELIVERY_LEADTIME.json"
 WEEK = timedelta(days=7)
 STAGES = ("clear", "forge_pr", "ci_start", "ci_end", "live", "full_green", "production",
           "adopted")
+#: STUCK (zuck 11-26 15:47Z: memecoin #53 sat CLEAR with no box CI for ~40 h, unseen). An
+#: open CLEAR change with no box-ci status, or not live, past these limits is listed in
+#: summary.stuck on every pass.
+STUCK_NO_CI_H = 2.0
+STUCK_NOT_LIVE_H = 6.0
 UNMEASURED_STAGES = {"gateway_restart": "no box artifact stamps a gateway restart per release yet",
                      "first_use": "no box artifact stamps the first use of a change yet"}
 CLEARERS = frozenset({"auditor", "quant-admin"})
@@ -189,6 +194,30 @@ def bottleneck(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, fl
     return {k: round(v, 2) for k, v in held.most_common()}
 
 
+def stuck(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
+    """Open CLEAR changes past their stage limit, oldest first. Read only: names them."""
+    no_ci, not_live = [], []
+    for r in rows:
+        if r.get("state") not in (None, "open"):
+            continue
+        st = {k: _ts(v) for k, v in (r.get("stages") or {}).items()}
+        c = st.get("clear")
+        if not c or st.get("live"):
+            continue
+        age = _hours(c, now) or 0.0
+        item = {"pr": r.get("pr"), "head": str(r.get("head") or "")[:12], "title": r.get("title"),
+                "clear_age_h": age,
+                "clear_at_head": (r.get("pr_view") or {}).get("clear_at_head")}
+        if not st.get("ci_start") and age >= STUCK_NO_CI_H:
+            no_ci.append(item)
+        elif age >= STUCK_NOT_LIVE_H:
+            not_live.append(item)
+    key = lambda i: -i["clear_age_h"]  # noqa: E731
+    return {"limits_h": {"no_ci": STUCK_NO_CI_H, "not_live": STUCK_NOT_LIVE_H},
+            "no_ci": sorted(no_ci, key=key), "not_live": sorted(not_live, key=key),
+            "n": len(no_ci) + len(not_live)}
+
+
 def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[str, Any]],
             now: datetime) -> dict[str, Any]:
     since = now - WEEK
@@ -226,6 +255,7 @@ def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[st
         "hours_held_by_stage": held,
         "bottleneck": next(iter(held), None),
         "unmeasured_stages": UNMEASURED_STAGES,
+        "stuck": stuck(rows, now),
     }
 
 

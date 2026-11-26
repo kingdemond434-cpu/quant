@@ -171,3 +171,23 @@ def test_rows_carry_the_pr_view_and_the_box_ci_status_count():
     for r in doc["changes"]:
         assert set(r["pr_view"]) == {"verdict_lines", "last_verdict", "clear_at_head",
                                      "box_ci_statuses"}
+
+
+def test_stuck_lists_clear_changes_without_box_ci_or_not_live_past_their_limit():
+    now = datetime(2026, 11, 26, 16, 0, tzinfo=UTC)
+    def r(n, clear_h, ci=False, live=False, state="open"):
+        at = lambda h: (now - timedelta(hours=h)).isoformat()  # noqa: E731
+        return {"pr": n, "head": "a" * 40, "title": f"t{n}", "state": state,
+                "pr_view": {"clear_at_head": False},
+                "stages": {"clear": at(clear_h), "ci_start": at(clear_h - 0.1) if ci else None,
+                           "live": at(0.5) if live else None}}
+    rows = [r(53, 40), r(147, 1), r(128, 8, ci=True), r(5, 9, ci=True, live=True),
+            r(6, 50, state="closed"), {"pr": 7, "state": "open", "stages": {"clear": None}}]
+    s = dl.stuck(rows, now)
+    assert [i["pr"] for i in s["no_ci"]] == [53]          # #147 is under the 2 h limit
+    assert [i["pr"] for i in s["not_live"]] == [128]      # CI ran, 8 h and not live
+    assert s["n"] == 2 and s["no_ci"][0]["clear_at_head"] is False
+
+
+def test_the_summary_carries_the_stuck_block():
+    assert set(_doc()["summary"]["stuck"]) == {"limits_h", "no_ci", "not_live", "n"}
