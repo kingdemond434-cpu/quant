@@ -482,7 +482,14 @@ def _at(r: Mapping[str, Any]) -> datetime | None:
 #: (boot r15) "timed out after N s" with N below the cap that job has NOW measured the old
 #: budget, not the code. It does not count toward ENV_RERUNS and is re-run at once (it stays a
 #: red until a run at the current cap passes), unless another context holds a real code red.
-_TIMED_OUT = re.compile(r"timed out after (\d+)\s*s")
+#: Anchored to the box's OWN framing as the WHOLE status text ("box: replay-shadow rc=124: timed
+#: out after 600s", written by _run's timeout branch), never a phrase inside the child's output
+#: tail, so head code that prints it cannot buy itself endless re-runs (Audit should-fix a, r15).
+_TIMED_OUT = re.compile(r"\Abox: (?:replay-shadow|risk suites) rc=124: timed out after (\d+)s\Z")
+#: A hard bound all the same: past this many old-cap reds in one context the reds count as usual
+#: (a head that forges the box's exact framing buys at most this many extra runs). Today's PRs
+#: carry 3 (the first run plus two env re-runs at 600 s).
+UNDERCAP_REDS_MAX = 6
 
 
 def _cap_now(name: str) -> int:
@@ -511,14 +518,20 @@ def checked(runs: Sequence[Mapping[str, Any]], now: datetime | None = None) -> b
         for r in sorted(done, key=lambda r: (_at(r) or datetime.min.replace(tzinfo=UTC),
                                              int(r.get("id") or 0))):
             latest[str(r.get("name") or "")] = r
-        if any(_undercap(r) for r in latest.values()):
+        spent = {n for n in latest
+                 if sum(1 for x in done if x.get("name") == n and _undercap(x)) > UNDERCAP_REDS_MAX}
+
+        def old_cap(r: Mapping[str, Any]) -> bool:
+            return _undercap(r) and str(r.get("name") or "") not in spent
+
+        if any(old_cap(r) for r in latest.values()):
             # (r15) a red at an old, smaller cap: run it again now -- unless another context
             # already holds a real code red, which decides the head on its own
             return any(r.get("conclusion") == "failure" and not _env_red(r)
                        for r in latest.values())
         reds = [r for r in latest.values() if _env_red(r)]
         rounds = max((sum(1 for r in done if r.get("name") == n and _env_red(r)
-                           and not _undercap(r)) for n in latest), default=0)
+                           and not old_cap(r)) for n in latest), default=0)
         newest = max((a for r in reds if (a := _at(r)) is not None), default=None)
         code_red = any(r.get("conclusion") == "failure" and not _env_red(r)
                        for r in latest.values())

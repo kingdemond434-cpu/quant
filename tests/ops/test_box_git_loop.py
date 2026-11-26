@@ -169,6 +169,14 @@ def test_a_replay_red_at_the_old_600s_cap_is_rerun_and_still_blocks_until_it_pas
     risk = "box: risk suites rc=124: timed out after 600s"
     assert L.checked([_run("risk-invariants", "failure", risk, h, i)
                       for i, h in enumerate((9, 6, 3))], NOW)
+    # the phrase inside the child's own output is not the box's framing: no free re-runs
+    spoof = "box: replay-shadow rc=1: ... child said: timed out after 5s"
+    assert L.checked([_run("replay-shadow", "failure", spoof, h, i)
+                      for i, h in enumerate((9, 6, 3))], NOW)
+    # even an exact forgery of the framing is bounded
+    n = L.UNDERCAP_REDS_MAX + 1
+    many = [_run("replay-shadow", "failure", old, 40 - i, i) for i in range(n)]
+    assert L.checked(many, NOW)
     # a real code red in another context decides the head: no hour of replay is spent on it
     code = _run("risk-invariants", "failure", "risk suites rc=1: 2 failed", 5, 20)
     assert L.checked([code, *reds], NOW)
