@@ -376,6 +376,11 @@ SESSION_PROBE_STATE = DESK / "data" / "GOLD_SESSION_PROBE_STATE.json"
 E8_SPEED_RISK = 0.0075
 E8_SPEED_OTHERS_MAX = 0.0015
 E8_SPEED_LIFT_OFF = DESK / "data" / "E8_SPEED_LIFT_OFF"
+#: THE SUMMED GOLD CAP, IN CODE (Audit condition (c), 2026-11-26): asia + london_am + afternoon
+#: may never sum above this with the lift on. 0.009 + the bracket slip (DEFAULT_SLIP_POINTS on a
+#: ~1R stop is < 0.5R per window) stays far inside E8 Pro's 2.5% daily limit, which the one guard
+#: and the bracket-floor fit still enforce on the measured room every pass.
+E8_GOLD_SUM_MAX = 0.009
 
 
 def e8_speed_lift(kelly: dict[str, float], sources: dict[str, str], *, ceiling: float,
@@ -396,9 +401,10 @@ def e8_speed_lift(kelly: dict[str, float], sources: dict[str, str], *, ceiling: 
     if not asia > 0 or sources.get("asia") != "cert_book":
         return None, {**doc, "status": "NOT_SIZED",
                       "why": "asia is not sized by the cert book this pass; nothing to lift"}
-    if others > E8_SPEED_OTHERS_MAX + 1e-12:
+    if others > E8_SPEED_OTHERS_MAX + 1e-12 or E8_SPEED_RISK + others > E8_GOLD_SUM_MAX + 1e-12:
         return None, {**doc, "status": "DROPPED",
-                      "why": (f"london_am + afternoon carry {others:g} > {E8_SPEED_OTHERS_MAX:g}; "
+                      "why": (f"london_am + afternoon carry {others:g} (limit "
+                              f"{E8_SPEED_OTHERS_MAX:g}, summed cap {E8_GOLD_SUM_MAX:g}); "
                               f"asia stays at {min(asia, ceiling):g}")}
     return max(asia, E8_SPEED_RISK), {**doc, "status": "LIFTED"}
 

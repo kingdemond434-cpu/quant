@@ -147,3 +147,25 @@ def test_the_lift_never_revives_a_zero_or_lifts_an_unbooked_window(tmp_path) -> 
 def test_the_lift_is_off_with_its_marker_and_asia_is_the_cert(monkeypatch, tmp_path) -> None:
     doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=None, cert=VALID, probe=True)
     assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
+
+
+def test_the_summed_gold_risk_with_the_lift_is_capped_in_code(tmp_path) -> None:
+    """Audit condition (c): asia + both probes never exceed E8_GOLD_SUM_MAX with the lift on."""
+    off = tmp_path / "off"
+    probes = {w: g.session_probe_frac(n, dc.E8_CERT_CEILING)
+              for w, n in g.SESSION_PROBE_PRIOR_N.items()}
+    lift, _ = g.e8_speed_lift({"asia": 0.006, **probes}, {"asia": "cert_book"}, ceiling=0.006,
+                              off=off)
+    assert lift is not None and lift + sum(probes.values()) <= g.E8_GOLD_SUM_MAX
+    assert g.E8_GOLD_SUM_MAX < 0.025              # E8 Pro's daily limit
+    for others in (0.0015, 0.0016, 0.003):
+        lift, _ = g.e8_speed_lift({"asia": 0.006, "london_am": others}, {"asia": "cert_book"},
+                                  ceiling=0.006, off=off)
+        total = (lift if lift is not None else 0.006) + others
+        assert lift is None or total <= g.E8_GOLD_SUM_MAX
+
+
+def test_the_exception_is_scoped_to_exactly_two_e8_windows() -> None:
+    """Audit condition (a): the n<10 exception names london_am and afternoon only, on E8 only."""
+    assert set(g.SESSION_PROBE_PRIOR_N) == {"london_am", "afternoon"}
+    assert dc.PRINCIPAL_ZERO["fusion"] >= dc.GOLD_ASIA_ONLY_ZERO     # Fusion keeps its pin
