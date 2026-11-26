@@ -518,6 +518,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/TICK_FEATURES.json", 360,
         "per non-exotic symbol: spread regime, liquidity by hour and post-news response as "
         "point-in-time lake series the generators condition on; UNMEASURED where no tape"),
+    # EXOTIC STATE FEATURES (2026-11-25, idea 47): a core leg of MT5-Hourly. It writes its
+    # report on every pass, budget-stopped or not, so a day without one means it stopped running.
+    "MT5-Hourly (exotic state features)": (
+        "desks/mt5/reports/EXOTIC_STATE_FEATURES.json", 1440,
+        "per exotic certificate: its post-sample firing state as a look-ahead-probed lake series, "
+        "and the declared conditioned-cell set on non-exotic bloc targets with its trial charge"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),

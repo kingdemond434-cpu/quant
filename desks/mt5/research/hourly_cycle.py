@@ -1251,6 +1251,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The exotic certificates' exact specs re-minted on the tradable instruments sharing their
     # driver (exotic ban, 2026-11-24): a plan walk and a docket stream, bounded per pass.
     "exotic_transplant",
+    # The exotic certificates' post-sample FIRING STATE as lake-series conditioners on certified
+    # non-exotic parents in the same macro bloc (idea 47): one symbol resident, bounded per pass.
+    "exotic_state_features",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -2299,6 +2302,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plan's kill margin can yield it -- an undeclared leg has cap 0 and is never yielded (Audit
     # HOLD 8044d9b16, 2026-11-25: the core pass was killed at its limit on 5 of 5 runs).
     "exotic_transplant": 345,
+    # The exotic firing-state features stop themselves at --budget-s 300 (70% replaying, the
+    # rest planning and minting); declared so the core plan's kill margin can yield them.
+    "exotic_state_features": 345,
     # The tick-feature conditioner stops itself at --budget-s 240 (one instrument-day resident,
     # oldest pending day first); 300 leaves the derive-and-write phase its margin.
     "tick_features": 300,
@@ -6740,6 +6746,13 @@ def main() -> None:
     # hypothesis the sealed judge charges as a trial; the certificate is provenance only.
     xtp = _costed("exotic_transplant", lambda: _producer(
         "exotic_transplant", "research/exotic_transplant.py", "--once", "--budget-s", "300"))
+    # THE EXOTIC CERTIFICATES' FIRING STATE (idea 47). The exotic rule never trades; whether it
+    # fired (net long / net short, post-sample days only, look-ahead probed) is published as
+    # data/lake/series/exo_state__<SYM>.csv and minted as an `alt:` conditioner on certified
+    # non-exotic parents in the exotic leg's declared macro bloc -- a fixed, declared trial set.
+    xsf = _costed("exotic_state_features", lambda: _producer(
+        "exotic_state_features", "research/exotic_state_features.py", "--once", "--budget-s",
+        "300"))
     # THE LIVE ACCOUNT'S FILLS (principal 2026-09-23). `matched_fills` read 0 everywhere because
     # nothing had ever written the intent/deal join down; thirty real fills were on disk. This
     # records quote, ask, fill, latency, volume, spread and slippage (points and R) into the
@@ -7277,6 +7290,7 @@ def main() -> None:
                     "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "exotic_transplant": xtp,
+                    "exotic_state_features": xsf,
                     "fill_recorder": flr, "cost_surfaces": csf,
                     "fill_proven": fpv,
                     "allocator_scorecard": asc, "zero_live_page": zlp,
