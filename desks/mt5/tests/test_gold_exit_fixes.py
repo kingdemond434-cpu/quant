@@ -30,6 +30,16 @@ if str(_TESTS) not in sys.path:
 from mt5desk import position_manager as pm  # noqa: E402
 from prop import e8_gold  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _no_real_probe_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The session probe and speed lift never touch the desk's real state files from a test."""
+    monkeypatch.setattr(e8_gold, "SESSION_PROBE_STATE", tmp_path / "default_probe_state.json")
+    (tmp_path / "default_probe_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(e8_gold, "SESSION_PROBE_OFF", tmp_path / "default_probe_off")
+    (tmp_path / "default_lift_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(e8_gold, "E8_SPEED_LIFT_OFF", tmp_path / "default_lift_off")
+
 _GW = _DESK / "mt5desk" / "gateway.py"
 _GW_TREE = ast.parse(_GW.read_text(encoding="utf-8"))
 

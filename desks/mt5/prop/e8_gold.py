@@ -350,14 +350,14 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
 #: certified number above 0 for the window beats the probe; the probe replaces only the pin and a
 #: cert-book 0.0 / absence for these two windows. DEMOTION IS AUTOMATIC AND LATCHED: once a probed
 #: window has SESSION_PROBE_DEMOTE_STOPS protective-stop exits in the journal inside
-#: SESSION_PROBE_DEMOTE_DAYS since its probe started, it goes back to the pin (forward only) and
+#: its whole probe life (r3: no time window, no knob), it goes back to the pin (forward only) and
 #: stays there until a certified number for it reaches the cert book. A journal that is present
 #: but unreadable opens no probe (UNMEASURED, L1.28a). Revert: create data/GOLD_SESSION_PROBE_OFF.
 #: Every probed pass bills the shrink below the ceiling as rail `session_probe_shrink`.
-SESSION_PROBE_PRIOR_N: dict[str, int] = {"london_am": 7, "afternoon": 5}
-SESSION_PROBE_HALF_N = 50
+#: Each window's measured live n, one int knob per window so each has its own max ceiling.
+SESSION_PROBE_N_LONDON_AM = 7
+SESSION_PROBE_N_AFTERNOON = 5
 SESSION_PROBE_DEMOTE_STOPS = 5
-SESSION_PROBE_DEMOTE_DAYS = 14
 SESSION_PROBE_OFF = DESK / "data" / "GOLD_SESSION_PROBE_OFF"
 SESSION_PROBE_STATE = DESK / "data" / "GOLD_SESSION_PROBE_STATE.json"
 
@@ -415,12 +415,19 @@ def e8_speed_lift(kelly: dict[str, float], sources: dict[str, str], *, ceiling: 
     return max(asia, E8_SPEED_RISK), {**doc, "status": "LIFTED"}
 
 
+def session_probe_prior_n() -> dict[str, int]:
+    """{window: its measured live n}: the two windows the exception covers, and only those."""
+    return {"london_am": int(SESSION_PROBE_N_LONDON_AM),
+            "afternoon": int(SESSION_PROBE_N_AFTERNOON)}
+
+
 def session_probe_frac(n: int, ceiling: float) -> float:
-    """The probe's risk fraction: `ceiling * n / (n + SESSION_PROBE_HALF_N)`, 0 for n <= 0. Pure."""
+    """The probe's risk fraction: `ceiling * n / (n + 50)`, the desk's fill-proven shrink (the 50
+    is the rule itself, written here as a literal so the replay measures it), 0 for n <= 0. Pure."""
     n = int(n)
     if n <= 0 or not (ceiling > 0):
         return 0.0
-    return round(float(ceiling) * n / (n + SESSION_PROBE_HALF_N), 6)
+    return round(float(ceiling) * n / (n + 50), 6)
 
 
 def probe_stop_count(window: str, *, since: datetime, path: Path | None = None) -> int | None:
@@ -459,9 +466,9 @@ def session_probe(*, now: datetime, cert_void: bool, cert: dict[str, float] | No
     off = off if off is not None else SESSION_PROBE_OFF
     state_path = state_path if state_path is not None else SESSION_PROBE_STATE
     doc: dict[str, Any] = {"enabled": True, "windows": {},
-                           "rule": (f"E8_CERT_CEILING * n/(n+{SESSION_PROBE_HALF_N}); demoted at "
+                           "rule": ("E8_CERT_CEILING * n/(n+50); demoted at "
                                     f"{SESSION_PROBE_DEMOTE_STOPS} stop exits in "
-                                    f"{SESSION_PROBE_DEMOTE_DAYS}d")}
+                                    "over the probe's life")}
     out: dict[str, float] = {}
     try:
         if off.exists():
@@ -480,7 +487,7 @@ def session_probe(*, now: datetime, cert_void: bool, cert: dict[str, float] | No
             state = raw if isinstance(raw, dict) else {}
         wins = state.setdefault("windows", {})
         changed = False
-        for w, n in SESSION_PROBE_PRIOR_N.items():
+        for w, n in session_probe_prior_n().items():
             row: dict[str, Any] = {"n_prior": n}
             doc["windows"][w] = row
             if w not in pinned:
@@ -499,7 +506,7 @@ def session_probe(*, now: datetime, cert_void: bool, cert: dict[str, float] | No
             started = datetime.fromisoformat(str(ws["started_at"]))
             if started.tzinfo is None:
                 started = started.replace(tzinfo=UTC)
-            since = max(started, now - timedelta(days=SESSION_PROBE_DEMOTE_DAYS))
+            since = started
             stops = probe_stop_count(w, since=since, path=stops_path)
             if stops is None:
                 row.update(started_at=ws["started_at"], stops=None, status="UNMEASURED")
@@ -2786,8 +2793,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             _record({"at": now.isoformat(timespec="seconds"), "window": name,
                      "status": "CAPPED", "rail": "session_probe_shrink",
                      "why": (f"session probe sizes {name} at {frac:g} "
-                             f"(E8_CERT_CEILING x n/(n+{SESSION_PROBE_HALF_N}), "
-                             f"n={SESSION_PROBE_PRIOR_N.get(name)})"),
+                             f"(E8_CERT_CEILING x n/(n+50), "
+                             f"n={session_probe_prior_n().get(name)})"),
                      "risk_frac": frac, "ceiling": E8_CERT_CEILING,
                      "missed_growth_risk_usd": round(equity * max(E8_CERT_CEILING - frac, 0.0),
                                                      2),

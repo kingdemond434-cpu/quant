@@ -29,6 +29,16 @@ for _p in (str(_DESK), str(_DESK.parent.parent), str(_DESK / "tests")):
 from prop import e8_gold as g  # noqa: E402
 from prop import e8_guard  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _no_real_probe_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The session probe and speed lift never touch the desk's real state files from a test."""
+    monkeypatch.setattr(g, "SESSION_PROBE_STATE", tmp_path / "default_probe_state.json")
+    (tmp_path / "default_probe_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(g, "SESSION_PROBE_OFF", tmp_path / "default_probe_off")
+    (tmp_path / "default_lift_off").write_text("", encoding="utf-8")
+    monkeypatch.setattr(g, "E8_SPEED_LIFT_OFF", tmp_path / "default_lift_off")
+
 _DAY = pd.Timestamp("2026-10-15", tz="UTC")
 _NOW = _DAY + pd.Timedelta(hours=17, minutes=30)      # afternoon window due (signal hour 17)
 _ENTRY, _STOP = 4300.0, 4315.0                          # a short, 15 points to its stop

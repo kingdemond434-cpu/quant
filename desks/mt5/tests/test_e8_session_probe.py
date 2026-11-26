@@ -153,7 +153,7 @@ def test_the_summed_gold_risk_with_the_lift_is_capped_in_code(tmp_path) -> None:
     """Audit condition (c): asia + both probes never exceed E8_GOLD_SUM_MAX with the lift on."""
     off = tmp_path / "off"
     probes = {w: g.session_probe_frac(n, dc.E8_CERT_CEILING)
-              for w, n in g.SESSION_PROBE_PRIOR_N.items()}
+              for w, n in g.session_probe_prior_n().items()}
     lift, _ = g.e8_speed_lift({"asia": 0.006, **probes}, {"asia": "cert_book"}, ceiling=0.006,
                               off=off)
     assert lift is not None and lift + sum(probes.values()) <= g.E8_GOLD_SUM_MAX
@@ -167,7 +167,7 @@ def test_the_summed_gold_risk_with_the_lift_is_capped_in_code(tmp_path) -> None:
 
 def test_the_exception_is_scoped_to_exactly_two_e8_windows() -> None:
     """Audit condition (a): the n<10 exception names london_am and afternoon only, on E8 only."""
-    assert set(g.SESSION_PROBE_PRIOR_N) == {"london_am", "afternoon"}
+    assert set(g.session_probe_prior_n()) == {"london_am", "afternoon"}
     assert dc.PRINCIPAL_ZERO["fusion"] >= dc.GOLD_ASIA_ONLY_ZERO     # Fusion keeps its pin
 
 
