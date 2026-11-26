@@ -121,6 +121,19 @@ def fetch(drop: Drop, run: Run = _run) -> tuple[bool, str]:
     return True, out.strip()[:12]
 
 
+def _readable_or_gone(path: Path) -> bool:
+    """True when the inbox copy is gone (filed away) or opens for reading. A copy this account
+    cannot read (a foreign ACL, 11-26) is delivered again instead of being skipped forever."""
+    try:
+        with path.open("rb") as fh:
+            fh.read(1)
+        return True
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+
+
 def deliver(checkout: Path, inbox: Path, ledger_path: Path) -> list[str]:
     """Copy new or changed packet files from the drop clone into the inbox. Returns one row per
     file copied or refused."""
@@ -145,13 +158,17 @@ def deliver(checkout: Path, inbox: Path, ledger_path: Path) -> list[str]:
             rows.append(f"refused {rel}: {size} bytes over the {cap} cap")
             continue
         digest = sha256(src)
-        if seen.get(rel) == digest:
+        if seen.get(rel) == digest and _readable_or_gone(inbox / rel):
             continue
         dest = inbox / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = dest.with_name(dest.name + ".part")
-        tmp.write_bytes(src.read_bytes())
-        os.replace(tmp, dest)
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            tmp = dest.with_name(dest.name + ".part")
+            tmp.write_bytes(src.read_bytes())
+            os.replace(tmp, dest)
+        except OSError as exc:  # one unwritable file never stops the rest; retried next pass
+            rows.append(f"stuck {rel}: {type(exc).__name__}: {str(exc)[:200]}")
+            continue
         seen[rel] = digest
         rows.append(f"delivered {rel} {digest[:12]}")
     tmp = ledger_path.with_name(ledger_path.name + ".part")

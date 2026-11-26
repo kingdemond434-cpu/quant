@@ -28,6 +28,7 @@ Manifest (`<id>.json`, next to `<id>.bundle`):
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 from collections.abc import Callable, Mapping
@@ -162,15 +163,38 @@ def import_one(bundle: Path, manifest_path: Path, *, git: Git, api: Api) -> tupl
 
 def drain(inbox: Path, *, git: Git, api: Api) -> list[str]:
     """Import every waiting packet; each lands in done/ or refused/ with its reason."""
-    out = []
+    out: list[str] = []
+    stuck: list[dict[str, Any]] = []
     for bundle, manifest in packets(inbox):
         try:
             ok, why = import_one(bundle, manifest, git=git, api=api)
         except Exception as exc:  # a forge error refuses this packet; it is kept, never lost
             ok, why = False, f"ERROR {type(exc).__name__}: {str(exc)[:300]}"
-        _file_away(bundle, manifest, inbox / ("done" if ok else "refused"), why)
+        try:
+            _file_away(bundle, manifest, inbox / ("done" if ok else "refused"), why)
+        except OSError as exc:  # one unmovable packet never stops the others (11-26 outage)
+            stuck.append({"packet": bundle.name, "imported": ok, "why": why[:300],
+                          "file_away": f"{type(exc).__name__}: {str(exc)[:200]}"})
+            out.append(f"STUCK {bundle.name}: {'imported' if ok else 'refused'} but left in "
+                       f"place ({type(exc).__name__}); {why}")
+            continue
         out.append(f"{'IMPORTED' if ok else 'REFUSED'} {bundle.name}: {why}")
+    _write_stuck(inbox, stuck)
     return out
+
+
+#: Packets the inbox could not file away on its last pass. The guardian pages on a non-empty
+#: list (INBOX_STUCK); an empty list is written too, so a stale page clears itself.
+STUCK = "STUCK.json"
+
+
+def _write_stuck(inbox: Path, stuck: list[dict[str, Any]]) -> None:
+    try:
+        tmp = inbox / (STUCK + ".part")
+        tmp.write_text(json.dumps({"stuck": stuck}, indent=1), encoding="utf-8")
+        os.replace(tmp, inbox / STUCK)
+    except OSError:
+        pass  # the drain's own rows still name every stuck packet
 
 
 def parse_verdict(doc: Any) -> tuple[tuple[str, str] | None, str]:

@@ -345,6 +345,28 @@ def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str],
 
 
 # ------------------------------------------------------------------------------ the stages
+#: The checkout this loop runs from (the installer's loop source). It always holds the boot
+#: commit, because the installer ran from it.
+LOOP_SRC = Path(__file__).resolve().parents[2]
+
+
+def ensure_boot(cfg: Config, src: Path = LOOP_SRC) -> str:
+    """Make sure the forge repo holds the boot commit's objects. A boot move lands the commit in
+    the loop source but not in the forge repo, and every gate then failed on "invalid reference"
+    (2026-11-26). Objects only: no ref is created or moved, so the forge's branches are untouched;
+    the check runs every pass, so a later gc that drops the objects is healed the same way."""
+    if not cfg.boot:
+        return "no boot"
+    have = ["git", "-C", str(cfg.bare), "cat-file", "-e", f"{cfg.boot}^{{commit}}"]
+    if _run(have, timeout=60)[0] == 0:
+        return "present"
+    rc, out = _run(["git", "-c", "safe.directory=*", "-C", str(cfg.bare), "fetch", "-q",
+                    "--no-tags", str(src), cfg.boot], timeout=600)
+    if rc == 0 and _run(have, timeout=60)[0] == 0:
+        return f"fetched {cfg.boot[:12]} from {src}"
+    return f"boot {cfg.boot[:12]} MISSING from the forge repo and not fetchable: {out[-200:]}"
+
+
 def gate_code(cfg: Config, live: str) -> str:
     """The commit whose gate runs. LIVE, once LIVE contains the forge-aware gate. Until the box-git
     change itself has merged, LIVE's gate only knows GitHub (and fails closed there), so the gate
@@ -352,6 +374,7 @@ def gate_code(cfg: Config, live: str) -> str:
     transport, never a PR's own code."""
     if not cfg.boot or cfg.boot == live:
         return live
+    ensure_boot(cfg)
     rc, _ = _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", cfg.boot, live],
                  timeout=120)
     return live if rc == 0 else cfg.boot
