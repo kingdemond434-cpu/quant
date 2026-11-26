@@ -1,0 +1,7 @@
+{
+ "branch": "claude/release-train-4-gates-r4",
+ "head": "23f3b984eb07e99e2f3db7add7817b1cd70b1b87",
+ "title": "Release train 4 (gates) r5",
+ "body": "Train 4 tip 23f3b984e, Audit CLEAR (box_inbox/verdicts/release-train-4-gates-r5.json). Delivered through the local drop (no GitLab).",
+ "comments": []
+}

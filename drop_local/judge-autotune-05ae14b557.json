@@ -1,0 +1,7 @@
+{
+ "branch": "claude/judge-autotune",
+ "head": "05ae14b55728b7d662cbefd186bba294fe74fd7d",
+ "title": "Judge autotune: judging floor ratchet",
+ "body": "Research packet, Audit CLEAR 05ae14b557. Box proof: desks/mt5/reports/JUDGE_FLOOR.json written by the hourly judging_throughput pass.",
+ "comments": []
+}
