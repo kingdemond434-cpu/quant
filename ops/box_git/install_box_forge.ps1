@@ -521,10 +521,18 @@ $ciPass = $null
 Say "scheduled QuantForge-CI every minute as $ciUser (no administrator, no token access)"
 
 foreach ($d in @($work, $jobs)) { & icacls $d /grant "${gateUser}:(OI)(CI)M" | Out-Null }
+# BOX STATE OUTBOX (Audit route C, 2026-11-26): MT5-ShadowSync (SYSTEM) drops its fenced state
+# commit here as pending.bundle; the loop (quantgate) judges it with ops/box_git/state_fence.py
+# and publishes claude/box-state. SYSTEM and Administrators full, quantgate modify, CI denied.
+$stateOutbox = Join-Path $Root "state-outbox"
+$null = New-Item -ItemType Directory -Force -Path $stateOutbox
+Lock-ToOwners $stateOutbox @($gateUser)
+& icacls $stateOutbox /deny "${ciUser}:(OI)(CI)F" | Out-Null
 $cfg = @{ forge_url = $forgeUrl; bare = $mirror; forge_bare = $bare; work = $work
           tokens = $Tokens; ca = $cert; state = (Join-Path $ciDir "state.json"); python = $py
           inbox = $inboxDir; boot = $boot; ci_jobs = $jobs; rules_log = (Join-Path $logDirF "rules_changes.jsonl")
-          trust_checker = (Join-Path $trustDir "trust_check.py"); trust_pin = $pinPath }
+          trust_checker = (Join-Path $trustDir "trust_check.py"); trust_pin = $pinPath
+          state_outbox = $stateOutbox }
 $cfgPath = Join-Path $Forge "loop.json"
 $cfg | ConvertTo-Json | Set-Content -LiteralPath $cfgPath -Encoding ascii
 $runner = Join-Path $Forge "run_loop.cmd"

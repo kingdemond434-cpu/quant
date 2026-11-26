@@ -50,6 +50,7 @@ from ops.box_git import (  # noqa: E402
     forge_api,
     impacted,
     inbox,
+    state_publish,
 )
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
@@ -72,6 +73,7 @@ class Config:
     trust_checker: Path | None = None  # box-local pinned trust checker (D-20261119-TRUSTSET)
     trust_pin: Path | None = None
     drop: drop_pull.Drop | None = None  # private drop repo the box pulls by itself
+    state_outbox: Path | None = None    # MT5-ShadowSync's bundle outbox (ops/box_git/state_publish)
 
     def token(self, account: str) -> str:
         return (self.tokens / f"{account}.token").read_text(encoding="utf-8").strip()
@@ -803,6 +805,37 @@ def inbox_tick(cfg: Config) -> str:
     return "; ".join(rows) or "inbox empty"
 
 
+def state_tick(cfg: Config) -> str:
+    """Box state from ShadowSync's outbox onto claude/box-state (ops/box_git/state_publish.py)."""
+    if cfg.state_outbox is None:
+        return "no state outbox configured"
+    who = {"NAME": "box-state", "EMAIL": "box-state@box.invalid"}
+    ident = {**os.environ, **{f"GIT_{r}_{k}": v for r in ("AUTHOR", "COMMITTER")
+                              for k, v in who.items()}}
+
+    def git(args: Sequence[str]) -> tuple[int, str]:
+        return _run(["git", "-c", "safe.directory=*", "-C", str(cfg.bare), *args], env=ident,
+                    timeout=600)
+
+    def push(sha: str, ref: str) -> tuple[int, str]:
+        return _run(["git", "-C", str(cfg.bare), "push", "-q", cfg.remote(), f"{sha}:{ref}"],
+                    env=cfg.git_env("claude"), timeout=600)
+
+    def remote_tip(ref: str) -> str | None:
+        """The branch tip on the forge, its objects fetched here (FETCH_HEAD only, no ref)."""
+        rc, out = _run(["git", "-C", str(cfg.bare), "ls-remote", cfg.remote(), ref],
+                       env=cfg.git_env("claude"), timeout=120)
+        sha = out.split()[0] if rc == 0 and out.split() else ""
+        if len(sha) != 40:
+            return None
+        _run(["git", "-C", str(cfg.bare), "fetch", "-q", cfg.remote(), ref],
+             env=cfg.git_env("claude"), timeout=600)
+        return sha
+
+    return state_publish.publish(cfg.state_outbox, cfg.state.parent / state_publish.STATUS,
+                                 git=git, push=push, remote_tip=remote_tip, live=LIVE)
+
+
 def drop_tick(cfg: Config) -> str:
     """Pull new packets from the drop repository into the inbox (ops/box_git/drop_pull.py)."""
     if cfg.drop is None or cfg.inbox is None:
@@ -865,6 +898,7 @@ def tick(cfg: Config) -> dict[str, Any]:
         out["swept"] = f"ERROR {type(exc).__name__}: {str(exc)[:200]}"
     for name, fn in (("drop", lambda: drop_tick(cfg)),
                      ("inbox", lambda: inbox_tick(cfg)),
+                     ("state", lambda: state_tick(cfg)),
                      ("gate", lambda: gate_tick(cfg, live_head(cfg))),
                      ("sign", lambda: sign_tick(cfg, live_head(cfg))),
                      ("pr", lambda: pr_tick(cfg)),
@@ -926,7 +960,8 @@ def main(argv: list[str] | None = None) -> int:
                  drop=drop_pull.Drop(url=raw["drop"]["url"], key=Path(raw["drop"]["key"]),
                                      checkout=Path(raw["drop"]["checkout"]),
                                      branch=raw["drop"].get("branch") or "main")
-                 if raw.get("drop") else None)
+                 if raw.get("drop") else None,
+                 state_outbox=Path(raw["state_outbox"]) if raw.get("state_outbox") else None)
     doc = tick(cfg)
     doc["trust"] = trust_status(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")

@@ -49,6 +49,9 @@ IMMUTABLE: tuple[str, ...] = (
     "libs/portfolio/capital_modifiers.py",
     "libs/validation/redteam.py",
     "libs/validation/replay2.py",
+    # THE BOX-STATE FENCE (Audit route C, 2026-11-26): what the forge loop may publish from
+    # ShadowSync's outbox. Widening it is a reviewed, re-signed change.
+    "ops/box_git/state_fence.py",
     "libs/validation/calibration.py",
     "libs/regime/state_admission.py",
     "scripts/check_growth_governance.py",
