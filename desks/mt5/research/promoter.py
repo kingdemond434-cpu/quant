@@ -439,12 +439,22 @@ def _registry_readable() -> bool:
 #: joins a certificate that exists NOW for its exact spec with no drift; it then keeps its own
 #: forward_start. Otherwise it is UNMEASURED until re-certified -- held, never KILL. A forward
 #: row counts for promotion only when it was priced at the fill-hour spread
-#: (`spread_basis == "fill_hour"`, research/qquant_shadow.py); anything else is UNMEASURED.
+#: (`is_fill_hour_basis`: "fill_hour" in the qquant lane, "fill_hour_HH" in the main lane);
+#: anything else is UNMEASURED.
 #: Every symbol, gold included (Audit HOLD on r3). A held row is UNMEASURED, never KILL; the
 #: gold windows trade through prop/e8_gold and the gateway's gold book, not through this door.
 HELD_REVIVED = "HELD_REVIVED_UNCERTIFIED"
 HELD_SPREAD = "HELD_SPREAD_UNMEASURED"
 HELD_CLASS = "HELD_LIVE_CLASS"
+
+
+def is_fill_hour_basis(basis: object) -> bool:
+    """True for a forward record priced at its measured fill-hour spread: the qquant lane writes
+    "fill_hour" (research/qquant_shadow.py), the main lane "fill_hour_HH" with the modal fill
+    hour (research/shadow_forward.fill_hour_costs). "pooled_median", absent or anything else
+    is not."""
+    b = str(basis or "")
+    return b == "fill_hour" or (b.startswith("fill_hour_") and b[len("fill_hour_"):].isdigit())
 
 
 def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
@@ -459,7 +469,7 @@ def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
         return HELD_REVIVED, ("revived by heal_orphaned_clocks with no certificate at revival, "
                               "and no current certificate for its exact spec without drift: "
                               "UNMEASURED until re-certified (never KILL)")
-    if row.get("spread_basis") != "fill_hour":
+    if not is_fill_hour_basis(row.get("spread_basis")):
         return HELD_SPREAD, (f"forward record priced at spread_basis "
                              f"{row.get('spread_basis')!r}, not the fill-hour spread: "
                              f"UNMEASURED until replayed at the fill hour (never KILL)")
