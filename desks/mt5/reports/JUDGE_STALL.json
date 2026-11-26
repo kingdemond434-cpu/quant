@@ -1,21 +1,21 @@
 {
- "at": "2026-11-26T16:01:04+00:00",
+ "at": "2026-11-26T16:16:04+00:00",
  "incidents": {
   "no_verdict": {
    "open": true,
-   "hours": 53.78,
-   "why": "no new verdict for 53.8h (last 2026-11-24T10:14:12+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 54.03,
+   "why": "no new verdict for 54.0h (last 2026-11-24T10:14:12+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": true,
    "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.01,
-   "busy_other_cores": 14.18,
-   "why": "judge tree at 0.01 cores (others 14.18) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 18.3h (limit 1h)",
+   "busy_judge_cores": 0.03,
+   "busy_other_cores": 14.36,
+   "why": "judge tree at 0.03 cores (others 14.36) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 18.5h (limit 1h)",
    "low_since": "2026-11-25T21:46:15+00:00",
-   "hours": 18.26
+   "hours": 18.5
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +25,9 @@
   },
   "sweep_overdue": {
    "open": true,
-   "hours": 35.57,
+   "hours": 35.82,
    "limit_h": 25.59,
-   "why": "35.6h since the last sweep ended (2026-11-25T04:26:47+00:00), status SWEEPING; limit 25.59h"
+   "why": "35.8h since the last sweep ended (2026-11-25T04:26:47+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -41,9 +41,9 @@
   "phase_overrun": {
    "open": true,
    "phase": "merge_and_publish",
-   "hours": 18.28,
+   "hours": 18.53,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 18.3h since 2026-11-25T21:44:14+00:00 (limit 3h)"
+   "why": "sweep phase merge_and_publish has run 18.5h since 2026-11-25T21:44:14+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -88,13 +88,13 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 11904,
-  "heartbeat_utc": "2026-11-26T16:00:44+00:00",
+  "heartbeat_utc": "2026-11-26T16:15:49+00:00",
   "last_sweep_ended_utc": "2026-11-25T04:26:47+00:00",
   "last_rc": 75
  },
  "host": "trading box",
  "page": {
-  "sent": false,
+  "sent": true,
   "open": [
    "cores_idle",
    "no_verdict",
@@ -102,7 +102,12 @@
    "sweep_overdue"
   ],
   "opened": [],
-  "reminded": [],
-  "resolved": []
+  "reminded": [
+   "no_verdict"
+  ],
+  "resolved": [],
+  "title": "JUDGE STALLED: cores_idle, no_verdict, phase_overrun, sweep_overdue",
+  "armed": 0,
+  "delivered": 0
  }
 }
