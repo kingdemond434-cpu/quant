@@ -633,7 +633,7 @@
     "certificate_at_revival": null
   },
   "last_run": "2026-11-26",
-  "updated_at": "2026-11-26T07:35:13+00:00",
+  "updated_at": "2026-11-26T07:35:29+00:00",
   "configured_sleeves": 1018,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -13814,7 +13814,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:38.583586+00:00",
     "sleeve_id": "5bd3f353ad96e9da4a2c",
-    "last_attempt_at": "2026-11-26T06:35:11+00:00",
+    "last_attempt_at": "2026-11-26T07:35:27+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -13837,7 +13837,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-26T06:35:11+00:00"
+      "at": "2026-11-26T07:35:27+00:00"
     },
     "last_error": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -13864,7 +13864,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:39.194816+00:00",
     "sleeve_id": "07a50f1d884a71cd2522",
-    "last_attempt_at": "2026-11-26T06:35:13+00:00",
+    "last_attempt_at": "2026-11-26T07:35:29+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -13887,7 +13887,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-26T06:35:13+00:00"
+      "at": "2026-11-26T07:35:29+00:00"
     },
     "last_error": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -30717,7 +30717,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.711372+00:00",
     "sleeve_id": "d8ace3f0d56ad69edd78",
-    "last_attempt_at": "2026-11-26T06:34:46+00:00",
+    "last_attempt_at": "2026-11-26T07:35:17+00:00",
     "bar_source": "CACHE:US30_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -30740,7 +30740,7 @@
     "last_error_cleared": "no M5 bars from any source for US30 covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-26T06:34:46+00:00"
+      "at": "2026-11-26T07:35:18+00:00"
     },
     "certificate_drift": true,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.6->1.6 spread per lot; round-trip charge 4.8845->4.8845 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
@@ -60638,46 +60638,47 @@
   },
   "engine_pass": {
     "started_at": "2026-11-26T06:56:39+00:00",
-    "rows_reached": 1013,
+    "rows_reached": 1018,
     "rows": 1018,
-    "complete": false,
+    "complete": true,
+    "finished_at": "2026-11-26T07:35:29+00:00",
     "profile": {
-      "seconds": 2396.0,
-      "rows_timed": 1013,
+      "seconds": 2412.5,
+      "rows_timed": 1018,
       "phase_seconds": {
-        "backtest": 207.7,
-        "fetch": 830.8,
+        "backtest": 208.1,
+        "fetch": 832.4,
         "resolve": 15.1,
-        "signals": 688.5
+        "signals": 690.7
       },
       "phase_calls": {
-        "backtest": 934,
-        "fetch": 158,
-        "resolve": 1006,
-        "signals": 928
+        "backtest": 939,
+        "fetch": 160,
+        "resolve": 1011,
+        "signals": 933
       },
       "reused": {
         "backtest": 72,
         "signals": 78
       },
       "family_seconds": {
-        "cross_asset_residual": 703.3,
+        "cross_asset_residual": 708.9,
         "macro_conditional": 568.5,
         "carry": 421.1,
-        "clock_transition": 193.9,
+        "clock_transition": 200.2,
         "range_reversion": 140.8,
         "overnight_gap_decay": 111.2,
         "pca_residual": 83.4,
         "formula": 57.8,
-        "session_range_breakout": 20.6,
+        "session_range_breakout": 25.1,
         "spread_state": 11.9,
         "overnight_drift": 0.7
       },
       "chart_seconds": {
-        "M5": 931.7,
+        "M5": 937.4,
         "M15": 752.9,
-        "M30": 371.8,
-        "H1": 256.6
+        "M30": 378.1,
+        "H1": 261.2
       },
       "slowest_rows": [
         {
@@ -69932,7 +69933,7 @@
     "n_historical": 23,
     "broker_offset_h": 0.0,
     "sleeve_id": "5c7219b8ee30b6df3eb7",
-    "last_attempt_at": "2026-11-26T06:34:46+00:00",
+    "last_attempt_at": "2026-11-26T07:35:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -69949,7 +69950,7 @@
     "e_status": "UNMEASURED: 5/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-26T06:34:46+00:00"
+      "at": "2026-11-26T07:35:22+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
@@ -70037,7 +70038,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-11-20T13:55:29.796005+00:00",
     "sleeve_id": "cb1cca8314f82a42457d",
-    "last_attempt_at": "2026-11-26T06:34:47+00:00",
+    "last_attempt_at": "2026-11-26T07:35:23+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -70056,7 +70057,7 @@
     "e_status": "UNMEASURED: 4/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-26T06:34:47+00:00"
+      "at": "2026-11-26T07:35:23+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
