@@ -1,5 +1,5 @@
 {
- "at": "2026-11-26T02:42:52+00:00",
+ "at": "2026-11-26T03:42:59+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-26T02:42:06+00:00",
-  "pid": 20600
+  "started_at": "2026-11-26T03:41:53+00:00",
+  "pid": 30696
  }
 }
