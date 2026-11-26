@@ -172,6 +172,14 @@ def _e8_gold_slip_writes_to_tmp(tmp_path_factory, monkeypatch):
             monkeypatch.setattr(g, "STOP_EXITS", d / "e8_gold_stop_exits.jsonl")
             if hasattr(g, "FX_STOP_EXITS"):
                 monkeypatch.setattr(g, "FX_STOP_EXITS", d / "e8_fx_stop_exits.jsonl")
+            if hasattr(g, "SESSION_PROBE_STATE"):
+                monkeypatch.setattr(g, "SESSION_PROBE_STATE", d / "GOLD_SESSION_PROBE_STATE.json")
+                monkeypatch.setattr(g, "SESSION_PROBE_OFF", d / "GOLD_SESSION_PROBE_OFF")
+            if hasattr(g, "E8_SPEED_LIFT_OFF"):
+                # The lane's mechanics tests size asia at the cert book's number; a test that
+                # exercises the speed lift points this at an absent marker itself.
+                (d / "E8_SPEED_LIFT_OFF").write_text("", encoding="utf-8")
+                monkeypatch.setattr(g, "E8_SPEED_LIFT_OFF", d / "E8_SPEED_LIFT_OFF")
     yield
 
 
