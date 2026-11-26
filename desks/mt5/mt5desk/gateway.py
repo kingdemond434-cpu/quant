@@ -529,6 +529,28 @@ def load_sleeves() -> list[dict]:
     sleeves, notes = _core.load_sleeves_verbose(SLEEVES_FILE)
     for note in notes:
         log(note)
+    # THE EXOTIC BAN AT THE GATEWAY'S DOOR (Audit gate (a), 2026-11-26): a LIVE row on an exotic
+    # or unclassified symbol is not traded, whatever wrote it (research/universe_policy.
+    # live_class_refusal; the promoter demotes it on its next pass). Logged, never silent.
+    try:
+        try:
+            from research.universe_policy import live_class_refusal
+        except ImportError:                                # pragma: no cover - path
+            import sys as _sys
+            if str(BASE) not in _sys.path:
+                _sys.path.insert(0, str(BASE))
+            from research.universe_policy import live_class_refusal
+    except Exception as exc:                               # fail closed: nothing on the class
+        log(f"live class door unreadable ({type(exc).__name__}): no promoted sleeve this pass")
+        return []
+    kept = []
+    for s in sleeves:
+        why = live_class_refusal(s.get("symbol")) if isinstance(s, dict) else "not a row"
+        if why:
+            log(f"sleeve {s.get('name') if isinstance(s, dict) else s!r} refused: {why}")
+            continue
+        kept.append(s)
+    sleeves = kept
     # LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). This is the last mandatory edge of the
     # whole pipeline -- promoter -> allocator -> GATEWAY -- and without the acknowledgement the
     # control plane can only observe that sleeves.json was written, never that the gateway read

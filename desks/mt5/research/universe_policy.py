@@ -406,3 +406,29 @@ def is_exotic_symbol(symbol: str, asset_class: str | None = None) -> bool:
     if "exotic" in str(klass or "").lower():
         return True
     return _majors_exotic(symbol)
+
+
+#: THE EXOTIC BAN ON EVERY LIVE PATH (principal 2026-11-24 18:04Z "exotics are banned"; Audit
+#: gate packet (a) 2026-11-26). The prop executors refused exotics, but the promoter ->
+#: sleeves.json -> gateway path and the allocator's columns did not. This one test is applied at
+#: all three. An exotic is refused outright. A symbol the broker registry does not know is
+#: UNCLASSIFIED and held (fail closed). When the registry itself is unreadable, only the leg test
+#: binds: refusing every symbol there would stop the gold lane on a file error, and that refusal
+#: is reported as `registry unreadable` rather than read as a class.
+def live_class_refusal(symbol: object) -> str | None:
+    """Why `symbol` may hold no live capital, or None. Never raises."""
+    sym = str(symbol or "").strip().upper()
+    if not sym:
+        return "no symbol on the row: its class is unknown, so it is held (fail closed)"
+    try:
+        reg = _registry()
+    except Exception:
+        reg = {}
+    klass = asset_class_of(sym) if reg else ""
+    if is_exotic_symbol(sym, klass if reg else None):
+        return (f"{sym} is an exotic: exotics are banned on every live path "
+                f"(principal 2026-11-24 18:04Z)")
+    if reg and not klass:
+        return (f"{sym} is not in the broker registry: UNCLASSIFIED, so it holds no live "
+                f"capital until it is classified (fail closed)")
+    return None

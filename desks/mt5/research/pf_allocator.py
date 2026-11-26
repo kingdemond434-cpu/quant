@@ -465,6 +465,16 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
             zero[name] = (f"its forward clock reached KILL ({clock.get('key')}): the forward "
                           f"evidence refuses this certificate, so the allocator records zero")
             continue
+        # THE EXOTIC BAN ON THE ALLOCATOR'S COLUMNS (Audit gate (a), 2026-11-26): an exotic is a
+        # recorded zero, an unclassified symbol UNMEASURED (fail closed, never a zero).
+        try:
+            from research.universe_policy import live_class_refusal
+        except ImportError:                               # pragma: no cover - box path
+            from universe_policy import live_class_refusal  # type: ignore[no-redef]
+        _cls = live_class_refusal(sym)
+        if _cls:
+            (zero if "exotic" in _cls else unmeasured)[name] = _cls
+            continue
         if str(clock.get("status") or "").upper().startswith("BLOCKED"):
             unmeasured[name] = f"its forward clock is {clock.get('status')}: no bars to replay on"
             continue

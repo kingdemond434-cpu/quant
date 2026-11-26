@@ -511,6 +511,34 @@ def rollover_block(row: Mapping[str, Any], now_utc: datetime) -> str | None:
     return None
 
 
+#: The allocator's rollover-artefact rule (research/pf_allocator.rollover_artefact, Audit CLEAR
+#: 83be0b74b3) restated for the E8 fallback, which must not depend on that module loading: a
+#: row whose recorded `entry_hours` ({broker hour: count}, read as broker hours only when
+#: `entry_hours_venue` names an MT5 feed) put >= ROLLOVER_SHARE of >= ROLLOVER_MIN_N entries in
+#: broker 00:00-01:59 is a bid-bar rollover artefact. Absent or foreign data is UNMEASURED and
+#: charges nothing.
+ROLLOVER_SHARE = 0.80
+ROLLOVER_MIN_N = 5
+
+
+def fallback_rollover_artefact(row: Mapping[str, Any]) -> str | None:
+    """Why this row is a rollover artefact, or None (including when unmeasured). Never raises."""
+    try:
+        venue = str(row.get("entry_hours_venue") or "").strip().lower()
+        hours = row.get("entry_hours")
+        if not venue.startswith("mt5:") or not isinstance(hours, Mapping):
+            return None
+        counts = {int(h): int(n) for h, n in hours.items() if int(n) > 0}
+        total = sum(counts.values())
+        roll = sum(n for h, n in counts.items() if h in ROLLOVER_BROKER_HOURS)
+    except (TypeError, ValueError):
+        return None
+    if total < ROLLOVER_MIN_N or roll < ROLLOVER_SHARE * total:
+        return None
+    return (f"{roll} of {total} recorded entries at broker 00:00-01:59: a rollover artefact "
+            f"(no deployable solve to price it)")
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -875,6 +903,28 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
     # undeployable or unreadable solve changes nothing. The stress cap below still binds.
     solved, solved_why = e8_solved_book()
     chosen, zeroed = apply_solved(chosen, solved)
+    # THE FALLBACK ADMITS ONLY WHAT IS PROVEN (Audit gate (b), 2026-11-26). With no deployable
+    # solve, a survivors row with no fill record used to carry the full evidence-rule size, and
+    # the allocator's rollover zero vanished with the solve. Now only a fill-proven or a
+    # principal-funded row trades in fallback, and a row whose recorded entries sit >= 80% in
+    # broker 00:00-01:59 is a recorded zero (fallback_rollover_artefact). Each drop is billed.
+    fallback_dropped: list[dict[str, Any]] = []
+    if not solved:
+        kept_fb: list[dict[str, Any]] = []
+        for r in chosen:
+            col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+            why = None
+            if not (r.get("fill_proven") or r.get("principal_funded")):
+                why = "no deployable solve, and no fill record or principal funding"
+            elif not r.get("principal_funded"):
+                why = fallback_rollover_artefact(r)
+            if why:
+                fallback_dropped.append({"column": col, "why": why,
+                                         "missed_growth_risk_frac": float(r["risk_frac"]),
+                                         "rail": "e8_fallback_unproven"})
+                continue
+            kept_fb.append(r)
+        chosen = kept_fb
     stressed = stress.cap_book(
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
@@ -919,7 +969,8 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "by_mechanism": fams,
         "stress": stressed,
         "allocator": {"source": solved_why, "n_priced": len(solved),
-                      "zeroed_by_allocator": zeroed},
+                      "zeroed_by_allocator": zeroed,
+                      "fallback_dropped": fallback_dropped},
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),
