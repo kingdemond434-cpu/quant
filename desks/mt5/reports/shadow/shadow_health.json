@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-26T05:30:43+00:00",
+  "updated_at": "2026-11-26T06:36:27+00:00",
   "configured_sleeves": 625,
   "represented_sleeves": 625,
   "certified_sleeves_total": 13452,
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 8
     },
     "age_measured": 46,
-    "median_age_days": 51.375,
+    "median_age_days": 51.421,
     "mature_14d_without_trade": 46,
     "fresh_attempts": 38,
     "naturally_inactive": 37,
@@ -40,23 +40,23 @@
     "12432 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2134.242,
+  "seconds": 2478.038,
   "stage_seconds": {
     "scalp_bar_refresh": 0.0,
     "external_state_reconcile": 2.5,
-    "legacy_shadow": 2094.6,
-    "scalp_shadow": 6.1,
-    "qquant_shadow": 1.7,
-    "promoter": 27.8
+    "legacy_shadow": 2403.3,
+    "scalp_shadow": 10.0,
+    "qquant_shadow": 1.6,
+    "promoter": 53.0
   },
   "engine_profile": {
-    "seconds": 2094.3,
+    "seconds": 2401.8,
     "rows_timed": 1018,
     "phase_seconds": {
-      "backtest": 221.8,
-      "fetch": 345.8,
-      "resolve": 20.2,
-      "signals": 768.7
+      "backtest": 271.1,
+      "fetch": 837.7,
+      "resolve": 53.2,
+      "signals": 698.1
     },
     "phase_calls": {
       "backtest": 939,
@@ -69,84 +69,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "cross_asset_residual": 751.2,
-      "macro_conditional": 610.9,
-      "carry": 310.5,
-      "overnight_gap_decay": 121.2,
-      "pca_residual": 93.7,
-      "formula": 77.0,
-      "clock_transition": 46.4,
-      "session_range_breakout": 25.0,
-      "spread_state": 11.6,
-      "range_reversion": 3.5,
-      "overnight_drift": 0.4
+      "cross_asset_residual": 1010.7,
+      "macro_conditional": 694.2,
+      "carry": 289.2,
+      "clock_transition": 122.0,
+      "overnight_gap_decay": 87.2,
+      "pca_residual": 62.8,
+      "formula": 59.9,
+      "range_reversion": 15.6,
+      "session_range_breakout": 12.9,
+      "spread_state": 9.2,
+      "overnight_drift": 0.3
     },
     "chart_seconds": {
-      "M5": 979.2,
-      "M15": 568.5,
-      "H1": 287.3,
-      "M30": 216.5
+      "M5": 1043.1,
+      "M15": 701.7,
+      "M30": 371.9,
+      "H1": 247.3
     },
     "slowest_rows": [
       {
-        "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
-        "seconds": 116.28
+        "key": "XAUAUD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 100.49
+      },
+      {
+        "key": "XAUAUD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96",
+        "seconds": 71.99
+      },
+      {
+        "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+        "seconds": 58.29
       },
       {
         "key": "GBPAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=asia_side_mode=revert_ttl_bars=144",
-        "seconds": 32.2
+        "seconds": 55.72
       },
       {
-        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-        "seconds": 27.8
+        "key": "USCOCOA.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 43.19
       },
       {
-        "key": "AUDCAD.cross_asset_residual.asia@M15#factor_symbols=['BTCUSD']_session=asia",
-        "seconds": 27.6
+        "key": "XAUEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 42.38
       },
       {
         "key": "XAGUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-        "seconds": 22.21
+        "seconds": 40.2
       },
       {
-        "key": "NZDHUF.carry.asia@M15#input_symbol=NZDHUF",
-        "seconds": 20.0
+        "key": "XAUAUD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=-1_ttl_bars=96",
+        "seconds": 39.97
       },
       {
-        "key": "EURCAD.macro_conditional.asia@M5",
-        "seconds": 16.8
+        "key": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=48",
+        "seconds": 39.42
+      },
+      {
+        "key": "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
+        "seconds": 36.86
+      },
+      {
+        "key": "GBPCAD.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
+        "seconds": 34.34
+      },
+      {
+        "key": "XAUAUD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96",
+        "seconds": 34.08
+      },
+      {
+        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
+        "seconds": 33.92
+      },
+      {
+        "key": "GBPMXN.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+        "seconds": 33.54
       },
       {
         "key": "XCUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-        "seconds": 15.45
-      },
-      {
-        "key": "GBPDKK.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-        "seconds": 14.23
-      },
-      {
-        "key": "GBPDKK.macro_conditional.asia@M5",
-        "seconds": 14.01
-      },
-      {
-        "key": "AUDSGD.pca_residual.asia@M15#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
-        "seconds": 10.27
-      },
-      {
-        "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192",
-        "seconds": 10.06
-      },
-      {
-        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=ny",
-        "seconds": 9.93
-      },
-      {
-        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
-        "seconds": 9.6
-      },
-      {
-        "key": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
-        "seconds": 9.17
+        "seconds": 33.07
       }
     ]
   },
