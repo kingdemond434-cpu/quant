@@ -396,7 +396,8 @@ def _row(*, admit: bool, heat: float = 0.03, delta: float = 0.0004) -> dict:
             "why": "fixture"}
 
 
-_CAND = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
+_CAND = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0,
+         "spread_basis": "fill_hour"}
 
 
 def test_capital_requires_a_measured_marginal_and_absence_is_standby_not_capital(desk) -> None:

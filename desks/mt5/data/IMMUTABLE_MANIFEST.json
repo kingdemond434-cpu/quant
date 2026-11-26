@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-11-26T00:50:00+00:00",
- "signed_by": "audit-clear-c48d791ac",
+ "signed_utc": "2026-11-26T13:10:00+00:00",
+ "signed_by": "audit-clear-aa5fcafd7",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "91a3656c090b0af3",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -8,7 +8,7 @@
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
   "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "6fb3f15cec4d1410",
+  "desks/mt5/research/promoter.py": "69403b1dc55cc884",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/ops/live_ledger_migration.py": "74ef5609d1ce37a4",
   "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",

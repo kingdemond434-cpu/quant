@@ -43,7 +43,8 @@ from mt5desk import provenance  # noqa: E402
 from libs.research.alpha_state import AlphaStateLedger  # noqa: E402
 
 _ACC = {"login": 5551234, "server": "FusionMarkets-Live", "kind": provenance.LIVE}
-_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0, "days": 21}
+_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0, "days": 21,
+         "spread_basis": "fill_hour"}
 
 
 def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False
@@ -205,11 +206,14 @@ def test_the_generic_and_scalp_lanes_carry_identity_too(desk, monkeypatch) -> No
     spec = {"symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
             "condition": None, "side": "LONG"}
     monkeypatch.setattr(promoter, "load_cert_specs", lambda: {key: spec})
+    # the identity is the subject here; the live-class door has its own tests
+    monkeypatch.setattr(promoter, "_class_refusal", lambda _sym: None)
     desk.allocation([key, "xau_m5_test"])
     view = promoter.allocation_view()
     sleeves: list[dict] = []
     assert promoter.promote_generic(sleeves, {key: {"status": "PROMOTION_CANDIDATE",
-                                                    "exp_r": 0.2, "n": 55}},
+                                                    "exp_r": 0.2, "n": 55,
+                                                    "spread_basis": "fill_hour"}},
                                     set(), set(), regrade={}, view=view)
     (g,) = sleeves
     assert g["certificate"] == key and g["sleeve_id"] == "1903a4cc90212b4c29d5"

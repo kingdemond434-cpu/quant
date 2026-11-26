@@ -417,6 +417,55 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
     return None, f"{sym or 'row'} has no clock identity and no registry cost fields"
 
 
+def _class_refusal(symbol: object) -> str | None:
+    """`universe_policy.live_class_refusal`, importable from the box's research path."""
+    try:
+        from universe_policy import live_class_refusal
+    except ImportError:                                   # pragma: no cover - path
+        from research.universe_policy import live_class_refusal
+    return live_class_refusal(symbol)
+
+
+def _registry_readable() -> bool:
+    try:
+        from universe_policy import registry_readable
+    except ImportError:                                   # pragma: no cover - path
+        from research.universe_policy import registry_readable
+    return registry_readable()
+
+
+#: THE REVIVED-CLOCK AND FILL-HOUR GATES (Audit gate packet (c) + Brain Q42, 2026-11-26).
+#: A clock heal_orphaned_clocks revived with `certificate_at_revival` null counts only when it
+#: joins a certificate that exists NOW for its exact spec with no drift; it then keeps its own
+#: forward_start. Otherwise it is UNMEASURED until re-certified -- held, never KILL. A forward
+#: row counts for promotion only when it was priced at the fill-hour spread
+#: (`spread_basis == "fill_hour"`, research/qquant_shadow.py); anything else is UNMEASURED.
+#: Every symbol, gold included (Audit HOLD on r3). A held row is UNMEASURED, never KILL; the
+#: gold windows trade through prop/e8_gold and the gateway's gold book, not through this door.
+HELD_REVIVED = "HELD_REVIVED_UNCERTIFIED"
+HELD_SPREAD = "HELD_SPREAD_UNMEASURED"
+HELD_CLASS = "HELD_LIVE_CLASS"
+
+
+def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
+                   symbol: object) -> tuple[str, str] | None:
+    """(status, why) when a PROMOTION_CANDIDATE may not promote this pass, else None. Pure
+    apart from the registry read."""
+    cls = _class_refusal(symbol)
+    if cls:
+        return HELD_CLASS, cls
+    if "certificate_at_revival" in row and not row.get("certificate_at_revival") \
+            and (not spec or drift):
+        return HELD_REVIVED, ("revived by heal_orphaned_clocks with no certificate at revival, "
+                              "and no current certificate for its exact spec without drift: "
+                              "UNMEASURED until re-certified (never KILL)")
+    if row.get("spread_basis") != "fill_hour":
+        return HELD_SPREAD, (f"forward record priced at spread_basis "
+                             f"{row.get('spread_basis')!r}, not the fill-hour spread: "
+                             f"UNMEASURED until replayed at the fill hour (never KILL)")
+    return None
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
     _apply_live_policy(sleeves)
@@ -427,8 +476,23 @@ def save_sleeves(sleeves: list[dict]) -> None:
     except (OSError, ValueError):
         _universe = {}
     stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    if not _registry_readable():
+        plog("live class door: registry unreadable -- only the exotic leg test binds this pass "
+             "(an unclassified symbol is NOT held while the registry cannot be read)")
     for row in sleeves:
         if str(row.get("status") or "").upper() == "LIVE":
+            # THE EXOTIC BAN AND THE UNKNOWN CLASS (Audit gate (a), 2026-11-26): every lane
+            # writes through here, so no exotic or unclassified row reaches the gateway LIVE.
+            # Reversible (STANDBY, never RETIRED); the risk it held is its missed-growth line.
+            _cls = _class_refusal(row.get("symbol"))
+            if _cls:
+                row.update({"status": "STANDBY", "demoted_at": stamp,
+                            "missed_growth_risk_frac": float(row.get("risk_frac") or 0.0),
+                            "risk_frac": 0.0, "risk_frac_source": "none",
+                            "demote_reason": _cls, "rail": "live_class"})
+                plog(f"{row.get('name')}: LIVE -> STANDBY, {_cls}")
+                kept.append(row)
+                continue
             _ch, _src = cost_basis_of(row, _universe)
             if _ch:
                 row["cost_hash"], row["cost_basis_source"] = _ch, _src
@@ -2244,6 +2308,18 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             plog(f"{key}: spec not in the current authority set -- recorded as drift, "
                  f"promotion proceeds on the clock's own certificate")
         cap = capital_verdict(view or {}, key, symbol=tup[0], family=tup[3], selector=tup[1])
+        _hold = promotion_hold(row, spec=spec, drift=bool(row["certificate_drift"]),
+                               symbol=tup[0])
+        if _hold:
+            row["status"], row["gate_reason"] = _hold
+            row["missed_growth_risk_frac"] = float(cap.get("risk_frac") or 0.0)
+            plog(f"{key}: candidate held -- {_hold[1]}")
+            note_door(key, door="HELD", from_status="PROMOTION_CANDIDATE", to_status=_hold[0],
+                      evidence=door_evidence(key, cap, n=row.get("n"), exp_r=row.get("exp_r"),
+                                             days=row.get("days"), lane="qquant"),
+                      reason=_hold[1])
+            changed = True
+            continue
         sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
                         "state": tup[2], "family": tup[3],
                         "side": str(spec.get("side", "LONG")).upper(),
@@ -2309,6 +2385,7 @@ def main() -> None:
     schanged = promote_scalp(sleeves, sshadow, existing, gate_authority, view=view)
     changed = changed or qchanged or schanged
 
+    _authority_logged = False
     for key, st in shadow.items():
         if not isinstance(st, dict):
             continue
@@ -2391,6 +2468,30 @@ def main() -> None:
             changed = True
             continue
         cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
+        # THE MAIN SHADOW CARRIES THE 166 (box 2026-11-26: "PROMOTION CANDIDATE", 165 revived
+        # with no certificate, none priced at the fill hour), so the gates bind here too. The
+        # current authority set stands in for the spec: a gate_spec inside it is "a certificate
+        # that exists now", and drift is its absence. AN EMPTY OR UNREADABLE AUTHORITY SET JOINS
+        # NOTHING (Audit MF2 on r3): drift reads False there, so the revival gate treats it as
+        # drift -- a revived row is held -- and says so once per pass.
+        if not gate_authority and not _authority_logged:
+            plog("revival gate: the authority set is empty or unreadable -- no revived clock "
+                 "can join a current certificate this pass, so every revived row is held")
+            _authority_logged = True
+        _hold = promotion_hold(st, spec={"gate_spec": gate_spec} if gate_authority else None,
+                               drift=bool(st["certificate_drift"]) or not gate_authority,
+                               symbol=sym)
+        if _hold:
+            st["status"], st["gate_reason"] = _hold
+            st["promotion_authority"] = False
+            st["missed_growth_risk_frac"] = float(cap.get("risk_frac") or 0.0)
+            plog(f"{key}: live promotion held -- {_hold[1]}")
+            note_door(key, door="HELD", from_status="PROMOTION CANDIDATE", to_status=_hold[0],
+                      evidence=door_evidence(key, cap, n=st.get("n"), exp_r=st.get("exp_r"),
+                                             days=st.get("days_active"), lane="main"),
+                      reason=_hold[1])
+            changed = True
+            continue
         row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": cap["risk_frac"],
                "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
                "admission": cap,

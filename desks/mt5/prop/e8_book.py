@@ -511,6 +511,28 @@ def rollover_block(row: Mapping[str, Any], now_utc: datetime) -> str | None:
     return None
 
 
+def fallback_filter(chosen: list[dict[str, Any]]
+                    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(kept, dropped) for the evidence-rule fallback (no deployable solve): only fill-proven or
+    principal-funded rows. Each drop carries its missed-growth line. Pure. The rollover hours
+    stay gated for every fill-proven row by `rollover_block` at the executor (survivor rows carry
+    no entry_hours, so an entry-hour artefact test here would be inert -- Audit rev note)."""
+    kept: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+    for r in chosen:
+        col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        why = None
+        if not (r.get("fill_proven") or r.get("principal_funded")):
+            why = "no deployable solve, and no fill record or principal funding"
+        if why:
+            dropped.append({"column": col, "why": why,
+                            "missed_growth_risk_frac": float(r.get("risk_frac") or 0.0),
+                            "rail": "e8_fallback_unproven"})
+            continue
+        kept.append(r)
+    return kept, dropped
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -875,6 +897,14 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
     # undeployable or unreadable solve changes nothing. The stress cap below still binds.
     solved, solved_why = e8_solved_book()
     chosen, zeroed = apply_solved(chosen, solved)
+    # THE FALLBACK ADMITS ONLY WHAT IS PROVEN (Audit gate (b), 2026-11-26). With no deployable
+    # solve, a survivors row with no fill record used to carry the full evidence-rule size, and
+    # the allocator's rollover zero vanished with the solve. Now only a fill-proven or a
+    # principal-funded row trades in fallback (rollover hours stay gated by rollover_block at
+    # the executor). Each drop is billed.
+    fallback_dropped: list[dict[str, Any]] = []
+    if not solved:
+        chosen, fallback_dropped = fallback_filter(chosen)
     stressed = stress.cap_book(
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
@@ -919,7 +949,8 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "by_mechanism": fams,
         "stress": stressed,
         "allocator": {"source": solved_why, "n_priced": len(solved),
-                      "zeroed_by_allocator": zeroed},
+                      "zeroed_by_allocator": zeroed,
+                      "fallback_dropped": fallback_dropped},
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),
