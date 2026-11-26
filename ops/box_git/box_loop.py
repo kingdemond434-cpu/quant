@@ -458,7 +458,7 @@ def gate_tick(cfg: Config, live: str) -> str:
 
 
 #: A pending box CI status older than this is a run that died (reboot, kill): it is run again.
-STALE_PENDING_S = 6 * 3600
+STALE_PENDING_S = 21600  # 6 h (a literal: it is a knob, boot r17)
 
 
 #: A red caused by the BOX, not the code: git unable to read the repo (exit 128), a run that
@@ -573,7 +573,7 @@ FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
 RISK_CONTEXT = "risk-invariants"
 REPLAY_CONTEXT = "replay-shadow"
 FAST_TIMEOUT_S = 600
-FAST_RISK_TIMEOUT_S = FAST_TIMEOUT_S
+FAST_RISK_TIMEOUT_S = 600  # = FAST_TIMEOUT_S (a literal: it is a knob, boot r17)
 #: (boot r15, 2026-11-26) replay-shadow is 90 scenarios x 2 trees = 180 fresh child processes.
 #: Measured 172 s on a Linux build box with its research legs failing fast; on the trading box
 #: every fast-path replay today (#4, #9, #13, #126, #127, #128) hit the 600 s cap, so no CLEARed

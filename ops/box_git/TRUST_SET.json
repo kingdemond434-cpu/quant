@@ -228,5 +228,166 @@
     "tests/ops/test_memecoin_gate.py"
    ]
   }
+ },
+ "knobs": {
+  "_why": "Boot r17 (zuck 2026-11-26 17:33Z 'cut every protected change possible all except core'; Audit pre-read TRUST_SHRINK_AUDIT_PREREAD.md). The closure CUTS at these names once trust_check proves each is still a ranged literal constant or a pure function whose only callers are named; judged against the INSTALLED policy. One-sided ranges pin today's value where the knob protects the live box (disk, cores, workers) or evidence (CI logs).",
+  "ops/box_git/box_loop.py": {
+   "constants": {
+    "FAST_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "FAST_RISK_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "FAST_REPLAY_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "PR_TICK_BUDGET_S": [
+     60,
+     14400
+    ],
+    "WORKTREE_ADD_TIMEOUT": [
+     60,
+     14400
+    ],
+    "JOB_POLL_S": [
+     0.5,
+     60
+    ],
+    "KEEP_CI_LOGS": [
+     200,
+     null
+    ],
+    "STALE_PENDING_S": [
+     600,
+     172800
+    ],
+    "ENV_RERUNS": [
+     0,
+     10
+    ],
+    "ENV_RERUN_AFTER_S": [
+     60,
+     86400
+    ],
+    "UNDERCAP_REDS_MAX": [
+     0,
+     20
+    ],
+    "_TIMED_OUT": {
+     "regex": true
+    }
+   },
+   "functions": {
+    "pr_order": {
+     "callers": [
+      "pr_tick"
+     ]
+    },
+    "_undercap": {
+     "callers": [
+      "checked"
+     ]
+    },
+    "_cap_now": {
+     "callers": [
+      "_undercap"
+     ]
+    },
+    "_at": {
+     "callers": [
+      "checked"
+     ]
+    }
+   },
+   "frozen_refs": [
+    "datetime",
+    "UTC",
+    "Any",
+    "Mapping",
+    "Sequence",
+    "REPLAY_CONTEXT",
+    "_TRAIN"
+   ],
+   "frozen_calls": [
+    "_env_red"
+   ],
+   "methods": [
+    "get",
+    "items",
+    "keys",
+    "values",
+    "startswith",
+    "endswith",
+    "lower",
+    "upper",
+    "strip",
+    "split",
+    "search",
+    "match",
+    "fullmatch",
+    "group",
+    "replace",
+    "isoformat",
+    "timestamp",
+    "fromisoformat",
+    "total_seconds",
+    "now"
+   ],
+   "attrs": [
+    "min"
+   ]
+  },
+  "ops/box_git/box_ci.py": {
+   "constants": {
+    "DISK_FLOOR_GB": [
+     25.0,
+     null
+    ],
+    "RESERVE_CORES": [
+     2,
+     null
+    ],
+    "MAX_WORKERS": [
+     1,
+     8
+    ],
+    "IDLE_THRESHOLD_PCT": [
+     1.0,
+     20.0
+    ],
+    "FLOOR_WORKERS": [
+     1,
+     4
+    ],
+    "BOX_TEST_TIMEOUT_S": [
+     300,
+     14400
+    ]
+   }
+  },
+  "ops/box_git/inbox.py": {
+   "constants": {
+    "MAX_COMMENTS": [
+     1,
+     200
+    ],
+    "MAX_COMMENT": [
+     1000,
+     200000
+    ],
+    "MAX_BUNDLE_BYTES": [
+     1048576,
+     1073741824
+    ],
+    "MAX_PAGES": [
+     1,
+     400
+    ]
+   }
+  }
  }
 }

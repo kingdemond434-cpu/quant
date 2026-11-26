@@ -270,7 +270,243 @@ def _dump(nodes: Iterable[ast.AST]) -> str:
                                     for n in nodes).encode()).hexdigest()
 
 
-def closure(tree: Tree, roots: dict[str, list[str]]) -> dict[str, str]:
+
+# ---------------------------------------------------------------------------------------------
+# KNOBS (boot r17, zuck 2026-11-26 17:33Z "cut every protected change possible all except core";
+# Audit pre-read TRUST_SHRINK_AUDIT_PREREAD.md, 23 items). A knob is a name inside a symbols
+# file's closure whose change can only delay, re-run or resize work: the closure CUTS at it (not
+# recorded, not traversed) once the checker has proved, at the measured commit, that it still is
+# one. The knob list is read from the policy THE CALLER PASSES (the installed/base policy, never
+# the head's, item 17). Anything that fails a rule raises Unmeasured, so the change is TRUST
+# (item 18).
+#   constant: exactly ONE module-level binding, a plain `NAME = <literal>` (int/float/bool, or
+#             `re.compile("<literal>")` when the spec says "regex"), inside its [min, max]
+#             (None = open on that side; one-sided ranges pin today's value as the floor or cap).
+#   function: a PURE def: no decorators, literal defaults, `from __future__ import annotations`
+#             in the file, and a body that can only compute from its arguments (see _Pure).
+#             Its callers in every symbols file are only the named T functions or other knobs.
+# ---------------------------------------------------------------------------------------------
+SAFE_BUILTINS = frozenset({"len", "sum", "any", "all", "min", "max", "sorted", "int", "float",
+                           "str", "bool", "dict", "list", "set", "tuple", "isinstance",
+                           "enumerate", "zip", "range", "round", "abs", "ValueError",
+                           "TypeError", "KeyError"})
+_BANNED_NODES = (ast.Import, ast.ImportFrom, ast.Global, ast.Nonlocal, ast.Yield, ast.YieldFrom,
+                 ast.Await, ast.AsyncFunctionDef, ast.ClassDef, ast.With, ast.AsyncWith,
+                 ast.Delete)
+_LITERAL = (int, float, bool)
+
+
+def _literal_default(n: ast.AST) -> bool:
+    if isinstance(n, ast.Constant):
+        return n.value is None or isinstance(n.value, int | float | bool | str)
+    return isinstance(n, ast.Tuple) and all(_literal_default(e) for e in n.elts)
+
+
+def knobs_of(pol: dict[str, Any], path: str) -> dict[str, Any]:
+    spec = (pol.get("knobs") or {}).get(path) or {}
+    return spec if isinstance(spec, dict) else {}
+
+
+def _knob_names(spec: dict[str, Any]) -> set[str]:
+    return set(spec.get("constants") or {}) | set(spec.get("functions") or {})
+
+
+def _check_constant(mod: ast.Module, path: str, name: str, rule: Any) -> None:
+    binds = _top_bindings(mod).get(name) or []
+    if len(binds) != 1 or not isinstance(binds[0], ast.Assign):
+        raise Unmeasured(f"{path}: knob {name} is not one plain assignment")
+    st = binds[0]
+    if len(st.targets) != 1 or not isinstance(st.targets[0], ast.Name):
+        raise Unmeasured(f"{path}: knob {name} is not a single-name assignment")
+    for n in ast.walk(mod):
+        if isinstance(n, ast.Global) and name in n.names:
+            raise Unmeasured(f"{path}: knob {name} is declared global")
+    v = st.value
+    if isinstance(rule, dict) and rule.get("regex"):
+        ok = (isinstance(v, ast.Call) and isinstance(v.func, ast.Attribute)
+              and isinstance(v.func.value, ast.Name) and v.func.value.id == "re"
+              and v.func.attr == "compile" and not v.keywords and len(v.args) == 1
+              and isinstance(v.args[0], ast.Constant) and isinstance(v.args[0].value, str))
+        if not ok:
+            raise Unmeasured(f"{path}: knob {name} is not re.compile(<literal>)")
+        return
+    if not (isinstance(v, ast.Constant) and isinstance(v.value, _LITERAL)):
+        raise Unmeasured(f"{path}: knob {name} is not a numeric literal")
+    lo, hi = [*list(rule), None, None][:2] if isinstance(rule, list | tuple) else (None, None)
+    x = v.value
+    if (lo is not None and x < lo) or (hi is not None and x > hi):
+        raise Unmeasured(f"{path}: knob {name} = {x!r} is outside [{lo}, {hi}]")
+
+
+class _Pure(ast.NodeVisitor):
+    """Proves one function body can only compute from its arguments (Audit pre-read A1-A6)."""
+
+    def __init__(self, path: str, fn: str, allowed: set[str], calls: set[str],
+                 methods: set[str], attrs: set[str]) -> None:
+        self.path, self.fn = path, fn
+        self.allowed, self.calls, self.methods, self.attrs = allowed, calls, methods, attrs
+        self.local_fns: set[str] = set()
+        self.frozen_calls: set[str] = set()
+
+    def bad(self, n: ast.AST, why: str) -> None:
+        raise Unmeasured(f"{self.path}: knob {self.fn} is not pure ({why}, line "
+                         f"{getattr(n, 'lineno', '?')})")
+
+    def check_args(self, a: ast.arguments, n: ast.AST) -> None:
+        for d in [*a.defaults, *[k for k in a.kw_defaults if k is not None]]:
+            if not _literal_default(d):
+                self.bad(n, "a non-literal default")
+
+    def generic_visit(self, node: ast.AST) -> None:
+        if isinstance(node, _BANNED_NODES):
+            self.bad(node, type(node).__name__)
+        super().generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        if node.decorator_list:
+            self.bad(node, "a decorator")
+        self.check_args(node.args, node)
+        self.local_fns.add(node.name)
+        for st in node.body:
+            self.visit(st)
+        # annotations are inert under `from __future__ import annotations` (checked by caller)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        self.check_args(node.args, node)
+        self.visit(node.body)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        # (Audit r17 MF1) a WHITELIST, not an underscore ban: gi_frame, f_builtins, cr_frame,
+        # tb_frame ... carry no underscore. Calls are checked in visit_Call against `methods`;
+        # a plain load must be in `attrs`.
+        if node.attr.startswith("_") or node.attr not in self.attrs:
+            self.bad(node, f"attribute .{node.attr}")
+        self.visit(node.value)
+
+    def callable_arg(self, n: ast.AST) -> None:
+        """A value a callee may CALL (key=): only a lambda, a local def or a knob function."""
+        ok = isinstance(n, ast.Lambda) or (isinstance(n, ast.Name) and (
+            n.id in self.local_fns or n.id in self.calls - self.frozen_calls))
+        if not ok:
+            self.bad(n, "a callable argument that is not a lambda, local def or knob")
+
+    def visit_Call(self, node: ast.Call) -> None:
+        f = node.func
+        if isinstance(f, ast.Name):
+            if f.id not in SAFE_BUILTINS and f.id not in self.calls \
+                    and f.id not in self.local_fns:
+                self.bad(node, f"a call to {f.id}")
+        elif isinstance(f, ast.Attribute):
+            if f.attr.startswith("_") or f.attr not in self.methods:
+                self.bad(node, f"method .{f.attr}")
+            self.visit(f.value)
+        else:
+            self.bad(node, "a call through an expression")
+        for k in node.keywords:
+            if k.arg is None:
+                self.bad(node, "a ** argument")
+            if k.arg == "key":
+                self.callable_arg(k.value)
+        for a in node.args:
+            if isinstance(a, ast.Starred):
+                self.bad(node, "a * argument")
+        for a in [*node.args, *[k.value for k in node.keywords]]:
+            self.visit(a)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, ast.Load) and node.id not in self.allowed:
+            self.bad(node, f"name {node.id}")
+
+
+def _local_names(fn: ast.FunctionDef) -> set[str]:
+    out: set[str] = set()
+    for n in ast.walk(fn):
+        if isinstance(n, ast.arg):
+            out.add(n.arg)
+        elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
+            out.add(n.id)
+        elif isinstance(n, ast.FunctionDef | ast.Lambda) and n is not fn:
+            if isinstance(n, ast.FunctionDef):
+                out.add(n.name)
+        elif isinstance(n, ast.ExceptHandler) and n.name:
+            out.add(n.name)
+    return out
+
+
+def _check_function(mod: ast.Module, path: str, name: str, spec: dict[str, Any]) -> None:
+    binds = _top_bindings(mod).get(name) or []
+    if len(binds) != 1 or not isinstance(binds[0], ast.FunctionDef):
+        raise Unmeasured(f"{path}: knob {name} is not one plain def")
+    fn = binds[0]
+    future = any(isinstance(st, ast.ImportFrom) and st.module == "__future__"
+                 and any(a.name == "annotations" for a in st.names) for st in mod.body)
+    if not future:
+        raise Unmeasured(f"{path}: knob {name}: annotations are live (no __future__ import)")
+    knobs = _knob_names(spec)
+    calls = set(spec.get("frozen_calls") or []) | set(spec.get("functions") or {})
+    allowed = (_local_names(fn) | knobs | set(spec.get("frozen_refs") or []) | SAFE_BUILTINS
+               | {"True", "False", "None"})
+    v = _Pure(path, name, allowed, calls, set(spec.get("methods") or []),
+              set(spec.get("attrs") or []))
+    v.frozen_calls = set(spec.get("frozen_calls") or [])
+    if fn.decorator_list:
+        v.bad(fn, "a decorator")
+    v.check_args(fn.args, fn)
+    for st in fn.body:
+        v.visit(st)
+
+
+def _check_callers(tree: Tree, pol: dict[str, Any]) -> None:
+    """Every load of a knob FUNCTION inside a symbols file sits in a named caller or a knob."""
+    for path in pol.get("symbols") or {}:
+        if not tree.has(path):
+            continue
+        mod = tree.module(path)
+        imps = _imports(mod)
+        for top, nodes in _top_bindings(mod).items():
+            for node in nodes:
+                if isinstance(node, ast.Import | ast.ImportFrom):
+                    continue
+                for ref in ast.walk(node):
+                    owner, fname = None, None
+                    if isinstance(ref, ast.Name) and isinstance(ref.ctx, ast.Load):
+                        owner, fname = path, ref.id
+                    elif isinstance(ref, ast.Attribute) and isinstance(ref.value, ast.Name) \
+                            and ref.value.id in imps:
+                        m, attr = imps[ref.value.id]
+                        owner = tree.module_path(f"{m}.{attr}" if attr else m)
+                        fname = ref.attr
+                    if owner is None or fname is None:
+                        continue
+                    spec = knobs_of(pol, owner)
+                    funcs = spec.get("functions") or {}
+                    if fname not in funcs or (owner == path and top == fname):
+                        continue
+                    callers = set((funcs.get(fname) or {}).get("callers") or [])
+                    if owner != path or (top not in callers and top not in funcs):
+                        raise Unmeasured(f"{path}::{top} uses knob {owner}::{fname} "
+                                         "outside its named callers")
+        for st in ast.walk(mod):
+            if isinstance(st, ast.ImportFrom) and st.module and not st.level:
+                owner = tree.module_path(st.module)
+                if owner and owner != path:
+                    funcs = knobs_of(pol, owner).get("functions") or {}
+                    hit = [a.name for a in st.names if a.name in funcs]
+                    if hit:
+                        raise Unmeasured(f"{path} imports knob {owner}::{hit[0]}")
+
+
+def check_knob(tree: Tree, pol: dict[str, Any], path: str, name: str) -> None:
+    spec = knobs_of(pol, path)
+    mod = tree.module(path)
+    if name in (spec.get("constants") or {}):
+        _check_constant(mod, path, name, spec["constants"][name])
+    else:
+        _check_function(mod, path, name, spec)
+
+
+def closure(tree: Tree, roots: dict[str, list[str]],
+            pol: dict[str, Any] | None = None) -> dict[str, str]:
     """{"path::name": digest} for the static closure of `roots` ({path: [names]})."""
     out: dict[str, str] = {}
     todo = [(p, n) for p, names in roots.items() for n in names]
@@ -281,6 +517,10 @@ def closure(tree: Tree, roots: dict[str, list[str]]) -> dict[str, str]:
         if (path, name) in seen or path in whole:
             continue
         seen.add((path, name))
+        if pol is not None and name in _knob_names(knobs_of(pol, path)):
+            check_knob(tree, pol, path, name)   # proved a knob here, or Unmeasured -> TRUST
+            out[f"{path}::{name}"] = "KNOB"
+            continue
         mod = tree.module(path)
         binds = _top_bindings(mod)
         if name not in binds:
@@ -317,7 +557,8 @@ def closure(tree: Tree, roots: dict[str, list[str]]) -> dict[str, str]:
                         whole.add(as_module)
                     elif attr and not as_module and (target := tree.module_path(mod_name)):
                         todo.append((target, attr))
-                    out[f"{path}::{ref.id}"] = _dump(binds[ref.id])
+                    if pol is None or ref.id not in _knob_names(knobs_of(pol, path)):
+                        out[f"{path}::{ref.id}"] = _dump(binds[ref.id])
     for path in sorted(whole):
         out[f"{path}::*"] = hashlib.sha256((tree.text(path) or "").encode()).hexdigest()
     return out
@@ -349,7 +590,27 @@ def measure(git: Git, ref: str, policy: dict[str, Any]) -> dict[str, str]:
     missing = [p for p in policy["symbols"] if not tree.has(p)]
     if missing:
         raise Unmeasured(f"frozen symbol files missing at {ref}: {missing}")
-    out.update(closure(tree, roots))
+    pol = policy
+    if pol.get("knobs"):
+        for p, spec in pol["knobs"].items():  # what a knob may read or call stays frozen itself
+            if p.startswith("_") or not isinstance(spec, dict) or not tree.has(p):
+                continue
+            binds = _top_bindings(tree.module(p))
+            extra = [n for n in [*(spec.get("frozen_refs") or []),
+                                 *(spec.get("frozen_calls") or [])] if n in binds]
+            roots[p] = sorted({*roots.get(p, []), *extra})
+        missing_k = [f"{p}::{n}" for p, spec in pol["knobs"].items() if not p.startswith("_")
+                     for n in _knob_names(spec if isinstance(spec, dict) else {})
+                     if not tree.has(p) or n not in _top_bindings(tree.module(p))]
+        if missing_k:  # item 18: a policy knob absent at this commit fails closed
+            raise Unmeasured(f"knobs missing at {ref}: {missing_k[:5]}")
+        for p, spec in pol["knobs"].items():  # EVERY knob is proved, reached or not: a knob a
+            if p.startswith("_") or not isinstance(spec, dict):  # knob calls must be pure too
+                continue
+            for n in sorted(_knob_names(spec)):
+                check_knob(tree, pol, p, n)
+        _check_callers(tree, pol)
+    out.update(closure(tree, roots, pol if pol.get("knobs") else None))
     return out
 
 
@@ -388,8 +649,49 @@ def _policy_grows(base: str, head: str) -> bool:
             for p, names in b[k].items():
                 if [x for x in h[k].get(p, []) if x in names] != names:
                     return False
+        elif k == "knobs":
+            if not _knobs_tighten(b[k], h[k]):
+                return False
         elif b[k] != h[k]:
             return False
+    return True
+
+
+def _narrower(b: Any, h: Any) -> bool:
+    """A head knob rule at least as tight as the base's (item 19)."""
+    if isinstance(b, dict) or isinstance(h, dict):
+        return bool(b == h)
+    if not (isinstance(b, list | tuple) and isinstance(h, list | tuple) and len(b) == len(h) == 2):
+        return False
+    (blo, bhi), (hlo, hhi) = b, h
+    lo_ok = blo is None or (hlo is not None and hlo >= blo)
+    hi_ok = bhi is None or (hhi is not None and hhi <= bhi)
+    return bool(lo_ok and hi_ok)
+
+
+def _knobs_tighten(b: Any, h: Any) -> bool:
+    """Removing a knob, narrowing a range or a whitelist is TIGHTEN; anything else is not."""
+    if not isinstance(b, dict) or not isinstance(h, dict) or not set(h) <= set(b):
+        return False
+    for path, hs in h.items():
+        bs = b[path]
+        if path.startswith("_"):
+            continue
+        if not isinstance(hs, dict) or not isinstance(bs, dict) or not set(hs) <= set(bs):
+            return False
+        hc, bc = hs.get("constants") or {}, bs.get("constants") or {}
+        if not set(hc) <= set(bc) or not all(_narrower(bc[n], hc[n]) for n in hc):
+            return False
+        hf, bf = hs.get("functions") or {}, bs.get("functions") or {}
+        if not set(hf) <= set(bf):
+            return False
+        for n, rule in hf.items():
+            hcall = set((rule or {}).get("callers") or [])
+            if not hcall <= set((bf[n] or {}).get("callers") or []):
+                return False
+        for lst in ("frozen_refs", "frozen_calls", "methods", "attrs"):
+            if not set(hs.get(lst) or []) <= set(bs.get(lst) or []):
+                return False
     return True
 
 
@@ -552,3 +854,27 @@ def verdict(git: Git, base: str, head: str, pin: dict[str, Any],
     if ht and ht in (pin.get("authorized") or {}):
         return True, "AUTHORIZED", f"the owner's AUTHORIZE TRUST covers {ht[:12]}", ht
     return False, cls, why, ht
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`--classify REPO OLD NEW`: one JSON line {"class", "why"} for the boot mover (r18).
+
+    The mover runs THIS file as copied from the CURRENT boot (never the packet's), against the
+    policy beside it, so a packet can neither choose its checker nor its knobs (items 17, 21). Any
+    error prints nothing and exits non-zero; the mover reads that as REFUSE."""
+    import sys
+    a = list(sys.argv[1:] if argv is None else argv)
+    if len(a) != 4 or a[0] != "--classify":
+        print("usage: trust_check.py --classify REPO OLD NEW", file=sys.stderr)
+        return 2
+    repo, old, new = a[1:]
+    git = strict_git("git", "-c", "safe.directory=*", "-c", "core.fsmonitor=false",
+                     "-c", "core.hooksPath=NUL", "-C", repo)
+    changed = git("diff", "--no-renames", "--name-only", old, new).split()
+    cls, why = classify(git, old, new, changed, load_policy())
+    print(json.dumps({"class": cls, "why": why}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

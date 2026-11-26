@@ -42,7 +42,7 @@ SHA = re.compile(r"[0-9a-f]{40}")
 BRANCH = re.compile(r"claude/[A-Za-z0-9._/-]{1,200}")
 MAX_COMMENTS = 20
 MAX_COMMENT = 20000
-MAX_BUNDLE_BYTES = 200 * 1024 * 1024
+MAX_BUNDLE_BYTES = 209715200  # 200 MiB (a literal: it is a knob, boot r17)
 #: Lines no author packet may carry: verdicts and owner authorizations come from their own seats.
 RESERVED = re.compile(r"(?m)^\s*(AUDIT (CLEAR|HOLD)|UNCOUNTED CLEAR|AUTHORIZE TRUST)\b")
 VERDICT_LINE = re.compile(r"AUDIT (CLEAR|HOLD) [0-9a-f]{40}(?: (merge|squash))?")
