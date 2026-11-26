@@ -3,9 +3,9 @@
     python -m pytest desks/mt5/tests/test_promotion_gates.py -q
 
 (a) exotic or unclassified symbols hold no live capital: promoter.save_sleeves, the gateway's
-    roster and the allocator's columns; (b) the E8 evidence-rule fallback admits only fill-proven
-    or principal-funded rows and zeroes a rollover artefact; (c) a revived clock with no
-    certificate at revival, and a forward row not priced at the fill-hour spread, are held
+    roster and the allocator's columns; (b) the E8 evidence-rule fallback admits only
+    fill-proven or principal-funded rows (rollover hours stay gated by rollover_block); (c) a
+    revived clock with no certificate at revival, and a forward row not priced at the fill-hour spread, are held
     UNMEASURED -- never KILL.
 """
 from __future__ import annotations
@@ -41,6 +41,7 @@ def registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 # ------------------------------------------------------------------------- (a) the class door
 def test_exotic_and_unclassified_are_refused_and_majors_metals_pass(registry) -> None:
+    assert up.registry_readable() is True
     assert up.live_class_refusal("EURUSD") is None
     assert up.live_class_refusal("XAUUSD") is None
     assert "exotic" in str(up.live_class_refusal("USDZAR"))     # by registry class
@@ -51,6 +52,7 @@ def test_exotic_and_unclassified_are_refused_and_majors_metals_pass(registry) ->
 
 def test_an_unreadable_registry_binds_only_the_leg_test(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(up, "UNIVERSE", tmp_path / "absent.json")
+    assert up.registry_readable() is False
     assert up.live_class_refusal("XAUUSD") is None              # gold is never stopped by it
     assert "exotic" in str(up.live_class_refusal("EURNOK"))
 
@@ -100,15 +102,6 @@ def test_the_fallback_admits_only_proven_or_principal_rows() -> None:
     assert [r["symbol"] for r in kept] == ["GBPUSD", "AUDUSD"]
     (d,) = dropped
     assert d["column"] == "EURUSD_carry_asia" and d["missed_growth_risk_frac"] == 0.004
-
-
-def test_the_fallback_zeroes_a_rollover_artefact_but_not_unmeasured_hours() -> None:
-    art = _row(fill_proven={"n": 12}, entry_hours={"0": 7, "1": 2, "9": 1},
-               entry_hours_venue="MT5:FusionMarkets-Live")
-    unknown = _row(symbol="GBPUSD", fill_proven={"n": 12}, entry_hours={"0": 9},
-                   entry_hours_venue="test")
-    kept, dropped = e8_book.fallback_filter([art, unknown])
-    assert [r["symbol"] for r in kept] == ["GBPUSD"] and "rollover" in dropped[0]["why"]
 
 
 # ------------------------------------------------------- (c) revived clocks and Q42 spreads

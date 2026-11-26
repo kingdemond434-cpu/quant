@@ -426,6 +426,14 @@ def _class_refusal(symbol: object) -> str | None:
     return live_class_refusal(symbol)
 
 
+def _registry_readable() -> bool:
+    try:
+        from universe_policy import registry_readable
+    except ImportError:                                   # pragma: no cover - path
+        from research.universe_policy import registry_readable
+    return registry_readable()
+
+
 #: THE REVIVED-CLOCK AND FILL-HOUR GATES (Audit gate packet (c) + Brain Q42, 2026-11-26).
 #: A clock heal_orphaned_clocks revived with `certificate_at_revival` null counts only when it
 #: joins a certificate that exists NOW for its exact spec with no drift; it then keeps its own
@@ -468,6 +476,9 @@ def save_sleeves(sleeves: list[dict]) -> None:
     except (OSError, ValueError):
         _universe = {}
     stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    if not _registry_readable():
+        plog("live class door: registry unreadable -- only the exotic leg test binds this pass "
+             "(an unclassified symbol is NOT held while the registry cannot be read)")
     for row in sleeves:
         if str(row.get("status") or "").upper() == "LIVE":
             # THE EXOTIC BAN AND THE UNKNOWN CLASS (Audit gate (a), 2026-11-26): every lane

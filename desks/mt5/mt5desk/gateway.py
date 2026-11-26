@@ -534,12 +534,14 @@ def load_sleeves() -> list[dict]:
     # live_class_refusal; the promoter demotes it on its next pass). Logged, never silent.
     try:
         try:
-            from research.universe_policy import live_class_refusal
+            from research.universe_policy import live_class_refusal, registry_readable
         except ImportError:                                # pragma: no cover - path
             import sys as _sys
             if str(BASE) not in _sys.path:
                 _sys.path.insert(0, str(BASE))
-            from research.universe_policy import live_class_refusal
+            from research.universe_policy import live_class_refusal, registry_readable
+        if not registry_readable():
+            log("live class door: registry unreadable -- only the exotic leg test binds")
     except Exception as exc:                               # fail closed: nothing on the class
         log(f"live class door unreadable ({type(exc).__name__}): no promoted sleeve this pass")
         return []

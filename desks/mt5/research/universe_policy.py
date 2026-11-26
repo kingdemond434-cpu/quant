@@ -415,6 +415,16 @@ def is_exotic_symbol(symbol: str, asset_class: str | None = None) -> bool:
 #: UNCLASSIFIED and held (fail closed). When the registry itself is unreadable, only the leg test
 #: binds: refusing every symbol there would stop the gold lane on a file error, and that refusal
 #: is reported as `registry unreadable` rather than read as a class.
+def registry_readable() -> bool:
+    """True when the broker registry parses to at least one symbol. The live-class door's
+    callers log `registry unreadable` when it is False (Audit rev note 2026-11-26): the leg test
+    alone then binds, and that must be visible, never read as "not exotic"."""
+    try:
+        return bool(_registry())
+    except Exception:
+        return False
+
+
 def live_class_refusal(symbol: object) -> str | None:
     """Why `symbol` may hold no live capital, or None. Never raises."""
     sym = str(symbol or "").strip().upper()
