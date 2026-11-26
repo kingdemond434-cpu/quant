@@ -43,7 +43,8 @@ from mt5desk import provenance  # noqa: E402
 from libs.research.alpha_state import AlphaStateLedger  # noqa: E402
 
 _ACC = {"login": 5551234, "server": "FusionMarkets-Live", "kind": provenance.LIVE}
-_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0, "days": 21}
+_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0, "days": 21,
+         "spread_basis": "fill_hour"}
 
 
 def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False

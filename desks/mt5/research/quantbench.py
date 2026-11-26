@@ -58,7 +58,7 @@ SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter
 PROMOTER_SEAL_ROTATION = {
     "path": "desks/mt5/research/promoter.py",
     "from": "86abbd9aba36586022c6cfaf4bb3dd685df6f7e8d73feaa2a401504fa32510e8",
-    "to": "ff68ccead4efa91edd85327a48cdb8fbe38b8bc1df192f7ef82614202d2a63c2",
+    "to": "9dad4ab2f623f9e24c56b76035226459850ecdfb99a4c7b1975669ab465cfc29",
     "signed_by": "auditor-clear",
 }
 

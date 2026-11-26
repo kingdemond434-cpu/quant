@@ -123,3 +123,10 @@ def test_a_forward_row_not_priced_at_the_fill_hour_is_unmeasured(registry) -> No
     assert st == promoter.HELD_SPREAD
     assert promoter.promotion_hold({**row, "spread_basis": "fill_hour"}, spec=SPEC,
                                    drift=False, symbol="EURUSD") is None
+
+
+def test_the_gold_lane_is_never_held_by_the_revival_or_spread_gates(registry) -> None:
+    row = {"status": "PROMOTION CANDIDATE", "certificate_at_revival": None}
+    assert promoter.promotion_hold(row, spec=None, drift=True, symbol="XAUUSD") is None
+    st, _ = promoter.promotion_hold(row, spec=None, drift=True, symbol="EURUSD")
+    assert st == promoter.HELD_REVIVED

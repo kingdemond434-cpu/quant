@@ -445,6 +445,7 @@ def _registry_readable() -> bool:
 HELD_REVIVED = "HELD_REVIVED_UNCERTIFIED"
 HELD_SPREAD = "HELD_SPREAD_UNMEASURED"
 HELD_CLASS = "HELD_LIVE_CLASS"
+GOLD_PREFIX = "XAU"
 
 
 def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
@@ -454,6 +455,10 @@ def promotion_hold(row: dict, *, spec: dict | None, drift: bool,
     cls = _class_refusal(symbol)
     if cls:
         return HELD_CLASS, cls
+    if str(symbol or "").upper().startswith(GOLD_PREFIX):
+        # THE GOLD LANE IS NOT STRUCK (Audit ruling 2026-11-26): gold_asia is itself a revived
+        # clock, and nothing in the gold lane may read a held row as "no evidence".
+        return None
     if "certificate_at_revival" in row and not row.get("certificate_at_revival") \
             and (not spec or drift):
         return HELD_REVIVED, ("revived by heal_orphaned_clocks with no certificate at revival, "
@@ -2467,6 +2472,23 @@ def main() -> None:
             changed = True
             continue
         cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
+        # THE MAIN SHADOW CARRIES THE 166 (box 2026-11-26: "PROMOTION CANDIDATE", 165 revived
+        # with no certificate, none priced at the fill hour), so the gates bind here too. The
+        # current authority set stands in for the spec: a gate_spec inside it is "a certificate
+        # that exists now", and drift is its absence. Gold is exempt (promotion_hold).
+        _hold = promotion_hold(st, spec={"gate_spec": gate_spec},
+                               drift=bool(st["certificate_drift"]), symbol=sym)
+        if _hold:
+            st["status"], st["gate_reason"] = _hold
+            st["promotion_authority"] = False
+            st["missed_growth_risk_frac"] = float(cap.get("risk_frac") or 0.0)
+            plog(f"{key}: live promotion held -- {_hold[1]}")
+            note_door(key, door="HELD", from_status="PROMOTION CANDIDATE", to_status=_hold[0],
+                      evidence=door_evidence(key, cap, n=st.get("n"), exp_r=st.get("exp_r"),
+                                             days=st.get("days_active"), lane="main"),
+                      reason=_hold[1])
+            changed = True
+            continue
         row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": cap["risk_frac"],
                "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
                "admission": cap,
