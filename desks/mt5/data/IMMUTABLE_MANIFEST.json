@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-11-25T23:50:00+00:00",
- "signed_by": "audit-clear-323d3e8a3",
+ "signed_utc": "2026-11-26T00:50:00+00:00",
+ "signed_by": "audit-clear-c48d791ac",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "91a3656c090b0af3",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -17,7 +17,7 @@
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
-  "libs/validation/replay2.py": "a002827611ea8079",
+  "libs/validation/replay2.py": "07be1f543798182d",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
