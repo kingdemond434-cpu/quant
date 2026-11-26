@@ -1741,14 +1741,154 @@ def unknown_row_reason(v: dict) -> dict:
     return out
 
 
-def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
-    """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping."""
+def _unmeasured_verdict(c: dict, dev, pre_carve_days: int | None) -> dict:
+    """The UNMEASURED verdict of a built cell with fewer than 60 development days.
+
+    `dev` is the cell's carved development series (None when none could be built) and
+    `pre_carve_days` the length of its full series. ONE function, called by `run_gauntlet` for
+    every cell outside the matrix and by a shard's `rule` phase for the cells it owns, so the row
+    a shard publishes before the merge is byte-for-byte the row the merge would write."""
+    n = 0 if dev is None else len(dev)
+    nsig = c.get("_n_signals")
+    # THE CAUSE, NAMED BY THE ONE ORGAN THAT CAN SEE IT (2026-09-30). Every UNKNOWN carries
+    # it, and `failed_gates` is never empty: the observations gate is the gate that stopped it.
+    err = c.get("_series_error")
+    why_unknown = classify_unknown(dev, pre_carve_days, nsig, errored=bool(err))
+    return {
+        "cell": cell_id({"sym": c["sym"], "family": c["family"],
+                         "params": c.get("params") or {}}),
+        "sym": c["sym"], "family": c["family"], "days": n,
+        "params": c.get("params") or {}, "timeframe": c.get("timeframe"),
+        "days_before_lockbox": pre_carve_days, "n_signals": nsig,
+        "unknown_reason": why_unknown,
+        "failed_gates": ["observations"], "n_failed_gates": 1,
+        **({"series_error": err} if err else {}),
+        "passed": False, "unmeasured": True,
+        "stages": {"observations": {
+            "passed": False, "days": n, "required": 60,
+            "why": ("no daily series could be built from this cell's signals"
+                    if dev is None else
+                    f"only {n} daily observations; CPCV with purge+embargo and the "
+                    f"walk-forward folds require 60. This is UNMEASURED, not a failure: "
+                    f"the cell fires too rarely to be judged, which is a fact about the "
+                    f"SEARCH that proposed it, not evidence against the edge")}},
+    }
+
+
+def _gate_index_mark_path() -> Path:
+    """The index's watermark: the ledger byte length the index file is known to cover. Named at
+    call time beside GATE_INDEX, so a test that moves the index moves its mark."""
+    return GATE_INDEX.with_name(GATE_INDEX.stem + ".mark.json")
+
+
+def _gate_key(row: dict) -> str | None:
+    """The index key a ledger row stands for (`gate|passed`), or None for a row that is not one."""
+    cell = str(row.get("cell") or "")
+    if not cell:
+        return None
+    gate = str(row.get("terminal_gate") or ("PASSED" if row.get("passed") else "UNKNOWN"))
+    return f"{gate}|{1 if row.get('passed') else 0}"
+
+
+def _load_gate_index() -> dict:
+    """The per-cell index, RECONCILED WITH THE LEDGER IT INDEXES (2026-11-25).
+
+    The ledger is the record and the index only a cache of its latest row per cell, but the two
+    were written as two files with nothing joining them: a sweep killed between the ledger append
+    and the index rewrite left the index behind, and the next sweep appended every one of those
+    rows AGAIN. Per-shard publication appends the ledger while the index rewrite waits for the
+    end of the wave, so the gap is now routine rather than rare. The index therefore carries a
+    watermark -- the ledger length it covers -- and any rows past it are folded in on load (the
+    latest row per cell wins, exactly as the writer's own rule). A torn last line is skipped and
+    re-appended by the next writer. No mark, or a ledger shorter than it, folds nothing: the
+    index reads as it always did. Never raises."""
     try:
         idx = json.loads(GATE_INDEX.read_text("utf-8"))
         if not isinstance(idx, dict):
             idx = {}
     except (OSError, ValueError):
         idx = {}
+    try:
+        mark = json.loads(_gate_index_mark_path().read_text("utf-8"))
+        covered = int(mark.get("ledger_bytes")) if isinstance(mark, dict) else -1
+    except (OSError, ValueError, TypeError):
+        covered = -1
+    try:
+        size = GATE_LEDGER.stat().st_size
+    except OSError:
+        size = -1
+    if 0 <= covered < size:
+        try:
+            with GATE_LEDGER.open("rb") as fh:
+                fh.seek(covered)
+                for raw in fh:
+                    try:
+                        row = json.loads(raw)
+                    except ValueError:
+                        continue
+                    key = _gate_key(row) if isinstance(row, dict) else None
+                    if key is not None:
+                        idx[str(row.get("cell"))] = key
+        except OSError:
+            pass
+    return idx
+
+
+def _save_gate_index(idx: dict) -> None:
+    """Write the index, then its watermark, each by write-then-rename (a kill leaves the old file
+    or the whole new one, never a torn index that reads as empty and re-appends every cell).
+    The mark is taken BEFORE the index is written: rows appended after it are folded again on the
+    next load, which is idempotent, so the mark can only ever under-claim. Raises OSError."""
+    try:
+        covered = GATE_LEDGER.stat().st_size
+    except OSError:
+        covered = None
+    GATE_INDEX.parent.mkdir(parents=True, exist_ok=True)
+    tmp = GATE_INDEX.with_name(f"{GATE_INDEX.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(idx, indent=0, sort_keys=True), encoding="utf-8")
+    os.replace(tmp, GATE_INDEX)
+    mark = _gate_index_mark_path()
+    if covered is None:
+        mark.unlink(missing_ok=True)
+        return
+    mtmp = mark.with_name(f"{mark.name}.{os.getpid()}.tmp")
+    mtmp.write_text(json.dumps({"ledger_bytes": int(covered),
+                                "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}),
+                    encoding="utf-8")
+    os.replace(mtmp, mark)
+
+
+def _append_ledger_rows(rows: list) -> None:
+    """Append `rows` to the ledger in ONE write, starting on a fresh line if a kill left the last
+    one torn, and flushed to disk before returning. Text mode, exactly as the writer always
+    appended (so the box's line endings do not change). Raises OSError."""
+    GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    blob = "".join(json.dumps(r, default=str) + chr(10) for r in rows)
+    try:
+        with open(GATE_LEDGER, "rb") as rd:
+            rd.seek(0, os.SEEK_END)
+            if rd.tell() > 0:
+                rd.seek(-1, os.SEEK_END)
+                if rd.read(1) != b"\n":
+                    blob = chr(10) + blob
+    except FileNotFoundError:
+        pass
+    with GATE_LEDGER.open("a", encoding="utf-8") as fh:
+        fh.write(blob)
+        fh.flush()
+        with contextlib.suppress(OSError):
+            os.fsync(fh.fileno())
+
+
+def _append_gate_ledger(verdicts: list, specs: list | None = None, *,
+                        idx: dict | None = None, save_index: bool = True) -> dict:
+    """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping.
+
+    `idx` lets a caller that appends several times in one process (per-shard publication) hold
+    the index in memory and pass `save_index=False` until its last append; the ledger rows are
+    written every call, and `_load_gate_index` folds any the saved index does not yet cover."""
+    if idx is None:
+        idx = _load_gate_index()
     graph_ids = _graph_ids_for(specs)
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     rows = []
@@ -1790,13 +1930,16 @@ def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
     if not rows:
         return {"appended": 0, "known": len(idx)}
     try:
-        GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        with GATE_LEDGER.open("a", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps(r, default=str) + chr(10))
-        GATE_INDEX.write_text(json.dumps(idx, indent=0, sort_keys=True), encoding="utf-8")
+        _append_ledger_rows(rows)
     except OSError as exc:
         return {"appended": 0, "known": len(idx), "error": str(exc)[:120]}
+    if save_index:
+        try:
+            _save_gate_index(idx)
+        except OSError as exc:
+            # The rows are durable; the index catches up from the ledger on its next load.
+            return {"appended": len(rows), "known": len(idx),
+                    "index_error": str(exc)[:120]}
     return {"appended": len(rows), "known": len(idx)}
 
 
@@ -3501,33 +3644,11 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     for _i, _c in enumerate(cells):
         if _i in _judged:
             continue
-        _d = daily[_i] if _i < len(daily) else None
-        _n = 0 if _d is None else len(_d)
-        _pre = _pre_carve_days[_i] if _i < len(_pre_carve_days) else None
-        _nsig = _c.get("_n_signals")
-        # THE CAUSE, NAMED BY THE ONE ORGAN THAT CAN SEE IT (2026-09-30). Every UNKNOWN carries
-        # it, and `failed_gates` is never empty: the observations gate is the gate that stopped it.
-        _err = _c.get("_series_error")
-        _why_unknown = classify_unknown(_d, _pre, _nsig, errored=bool(_err))
-        verdicts.append({
-            "cell": cell_id({"sym": _c["sym"], "family": _c["family"],
-                             "params": _c.get("params") or {}}),
-            "sym": _c["sym"], "family": _c["family"], "days": _n,
-            "params": _c.get("params") or {}, "timeframe": _c.get("timeframe"),
-            "days_before_lockbox": _pre, "n_signals": _nsig,
-            "unknown_reason": _why_unknown,
-            "failed_gates": ["observations"], "n_failed_gates": 1,
-            **({"series_error": _err} if _err else {}),
-            "passed": False, "unmeasured": True,
-            "stages": {"observations": {
-                "passed": False, "days": _n, "required": 60,
-                "why": ("no daily series could be built from this cell's signals"
-                        if _d is None else
-                        f"only {_n} daily observations; CPCV with purge+embargo and the "
-                        f"walk-forward folds require 60. This is UNMEASURED, not a failure: "
-                        f"the cell fires too rarely to be judged, which is a fact about the "
-                        f"SEARCH that proposed it, not evidence against the edge")}},
-        })
+        # THE ONE UNMEASURED ROW (`_unmeasured_verdict`), shared with a shard's `rule` phase so the
+        # row a shard publishes before the merge is the row the merge writes (2026-11-25).
+        verdicts.append(_unmeasured_verdict(
+            _c, daily[_i] if _i < len(daily) else None,
+            _pre_carve_days[_i] if _i < len(_pre_carve_days) else None))
 
     elapsed = time.time() - t0
     n_pass = sum(1 for v in verdicts if v.get("passed"))
@@ -4087,7 +4208,7 @@ def main():
         # the development window. This process verifies every planned cell came back from
         # exactly one shard and restores the plan's order. No shard computes a program-level
         # number: `run_gauntlet` below does, once, on the union.
-        _sh = _run_shards(eligible_specs, meta, _build_t0)
+        _sh = _run_shards(eligible_specs, meta, _build_t0, seen=_seen)
         cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
         blocked_build.extend(_sh["blocked"])
         cache_hits, built_fresh = _sh["cache_hits"], _sh["built_fresh"]
@@ -4203,6 +4324,11 @@ def main():
     _save_seen_cells(_seen, {str(v.get("cell") or "")
                              for v in (result.get("verdicts") or [])
                              if isinstance(v, dict) and v.get("passed") is not None})
+    if _sharding is not None and (_SHARD or {}).get("publication"):
+        # THE STAGED COPY CHECKED AGAINST THE RECORD JUST WRITTEN (idea 45): agree/disagree into
+        # MERGED.json, so the reader stops reading the copy. Bookkeeping, never the sweep.
+        _sharding["publication_check"] = _safe(
+            lambda: _seal_shard_publication(result.get("verdicts") or []), "shard_publication")
     result["build_rotation"] = {
         "symbols_built_this_run": len(_built_syms),
         "symbols_in_cursor": len(_cursor),
@@ -4777,6 +4903,95 @@ class ShardMergeError(RuntimeError):
     """A shard's output is missing, stale, duplicated or inconsistent with the plan."""
 
 
+# ------------------------------------------------------------ PER-SHARD VERDICT PUBLICATION
+#: WHAT A SHARD ALREADY KNOWS, MADE DURABLE WHEN IT FINISHES (idea 45, 2026-11-25). A sweep runs
+#: 18-30 h and published nothing until its single-process merge ended; four were killed (hung)
+#: and the last died in `merge_and_publish` after 15/15 shards, so every finished shard's work
+#: was lost and the box read 0 first verdicts in 24 h. A verdict is decided per shard ONLY where
+#: no program-level gate can change it:
+#:
+#:   FINAL                      a cell-local HEAD gate (`CELL_LOCAL_HEAD`) failed, which
+#:                              precedes every program-level gate in the stage order, so the
+#:                              terminal gate and `passed: False` are the merge's own; or the
+#:                              cell is UNMEASURED (< 60 development days at the plan's cut) in
+#:                              a shard holding at least one judgeable cell -- the union then
+#:                              holds one too, and the merge writes exactly this row
+#:                              (`_unmeasured_verdict`).
+#:   REJECTED_TERMINAL_PENDING  a later cell-local gate failed: `passed: False` is certain, but
+#:                              the terminal gate may be `deflated_sharpe`, `pbo` or
+#:                              `reality_check_spa`, which only the union can say.
+#:   PROVISIONAL                every cell-local gate passed: the verdict waits for the
+#:                              PROGRAM_LEVEL_GATES and reads `passed: null`.
+#:
+#: NOTHING IS EVER PASSED, CERTIFIED OR CHARGED HERE. No census, PBO, SPA, DSR, lockbox or trial
+#: count is computed by a shard or by the publisher; certificates, the report, the power-cure list
+#: and the survivors file stay in the merge. Each shard's rows go to
+#: `shard_verdicts/<plan token>/shard_<k>.json` (all three statuses; read by
+#: `research/shard_verdicts.py`, which no promotion path reads), and its FINAL rows go to the
+#: record -- the gate ledger, the hypothesis graph and the seen-cells stamp -- through the same
+#: change-only writers the merge uses, so the merge's own pass over those cells finds them
+#: unchanged and writes nothing twice. `_seal_shard_publication` then checks every FINAL row
+#: against the merge's verdict and writes MERGED.json.
+VERDICT_FINAL = "FINAL"
+VERDICT_REJECTED_PENDING = "REJECTED_TERMINAL_PENDING"
+VERDICT_PROVISIONAL = "PROVISIONAL"
+PROGRAM_LEVEL_GATES = ("deflated_sharpe", "pbo", "reality_check_spa", "lockbox")
+SHARD_VERDICT_SCHEMA = "shard_verdicts/1"
+SHARD_PUBLISH_DIR = REPORTS.parent / "data" / "hypotheses" / "shard_verdicts"
+#: Plans kept under SHARD_PUBLISH_DIR (newest first); the merge prunes the rest.
+SHARD_PUBLISH_KEEP = 4
+#: The fields of a staged row (the record rows are the merge's own shape).
+PUBLISHED_FIELDS = ("cell", "sym", "family", "verdict_status", "passed", "terminal_gate",
+                    "terminal_kind", "terminal_gate_id", "terminal_reason", "days",
+                    "unknown_reason", "local_failed_gates", "pending_gates")
+#: What a FINAL row must agree with the merge on (`_seal_shard_publication`).
+PUBLISHED_FINAL_FIELDS = ("passed", "terminal_gate", "unknown_reason", "days")
+
+
+def _stage_reason(gate: str, stage: object) -> str:
+    if isinstance(stage, dict):
+        for key in ("message", "reason", "why", "detail"):
+            if stage.get(key):
+                return f"{gate}: {str(stage[key])[:180]}"
+        vals = {k: v for k, v in stage.items() if k != "passed" and not isinstance(v, dict | list)}
+        if vals:
+            return f"{gate}: " + ", ".join(f"{k}={v}" for k, v in list(vals.items())[:4])[:180]
+    return gate
+
+
+def _shard_verdict(c: dict, full, dev, *, union_judges: bool) -> dict:
+    """One cell's verdict as a shard can know it (see VERDICT_FINAL above). Returns the row; a
+    FINAL row carries `verdict`, the dict the merge itself builds for that cell."""
+    base = {"cell": cell_id(c), "sym": c.get("sym"), "family": c.get("family")}
+    local = c.get("_local_stages")
+    if local is None:
+        v = _unmeasured_verdict(c, dev, None if full is None else len(full))
+        row = {**base, "cell": v["cell"], "days": v["days"], "unknown_reason": v["unknown_reason"]}
+        if not union_judges:
+            # A shard with no judgeable cell cannot know the union has one; with none, the merge
+            # writes no verdict at all, so this row waits for the merge.
+            return {**row, "verdict_status": VERDICT_PROVISIONAL, "passed": None,
+                    "pending_gates": ["a judgeable cell in the union"]}
+        return {**row, "verdict_status": VERDICT_FINAL, "passed": False, "terminal_gate": None,
+                "terminal_kind": "UNMEASURED", "terminal_gate_id": "observations",
+                "terminal_reason": v["unknown_reason"], "verdict": v}
+    days = 0 if dev is None else len(dev)
+    head = [g for g in CELL_LOCAL_HEAD if not local[g].get("passed")]
+    if head:
+        v = {**base, "params": c.get("params") or {}, "days": days, "passed": False,
+             "stages": {g: local[g] for g in CELL_LOCAL_HEAD}, "terminal_gate": head[0]}
+        return {**base, "days": days, "verdict_status": VERDICT_FINAL, "passed": False,
+                "terminal_gate": head[0], "terminal_kind": "RULED", "terminal_gate_id": head[0],
+                "terminal_reason": _stage_reason(head[0], local[head[0]]), "verdict": v}
+    later = [g for g in (*CELL_LOCAL_MID, *CELL_LOCAL_TAIL) if not local[g].get("passed")]
+    if later:
+        return {**base, "days": days, "verdict_status": VERDICT_REJECTED_PENDING,
+                "passed": False, "terminal_gate": None, "local_failed_gates": later,
+                "pending_gates": list(PROGRAM_LEVEL_GATES)}
+    return {**base, "days": days, "verdict_status": VERDICT_PROVISIONAL, "passed": None,
+            "terminal_gate": None, "pending_gates": list(PROGRAM_LEVEL_GATES)}
+
+
 def shard_of(spec: dict, n_shards: int) -> int:
     """The ONE shard that rules `spec`: sha256 of its cell id, mod N. Stable across processes,
     hosts and Python hash seeds, so every shard computes the same partition from the same plan."""
@@ -4921,6 +5136,23 @@ def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> d
                seconds=round(out.get("build_seconds", 0.0) + time.time() - t0, 3),
                peak_rss_mb=round(_rss_mb(), 1))
     _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
+    # WHAT THIS SHARD ALREADY KNOWS (see VERDICT_FINAL), in its OWN small file, written AFTER the
+    # rule output so its presence means the shard finished. The merging process publishes it
+    # (`publish_finished_shard`); a shard writes no shared record.
+    verdict_rows: list[dict] = []
+    for row in out["rows"]:
+        if row["kind"] != "cell":
+            continue
+        c = row["obj"]
+        full = c.get("_shard_ds")
+        cell_cut = c.get("_local_cut") if c.get("_local_stages") is not None else \
+            cell_dev_cut(full, cut, frac=plan.get("lockbox_frac"))
+        dev = full if (full is None or cell_cut is None) else full[full.index < cell_cut]
+        verdict_rows.append({"idx": int(row["idx"]),
+                             **_shard_verdict(c, full, dev, union_judges=n_local > 0)})
+    _pickle_atomic(shard_dir / f"shard_{k}.verdicts.pkl",
+                   {"protocol": SHARD_PROTOCOL, "token": plan["token"], "k": k, "n": plan["n"],
+                    "cut": cut, "rows": verdict_rows})
     print(f"SHARD {k}/{plan['n']} rule: {n_local} cell(s) ruled cell-locally")
     return {"k": k, "phase": "rule", "cells_ruled": n_local}
 
@@ -5003,8 +5235,250 @@ def _shard_collect(shard_dir: Path, plan: dict, phase: str = "rule") -> dict:
                        "shards": reports}}
 
 
-def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
-    """Write the plan, hand it to the launcher's dispatcher, and collect. Called from `main`."""
+def _publish_shard(plan: dict, k: int, rows: list, pub_dir: Path | None = None) -> Path:
+    """Stage shard `k`'s rows at `<pub_dir>/<token>/shard_<k>.json`, by write-then-rename.
+
+    IDEMPOTENT: a republished shard (a retry, a second hook call) REPLACES its file, and the reader
+    counts a cell once per plan. FAILS CLOSED on a row that claims a pass: a shard can never pass
+    a cell, so such a row is a defect and nothing of that shard is staged."""
+    for r in rows:
+        if r.get("passed") is True:
+            raise ShardMergeError(f"shard {k} row {r.get('cell')!r} claims a pass; refused")
+    root = Path(pub_dir or (plan.get("publication") or {}).get("dir") or SHARD_PUBLISH_DIR)
+    d = root / str(plan["token"])
+    d.mkdir(parents=True, exist_ok=True)
+    slim = [{f: r.get(f) for f in PUBLISHED_FIELDS if r.get(f) is not None or f == "passed"}
+            for r in rows]
+    doc = {"schema": SHARD_VERDICT_SCHEMA, "token": plan["token"], "k": int(k),
+           "n": int(plan["n"]), "published_at": datetime.now(UTC).isoformat(timespec="seconds"),
+           "rows": slim}
+    out = d / f"shard_{int(k)}.json"
+    tmp = d / f"shard_{int(k)}.json.{os.getpid()}.tmp"
+    tmp.write_text(json.dumps(doc, default=str), encoding="utf-8")
+    os.replace(tmp, out)
+    return out
+
+
+def _verdict_graph():
+    """The hypothesis graph the record is written to (a seam for tests)."""
+    from libs.research.hypothesis_graph import Graph
+    return Graph()
+
+
+class _ShardPublisher:
+    """Publishes each finished `rule` shard from the MERGING process, the one pen (see above).
+
+    `submit(k)` is called from the launcher's wave threads as each shard exits cleanly
+    (`publish_finished_shard`); one daemon thread does the work in order, so a wave thread never
+    waits on a publication and two publications never interleave. `drain()` publishes every
+    finished shard not yet published (a launcher without the hook, a hook that failed) and stops
+    the thread; `_run_shards` calls it in a `finally`, so a wave that fails still publishes the
+    shards that finished. Every failure is counted in `report`, never raised into the sweep."""
+
+    def __init__(self, plan: dict, shard_dir: Path, seen: dict | None,
+                 pub_dir: Path | None = None) -> None:
+        import queue
+        import threading
+
+        self.plan, self.shard_dir, self.seen = plan, Path(shard_dir), seen
+        self.pub_dir = Path(pub_dir or SHARD_PUBLISH_DIR)
+        self.done: set[int] = set()
+        self.report: dict = {"token": plan["token"], "shards_published": [], "staged_rows": 0,
+                             "final_rows": 0, "ledger_rows": 0, "graph_rows": 0,
+                             "seen_stamped": 0, "errors": []}
+        self._lock = threading.Lock()
+        self._q: queue.Queue = queue.Queue()
+        self._thread = threading.Thread(target=self._loop, name="judge-shard-publish",
+                                        daemon=True)
+        self._idx: dict | None = None
+        self._graph = None
+        self._fates = None
+        self._thread.start()
+
+    def submit(self, k: int) -> None:
+        self._q.put(int(k))
+
+    def _loop(self) -> None:
+        while True:
+            k = self._q.get()
+            if k is None:
+                return
+            self.publish(k)
+
+    def publish(self, k: int) -> bool:
+        """Publish shard `k` once. True when it is (now or already) published."""
+        with self._lock:
+            if k in self.done:
+                return True
+            try:
+                return self._publish(k)
+            except Exception as exc:          # bookkeeping: never a reason to fail the sweep
+                self.report["errors"].append(f"shard {k}: {type(exc).__name__}: {exc}"[:240])
+                return False
+
+    def _publish(self, k: int) -> bool:
+        f = self.shard_dir / f"shard_{k}.verdicts.pkl"
+        if not f.exists():
+            return False
+        doc = _unpickle(f)
+        plan, n = self.plan, int(self.plan["n"])
+        if (doc.get("protocol") != SHARD_PROTOCOL or doc.get("token") != plan["token"]
+                or int(doc.get("k", -1)) != k or int(doc.get("n", -1)) != n
+                or doc.get("cut") != plan.get("cut")):
+            raise ShardMergeError(f"shard {k} verdicts are stale or belong to another plan")
+        specs = plan["specs"]
+        rows = list(doc.get("rows") or [])
+        for r in rows:
+            i = int(r["idx"])
+            if (not 0 <= i < len(specs) or shard_of(specs[i], n) != k
+                    or str(r.get("sym")) != str(specs[i]["sym"])
+                    or str(r.get("family")) != str(specs[i]["family"])):
+                raise ShardMergeError(f"shard {k} published cell {i}, which it does not own")
+        _publish_shard(plan, k, rows, self.pub_dir)
+        self.report["staged_rows"] += len(rows)
+        final = [dict(r["verdict"]) for r in rows
+                 if r.get("verdict_status") == VERDICT_FINAL and isinstance(r.get("verdict"), dict)]
+        self._record(final)
+        self.done.add(k)
+        self.report["shards_published"].append(k)
+        return True
+
+    def _record(self, verdicts: list) -> None:
+        """The merge's three record writers, in the merge's order, on this shard's FINAL rows:
+        graph (stamping each verdict's pre-registration), gate ledger, then the seen stamp --
+        the verdict is durable before the cell is called judged."""
+        if not verdicts:
+            return
+        self.report["final_rows"] += len(verdicts)
+        specs = {str(v["cell"]): {"sym": v.get("sym"), "family": v.get("family"),
+                                  "params": v.get("params") or {}} for v in verdicts}
+        if self._graph is None:
+            from libs.research.hypothesis_graph import fate_index
+            self._graph = _verdict_graph()
+            self._fates = fate_index(self._graph)
+        got = record_gauntlet_verdicts(verdicts, specs, first_judged=self.seen,
+                                       graph=self._graph, fates=self._fates)
+        self.report["graph_rows"] += int(got.get("recorded") or 0)
+        if self._idx is None:
+            self._idx = _load_gate_index()
+        led = _append_gate_ledger(verdicts, list(specs.values()), idx=self._idx,
+                                  save_index=False)
+        if led.get("error"):
+            # The in-memory index now names rows the ledger never received: drop it, so it is
+            # never saved, and the next publication reloads from disk.
+            self._idx = None
+            raise OSError(f"gate ledger: {led['error']}")
+        self.report["ledger_rows"] += int(led.get("appended") or 0)
+        if led.get("appended") and not _gate_index_mark_path().exists():
+            # NO WATERMARK YET (the first sweep after this change): save once now, so a kill
+            # before the drain leaves an index the next load can reconcile from the ledger.
+            _save_gate_index(self._idx)
+        if self.seen is not None:
+            before = len(self.seen)
+            _save_seen_cells(self.seen, {str(v.get("cell") or "") for v in verdicts
+                                         if v.get("passed") is not None})
+            self.report["seen_stamped"] += len(self.seen) - before
+
+    def drain(self) -> dict:
+        """Publish every finished shard not yet published, stop the thread, save the index."""
+        self._q.put(None)
+        self._thread.join()
+        for k in range(int(self.plan["n"])):
+            self.publish(k)
+        with self._lock:
+            if self._idx is not None:
+                try:
+                    _save_gate_index(self._idx)
+                except OSError as exc:
+                    self.report["errors"].append(f"gate index: {exc}"[:240])
+            self._fates = self._graph = None            # the merge reads its own
+        self.report["shards_published"].sort()
+        return self.report
+
+
+#: The publisher of the sweep in flight; set and cleared by `_run_shards`.
+_PUBLISHER: _ShardPublisher | None = None
+
+
+def publish_finished_shard(shard_dir: Path | str, k: int, phase: str) -> bool:
+    """The launcher's hook: shard `k` of `phase` exited cleanly. Queues its publication and
+    returns at once (True when queued). A no-op outside a sharded sweep and for `build`, whose
+    shards know no verdict yet. Never raises."""
+    pub = _PUBLISHER
+    if pub is None or phase != "rule":
+        return False
+    try:
+        if Path(shard_dir) != pub.shard_dir:
+            return False
+        pub.submit(int(k))
+        return True
+    except Exception:
+        return False
+
+
+def _seal_shard_publication(verdicts: list) -> dict:
+    """After the merge: check every staged FINAL row against the merge's verdict for that cell,
+    write MERGED.json beside them (the reader then reads the record, not the copy), and keep the
+    newest SHARD_PUBLISH_KEEP plans. A disagreement is counted, never hidden: the merge's own
+    ledger and graph writers have already recorded its verdict, which supersedes the copy."""
+    import shutil
+
+    pub = (_SHARD or {}).get("publication") or {}
+    root, token = Path(pub.get("dir") or SHARD_PUBLISH_DIR), str(pub.get("token") or "")
+    if not token:
+        return {"status": "NOT_RUN", "why": "no shard publication in this sweep"}
+    d = root / token
+    by_cell = {str(v.get("cell")): v for v in verdicts if isinstance(v, dict)}
+    seen: set[str] = set()
+    agree = disagree = provisional = absent = 0
+    sample: list[str] = []
+    for f in sorted(d.glob("shard_*.json")):
+        try:
+            rows = json.loads(f.read_text("utf-8")).get("rows") or []
+        except (OSError, ValueError, AttributeError):
+            continue
+        for r in rows:
+            cid = str(r.get("cell") or "")
+            if not cid or cid in seen:
+                continue
+            seen.add(cid)
+            if r.get("verdict_status") != VERDICT_FINAL:
+                provisional += 1
+                continue
+            v = by_cell.get(cid)
+            if v is None:
+                absent += 1
+                continue
+            if all(r.get(x) == v.get(x) for x in PUBLISHED_FINAL_FIELDS):
+                agree += 1
+            else:
+                disagree += 1
+                if len(sample) < 20:
+                    sample.append(cid)
+    doc = {"token": token, "merged_at": datetime.now(UTC).isoformat(timespec="seconds"),
+           "published_rows": len(seen), "final_rows_agree": agree,
+           "final_rows_disagree": disagree, "disagree_sample": sample,
+           "provisional_rows": provisional, "absent_from_merge": absent}
+    with contextlib.suppress(OSError):
+        d.mkdir(parents=True, exist_ok=True)
+        tmp = d / f"MERGED.json.{os.getpid()}.tmp"
+        tmp.write_text(json.dumps(doc), encoding="utf-8")
+        os.replace(tmp, d / "MERGED.json")
+    with contextlib.suppress(OSError):
+        plans = sorted((p for p in root.iterdir() if p.is_dir()),
+                       key=lambda p: p.stat().st_mtime, reverse=True)
+        for old in [p for p in plans if p.name != token][max(0, SHARD_PUBLISH_KEEP - 1):]:
+            shutil.rmtree(old, ignore_errors=True)
+    return doc
+
+
+def _run_shards(eligible_specs: list, meta: dict, build_t0: float,
+                seen: dict | None = None) -> dict:
+    """Write the plan, hand it to the launcher's dispatcher, and collect. Called from `main`.
+
+    `seen` is `main`'s seen-cells dict: the per-shard publisher stamps the cells whose verdict it
+    makes durable, in the same dict the merge stamps later."""
+    global _PUBLISHER
     cfg = _SHARD or {}
     n = int(cfg["n"])
     shard_dir = Path(cfg.get("dir") or SHARD_DIR)
@@ -5039,10 +5513,31 @@ def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
 
     plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
     _pickle_atomic(shard_dir / "cut.pkl", {"token": token, "cut": plan["cut"]})
-    dispatch(shard_dir, n, "rule")  # type: ignore[operator]
+    # EACH FINISHED SHARD IS PUBLISHED AS IT FINISHES (see VERDICT_FINAL), and whatever finished
+    # is published even when the wave fails: the merge below can be killed, the shards' work no
+    # longer goes with it.
+    pub_dir = Path(cfg.get("publish_dir") or SHARD_PUBLISH_DIR)
+    publisher = None
+    if cfg.get("publish", True):
+        publisher = _ShardPublisher(plan, shard_dir, seen, pub_dir)
+        cfg["publication"] = {"dir": str(pub_dir), "token": token}
+        _PUBLISHER = publisher
+    try:
+        dispatch(shard_dir, n, "rule")  # type: ignore[operator]
+    finally:
+        if publisher is not None:
+            _PUBLISHER = None
+            pub_report = publisher.drain()
+            print(f"SHARD PUBLICATION: {len(pub_report['shards_published'])}/{n} shard(s), "
+                  f"{pub_report['staged_rows']} staged row(s), {pub_report['final_rows']} FINAL "
+                  f"-> ledger +{pub_report['ledger_rows']}, graph +{pub_report['graph_rows']}, "
+                  f"seen +{pub_report['seen_stamped']}"
+                  + (f"; errors {pub_report['errors'][:3]}" if pub_report["errors"] else ""))
     got = _shard_collect(shard_dir, plan, phase="rule")
     got["report"].update(dispatch_seconds=round(time.time() - t0, 3),
                          build_phase_seconds=round(t_build, 3), lockbox_cut=str(plan["cut"]))
+    if publisher is not None:
+        got["report"]["publication"] = publisher.report
     for f in [*shard_dir.glob("shard_*.pkl"), shard_dir / "cut.pkl"]:
         f.unlink(missing_ok=True)
     return got

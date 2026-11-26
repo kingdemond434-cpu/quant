@@ -1278,6 +1278,21 @@ def _watched_run(argv: list[str], *, cwd: Path | str | None = None,
 run = _watched_run
 
 
+def _shard_finished(shard_dir: Path, k: int, phase: str) -> bool:
+    """Tell the sealed judge that shard `k` exited cleanly, so it publishes that shard's verdicts
+    now rather than after the merge (idea 45, `external_gauntlet.publish_finished_shard`). The
+    judge only QUEUES the publication; it runs on the judge's own thread in this process, the
+    one that holds the certification lane. A judge image without the hook, or any failure, is a
+    no-op: the judge's own drain after the wave publishes every finished shard anyway."""
+    try:
+        judge = (sys.modules.get("scripts.external_gauntlet")
+                 or sys.modules.get("external_gauntlet"))
+        hook = getattr(judge, "publish_finished_shard", None)
+        return bool(hook(shard_dir, k, phase)) if callable(hook) else False
+    except Exception:
+        return False
+
+
 def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     """Run every judge-owned shard, retrying only failed children at low concurrency.
 
@@ -1391,6 +1406,8 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         with walls_lock:
             walls.append(time.monotonic() - t0)
         _progress_bump("done")
+        if phase == "rule":
+            _shard_finished(shard_dir, k, phase)
 
     def attempted(k: int) -> tuple[int, Exception | None]:
         try:
@@ -2569,22 +2586,59 @@ def _child_heartbeat_hang(pid: int, now: float) -> str | None:
     return None
 
 
-def _release_locks_of(pid: int) -> list[str]:
+def _gone(pid: int) -> bool:
+    """True only on positive evidence that `pid` no longer runs (absent, or a zombie)."""
+    try:
+        import psutil
+    except ImportError:
+        return False
+    try:
+        p = psutil.Process(pid)
+        return p.status() == psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
+        return True
+    except psutil.Error:
+        return False
+
+
+def _tree_pids(pid: int) -> list[int]:
+    """`pid` and every descendant, read BEFORE a kill (the tree cannot be walked after it)."""
+    out = [int(pid)]
+    try:
+        import psutil
+        out += [int(k.pid) for k in psutil.Process(pid).children(recursive=True)]
+    except Exception:
+        pass
+    return out
+
+
+def _release_locks_of(pid: int, tree: list[int] | None = None) -> list[str]:
     """Remove the sweep locks a KILLED child held, so the next sweep does not wait behind it.
 
     MEASURED 2026-11-25: after the 04:18Z kill the next child logged `certification_lane:
     REFUSED duplicate writer; active lock` eight times to 04:26Z before it got the lane. Only a
-    lock stamped with exactly this pid on this host is removed. Never raises."""
+    lock stamped with exactly this pid on this host is removed. Never raises.
+
+    THE LOCK IS NOT STAMPED WITH THE PID THE RESIDENT LAUNCHED (2026-11-25, idea 45). On the box
+    the sweep runs as `.venv/Scripts/python.exe`, a launcher shim that starts the real
+    interpreter as ITS child: the box read shows the pairs 3460/18528 and 11904/6888, and the
+    heartbeat -- and every lock -- carries the second pid. `Popen.pid` is the shim's, so matching
+    it alone released nothing. `tree` is the killed tree's pids, read before the kill: a lock
+    stamped by any of them is removed too, but only once that process is provably gone."""
     import socket
 
     root = _lock_root()
     out: list[str] = []
     if root is None:
         return out
+    others = {int(p) for p in (tree or ()) if int(p) != int(pid)}
     for name in SWEEP_LOCKS:
         path = root / f"{name}.json"
         doc = _read_json(path)
-        if doc.get("pid") == pid and str(doc.get("host") or "") == socket.gethostname():
+        if str(doc.get("host") or "") != socket.gethostname():
+            continue
+        owner = doc.get("pid")
+        if owner == pid or (isinstance(owner, int) and owner in others and _gone(owner)):
             with contextlib.suppress(OSError):
                 path.unlink()
                 out.append(name)
@@ -2648,11 +2702,12 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     why = hung or (f"its whole tree burned < {NO_PROGRESS_CORES} core per process for "
                    f"{tracker.idle_s(now):.0f}s (> {idle_kill_s:.0f}s), measured by the resident")
     hb = _read_json(HEARTBEAT)
+    tree = _tree_pids(child.pid)
     kill = _kill_report(_kill_sweep_tree(child.pid))
     with contextlib.suppress(subprocess.TimeoutExpired):
         child.wait(timeout=30)
     with contextlib.suppress(Exception):
-        kill["locks_released"] = _release_locks_of(child.pid)
+        kill["locks_released"] = _release_locks_of(child.pid, tree)
     restored = restore_merge_outputs(
         pid=child.pid, since=_ts(hb.get("started_utc")) if hb.get("pid") == child.pid else None)
     record_stall("resident_kill", detail=f"sweep pid {child.pid}: {why}", pid=child.pid,
