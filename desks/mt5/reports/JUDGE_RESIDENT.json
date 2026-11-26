@@ -403,7 +403,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-26T20:54:57+00:00",
+ "heartbeat_utc": "2026-11-26T21:04:58+00:00",
  "sweep_phase": {
   "pid": 18528,
   "sweep_started_utc": "2026-11-25T04:27:14+00:00",
@@ -637,42 +637,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 945,
+     "samples": 1005,
      "top": [
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__lt__:48 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__lt__:48 < common.py:new_method:76",
        "n": 97,
-       "share": 0.103
+       "share": 0.097
       },
       {
        "stack": "managers.py:get_rows_with_mask:1978 < series.py:_get_rows_with_mask:1229 < series.py:__getitem__:1163 < gate_policy.py:carve_lockbox:181 < external_gauntlet.py:run_gauntlet:3018 < external_gauntlet.py:main:3883",
        "n": 54,
-       "share": 0.057
+       "share": 0.054
       },
       {
        "stack": "external_gauntlet.py:run_gauntlet:3034 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 48,
-       "share": 0.051
+       "share": 0.048
+      },
+      {
+       "stack": "frontier_identity.py:cell_id:41 < external_gauntlet.py:run_gauntlet:3163 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 45,
+       "share": 0.045
       },
       {
        "stack": "_methods.py:_var:168 < _methods.py:_std:219 < dsr.py:sharpe_ratio:24 < dsr.py:probabilistic_sharpe_ratio:34 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
-       "n": 40,
+       "n": 42,
        "share": 0.042
-      },
-      {
-       "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__ge__:60 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__ge__:60 < common.py:new_method:76",
-       "n": 38,
-       "share": 0.04
       }
      ],
      "process": {
-      "cpu_s": 4019.6,
-      "page_faults": 87984450.0,
+      "cpu_s": 4166.1,
+      "page_faults": 88162957.0,
       "read_bytes": 2371343410.0,
-      "write_bytes": 1931537.0,
-      "sampled_s": 9440.0,
+      "write_bytes": 2045616.0,
+      "sampled_s": 10040.0,
       "rss_mb_max": 8072.2,
-      "cpu_share_of_wall": 0.426
+      "cpu_share_of_wall": 0.415
      }
     }
    }
