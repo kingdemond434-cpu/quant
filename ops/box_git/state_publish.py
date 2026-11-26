@@ -4,7 +4,7 @@ MT5-ShadowSync (SYSTEM) builds a fenced, one-parent state commit on the forge LI
 it as a bundle in the state outbox (SYSTEM writes; the loop's quantgate account may modify).
 This stage, each pass:
   1. verifies the bundle against the forge repository and reads refs/publish/pending from it;
-  2. judges that commit with the byte-pinned fence (ops/box_git/state_fence.py): one parent equal
+  2. judges that commit with the T-pinned fence (ops/box_git/state_fence.py): one parent equal
      to the LIVE tip right now, added/modified regular state files only;
   3. publishes the same tree as a fast-forward of claude/box-state, pushed as the `claude` thread
      account (no new credential). LIVE is never touched: the gate's CLEAR plus box CI stay the

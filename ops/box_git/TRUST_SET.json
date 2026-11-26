@@ -26,7 +26,9 @@
   "ops/release/not_money_scripts.txt",
   "scripts/sign_train.py",
   "scripts/check_immutable_evaluator.py",
-  "desks/mt5/data/SEAL_CLEARS.jsonl"
+  "desks/mt5/data/SEAL_CLEARS.jsonl",
+  "ops/box_git/state_fence.py",
+  "ops/box_git/state_publish.py"
  ],
  "grow_only": [
   "ops/release/protected_paths.txt",

@@ -5,8 +5,9 @@ commit over as a bundle; the loop's `state` stage checks it HERE and publishes i
 branch claude/box-state as the `claude` thread account. LIVE is never touched, so the gate's
 CLEAR plus box CI stay the second fence for anything that could ever reach LIVE.
 
-This file is byte-pinned (scripts/check_immutable_evaluator.py IMMUTABLE, signed manifest): a
-change to what the fence allows is a reviewed, re-signed change, never a quiet edit.
+This file is pinned by the trust set T (ops/box_git/TRUST_SET.json `files`; zuck 2026-11-26
+09:11Z, Audit ruling C): once LIVE contains the boot, run_loop.cmd runs the loop from LIVE's tip,
+so a change to what the fence allows needs the owner's AUTHORIZE TRUST, never a quiet edit.
 
 THE FENCE, all of it, or nothing is published:
   * the commit has exactly ONE parent, and that parent is the forge LIVE tip right now (a stale

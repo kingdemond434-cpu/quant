@@ -182,9 +182,39 @@ def test_the_door_refuses_a_non_fast_forward_of_box_state():
     assert not protect.decide("a" * 40, protect.ZERO, ref, "thread", lambda a, b: True).ok
 
 
-def test_state_fence_is_byte_pinned_by_the_immutable_manifest():
+def test_state_fence_and_publisher_are_in_the_trust_set():
+    """Audit ruling C (zuck 2026-11-26 09:11Z): the fence is pinned by T, not by the evaluator's
+    manifest (the box sign path can never add a new manifest row)."""
+    from ops.box_git import trust_check as T
+    files = T.load_policy()["files"]
+    assert "ops/box_git/state_fence.py" in files
+    assert "ops/box_git/state_publish.py" in files
     src = (ROOT / "scripts" / "check_immutable_evaluator.py").read_text(encoding="utf-8")
-    assert '"ops/box_git/state_fence.py"' in src
+    assert "state_fence" not in src
+
+
+def test_a_one_byte_fence_edit_needs_authorize_trust(tmp_path):
+    from ops.box_git import trust_check as T
+    pol = {**T.load_policy(), "symbols": {}, "contracts": {}, "hard_caps": []}
+    repo = tmp_path / "t"
+    repo.mkdir()
+    g = T.strict_git("git", "-C", str(repo), "-c", "user.email=t@t", "-c", "user.name=t")
+    g("init", "-q")
+    rels = ("ops/box_git/state_fence.py", "ops/box_git/state_publish.py", T.POLICY_PATH)
+    for rel in rels:
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_bytes((ROOT / rel).read_bytes())
+    g("add", *rels)
+    g("commit", "-q", "-m", "base")
+    base = g("rev-parse", "HEAD").strip()
+    fence = repo / "ops/box_git/state_fence.py"
+    src = fence.read_text(encoding="utf-8")
+    assert '"100644"' in src
+    fence.write_text(src.replace('"100644"', '"100645"', 1), encoding="utf-8")
+    g("commit", "-q", "-am", "widen")
+    head = g("rev-parse", "HEAD").strip()
+    assert T.classify(g, base, base, [], policy=pol)[0] == "ORDINARY"
+    assert T.classify(g, base, head, [], policy=pol)[0] == "TRUST"
 
 
 def test_a_newer_hand_over_never_replaces_the_bundle_being_judged(world, tmp_path):
