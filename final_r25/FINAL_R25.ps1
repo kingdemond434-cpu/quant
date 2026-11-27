@@ -54,7 +54,7 @@ $U8 = New-Object Text.UTF8Encoding($false)
 Say "staged $Name (sha256 $h) and Audit's verdict in $RB"
 
 if (-not (Test-Path -LiteralPath $OA -PathType Container)) { Stop-Here "no $OA (the mover's installer makes it)" }
-[IO.File]::WriteAllText((Join-Path $OA "$Head.txt"), "zuck (owner) approves boot r25 $Head: box guardian phase 1, read-only status`n", $U8)
+[IO.File]::WriteAllText((Join-Path $OA "$Head.txt"), "zuck (owner) approves boot r25 ${Head}: box guardian phase 1, read-only status`n", $U8)
 Say "owner approval written for $Head"
 
 if ($AllowClaudeStaging) {
