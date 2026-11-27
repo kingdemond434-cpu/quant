@@ -28,7 +28,9 @@
   "scripts/check_immutable_evaluator.py",
   "desks/mt5/data/SEAL_CLEARS.jsonl",
   "ops/box_git/state_fence.py",
-  "ops/box_git/state_publish.py"
+  "ops/box_git/state_publish.py",
+  "ops/box_git/box_guardian.ps1",
+  "ops/box_git/guardian/*"
  ],
  "grow_only": [
   "ops/release/protected_paths.txt",
