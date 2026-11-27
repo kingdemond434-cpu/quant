@@ -843,8 +843,7 @@ def full_tick(cfg: Config, live: str) -> str:
 
 
 def promote_tick(cfg: Config) -> str:
-    with STATE_LOCK:
-        state = box_ci.load_state(cfg.state)
+    state = box_ci.load_state(cfg.state)
 
     def anc(a: str, b: str) -> bool:
         return _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", a, b])[0] == 0
@@ -861,10 +860,9 @@ def promote_tick(cfg: Config) -> str:
                         "--remote", cfg.remote(), "--root", str(root)],
                        cwd=root, env=cfg.git_env("release-authority"), timeout=900)
     if rc == 0:
-        with STATE_LOCK:
-            state = box_ci.load_state(cfg.state)
-            state["promoted"] = head
-            box_ci.save_state(cfg.state, state)
+        state = box_ci.load_state(cfg.state)
+        state["promoted"] = head
+        box_ci.save_state(cfg.state, state)
     last = out.strip().splitlines()[-1][:160] if out.strip() else ""
     return f"promote {head[:9]}: rc={rc} {last}"
 
@@ -994,11 +992,6 @@ def sign_diff_problems(old_manifest: str, new_manifest: str, old_qb: str, new_qb
 
 
 def sign_tick(cfg: Config, live: str) -> str:
-    with STATE_LOCK:  # (r20) the full stage writes the same state file from its own thread
-        return _sign_tick(cfg, live)
-
-
-def _sign_tick(cfg: Config, live: str) -> str:
     state = box_ci.load_state(cfg.state)
     last = str(state.get("sign_checked") or "")
     if last == live:
@@ -1177,15 +1170,21 @@ LIGHT = ("drop", "inbox", "state", "gate", "sign", "promote", "leadtime")
 HEAVY = ("pr", "full")
 
 
+def _locked(fn: Callable[[], str]) -> str:
+    with STATE_LOCK:
+        return fn()
+
+
 def _stages(cfg: Config) -> dict[str, Callable[[], str]]:
     return {"drop": lambda: drop_tick(cfg),
             "inbox": lambda: inbox_tick(cfg),
             "state": lambda: state_tick(cfg),
             "gate": lambda: gate_tick(cfg, live_head(cfg)),
-            "sign": lambda: sign_tick(cfg, live_head(cfg)),
+            # sign and promote read-modify-write the CI state the full thread also writes
+            "sign": lambda: _locked(lambda: sign_tick(cfg, live_head(cfg))),
             "pr": lambda: pr_tick(cfg),
             "full": lambda: full_tick(cfg, live_head(cfg)),
-            "promote": lambda: promote_tick(cfg),
+            "promote": lambda: _locked(lambda: promote_tick(cfg)),
             "leadtime": lambda: leadtime_tick(cfg)}
 
 
