@@ -50,6 +50,15 @@ MAX_BUNDLE = 200 * 1024 * 1024
 MAX_JSON = 256 * 1024
 LEDGER = "drop_ledger.json"
 LOCAL_DROP = Path(r"C:\opt\bridge\quant\drop_local")
+#: (boot r22) THE PACKETS-ONLY INBOX (coordinator 2026-11-27 12:44Z; zuck 12:33Z "Yes" to letting
+#: the box's own Claude drop new builds in). Writable by the box's interactive user, so builds
+#: reach the forge with no owner paste. It can carry AUTHOR packets only: a root `<id>.bundle` /
+#: `<id>.json`. Nothing under verdicts/, forge_reboot/ or announced/ is ever read from it, and a
+#: manifest naming a verdict, hold, trust or owner line is refused, so it can never move a boot,
+#: approve a head or start a silence window. A packet still merges only on the Auditor's CLEAR at
+#: its exact head, which keeps arriving through drop_local (admin-only) as before.
+PACKETS_LOCAL = Path(r"C:\opt\bridge\quant\packets_inbox")
+_SEAT_LINE = re.compile(rb"AUDIT CLEAR|AUDIT HOLD|AUTHORIZE TRUST|OWNER APPROVE|silence_approved")
 _BOOT = re.compile(r"boot-[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(bundle|bundle\.sha256|verdict\.json)")
 
 Run = Callable[[Sequence[str]], tuple[int, str]]
@@ -135,6 +144,47 @@ def stage_local(local: Path | None, checkout: Path) -> list[str]:
             rows.append(f"local stuck {rel}: {type(exc).__name__}: {str(exc)[:200]}")
             continue
         rows.append(f"local staged {rel} {hashlib.sha256(data).hexdigest()[:12]}")
+    return rows
+
+
+def stage_packets(folder: Path | None, checkout: Path, keep: Path | None = None) -> list[str]:
+    """(r22) Author packets from the packets-only inbox into the checkout ROOT. Never a verdict,
+    a boot packet or an announcement; never a symlink; never a manifest with a seat's line."""
+    if folder is None or not folder.is_dir() or folder.is_symlink():
+        return []
+    rows: list[str] = []
+    found = [p for p in folder.iterdir() if p.is_file() and not p.is_symlink()]
+    for p in sorted(found, key=lambda q: order(q.name)):
+        rel = p.name
+        cap = wanted(rel)
+        if cap is None:
+            continue  # root files only: verdicts/ etc. are never even listed (iterdir, no glob)
+        if keep is not None and (keep / rel).exists():
+            rows.append(f"packets skipped {rel}: drop_local holds that name")
+            continue
+        size = p.stat().st_size
+        if size > cap:
+            rows.append(f"packets refused {rel}: {size} bytes over the {cap} cap")
+            continue
+        try:
+            data = p.read_bytes()
+        except OSError as exc:
+            rows.append(f"packets stuck {rel}: {type(exc).__name__}")
+            continue
+        if rel.endswith(".json") and _SEAT_LINE.search(data):
+            rows.append(f"packets refused {rel}: a manifest may not carry a verdict or owner line")
+            continue
+        dest = checkout / rel
+        try:
+            if dest.is_file() and dest.read_bytes() == data:
+                continue
+            tmp = dest.with_name(dest.name + ".part")
+            tmp.write_bytes(data)
+            os.replace(tmp, dest)
+        except OSError as exc:  # retried next pass
+            rows.append(f"packets stuck {rel}: {type(exc).__name__}: {str(exc)[:200]}")
+            continue
+        rows.append(f"packets staged {rel} {hashlib.sha256(data).hexdigest()[:12]}")
     return rows
 
 
@@ -232,9 +282,12 @@ def deliver(checkout: Path, inbox: Path, ledger_path: Path) -> list[str]:
 
 
 def pull(drop: Drop, inbox: Path, state_dir: Path, run: Run = _run,
-         local: Path | None = LOCAL_DROP) -> str:
+         local: Path | None = LOCAL_DROP, packets: Path | None = PACKETS_LOCAL) -> str:
     ok, why = fetch(drop, run)
     staged = stage_local(local, drop.checkout) if drop.checkout.is_dir() else []
+    # (r22) a name drop_local (admin) also holds is never taken from the packets inbox
+    if drop.checkout.is_dir():
+        staged += stage_packets(packets, drop.checkout, keep=local)
     if not ok and not (local is not None and local.is_dir() and drop.checkout.is_dir()):
         return f"drop not pulled ({why}); inbox unchanged"
     rows = staged + deliver(drop.checkout, inbox, state_dir / LEDGER)
