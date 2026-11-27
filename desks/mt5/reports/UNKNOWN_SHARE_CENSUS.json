@@ -9,9 +9,9 @@
   "stage": "building",
   "utc_day": "2026-11-27",
   "started_at": "2026-11-27T06:54:44+00:00",
-  "written_at": "2026-11-27T07:18:31+00:00",
+  "written_at": "2026-11-27T07:31:31+00:00",
   "cells_planned": 6000,
-  "cells_visited": 1456,
+  "cells_visited": 3298,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 70047,
     "rss_cap_mb": 17512,
-    "peak_rss_mb": 909
+    "peak_rss_mb": 1072
   },
-  "lockbox_cut": "2022-09-07",
+  "lockbox_cut": "2022-05-06",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 241,
-  "elapsed_s": 1419.2,
+  "cells_carved_at_own_tail": 629,
+  "elapsed_s": 2198.6,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 21,
@@ -39,121 +39,125 @@
     }
   },
   "sampled_cells": {
-    "cells": 1456,
+    "cells": 3298,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 665,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 1505,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 750,
-    "unknown": 78,
-    "unknown_share_of_judged": 0.104,
+    "judged_built": 1750,
+    "unknown": 191,
+    "unknown_share_of_judged": 0.1091,
     "wilson95": [
-      0.0841,
-      0.1279
+      0.0954,
+      0.1246
     ],
     "unknown_by_reason": {
-      "no_signals": 57,
-      "too_rare": 14,
-      "lockbox_consumed_history": 5,
-      "short_history_after_cut": 2
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 19,
+      "short_history_after_cut": 8
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 27,
-      "session_range_breakout": 13,
-      "htf_anchor_trend": 4,
-      "overnight_drift": 4,
-      "comex_settlement": 3,
+      "formula": 68,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "session_handoff": 4,
+      "asia_momentum": 3,
+      "hedging_demand_close": 3,
       "london_close_momentum": 3,
-      "session_handoff": 3,
-      "execution_state": 3,
-      "regime_split": 2,
-      "asia_momentum": 2,
-      "hedging_demand_close": 2,
-      "dow_effect": 2,
-      "alt_series_momentum": 2,
-      "vol_transition": 2,
-      "joint_genome": 1
+      "dow_effect": 3,
+      "vol_transition": 3,
+      "pca_residual": 2
     },
     "unknown_by_chart": {
-      "H1": 35,
-      "M30": 13,
-      "M5": 10,
-      "M15": 8,
-      "H4": 4,
-      "M1": 4,
-      "D1": 4
+      "H1": 90,
+      "M30": 34,
+      "M5": 17,
+      "M15": 16,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
     },
     "judged_by_chart": {
-      "H1": 331,
-      "M30": 147,
-      "M15": 119,
-      "M5": 99,
-      "M1": 23,
-      "H4": 23,
-      "D1": 8
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
     }
   },
   "sampled_plus_siblings": {
-    "cells": 1456,
+    "cells": 3298,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 665,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 1505,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 750,
-    "unknown": 78,
-    "unknown_share_of_judged": 0.104,
+    "judged_built": 1750,
+    "unknown": 191,
+    "unknown_share_of_judged": 0.1091,
     "wilson95": [
-      0.0841,
-      0.1279
+      0.0954,
+      0.1246
     ],
     "unknown_by_reason": {
-      "no_signals": 57,
-      "too_rare": 14,
-      "lockbox_consumed_history": 5,
-      "short_history_after_cut": 2
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 19,
+      "short_history_after_cut": 8
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 27,
-      "session_range_breakout": 13,
-      "htf_anchor_trend": 4,
-      "overnight_drift": 4,
-      "comex_settlement": 3,
+      "formula": 68,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "session_handoff": 4,
+      "asia_momentum": 3,
+      "hedging_demand_close": 3,
       "london_close_momentum": 3,
-      "session_handoff": 3,
-      "execution_state": 3,
-      "regime_split": 2,
-      "asia_momentum": 2,
-      "hedging_demand_close": 2,
-      "dow_effect": 2,
-      "alt_series_momentum": 2,
-      "vol_transition": 2,
-      "joint_genome": 1
+      "dow_effect": 3,
+      "vol_transition": 3,
+      "pca_residual": 2
     },
     "unknown_by_chart": {
-      "H1": 35,
-      "M30": 13,
-      "M5": 10,
-      "M15": 8,
-      "H4": 4,
-      "M1": 4,
-      "D1": 4
+      "H1": 90,
+      "M30": 34,
+      "M5": 17,
+      "M15": 16,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
     },
     "judged_by_chart": {
-      "H1": 331,
-      "M30": 147,
-      "M15": 119,
-      "M5": 99,
-      "M1": 23,
-      "H4": 23,
-      "D1": 8
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
     }
   },
   "siblings_only": {
