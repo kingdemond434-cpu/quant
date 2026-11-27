@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-27T17:00:05.547936+00:00",
+  "swept_at": "2026-11-27T17:15:03.665044+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -482,7 +482,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.631,
+      "shadow_exp_r": -0.6008,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -504,7 +504,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2728,
+      "shadow_exp_r": -0.602,
       "woke_on_shadow": false
     },
     "EURMXN|carry_asia": {
@@ -1879,7 +1879,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.363,
+      "shadow_exp_r": -0.4637,
       "woke_on_shadow": false
     },
     "XTIUSD|range_reversion_asia": {
