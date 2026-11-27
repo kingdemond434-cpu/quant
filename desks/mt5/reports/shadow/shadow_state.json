@@ -633,7 +633,7 @@
     "certificate_at_revival": null
   },
   "last_run": "2026-11-27",
-  "updated_at": "2026-11-27T10:35:05+00:00",
+  "updated_at": "2026-11-27T10:35:40+00:00",
   "configured_sleeves": 1018,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -9072,7 +9072,7 @@
   },
   "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96": {
     "n": 556,
-    "cum_r": -44.671569439393835,
+    "cum_r": -45.27669764452194,
     "max_dd_r": -57.1811890073483,
     "first_entry": "2026-09-28 00:10:00+00:00",
     "last_entry": "2026-11-27 10:25:00+00:00",
@@ -9083,16 +9083,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:22:35.894247+00:00",
     "sleeve_id": "ef2ced265b954d17848e",
-    "last_attempt_at": "2026-11-27T09:36:41+00:00",
+    "last_attempt_at": "2026-11-27T10:35:26+00:00",
     "bar_source": "CACHE:AUDNZD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.08034454935142776,
+    "exp_r": -0.08143290943259342,
     "days_active": 61,
-    "forward_t": -1.276,
-    "e_value": 1.4157,
+    "forward_t": -1.293,
+    "e_value": 1.4494,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 556,
@@ -9106,7 +9106,7 @@
     "last_error_cleared": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-27T09:36:41+00:00"
+      "at": "2026-11-27T10:35:27+00:00"
     },
     "last_error": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -9128,7 +9128,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:20:55+00:00",
     "sleeve_id": "b0eec8affe4391148368",
-    "last_attempt_at": "2026-11-27T09:36:49+00:00",
+    "last_attempt_at": "2026-11-27T10:35:31+00:00",
     "bar_source": "CACHE:AUDNZD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -9190,7 +9190,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-27T09:36:49+00:00"
+      "at": "2026-11-27T10:35:31+00:00"
     },
     "last_error": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -9201,7 +9201,7 @@
   },
   "AUDNZD.macro_conditional.asia@M5": {
     "n": 561,
-    "cum_r": -98.67058888861095,
+    "cum_r": -99.27571709373905,
     "max_dd_r": -113.50499634991355,
     "first_entry": "2026-09-28 00:10:00+00:00",
     "last_entry": "2026-11-27 10:25:00+00:00",
@@ -9212,16 +9212,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:23:03.977957+00:00",
     "sleeve_id": "1a9b18e2f48e0b6471d3",
-    "last_attempt_at": "2026-11-27T09:36:55+00:00",
+    "last_attempt_at": "2026-11-27T10:35:40+00:00",
     "bar_source": "CACHE:AUDNZD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.17588340265349545,
+    "exp_r": -0.17696206255568458,
     "days_active": 61,
-    "forward_t": -2.758,
-    "e_value": 11.1337,
+    "forward_t": -2.776,
+    "e_value": 11.433,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 561,
@@ -9235,7 +9235,7 @@
     "last_error_cleared": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-27T09:36:56+00:00"
+      "at": "2026-11-27T10:35:40+00:00"
     },
     "last_error": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -45068,7 +45068,7 @@
   },
   "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192": {
     "n": 499,
-    "cum_r": -286.20989824451954,
+    "cum_r": -286.81502644964763,
     "max_dd_r": -288.74870471587366,
     "first_entry": "2026-09-28 00:10:00+00:00",
     "last_entry": "2026-11-27 10:25:00+00:00",
@@ -45079,16 +45079,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:00:53.974965+00:00",
     "sleeve_id": "ede74e0c8e68168c9a7f",
-    "last_attempt_at": "2026-11-27T09:36:30+00:00",
+    "last_attempt_at": "2026-11-27T10:35:12+00:00",
     "bar_source": "CACHE:AUDNZD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.5735669303497386,
+    "exp_r": -0.5747796121235423,
     "days_active": 60,
-    "forward_t": -8.715,
-    "e_value": 3193756507.9964,
+    "forward_t": -8.739,
+    "e_value": 3438438157.8131,
     "e_crossed_at": 60,
     "e_crossed_stamp": "2026-10-02 16:40:00+00:00",
     "e_n": 499,
@@ -45103,7 +45103,7 @@
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 4.5->37.00000000000001 spread per lot; round-trip charge 4.3331->20.9007 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-27T09:36:30+00:00"
+      "at": "2026-11-27T10:35:12+00:00"
     },
     "last_error": "OSError: [Errno 28] No space left on device",
     "bars_wanted": {
@@ -45115,7 +45115,7 @@
   },
   "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=48": {
     "n": 718,
-    "cum_r": -44.655975875016885,
+    "cum_r": -45.20892807745342,
     "max_dd_r": -55.703513276588836,
     "first_entry": "2026-09-28 00:10:00+00:00",
     "last_entry": "2026-11-27 10:55:00+00:00",
@@ -45126,16 +45126,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:01:08.086872+00:00",
     "sleeve_id": "43aca136d1543a5f46d0",
-    "last_attempt_at": "2026-11-27T09:36:35+00:00",
+    "last_attempt_at": "2026-11-27T10:35:18+00:00",
     "bar_source": "CACHE:AUDNZD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.062194952472168365,
+    "exp_r": -0.06296508088781813,
     "days_active": 60,
-    "forward_t": -1.084,
-    "e_value": 1.1826,
+    "forward_t": -1.097,
+    "e_value": 1.2015,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 718,
@@ -45149,7 +45149,7 @@
     "last_error_cleared": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-27T09:36:36+00:00"
+      "at": "2026-11-27T10:35:18+00:00"
     },
     "last_error": "no M5 bars from any source for AUDNZD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -60637,23 +60637,24 @@
   },
   "engine_pass": {
     "started_at": "2026-11-27T09:56:06+00:00",
-    "rows_reached": 1013,
+    "rows_reached": 1018,
     "rows": 1018,
-    "complete": false,
+    "complete": true,
+    "finished_at": "2026-11-27T10:35:40+00:00",
     "profile": {
-      "seconds": 2389.5,
-      "rows_timed": 1013,
+      "seconds": 2424.5,
+      "rows_timed": 1018,
       "phase_seconds": {
-        "backtest": 209.1,
+        "backtest": 218.5,
         "fetch": 884.2,
-        "resolve": 14.0,
-        "signals": 680.1
+        "resolve": 14.5,
+        "signals": 700.0
       },
       "phase_calls": {
-        "backtest": 935,
+        "backtest": 940,
         "fetch": 160,
-        "resolve": 1007,
-        "signals": 929
+        "resolve": 1012,
+        "signals": 934
       },
       "reused": {
         "backtest": 72,
@@ -60661,7 +60662,7 @@
       },
       "family_seconds": {
         "cross_asset_residual": 969.3,
-        "macro_conditional": 555.6,
+        "macro_conditional": 590.5,
         "carry": 457.7,
         "overnight_gap_decay": 108.5,
         "clock_transition": 64.3,
@@ -60674,7 +60675,7 @@
       },
       "chart_seconds": {
         "M15": 985.2,
-        "M5": 909.4,
+        "M5": 944.4,
         "H1": 229.8,
         "M30": 214.0
       },
