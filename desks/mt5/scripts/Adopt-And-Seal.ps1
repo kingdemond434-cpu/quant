@@ -115,6 +115,15 @@ if ($Pinned) {
         "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: -Pinned python is not isolated from $RepoRoot; not adopting: $probe"
         exit 2
     }
+    # (r24 r6, Audit MF1) BEFORE THE FIRST GIT CALL: the live .git must be sealed against quantrun
+    # (owner Administrators/SYSTEM, no rename, re-ACL or config write, no commondir/config.worktree),
+    # or SYSTEM git would read a config quantrun wrote. Checked again just before the seal commit.
+    . (Join-Path $GuardRoot "ops\box_git\runas\git_acl.ps1")
+    $unsealed = @(Test-GitAclSealed -RepoRoot $RepoRoot)
+    if ($unsealed.Count -gt 0) {
+        "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: the live .git is not sealed against quantrun; not adopting: $($unsealed -join '; ')"
+        exit 2
+    }
 } else {
     $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $pyArgs = @()
     if (-not (Test-Path $py)) {
@@ -766,6 +775,10 @@ if ($dirty.Count -gt 0) {
 if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Undo-Adoption "release.seal failed" 4 "seal-failed" }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
+if ($Pinned) {
+    $unsealed = @(Test-GitAclSealed -RepoRoot $RepoRoot)
+    if ($unsealed.Count -gt 0) { Log "the live .git lost its seal mid-run: $($unsealed -join '; ')"; Undo-Adoption "live .git unsealed" 5 "git-unsealed" }
+}
 git add -- "desks/mt5/data/RELEASE.json"
 if ($LASTEXITCODE -ne 0) { Log "seal stage failed (exit $LASTEXITCODE)"; Undo-Adoption "seal stage failed" 5 "seal-stage-failed" }
 

@@ -133,7 +133,7 @@ Say "door: protect.py pinned in trust\, hook reads guard\verdicts ($($hook.FullN
 
 # 4. the pinned migrator
 $pinned = @{}
-foreach ($f in @('runas_plan.py', 'runas_probe.py', 'runas\migrate.ps1')) {
+foreach ($f in @('runas_plan.py', 'runas_probe.py', 'runas\migrate.ps1', 'runas\git_acl.ps1')) {
     $from = Join-Path $src $f
     if (-not (Test-Path -LiteralPath $from)) { Stop-Here "missing $from" }
     $to = Join-Path $Runas (Split-Path -Leaf $f)
@@ -190,10 +190,28 @@ if ($leak.Count -gt 0) { Stop-Here ("the guard venv still reaches into C:\opt: "
 Set-Content -LiteralPath (Join-Path $adopt 'python.txt') -Value $pinnedPy -Encoding ascii
 Say "pinned python: $pinnedPy (base copied from $($pyInfo.base), fence armed, nothing on sys.path under C:\opt)"
 & icacls $adopt /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
-foreach ($g in @('config', 'hooks', 'info')) {
-    $gp = Join-Path $Live ".git\$g"
-    if (Test-Path -LiteralPath $gp) { & icacls $gp /deny "${RunUser}:(OI)(CI)(W,D,DC,WDAC,WO)" | Out-Null }
+# (Audit MF1 on r5) THE LIVE TREE'S .git IS SEALED AGAINST quantrun. Its Modify on C:\opt\quant
+# would otherwise let it rename .git (DELETE inherits onto the folder) and drop in one with its own
+# config, whose filters, sshCommand, helpers or includes then run inside SYSTEM git. So: .git and
+# .git\config are owned by Administrators; quantrun is denied D/WDAC/WO on .git itself (this folder
+# only), W/D/WDAC/WO on .git\config, everything but read on hooks and info, and DC on the tree
+# root. Test-GitAclSealed (the same check the pinned adopter and the RUN_AS proof run) must pass.
+$gitDir = Join-Path $Live '.git'
+& icacls $gitDir /setowner '*S-1-5-32-544' | Out-Null
+& icacls (Join-Path $gitDir 'config') /setowner '*S-1-5-32-544' | Out-Null
+& icacls $gitDir /deny "${RunUser}:(D,WDAC,WO)" | Out-Null
+& icacls (Join-Path $gitDir 'config') /deny "${RunUser}:(W,D,WDAC,WO)" | Out-Null
+foreach ($g in @('hooks', 'info')) {
+    $gp = Join-Path $gitDir $g
+    if (-not (Test-Path -LiteralPath $gp)) { $null = New-Item -ItemType Directory -Force -Path $gp }
+    & icacls $gp /setowner '*S-1-5-32-544' | Out-Null
+    & icacls $gp /deny "${RunUser}:(OI)(CI)(W,D,DC,WDAC,WO)" | Out-Null
 }
+& icacls $Live /deny "${RunUser}:(DC)" | Out-Null
+. (Join-Path $tree 'ops\box_git\runas\git_acl.ps1')
+$unsealed = Test-GitAclSealed -RepoRoot $Live -RunUser $RunUser
+if ($unsealed.Count -gt 0) { Stop-Here ("the live .git is not sealed against ${RunUser}: " + ($unsealed -join '; ')) }
+Say "live .git sealed against ${RunUser} (owner Administrators; no rename, re-ACL or config write)"
 $ar = Get-ScheduledTask -TaskName 'MT5-AdoptRelease' -ErrorAction SilentlyContinue
 if (-not $ar) { Stop-Here 'MT5-AdoptRelease not found' }
 $pinScript = Join-Path $tree 'desks\mt5\scripts\Adopt-And-Seal.ps1'

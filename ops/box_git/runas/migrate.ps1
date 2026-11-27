@@ -15,6 +15,10 @@ $Self   = $MyInvocation.MyCommand.Path
 $Here   = Split-Path -Parent $Self
 $Guard  = Split-Path -Parent $Here
 $Py     = Get-Content -LiteralPath (Join-Path $Here 'python.txt') -TotalCount 1
+# (r24 r6) SYSTEM-side python is the guard's own venv (install_guard, Audit C4), never the gateway's:
+# $Py, which quantrun may be able to write, is only ever launched AS quantrun (the probe tasks).
+$SysPy  = Get-Content -LiteralPath (Join-Path $Guard 'adopt\python.txt') -TotalCount 1
+. (Join-Path $Here 'git_acl.ps1')
 $Plan   = Join-Path $Here 'runas_plan.py'
 $Probe  = Join-Path $Here 'runas_probe.py'
 $State  = Join-Path $Here 'state.json'
@@ -73,7 +77,7 @@ function Restart-Moved([string[]] $names) {
             }
         }
     }
-    if ($markers.Count) { & $Py -I $Plan kill-old @markers | ForEach-Object { Say "kill-old: $_" } }
+    if ($markers.Count) { & $SysPy -I $Plan kill-old @markers | ForEach-Object { Say "kill-old: $_" } }
     foreach ($n in $names) { Start-ScheduledTask -TaskName $n -ErrorAction SilentlyContinue }
 }
 function Run-Probe([string] $exe, [string] $expect, [string] $out) {
@@ -127,6 +131,11 @@ function Terminal-Checks {
             $r["$d no_ea"] = ($ea.Count -eq 0)
         }
     }
+    # (r24 r6, Audit MF1) the live tree's .git is sealed against quantrun: any reason fails the proof
+    $live = Get-Content -LiteralPath (Join-Path $Here 'live_tree.txt') -TotalCount 1
+    $why = @(); try { $why = @(Test-GitAclSealed -RepoRoot $live -RunUser $RunUser) } catch { $why = @("check failed: $($_.Exception.Message)") }
+    $r['live .git sealed'] = ($why.Count -eq 0)
+    if ($why.Count) { Say ("git seal: " + ($why -join '; ')) }
     $out = Join-Path $Here 'terminal_checks.json'; Save $r $out; return $out
 }
 
@@ -142,7 +151,7 @@ if ($Rollback) {
     Read-Tasks
 }
 $st = if (Test-Path -LiteralPath $State) { Get-Content -LiteralPath $State -Raw | ConvertFrom-Json } else { @{ state = 'PROBE' } }
-$d = (& $Py -I $Plan plan $Tasks $State $Probes) | ConvertFrom-Json
+$d = (& $SysPy -I $Plan plan $Tasks $State $Probes) | ConvertFrom-Json
 switch -Regex ($d.action) {
     '^probe$' {
         # every venue must attach: the move takes the FTMO lanes too
@@ -173,7 +182,7 @@ switch -Regex ($d.action) {
     '^check$' {
         if ($st.state -in @('MOVED', 'WATCH')) {
             $hb = Join-Path (Get-Content -LiteralPath (Join-Path $Here 'live_tree.txt') -TotalCount 1) 'desks\mt5\data\gateway_state.json'
-            $wv = (& $Py -I $Plan watch $st.moved_at $hb) | Select-Object -Last 1
+            $wv = (& $SysPy -I $Plan watch $st.moved_at $hb) | Select-Object -Last 1
             if ($wv -eq 'rollback') {
                 Say 'Monday watch: gateway heartbeat stale after the move; rolling back'
                 & powershell -NoProfile -ExecutionPolicy Bypass -File $Self -Rollback
@@ -185,4 +194,4 @@ switch -Regex ($d.action) {
 }
 # proof, every cycle (Audit MF-A/MF-B): guard\runas\RUN_AS.json (quantgate may only read it)
 $w = Write-Probes; $t = Terminal-Checks
-& $Py -I $Plan proof $Tasks $w $t (Join-Path $Here 'RUN_AS.json') | Out-Null
+& $SysPy -I $Plan proof $Tasks $w $t (Join-Path $Here 'RUN_AS.json') | Out-Null

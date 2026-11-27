@@ -500,3 +500,52 @@ def test_install_guard_builds_its_own_python() -> None:
                  "PYTHONSAFEPATH", "c:\\opt\\"):
         assert need in body, need
     assert "Value $py -Encoding ascii" not in src[i:]  # the gateway's python is never the adopter's
+
+
+# ------------------------------------------------- r24 r6: Audit MF1 on r5, the live .git seal
+def test_the_live_git_is_sealed_before_any_system_git_reads_it() -> None:
+    import re
+    acl = _ps("ops/box_git/runas/git_acl.ps1")
+    for need in ("BUILTIN\\\\Administrators|NT AUTHORITY\\\\SYSTEM", "ChangePermissions",
+                 "TakeOwnership", "DeleteSubdirectoriesAndFiles", "commondir", "config.worktree",
+                 "InheritOnly", "0x50000000", "-not $r.IsInherited"):
+        assert need in acl, need
+    ins = _ps("ops/box_git/install_guard.ps1")
+    for need in ("/setowner '*S-1-5-32-544'", '/deny "${RunUser}:(D,WDAC,WO)"',
+                 '/deny "${RunUser}:(W,D,WDAC,WO)"', '& icacls $Live /deny "${RunUser}:(DC)"',
+                 "Test-GitAclSealed -RepoRoot $Live", "'runas\\git_acl.ps1'"):
+        assert need in ins, need
+    # the pinned adopter checks the seal before its first git invocation, and again before sealing
+    src = _ps("desks/mt5/scripts/Adopt-And-Seal.ps1")
+    code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    first_git = re.search(r"(?m)(^|[\s(|;{])git (-C|rev-parse|diff|add|status|symbolic-ref)", code)
+    assert first_git and code.index("Test-GitAclSealed -RepoRoot $RepoRoot") < first_git.start()
+    assert code.count("Test-GitAclSealed -RepoRoot $RepoRoot") == 2
+    assert code.index("Test-GitAclSealed") < code.index('git add -- "desks/mt5/data/RELEASE.json"')
+    # and the RUN_AS proof carries it, measured by SYSTEM with the guard's own python
+    mig = _ps("ops/box_git/runas/migrate.ps1")
+    assert "$r['live .git sealed'] = ($why.Count -eq 0)" in mig
+    sys_calls = re.findall(r"& \$(\w+) -I \$Plan", mig)
+    assert sys_calls and set(sys_calls) == {"SysPy"}
+    assert re.findall(r"-Execute \$(\w+)", mig) == ["Py", "Py"]  # only quantrun's probe tasks
+
+
+def test_the_fence_refuses_unpickling(tmp_path) -> None:
+    import os
+    import shutil
+    import subprocess
+    import sys
+    site = tmp_path / "site"
+    site.mkdir()
+    shutil.copy(_REPO / "ops/box_git/pinned_sitecustomize.py", site / "sitecustomize.py")
+    probe = ("import pickle, collections\n"
+             "b = pickle.dumps(collections.OrderedDict(a=1))\n"
+             "try:\n    pickle.loads(b)\nexcept RuntimeError as e:\n"
+             "    print('REFUSED', 'pinned fence' in str(e))\n"
+             "print('PLAIN', pickle.loads(pickle.dumps({'a': [1, 2]})))\n")
+    env = {**os.environ, "PYTHONPATH": str(site), "QUANT_ADOPT_PINNED": "1",
+           "QUANT_LEDGER_ROOT": str(tmp_path / "live")}
+    out = subprocess.run([sys.executable, "-c", probe], env=env, capture_output=True, text=True,
+                         timeout=60, check=False)
+    assert out.returncode == 0, out.stderr
+    assert "REFUSED True" in out.stdout

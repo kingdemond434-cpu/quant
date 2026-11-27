@@ -5,6 +5,7 @@ Inert unless QUANT_ADOPT_PINNED=1. Then, for the life of the interpreter:
 
 * any import whose source lies under QUANT_LEDGER_ROOT (the live tree quantrun can write)
   raises ImportError -- the tree is data to the adopter, never code;
+* any unpickling of a global (pickle, joblib, numpy allow_pickle) raises RuntimeError;
 * any subprocess or os.system/exec whose executable or a file argument lies under that root and
   is a script or binary (.py .pyw .ps1 .psm1 .bat .cmd .exe .dll .vbs .js) raises RuntimeError.
 
@@ -76,6 +77,10 @@ def _arm(root_env: str) -> None:
         return [args]
 
     def _hook(event: str, args: tuple[Any, ...]) -> None:
+        if event == "pickle.find_class":
+            # tree files are data read as JSON or text: nothing is ever unpickled (incl. joblib,
+            # numpy allow_pickle), because a pickle is code
+            raise RuntimeError(f"pinned fence: refused to unpickle {args[0]}.{args[1]}")
         if event == "subprocess.Popen":
             cand = [args[0], *_args(args[1])]
         elif event in ("os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.startfile"):
