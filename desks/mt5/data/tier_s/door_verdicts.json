@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-27T11:37:50.062682+00:00",
+ "generated_utc": "2026-11-27T12:40:00.100699+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -127,9 +127,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -138,9 +138,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -149,9 +149,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -182,9 +182,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -193,9 +193,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -204,9 +204,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -215,9 +215,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19809,9 +19809,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19820,9 +19820,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19831,9 +19831,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19842,9 +19842,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19853,9 +19853,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19908,9 +19908,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -19919,9 +19919,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -25492,9 +25492,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -25503,9 +25503,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -42201,9 +42201,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -42212,9 +42212,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -54323,9 +54323,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -86426,9 +86426,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -86583,9 +86583,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -102675,9 +102675,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -111736,9 +111736,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -111747,9 +111747,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -114753,9 +114753,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -131602,9 +131602,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146353,9 +146353,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146364,9 +146364,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146375,9 +146375,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146386,9 +146386,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146397,9 +146397,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146408,9 +146408,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146419,9 +146419,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
@@ -146430,9 +146430,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 17,
-    "confidence": 0.8205,
-    "sd": 0.0607,
+    "n_oos": 21,
+    "confidence": 0.7111,
+    "sd": 0.0668,
     "status": "SUPPORTED"
    }
   },
