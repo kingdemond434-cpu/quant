@@ -1,6 +1,6 @@
 {
   "schema": "box_state_flow/1",
-  "measured_at": "2026-11-26T20:57:30+00:00",
+  "measured_at": "2026-11-27T07:36:47+00:00",
   "stall_h": 3.0,
   "flow_rel": "desks/mt5/reports/BOX_STATE_FLOW.json",
   "published_paths": 81,
@@ -9,19 +9,19 @@
   "publisher_identity": "quant-box",
   "last_published_commit": "a301e334c2",
   "last_published_at": "2026-11-19T05:08:15+00:00",
-  "newest_local_state_at": "2026-11-26T20:57:27+00:00",
+  "newest_local_state_at": "2026-11-27T07:36:47+00:00",
   "local_commits_not_on_origin": 1652,
   "hooks_path": "C:\\opt\\quant\\ops\\githooks",
   "sync_log": {
     "readable": true,
     "last_success_line": null,
-    "last_refusal_line": "2026-11-26T21:57:30.6409033+01:00 ABORT: BLOCKED_AUTH -- box state did not reach origin/claude/llm-auto-upgrade-verify-gcjac3 (no usable git credential)",
-    "last_line": "2026-11-26T21:57:30.6409033+01:00 ABORT: BLOCKED_AUTH -- box state did not reach origin/claude/llm-auto-upgrade-verify-gcjac3 (no usable git credential)"
+    "last_refusal_line": "2026-11-27T08:36:46.8606510+01:00 SKIP: MT5-AdoptRelease is adopting; this pass yields (next slot in 15 min)",
+    "last_line": "2026-11-27T08:36:46.8606510+01:00 SKIP: MT5-AdoptRelease is adopting; this pass yields (next slot in 15 min)"
   },
-  "published_age_h": 183.82,
-  "local_state_age_h": 0.0,
+  "published_age_h": 194.48,
+  "local_state_age_h": -0.0,
   "verdict": "STALLED",
-  "why": "local state is 0.0h old but origin's newest box-published state is 183.8h old -- delivery is broken, the desk is not idle",
+  "why": "local state is -0.0h old but origin's newest box-published state is 194.5h old -- delivery is broken, the desk is not idle",
   "page": {
     "sent": true,
     "reason": "verdict changed",
