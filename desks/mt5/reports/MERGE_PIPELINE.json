@@ -1,294 +1,306 @@
 {
-  "at": "2026-11-27T22:30:08+00:00",
+  "at": "2026-11-27T23:01:57+00:00",
   "status": "RED",
   "red": [
-    "CI_QUEUED #1369: a check queued 12575 min on 4fa7a7156",
-    "CLEAR_WAITING #1369: CLEARed 209.6 h ago, still open",
-    "CI_QUEUED #1368: a check queued 12593 min on b41ca6bff",
-    "CLEAR_WAITING #1368: CLEARed 209.9 h ago, still open",
-    "CLEAR_WAITING #1367: CLEARed 220.3 h ago, still open",
-    "CLEAR_WAITING #1366: CLEARed 220.6 h ago, still open",
-    "CLEAR_WAITING #1364: CLEARed 223.0 h ago, still open",
-    "CI_QUEUED #1363: a check queued 12896 min on a1824911c",
-    "CLEAR_WAITING #1363: CLEARed 223.4 h ago, still open",
-    "CLEAR_WAITING #1362: CLEARed 216.3 h ago, still open",
-    "CLEAR_WAITING #1361: CLEARed 216.0 h ago, still open",
-    "CI_QUEUED #1360: a check queued 12559 min on 36f3b291c",
-    "CLEAR_WAITING #1359: CLEARed 216.0 h ago, still open",
-    "CLEAR_WAITING #1356: CLEARed 228.7 h ago, still open",
-    "CLEAR_WAITING #1355: CLEARed 229.1 h ago, still open",
-    "CLEAR_WAITING #1354: CLEARed 229.1 h ago, still open",
-    "CLEAR_WAITING #1353: CLEARed 229.1 h ago, still open",
-    "CLEAR_WAITING #1352: CLEARed 218.4 h ago, still open",
-    "CLEAR_WAITING #1350: CLEARed 230.3 h ago, still open",
-    "CLEAR_WAITING #1348: CLEARed 228.7 h ago, still open",
-    "CLEAR_WAITING #1347: CLEARed 231.1 h ago, still open",
-    "CLEAR_WAITING #1345: CLEARed 231.6 h ago, still open",
-    "CLEAR_WAITING #1344: CLEARed 231.7 h ago, still open",
-    "CLEAR_WAITING #1342: CLEARed 232.4 h ago, still open",
-    "CLEAR_WAITING #1341: CLEARed 232.2 h ago, still open",
-    "CLEAR_WAITING #1340: CLEARed 227.3 h ago, still open",
-    "CLEAR_WAITING #1339: CLEARed 232.8 h ago, still open",
-    "CLEAR_WAITING #1338: CLEARed 233.0 h ago, still open",
-    "CLEAR_WAITING #1336: CLEARed 223.1 h ago, still open",
-    "CLEAR_WAITING #1335: CLEARed 233.2 h ago, still open",
-    "CLEAR_WAITING #1334: CLEARed 233.0 h ago, still open",
-    "CLEAR_WAITING #1333: CLEARed 233.5 h ago, still open",
-    "CLEAR_WAITING #1332: CLEARed 223.2 h ago, still open",
-    "CLEAR_WAITING #1331: CLEARed 223.2 h ago, still open",
-    "CLEAR_WAITING #1329: CLEARed 224.6 h ago, still open",
-    "CLEAR_WAITING #1328: CLEARed 234.1 h ago, still open",
-    "CLEAR_WAITING #1327: CLEARed 234.4 h ago, still open",
-    "CLEAR_WAITING #1326: CLEARed 234.6 h ago, still open",
-    "CLEAR_WAITING #1323: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1322: CLEARed 235.0 h ago, still open",
-    "CLEAR_WAITING #1321: CLEARed 234.0 h ago, still open",
-    "CLEAR_WAITING #1320: CLEARed 227.1 h ago, still open",
-    "CLEAR_WAITING #1318: CLEARed 235.6 h ago, still open",
-    "CLEAR_WAITING #1317: CLEARed 235.1 h ago, still open",
-    "CLEAR_WAITING #1316: CLEARed 235.8 h ago, still open",
-    "CLEAR_WAITING #1315: CLEARed 219.4 h ago, still open",
-    "CLEAR_WAITING #1314: CLEARed 235.7 h ago, still open",
-    "CLEAR_WAITING #1313: CLEARed 235.4 h ago, still open",
-    "CLEAR_WAITING #1311: CLEARed 228.9 h ago, still open",
-    "CLEAR_WAITING #1309: CLEARed 234.3 h ago, still open",
-    "CLEAR_WAITING #1308: CLEARed 235.7 h ago, still open",
-    "CLEAR_WAITING #1307: CLEARed 235.7 h ago, still open",
-    "CLEAR_WAITING #1306: CLEARed 234.3 h ago, still open",
-    "CLEAR_WAITING #1305: CLEARed 236.0 h ago, still open",
-    "CLEAR_WAITING #1304: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1303: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1302: CLEARed 223.7 h ago, still open",
-    "CLEAR_WAITING #1301: CLEARed 236.6 h ago, still open",
-    "CLEAR_WAITING #1300: CLEARed 234.6 h ago, still open",
-    "CLEAR_WAITING #1298: CLEARed 223.0 h ago, still open",
-    "CLEAR_WAITING #1297: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1296: CLEARed 234.3 h ago, still open",
-    "CLEAR_WAITING #1295: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1294: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1293: CLEARed 237.1 h ago, still open",
-    "CLEAR_WAITING #1292: CLEARed 234.3 h ago, still open",
-    "CLEAR_WAITING #1291: CLEARed 234.5 h ago, still open",
-    "CLEAR_WAITING #1290: CLEARed 237.7 h ago, still open",
-    "CLEAR_WAITING #1289: CLEARed 221.2 h ago, still open",
-    "CLEAR_WAITING #1288: CLEARed 218.7 h ago, still open",
-    "CLEAR_WAITING #1287: CLEARed 237.0 h ago, still open",
-    "CLEAR_WAITING #1286: CLEARed 218.7 h ago, still open",
-    "CLEAR_WAITING #1284: CLEARed 218.0 h ago, still open",
-    "CLEAR_WAITING #1283: CLEARed 238.0 h ago, still open",
-    "CLEAR_WAITING #1282: CLEARed 236.7 h ago, still open",
-    "CLEAR_WAITING #1281: CLEARed 237.6 h ago, still open",
-    "CLEAR_WAITING #1279: CLEARed 225.1 h ago, still open",
-    "CLEAR_WAITING #1278: CLEARed 228.9 h ago, still open",
-    "CLEAR_WAITING #1276: CLEARed 237.5 h ago, still open",
-    "CLEAR_WAITING #1275: CLEARed 237.6 h ago, still open",
-    "CLEAR_WAITING #1274: CLEARed 237.7 h ago, still open",
-    "CLEAR_WAITING #1273: CLEARed 238.7 h ago, still open",
-    "CLEAR_WAITING #1267: CLEARed 239.7 h ago, still open",
-    "CLEAR_WAITING #1265: CLEARed 240.4 h ago, still open",
-    "CLEAR_WAITING #1258: CLEARed 224.8 h ago, still open",
-    "CLEAR_WAITING #1252: CLEARed 242.4 h ago, still open",
-    "CLEAR_WAITING #1250: CLEARed 226.9 h ago, still open",
-    "CI_QUEUED #1249: a check queued 12562 min on 137a1d36d",
-    "CLEAR_WAITING #1249: CLEARed 209.3 h ago, still open",
-    "CLEAR_WAITING #1247: CLEARed 243.6 h ago, still open",
-    "CLEAR_WAITING #1246: CLEARed 243.7 h ago, still open",
-    "CLEAR_WAITING #1245: CLEARed 242.0 h ago, still open",
-    "CI_QUEUED #1241: a check queued 12897 min on a6da1b9ef",
-    "CLEAR_WAITING #1241: CLEARed 224.2 h ago, still open",
-    "CLEAR_WAITING #1240: CLEARed 237.0 h ago, still open",
-    "CI_QUEUED #1236: a check queued 12731 min on c0f8c3628",
-    "CLEAR_WAITING #1236: CLEARed 212.1 h ago, still open",
-    "CLEAR_WAITING #1234: CLEARed 219.5 h ago, still open",
-    "CLEAR_WAITING #1231: CLEARed 243.4 h ago, still open",
-    "CLEAR_WAITING #1222: CLEARed 317.3 h ago, still open",
-    "CLEAR_WAITING #1221: CLEARed 319.3 h ago, still open",
-    "CLEAR_WAITING #1219: CLEARed 318.4 h ago, still open",
-    "CLEAR_WAITING #1212: CLEARed 247.3 h ago, still open",
-    "CI_QUEUED #1211: a check queued 12852 min on 2f27aaa47",
-    "CLEAR_WAITING #1204: CLEARed 319.6 h ago, still open",
-    "CLEAR_WAITING #1202: CLEARed 319.6 h ago, still open",
-    "CLEAR_WAITING #1199: CLEARed 327.6 h ago, still open",
-    "CLEAR_WAITING #1197: CLEARed 319.6 h ago, still open",
-    "CLEAR_WAITING #1187: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #1185: CLEARed 330.0 h ago, still open",
-    "CLEAR_WAITING #1182: CLEARed 316.6 h ago, still open",
-    "CLEAR_WAITING #1181: CLEARed 332.2 h ago, still open",
-    "CLEAR_WAITING #1179: CLEARed 332.0 h ago, still open",
-    "CLEAR_WAITING #1178: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #1176: CLEARed 332.0 h ago, still open",
-    "CLEAR_WAITING #1175: CLEARed 236.9 h ago, still open",
-    "CLEAR_WAITING #1173: CLEARed 316.6 h ago, still open",
-    "CLEAR_WAITING #1171: CLEARed 332.8 h ago, still open",
-    "CLEAR_WAITING #1169: CLEARed 238.2 h ago, still open",
-    "CLEAR_WAITING #1168: CLEARed 330.3 h ago, still open",
-    "CLEAR_WAITING #1167: CLEARed 333.2 h ago, still open",
-    "CLEAR_WAITING #1165: CLEARed 238.3 h ago, still open",
-    "CLEAR_WAITING #1164: CLEARed 333.0 h ago, still open",
-    "CLEAR_WAITING #1163: CLEARed 333.0 h ago, still open",
-    "CLEAR_WAITING #1151: CLEARed 334.5 h ago, still open",
-    "CLEAR_WAITING #1149: CLEARed 334.7 h ago, still open",
-    "CLEAR_WAITING #1147: CLEARed 234.3 h ago, still open",
-    "CLEAR_WAITING #1146: CLEARed 334.6 h ago, still open",
-    "CLEAR_WAITING #1143: CLEARed 335.3 h ago, still open",
-    "CLEAR_WAITING #1142: CLEARed 225.0 h ago, still open",
-    "CLEAR_WAITING #1140: CLEARed 335.5 h ago, still open",
-    "CLEAR_WAITING #1137: CLEARed 335.5 h ago, still open",
-    "CLEAR_WAITING #1136: CLEARed 335.4 h ago, still open",
-    "CLEAR_WAITING #1135: CLEARed 335.7 h ago, still open",
-    "CLEAR_WAITING #1134: CLEARed 335.5 h ago, still open",
-    "CLEAR_WAITING #1128: CLEARed 333.5 h ago, still open",
-    "CLEAR_WAITING #1127: CLEARed 333.5 h ago, still open",
-    "CLEAR_WAITING #1126: CLEARed 332.5 h ago, still open",
-    "CLEAR_WAITING #1125: CLEARed 233.4 h ago, still open",
-    "CLEAR_WAITING #1124: CLEARed 332.5 h ago, still open",
-    "CLEAR_WAITING #1123: CLEARed 332.1 h ago, still open",
-    "CLEAR_WAITING #1122: CLEARed 332.3 h ago, still open",
-    "CLEAR_WAITING #1121: CLEARed 333.6 h ago, still open",
-    "CLEAR_WAITING #1119: CLEARed 338.0 h ago, still open",
-    "CLEAR_WAITING #1118: CLEARed 338.7 h ago, still open",
-    "CLEAR_WAITING #1116: CLEARed 236.6 h ago, still open",
-    "CLEAR_WAITING #1115: CLEARed 332.2 h ago, still open",
-    "CLEAR_WAITING #1114: CLEARed 335.1 h ago, still open",
-    "CLEAR_WAITING #1112: CLEARed 327.5 h ago, still open",
-    "CLEAR_WAITING #1111: CLEARed 334.6 h ago, still open",
-    "CLEAR_WAITING #1108: CLEARed 223.7 h ago, still open",
-    "CLEAR_WAITING #1099: CLEARed 342.3 h ago, still open",
-    "CLEAR_WAITING #1097: CLEARed 332.2 h ago, still open",
-    "CLEAR_WAITING #1094: CLEARed 344.1 h ago, still open",
-    "CLEAR_WAITING #1092: CLEARed 330.8 h ago, still open",
-    "CLEAR_WAITING #1085: CLEARed 238.4 h ago, still open",
-    "CLEAR_WAITING #1083: CLEARed 337.6 h ago, still open",
-    "CLEAR_WAITING #1079: CLEARed 324.7 h ago, still open",
-    "CLEAR_WAITING #1077: CLEARed 334.7 h ago, still open",
-    "CLEAR_WAITING #1076: CLEARed 324.7 h ago, still open",
-    "CLEAR_WAITING #1075: CLEARed 234.0 h ago, still open",
-    "CLEAR_WAITING #1073: CLEARed 333.6 h ago, still open",
-    "CLEAR_WAITING #1071: CLEARed 330.6 h ago, still open",
-    "CLEAR_WAITING #1070: CLEARed 233.7 h ago, still open",
-    "CLEAR_WAITING #1068: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #1067: CLEARed 226.8 h ago, still open",
-    "CLEAR_WAITING #1060: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #1048: CLEARed 224.3 h ago, still open",
-    "CLEAR_WAITING #1042: CLEARed 329.4 h ago, still open",
-    "GREEN_WAITING #1042: mergeable and green 323.2 h, still open",
-    "CLEAR_WAITING #1038: CLEARed 238.0 h ago, still open",
-    "CLEAR_WAITING #1037: CLEARed 226.8 h ago, still open",
-    "CLEAR_WAITING #1031: CLEARed 333.6 h ago, still open",
-    "CLEAR_WAITING #1030: CLEARed 333.6 h ago, still open",
-    "CLEAR_WAITING #1028: CLEARed 333.7 h ago, still open",
-    "CLEAR_WAITING #1027: CLEARed 339.1 h ago, still open",
-    "CLEAR_WAITING #1025: CLEARed 236.6 h ago, still open",
-    "CLEAR_WAITING #1022: CLEARed 236.6 h ago, still open",
-    "CLEAR_WAITING #1020: CLEARed 335.2 h ago, still open",
-    "CLEAR_WAITING #1019: CLEARed 215.2 h ago, still open",
-    "CLEAR_WAITING #1017: CLEARed 247.2 h ago, still open",
-    "CLEAR_WAITING #1010: CLEARed 345.7 h ago, still open",
-    "CLEAR_WAITING #1004: CLEARed 335.2 h ago, still open",
-    "CLEAR_WAITING #1000: CLEARed 227.8 h ago, still open",
-    "CLEAR_WAITING #998: CLEARed 247.3 h ago, still open",
-    "CLEAR_WAITING #996: CLEARed 321.1 h ago, still open",
-    "CLEAR_WAITING #971: CLEARed 233.3 h ago, still open",
-    "CLEAR_WAITING #945: CLEARed 236.9 h ago, still open",
-    "CLEAR_WAITING #942: CLEARed 346.0 h ago, still open",
-    "CLEAR_WAITING #941: CLEARed 229.7 h ago, still open",
-    "CLEAR_WAITING #932: CLEARed 232.0 h ago, still open",
-    "CLEAR_WAITING #925: CLEARed 237.5 h ago, still open",
-    "CLEAR_WAITING #921: CLEARed 236.9 h ago, still open",
-    "CLEAR_WAITING #917: CLEARed 247.3 h ago, still open",
-    "CLEAR_WAITING #915: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #913: CLEARed 345.3 h ago, still open",
-    "CLEAR_WAITING #909: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #907: CLEARed 238.2 h ago, still open",
-    "CLEAR_WAITING #892: CLEARed 220.9 h ago, still open",
-    "CLEAR_WAITING #885: CLEARed 333.4 h ago, still open",
-    "CI_QUEUED #884: a check queued 12685 min on 9d41a1d4f",
-    "CLEAR_WAITING #884: CLEARed 213.9 h ago, still open",
-    "CLEAR_WAITING #880: CLEARed 318.7 h ago, still open",
-    "CLEAR_WAITING #879: CLEARed 244.8 h ago, still open",
-    "CLEAR_WAITING #871: CLEARed 334.3 h ago, still open",
-    "CLEAR_WAITING #854: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #853: CLEARed 335.1 h ago, still open",
-    "CLEAR_WAITING #852: CLEARed 233.8 h ago, still open",
-    "CI_QUEUED #846: a check queued 12615 min on 9fda4d722",
-    "CLEAR_WAITING #846: CLEARed 210.1 h ago, still open",
-    "CLEAR_WAITING #845: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #842: CLEARed 223.7 h ago, still open",
-    "CLEAR_WAITING #840: CLEARed 328.9 h ago, still open",
-    "CLEAR_WAITING #828: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #822: CLEARed 246.6 h ago, still open",
-    "GREEN_WAITING #822: mergeable and green 244.7 h, still open",
-    "CLEAR_WAITING #821: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #817: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #805: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #803: CLEARed 330.8 h ago, still open",
-    "CLEAR_WAITING #801: CLEARed 407.4 h ago, still open",
-    "CLEAR_WAITING #797: CLEARed 406.9 h ago, still open",
-    "CLEAR_WAITING #774: CLEARed 345.7 h ago, still open",
-    "CLEAR_WAITING #772: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #737: CLEARed 406.5 h ago, still open",
-    "CLEAR_WAITING #736: CLEARed 337.8 h ago, still open",
-    "CLEAR_WAITING #728: CLEARed 238.2 h ago, still open",
-    "CLEAR_WAITING #723: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #722: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #721: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #719: CLEARed 336.1 h ago, still open",
-    "CLEAR_WAITING #717: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #715: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #714: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #713: CLEARed 318.3 h ago, still open",
-    "CLEAR_WAITING #712: CLEARed 345.7 h ago, still open",
-    "CLEAR_WAITING #711: CLEARed 336.9 h ago, still open",
-    "CLEAR_WAITING #687: CLEARed 337.5 h ago, still open",
-    "CLEAR_WAITING #677: CLEARed 336.5 h ago, still open",
-    "CLEAR_WAITING #675: CLEARed 325.7 h ago, still open",
-    "CI_QUEUED #670: a check queued 12912 min on ee1dac408",
-    "CLEAR_WAITING #670: CLEARed 219.2 h ago, still open",
-    "CLEAR_WAITING #667: CLEARed 318.3 h ago, still open",
-    "CLEAR_WAITING #662: CLEARed 317.3 h ago, still open",
-    "CLEAR_WAITING #646: CLEARed 328.2 h ago, still open",
-    "CLEAR_WAITING #644: CLEARed 334.9 h ago, still open",
-    "CLEAR_WAITING #639: CLEARed 329.0 h ago, still open",
-    "CLEAR_WAITING #636: CLEARed 335.2 h ago, still open",
-    "CLEAR_WAITING #625: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #621: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #619: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #618: CLEARed 318.3 h ago, still open",
-    "CLEAR_WAITING #611: CLEARed 335.1 h ago, still open",
-    "CLEAR_WAITING #609: CLEARed 345.7 h ago, still open",
-    "CLEAR_WAITING #604: CLEARed 318.4 h ago, still open",
-    "CLEAR_WAITING #590: CLEARed 236.6 h ago, still open",
-    "CLEAR_WAITING #582: CLEARed 241.3 h ago, still open",
-    "CLEAR_WAITING #520: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #518: CLEARed 330.7 h ago, still open",
-    "CLEAR_WAITING #507: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #501: CLEARed 345.5 h ago, still open",
-    "CLEAR_WAITING #486: CLEARed 233.8 h ago, still open",
-    "CLEAR_WAITING #473: CLEARed 413.9 h ago, still open",
-    "CLEAR_WAITING #397: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #396: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #388: CLEARed 345.5 h ago, still open",
-    "CLEAR_WAITING #385: CLEARed 345.5 h ago, still open",
-    "CLEAR_WAITING #362: CLEARed 337.6 h ago, still open",
-    "CLEAR_WAITING #351: CLEARed 325.7 h ago, still open",
-    "CLEAR_WAITING #332: CLEARed 242.1 h ago, still open",
-    "CLEAR_WAITING #285: CLEARed 210.1 h ago, still open",
-    "CLEAR_WAITING #273: CLEARed 324.7 h ago, still open",
-    "CLEAR_WAITING #270: CLEARed 327.0 h ago, still open",
-    "CLEAR_WAITING #263: CLEARed 328.6 h ago, still open",
-    "CLEAR_WAITING #260: CLEARed 335.1 h ago, still open",
-    "CLEAR_WAITING #249: CLEARed 213.9 h ago, still open",
-    "CLEAR_WAITING #246: CLEARed 329.1 h ago, still open",
-    "CLEAR_WAITING #233: CLEARed 332.2 h ago, still open",
-    "CLEAR_WAITING #232: CLEARed 329.1 h ago, still open",
-    "CLEAR_WAITING #204: CLEARed 329.0 h ago, still open",
-    "CLEAR_WAITING #192: CLEARed 236.9 h ago, still open",
-    "CLEAR_WAITING #159: CLEARed 345.6 h ago, still open",
-    "CLEAR_WAITING #139: CLEARed 325.7 h ago, still open",
-    "REVIEWER_FP: 191 of 202 reviewer FAILs carry an Auditor CLEAR (#1367, #1364, #1363, #1362, #1361, #1359, #1356, #1355)",
-    "NO_MERGE_24H: no PR merged into LIVE for 209.6 h while 65 open PR(s) are green on the gating jobs (#1298, #1241, #1199, #1185, #1181, #1179, #1176, #1171)",
-    "SIGN_TRAIN_FAILING: 2481 runs in a row failed",
-    "WATCH_PARTIAL: 18 ready, CLEARed or queued PR(s) unread inside the budget (#133, #139, #159, #166, #192, #204, #232, #233)"
+    "CI_QUEUED #1369: a check queued 12607 min on 4fa7a7156",
+    "CLEAR_WAITING #1369: CLEARed 210.1 h ago, still open",
+    "CI_QUEUED #1368: a check queued 12625 min on b41ca6bff",
+    "CLEAR_WAITING #1368: CLEARed 210.4 h ago, still open",
+    "CLEAR_WAITING #1367: CLEARed 220.8 h ago, still open",
+    "CLEAR_WAITING #1366: CLEARed 221.2 h ago, still open",
+    "CI_QUEUED #1365: a check queued 12897 min on 5e3dc7a87",
+    "CLEAR_WAITING #1364: CLEARed 223.6 h ago, still open",
+    "CI_QUEUED #1363: a check queued 12928 min on a1824911c",
+    "CLEAR_WAITING #1363: CLEARed 224.0 h ago, still open",
+    "CLEAR_WAITING #1362: CLEARed 216.8 h ago, still open",
+    "CLEAR_WAITING #1361: CLEARed 216.5 h ago, still open",
+    "CI_QUEUED #1360: a check queued 12591 min on 36f3b291c",
+    "CLEAR_WAITING #1359: CLEARed 216.5 h ago, still open",
+    "CI_QUEUED #1358: a check queued 12640 min on e41e80e29",
+    "CLEAR_WAITING #1356: CLEARed 229.3 h ago, still open",
+    "CLEAR_WAITING #1355: CLEARed 229.6 h ago, still open",
+    "CLEAR_WAITING #1354: CLEARed 229.6 h ago, still open",
+    "CLEAR_WAITING #1353: CLEARed 229.6 h ago, still open",
+    "CLEAR_WAITING #1352: CLEARed 218.9 h ago, still open",
+    "CLEAR_WAITING #1350: CLEARed 230.8 h ago, still open",
+    "CLEAR_WAITING #1348: CLEARed 229.2 h ago, still open",
+    "CLEAR_WAITING #1347: CLEARed 231.6 h ago, still open",
+    "CLEAR_WAITING #1345: CLEARed 232.1 h ago, still open",
+    "CLEAR_WAITING #1344: CLEARed 232.2 h ago, still open",
+    "CLEAR_WAITING #1342: CLEARed 232.9 h ago, still open",
+    "CLEAR_WAITING #1341: CLEARed 232.8 h ago, still open",
+    "CLEAR_WAITING #1340: CLEARed 227.8 h ago, still open",
+    "CLEAR_WAITING #1339: CLEARed 233.3 h ago, still open",
+    "CLEAR_WAITING #1338: CLEARed 233.6 h ago, still open",
+    "CLEAR_WAITING #1336: CLEARed 223.6 h ago, still open",
+    "CLEAR_WAITING #1335: CLEARed 233.8 h ago, still open",
+    "CLEAR_WAITING #1334: CLEARed 233.6 h ago, still open",
+    "CLEAR_WAITING #1333: CLEARed 234.0 h ago, still open",
+    "CLEAR_WAITING #1332: CLEARed 223.7 h ago, still open",
+    "CLEAR_WAITING #1331: CLEARed 223.8 h ago, still open",
+    "CLEAR_WAITING #1329: CLEARed 225.1 h ago, still open",
+    "CLEAR_WAITING #1328: CLEARed 234.6 h ago, still open",
+    "CLEAR_WAITING #1327: CLEARed 234.9 h ago, still open",
+    "CLEAR_WAITING #1326: CLEARed 235.1 h ago, still open",
+    "CLEAR_WAITING #1323: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1322: CLEARed 235.5 h ago, still open",
+    "CLEAR_WAITING #1321: CLEARed 234.6 h ago, still open",
+    "CLEAR_WAITING #1320: CLEARed 227.7 h ago, still open",
+    "CLEAR_WAITING #1318: CLEARed 236.1 h ago, still open",
+    "CLEAR_WAITING #1317: CLEARed 235.7 h ago, still open",
+    "CLEAR_WAITING #1316: CLEARed 236.3 h ago, still open",
+    "CLEAR_WAITING #1315: CLEARed 220.0 h ago, still open",
+    "CLEAR_WAITING #1314: CLEARed 236.2 h ago, still open",
+    "CLEAR_WAITING #1313: CLEARed 236.0 h ago, still open",
+    "CLEAR_WAITING #1311: CLEARed 229.4 h ago, still open",
+    "CLEAR_WAITING #1309: CLEARed 234.9 h ago, still open",
+    "CLEAR_WAITING #1308: CLEARed 236.2 h ago, still open",
+    "CLEAR_WAITING #1307: CLEARed 236.2 h ago, still open",
+    "CLEAR_WAITING #1306: CLEARed 234.9 h ago, still open",
+    "CLEAR_WAITING #1305: CLEARed 236.5 h ago, still open",
+    "CLEAR_WAITING #1304: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1303: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1302: CLEARed 224.2 h ago, still open",
+    "CLEAR_WAITING #1301: CLEARed 237.2 h ago, still open",
+    "CLEAR_WAITING #1300: CLEARed 235.1 h ago, still open",
+    "CLEAR_WAITING #1298: CLEARed 223.6 h ago, still open",
+    "CLEAR_WAITING #1297: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1296: CLEARed 234.9 h ago, still open",
+    "CLEAR_WAITING #1295: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1294: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1293: CLEARed 237.6 h ago, still open",
+    "CLEAR_WAITING #1292: CLEARed 234.9 h ago, still open",
+    "CLEAR_WAITING #1291: CLEARed 235.0 h ago, still open",
+    "CLEAR_WAITING #1290: CLEARed 238.2 h ago, still open",
+    "CLEAR_WAITING #1289: CLEARed 221.8 h ago, still open",
+    "CLEAR_WAITING #1288: CLEARed 219.2 h ago, still open",
+    "CLEAR_WAITING #1287: CLEARed 237.5 h ago, still open",
+    "CLEAR_WAITING #1286: CLEARed 219.2 h ago, still open",
+    "CLEAR_WAITING #1284: CLEARed 218.6 h ago, still open",
+    "CLEAR_WAITING #1283: CLEARed 238.5 h ago, still open",
+    "CLEAR_WAITING #1282: CLEARed 237.2 h ago, still open",
+    "CLEAR_WAITING #1281: CLEARed 238.1 h ago, still open",
+    "CLEAR_WAITING #1279: CLEARed 225.6 h ago, still open",
+    "CLEAR_WAITING #1278: CLEARed 229.5 h ago, still open",
+    "CLEAR_WAITING #1276: CLEARed 238.0 h ago, still open",
+    "CLEAR_WAITING #1275: CLEARed 238.1 h ago, still open",
+    "CLEAR_WAITING #1274: CLEARed 238.2 h ago, still open",
+    "CLEAR_WAITING #1273: CLEARed 239.3 h ago, still open",
+    "CLEAR_WAITING #1267: CLEARed 240.2 h ago, still open",
+    "CLEAR_WAITING #1265: CLEARed 240.9 h ago, still open",
+    "CI_QUEUED #1259: a check queued 12646 min on 4c104df52",
+    "CLEAR_WAITING #1258: CLEARed 225.3 h ago, still open",
+    "CLEAR_WAITING #1252: CLEARed 242.9 h ago, still open",
+    "CLEAR_WAITING #1250: CLEARed 227.4 h ago, still open",
+    "CI_QUEUED #1249: a check queued 12593 min on 137a1d36d",
+    "CLEAR_WAITING #1249: CLEARed 209.9 h ago, still open",
+    "CLEAR_WAITING #1247: CLEARed 244.2 h ago, still open",
+    "CLEAR_WAITING #1246: CLEARed 244.2 h ago, still open",
+    "CLEAR_WAITING #1245: CLEARed 242.5 h ago, still open",
+    "CI_QUEUED #1241: a check queued 12929 min on a6da1b9ef",
+    "CLEAR_WAITING #1241: CLEARed 224.7 h ago, still open",
+    "CLEAR_WAITING #1240: CLEARed 237.5 h ago, still open",
+    "CI_QUEUED #1236: a check queued 12762 min on c0f8c3628",
+    "CLEAR_WAITING #1236: CLEARed 212.6 h ago, still open",
+    "CLEAR_WAITING #1234: CLEARed 220.0 h ago, still open",
+    "CLEAR_WAITING #1231: CLEARed 243.9 h ago, still open",
+    "CLEAR_WAITING #1222: CLEARed 317.8 h ago, still open",
+    "CLEAR_WAITING #1221: CLEARed 319.8 h ago, still open",
+    "CLEAR_WAITING #1219: CLEARed 319.0 h ago, still open",
+    "CLEAR_WAITING #1212: CLEARed 247.8 h ago, still open",
+    "CI_QUEUED #1211: a check queued 12884 min on 2f27aaa47",
+    "CLEAR_WAITING #1204: CLEARed 320.1 h ago, still open",
+    "CLEAR_WAITING #1202: CLEARed 320.1 h ago, still open",
+    "CLEAR_WAITING #1199: CLEARed 328.1 h ago, still open",
+    "CLEAR_WAITING #1197: CLEARed 320.1 h ago, still open",
+    "CLEAR_WAITING #1187: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #1185: CLEARed 330.5 h ago, still open",
+    "CLEAR_WAITING #1182: CLEARed 317.1 h ago, still open",
+    "CLEAR_WAITING #1181: CLEARed 332.7 h ago, still open",
+    "CLEAR_WAITING #1179: CLEARed 332.5 h ago, still open",
+    "CLEAR_WAITING #1178: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #1176: CLEARed 332.5 h ago, still open",
+    "CLEAR_WAITING #1175: CLEARed 237.4 h ago, still open",
+    "CLEAR_WAITING #1173: CLEARed 317.2 h ago, still open",
+    "CLEAR_WAITING #1171: CLEARed 333.4 h ago, still open",
+    "CLEAR_WAITING #1169: CLEARed 238.8 h ago, still open",
+    "CLEAR_WAITING #1168: CLEARed 330.8 h ago, still open",
+    "CLEAR_WAITING #1167: CLEARed 333.7 h ago, still open",
+    "CLEAR_WAITING #1165: CLEARed 238.8 h ago, still open",
+    "CLEAR_WAITING #1164: CLEARed 333.5 h ago, still open",
+    "CLEAR_WAITING #1163: CLEARed 333.5 h ago, still open",
+    "CLEAR_WAITING #1151: CLEARed 335.1 h ago, still open",
+    "CI_QUEUED #1150: a check queued 12591 min on ae88b0eb9",
+    "CLEAR_WAITING #1149: CLEARed 335.2 h ago, still open",
+    "CLEAR_WAITING #1147: CLEARed 234.8 h ago, still open",
+    "CLEAR_WAITING #1146: CLEARed 335.1 h ago, still open",
+    "CLEAR_WAITING #1143: CLEARed 335.8 h ago, still open",
+    "CLEAR_WAITING #1142: CLEARed 225.6 h ago, still open",
+    "CLEAR_WAITING #1140: CLEARed 336.1 h ago, still open",
+    "CLEAR_WAITING #1137: CLEARed 336.0 h ago, still open",
+    "CLEAR_WAITING #1136: CLEARed 335.9 h ago, still open",
+    "CLEAR_WAITING #1135: CLEARed 336.2 h ago, still open",
+    "CLEAR_WAITING #1134: CLEARed 336.1 h ago, still open",
+    "CLEAR_WAITING #1128: CLEARed 334.0 h ago, still open",
+    "CLEAR_WAITING #1127: CLEARed 334.0 h ago, still open",
+    "CLEAR_WAITING #1126: CLEARed 333.0 h ago, still open",
+    "CLEAR_WAITING #1125: CLEARed 233.9 h ago, still open",
+    "CLEAR_WAITING #1124: CLEARed 333.0 h ago, still open",
+    "CLEAR_WAITING #1123: CLEARed 332.6 h ago, still open",
+    "CLEAR_WAITING #1122: CLEARed 332.8 h ago, still open",
+    "CLEAR_WAITING #1121: CLEARed 334.1 h ago, still open",
+    "CLEAR_WAITING #1119: CLEARed 338.5 h ago, still open",
+    "CLEAR_WAITING #1118: CLEARed 339.2 h ago, still open",
+    "CLEAR_WAITING #1116: CLEARed 237.2 h ago, still open",
+    "CLEAR_WAITING #1115: CLEARed 332.8 h ago, still open",
+    "CLEAR_WAITING #1114: CLEARed 335.6 h ago, still open",
+    "CLEAR_WAITING #1112: CLEARed 328.0 h ago, still open",
+    "CLEAR_WAITING #1111: CLEARed 335.1 h ago, still open",
+    "CLEAR_WAITING #1108: CLEARed 224.2 h ago, still open",
+    "CLEAR_WAITING #1099: CLEARed 342.8 h ago, still open",
+    "CLEAR_WAITING #1097: CLEARed 332.8 h ago, still open",
+    "CLEAR_WAITING #1094: CLEARed 344.6 h ago, still open",
+    "CLEAR_WAITING #1092: CLEARed 331.4 h ago, still open",
+    "CLEAR_WAITING #1085: CLEARed 238.9 h ago, still open",
+    "CLEAR_WAITING #1083: CLEARed 338.2 h ago, still open",
+    "CLEAR_WAITING #1079: CLEARed 325.2 h ago, still open",
+    "CLEAR_WAITING #1077: CLEARed 335.2 h ago, still open",
+    "CLEAR_WAITING #1076: CLEARed 325.2 h ago, still open",
+    "CLEAR_WAITING #1075: CLEARed 234.5 h ago, still open",
+    "CLEAR_WAITING #1073: CLEARed 334.2 h ago, still open",
+    "CLEAR_WAITING #1071: CLEARed 331.2 h ago, still open",
+    "CLEAR_WAITING #1070: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #1068: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #1067: CLEARed 227.4 h ago, still open",
+    "CLEAR_WAITING #1060: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #1048: CLEARed 224.8 h ago, still open",
+    "CLEAR_WAITING #1042: CLEARed 329.9 h ago, still open",
+    "GREEN_WAITING #1042: mergeable and green 323.7 h, still open",
+    "CLEAR_WAITING #1038: CLEARed 238.5 h ago, still open",
+    "CLEAR_WAITING #1037: CLEARed 227.3 h ago, still open",
+    "CLEAR_WAITING #1031: CLEARed 334.1 h ago, still open",
+    "CLEAR_WAITING #1030: CLEARed 334.1 h ago, still open",
+    "CLEAR_WAITING #1028: CLEARed 334.2 h ago, still open",
+    "CLEAR_WAITING #1027: CLEARed 339.6 h ago, still open",
+    "CLEAR_WAITING #1025: CLEARed 237.2 h ago, still open",
+    "CLEAR_WAITING #1022: CLEARed 237.2 h ago, still open",
+    "CLEAR_WAITING #1020: CLEARed 335.7 h ago, still open",
+    "CLEAR_WAITING #1019: CLEARed 215.8 h ago, still open",
+    "CLEAR_WAITING #1017: CLEARed 247.7 h ago, still open",
+    "CLEAR_WAITING #1010: CLEARed 346.3 h ago, still open",
+    "CLEAR_WAITING #1004: CLEARed 335.7 h ago, still open",
+    "CLEAR_WAITING #1000: CLEARed 228.3 h ago, still open",
+    "CLEAR_WAITING #998: CLEARed 247.8 h ago, still open",
+    "CLEAR_WAITING #996: CLEARed 321.6 h ago, still open",
+    "CLEAR_WAITING #971: CLEARed 233.9 h ago, still open",
+    "CLEAR_WAITING #945: CLEARed 237.4 h ago, still open",
+    "CLEAR_WAITING #942: CLEARed 346.5 h ago, still open",
+    "CLEAR_WAITING #941: CLEARed 230.2 h ago, still open",
+    "CLEAR_WAITING #932: CLEARed 232.5 h ago, still open",
+    "CLEAR_WAITING #925: CLEARed 238.1 h ago, still open",
+    "CLEAR_WAITING #921: CLEARed 237.4 h ago, still open",
+    "CLEAR_WAITING #917: CLEARed 247.8 h ago, still open",
+    "CLEAR_WAITING #915: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #913: CLEARed 345.8 h ago, still open",
+    "CLEAR_WAITING #909: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #907: CLEARed 238.7 h ago, still open",
+    "CI_QUEUED #895: a check queued 12643 min on 5e5b93309",
+    "CLEAR_WAITING #892: CLEARed 221.4 h ago, still open",
+    "CI_QUEUED #886: a check queued 12644 min on 44be2f6b3",
+    "CLEAR_WAITING #885: CLEARed 333.9 h ago, still open",
+    "CI_QUEUED #884: a check queued 12717 min on 9d41a1d4f",
+    "CLEAR_WAITING #884: CLEARed 214.4 h ago, still open",
+    "CI_QUEUED #882: a check queued 12644 min on a59be74e4",
+    "CLEAR_WAITING #880: CLEARed 319.2 h ago, still open",
+    "CLEAR_WAITING #879: CLEARed 245.3 h ago, still open",
+    "CLEAR_WAITING #871: CLEARed 334.8 h ago, still open",
+    "CI_QUEUED #869: a check queued 12591 min on c4a333eab",
+    "CI_QUEUED #858: a check queued 12591 min on 44c8bf3d4",
+    "CLEAR_WAITING #854: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #853: CLEARed 335.6 h ago, still open",
+    "CLEAR_WAITING #852: CLEARed 234.3 h ago, still open",
+    "CI_QUEUED #846: a check queued 12647 min on 9fda4d722",
+    "CLEAR_WAITING #846: CLEARed 210.7 h ago, still open",
+    "CLEAR_WAITING #845: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #842: CLEARed 224.2 h ago, still open",
+    "CLEAR_WAITING #840: CLEARed 329.4 h ago, still open",
+    "CLEAR_WAITING #828: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #822: CLEARed 247.2 h ago, still open",
+    "GREEN_WAITING #822: mergeable and green 245.3 h, still open",
+    "CLEAR_WAITING #821: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #817: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #805: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #803: CLEARed 331.3 h ago, still open",
+    "CLEAR_WAITING #801: CLEARed 407.9 h ago, still open",
+    "CLEAR_WAITING #797: CLEARed 407.5 h ago, still open",
+    "CLEAR_WAITING #774: CLEARed 346.2 h ago, still open",
+    "CLEAR_WAITING #772: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #737: CLEARed 407.0 h ago, still open",
+    "CLEAR_WAITING #736: CLEARed 338.3 h ago, still open",
+    "CLEAR_WAITING #728: CLEARed 238.7 h ago, still open",
+    "CI_QUEUED #724: a check queued 12639 min on f64384720",
+    "CLEAR_WAITING #723: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #722: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #721: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #719: CLEARed 336.6 h ago, still open",
+    "CLEAR_WAITING #717: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #715: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #714: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #713: CLEARed 318.8 h ago, still open",
+    "CLEAR_WAITING #712: CLEARed 346.2 h ago, still open",
+    "CLEAR_WAITING #711: CLEARed 337.4 h ago, still open",
+    "CLEAR_WAITING #687: CLEARed 338.0 h ago, still open",
+    "CLEAR_WAITING #677: CLEARed 337.1 h ago, still open",
+    "CLEAR_WAITING #675: CLEARed 326.3 h ago, still open",
+    "CI_QUEUED #670: a check queued 12943 min on ee1dac408",
+    "CLEAR_WAITING #670: CLEARed 219.8 h ago, still open",
+    "CLEAR_WAITING #667: CLEARed 318.8 h ago, still open",
+    "CLEAR_WAITING #662: CLEARed 317.8 h ago, still open",
+    "CLEAR_WAITING #646: CLEARed 328.7 h ago, still open",
+    "CLEAR_WAITING #644: CLEARed 335.4 h ago, still open",
+    "CLEAR_WAITING #639: CLEARed 329.5 h ago, still open",
+    "CLEAR_WAITING #636: CLEARed 335.7 h ago, still open",
+    "CLEAR_WAITING #625: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #621: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #619: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #618: CLEARed 318.9 h ago, still open",
+    "CLEAR_WAITING #611: CLEARed 335.6 h ago, still open",
+    "CLEAR_WAITING #609: CLEARed 346.2 h ago, still open",
+    "CLEAR_WAITING #604: CLEARed 318.9 h ago, still open",
+    "CLEAR_WAITING #590: CLEARed 237.1 h ago, still open",
+    "CLEAR_WAITING #582: CLEARed 241.9 h ago, still open",
+    "CI_QUEUED #545: a check queued 12646 min on b83af4e7a",
+    "CLEAR_WAITING #520: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #518: CLEARed 331.2 h ago, still open",
+    "CLEAR_WAITING #507: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #501: CLEARed 346.0 h ago, still open",
+    "CLEAR_WAITING #486: CLEARed 234.3 h ago, still open",
+    "CLEAR_WAITING #473: CLEARed 414.5 h ago, still open",
+    "CLEAR_WAITING #397: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #396: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #388: CLEARed 346.0 h ago, still open",
+    "CLEAR_WAITING #385: CLEARed 346.0 h ago, still open",
+    "CLEAR_WAITING #362: CLEARed 338.2 h ago, still open",
+    "CLEAR_WAITING #351: CLEARed 326.3 h ago, still open",
+    "CLEAR_WAITING #332: CLEARed 242.6 h ago, still open",
+    "CI_QUEUED #285: a check queued 12620 min on d27a1f5e6",
+    "CLEAR_WAITING #285: CLEARed 210.7 h ago, still open",
+    "CLEAR_WAITING #273: CLEARed 325.2 h ago, still open",
+    "CLEAR_WAITING #270: CLEARed 327.5 h ago, still open",
+    "CLEAR_WAITING #263: CLEARed 329.1 h ago, still open",
+    "CLEAR_WAITING #260: CLEARed 335.7 h ago, still open",
+    "CI_QUEUED #249: a check queued 12868 min on 0dc0e5201",
+    "CLEAR_WAITING #249: CLEARed 214.4 h ago, still open",
+    "CLEAR_WAITING #246: CLEARed 329.7 h ago, still open",
+    "CLEAR_WAITING #233: CLEARed 332.7 h ago, still open",
+    "CLEAR_WAITING #232: CLEARed 329.6 h ago, still open",
+    "CLEAR_WAITING #204: CLEARed 329.6 h ago, still open",
+    "CLEAR_WAITING #192: CLEARed 237.4 h ago, still open",
+    "CLEAR_WAITING #159: CLEARed 346.1 h ago, still open",
+    "CLEAR_WAITING #139: CLEARed 326.3 h ago, still open",
+    "REVIEWER_FP: 200 of 278 reviewer FAILs carry an Auditor CLEAR (#1367, #1364, #1363, #1362, #1361, #1359, #1356, #1355)",
+    "NO_MERGE_24H: no PR merged into LIVE for 210.1 h while 98 open PR(s) are green on the gating jobs (#1298, #1241, #1238, #1199, #1185, #1181, #1179, #1176)",
+    "SIGN_TRAIN_FAILING: 2484 runs in a row failed"
   ],
   "queue": {
     "queued_runs": 0,
@@ -298,7 +310,7 @@
     "superseded_run_ids": []
   },
   "reviewer": {
-    "fails": 202,
+    "fails": 278,
     "cleared_fails": [
       1367,
       1364,
@@ -490,33 +502,42 @@
       397,
       396,
       362,
-      351
+      351,
+      273,
+      263,
+      260,
+      246,
+      233,
+      232,
+      204,
+      192,
+      139
     ],
-    "fp_rate": 0.95
+    "fp_rate": 0.72
   },
   "sweep": {
-    "at": "2026-11-27T22:30:08.3947024Z",
+    "at": "2026-11-27T23:01:56.9514395Z",
     "age_min": 0.0,
     "rc": 3,
     "note": "gh not logged in",
     "mutex_held_runs": 0
   },
   "sign_train": {
-    "at": "2026-11-27T22:30:04.8117761Z",
-    "age_min": 0.1,
+    "at": "2026-11-27T23:00:05.8877195Z",
+    "age_min": 1.9,
     "rc": 1,
     "note": "FAILED: no desk Python at C:\\opt\\quant\\.venv\\Scripts\\python.exe",
-    "fail_runs": 2481,
+    "fail_runs": 2484,
     "mutex_held_runs": 0,
     "waiting_on": null,
     "waiting_min": null
   },
   "live": {
-    "last_code_commit": "1eb1bfa55",
-    "last_code_at": "2026-11-27T22:26:58Z",
-    "hours_since_code": 0.05,
+    "last_code_commit": "2fe3c24a8",
+    "last_code_at": "2026-11-27T22:56:24Z",
+    "hours_since_code": 0.09,
     "last_merge_at": "2026-11-19T04:54:50Z",
-    "hours_since_merge": 209.59
+    "hours_since_merge": 210.12
   },
   "prs": [
     {
@@ -526,9 +547,9 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 12911.6,
+      "oldest_queued_min": 12943.4,
       "clear_at": "2026-11-18T19:15:51Z",
-      "clear_age_h": 219.24,
+      "clear_age_h": 219.77,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -540,9 +561,9 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 12897.3,
+      "oldest_queued_min": 12929.1,
       "clear_at": "2026-11-18T14:17:36Z",
-      "clear_age_h": 224.21,
+      "clear_age_h": 224.74,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -554,9 +575,23 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 12895.7,
+      "oldest_queued_min": 12927.5,
       "clear_at": "2026-11-18T15:04:29Z",
-      "clear_age_h": 223.43,
+      "clear_age_h": 223.96,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 1365,
+      "head": "5e3dc7a87",
+      "draft": true,
+      "queued_checks": [
+        "gate"
+      ],
+      "oldest_queued_min": 12897.0,
+      "clear_at": null,
+      "clear_age_h": null,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -568,10 +603,26 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 12851.7,
+      "oldest_queued_min": 12883.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 249,
+      "head": "0dc0e5201",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "quality",
+        "replay-shadow"
+      ],
+      "oldest_queued_min": 12868.2,
+      "clear_at": "2026-11-19T00:39:02Z",
+      "clear_age_h": 214.38,
+      "review": null,
       "gating_green": false,
       "green_since": null
     },
@@ -583,9 +634,9 @@
         "mt5-money-path",
         "quality"
       ],
-      "oldest_queued_min": 12730.6,
+      "oldest_queued_min": 12762.5,
       "clear_at": "2026-11-19T02:23:23Z",
-      "clear_age_h": 212.11,
+      "clear_age_h": 212.64,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -597,9 +648,9 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 12684.8,
+      "oldest_queued_min": 12716.6,
       "clear_at": "2026-11-19T00:37:24Z",
-      "clear_age_h": 213.88,
+      "clear_age_h": 214.41,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -616,9 +667,125 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 12615.4,
+      "oldest_queued_min": 12647.2,
       "clear_at": "2026-11-19T04:22:06Z",
-      "clear_age_h": 210.13,
+      "clear_age_h": 210.66,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 1259,
+      "head": "4c104df52",
+      "draft": true,
+      "queued_checks": [
+        "mt5-money-path",
+        "quality"
+      ],
+      "oldest_queued_min": 12646.2,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "cancelled",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 545,
+      "head": "b83af4e7a",
+      "draft": true,
+      "queued_checks": [
+        "mt5-money-path",
+        "quality"
+      ],
+      "oldest_queued_min": 12645.7,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "cancelled",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 882,
+      "head": "a59be74e4",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12644.5,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 886,
+      "head": "44be2f6b3",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12644.2,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 895,
+      "head": "5e5b93309",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12642.8,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 1358,
+      "head": "e41e80e29",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12639.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 724,
+      "head": "f64384720",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12638.9,
+      "clear_at": null,
+      "clear_age_h": null,
       "review": null,
       "gating_green": false,
       "green_since": null
@@ -633,10 +800,25 @@
         "replay-shadow",
         "risk-invariants"
       ],
-      "oldest_queued_min": 12592.8,
+      "oldest_queued_min": 12624.6,
       "clear_at": "2026-11-19T04:38:37Z",
-      "clear_age_h": 209.86,
+      "clear_age_h": 210.39,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 285,
+      "head": "d27a1f5e6",
+      "draft": true,
+      "queued_checks": [
+        "mt5-money-path",
+        "quality"
+      ],
+      "oldest_queued_min": 12619.6,
+      "clear_at": "2026-11-19T04:22:07Z",
+      "clear_age_h": 210.66,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -652,9 +834,9 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 12575.1,
+      "oldest_queued_min": 12606.9,
       "clear_at": "2026-11-19T04:56:55Z",
-      "clear_age_h": 209.55,
+      "clear_age_h": 210.08,
       "review": null,
       "gating_green": false,
       "green_since": null
@@ -667,9 +849,9 @@
         "gate",
         "trusted-eval"
       ],
-      "oldest_queued_min": 12561.5,
+      "oldest_queued_min": 12593.3,
       "clear_at": "2026-11-19T05:10:52Z",
-      "clear_age_h": 209.32,
+      "clear_age_h": 209.85,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -683,10 +865,57 @@
         "mt5-money-path",
         "quality"
       ],
-      "oldest_queued_min": 12559.2,
+      "oldest_queued_min": 12591.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "cancelled",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 1150,
+      "head": "ae88b0eb9",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12591.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 869,
+      "head": "c4a333eab",
+      "draft": true,
+      "queued_checks": [
+        "mt5-money-path",
+        "quality"
+      ],
+      "oldest_queued_min": 12590.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "cancelled",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 858,
+      "head": "44c8bf3d4",
+      "draft": true,
+      "queued_checks": [
+        "independent-review",
+        "replay-shadow",
+        "risk-invariants"
+      ],
+      "oldest_queued_min": 12590.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
       "gating_green": false,
       "green_since": null
     },
@@ -698,7 +927,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -710,7 +939,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -721,7 +950,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T18:13:11Z",
-      "clear_age_h": 220.28,
+      "clear_age_h": 220.81,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -733,20 +962,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T17:52:30Z",
-      "clear_age_h": 220.63,
+      "clear_age_h": 221.16,
       "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 1365,
-      "head": "5e3dc7a87",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
       "gating_green": false,
       "green_since": null
     },
@@ -757,7 +974,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T15:28:17Z",
-      "clear_age_h": 223.03,
+      "clear_age_h": 223.56,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -769,7 +986,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T22:12:03Z",
-      "clear_age_h": 216.3,
+      "clear_age_h": 216.83,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -781,7 +998,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T22:30:04Z",
-      "clear_age_h": 216.0,
+      "clear_age_h": 216.53,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -793,20 +1010,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T22:31:00Z",
-      "clear_age_h": 215.99,
+      "clear_age_h": 216.52,
       "review": "failure",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 1358,
-      "head": "e41e80e29",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
       "gating_green": false,
       "green_since": null
     },
@@ -818,7 +1023,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -829,7 +1034,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:45:38Z",
-      "clear_age_h": 228.74,
+      "clear_age_h": 229.27,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -841,7 +1046,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:26:54Z",
-      "clear_age_h": 229.05,
+      "clear_age_h": 229.59,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -853,7 +1058,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:24:16Z",
-      "clear_age_h": 229.1,
+      "clear_age_h": 229.63,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -865,7 +1070,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:23:19Z",
-      "clear_age_h": 229.11,
+      "clear_age_h": 229.64,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -877,7 +1082,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T20:05:17Z",
-      "clear_age_h": 218.41,
+      "clear_age_h": 218.95,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -901,7 +1106,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T08:14:00Z",
-      "clear_age_h": 230.27,
+      "clear_age_h": 230.8,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -925,7 +1130,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:49:20Z",
-      "clear_age_h": 228.68,
+      "clear_age_h": 229.21,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -937,7 +1142,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T07:24:49Z",
-      "clear_age_h": 231.09,
+      "clear_age_h": 231.62,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -961,7 +1166,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T06:54:42Z",
-      "clear_age_h": 231.59,
+      "clear_age_h": 232.12,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -973,7 +1178,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T06:51:09Z",
-      "clear_age_h": 231.65,
+      "clear_age_h": 232.18,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -986,7 +1191,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -997,7 +1202,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T06:08:39Z",
-      "clear_age_h": 232.36,
+      "clear_age_h": 232.89,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1009,7 +1214,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T06:16:17Z",
-      "clear_age_h": 232.23,
+      "clear_age_h": 232.76,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1021,7 +1226,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T11:13:28Z",
-      "clear_age_h": 227.28,
+      "clear_age_h": 227.81,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1033,7 +1238,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:44:39Z",
-      "clear_age_h": 232.76,
+      "clear_age_h": 233.29,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1045,7 +1250,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:27:37Z",
-      "clear_age_h": 233.04,
+      "clear_age_h": 233.57,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1058,7 +1263,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1069,7 +1274,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T15:26:13Z",
-      "clear_age_h": 223.06,
+      "clear_age_h": 223.59,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1081,7 +1286,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:16:36Z",
-      "clear_age_h": 233.22,
+      "clear_age_h": 233.76,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1093,7 +1298,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:27:36Z",
-      "clear_age_h": 233.04,
+      "clear_age_h": 233.57,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1105,7 +1310,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:02:03Z",
-      "clear_age_h": 233.47,
+      "clear_age_h": 234.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1117,7 +1322,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T15:20:47Z",
-      "clear_age_h": 223.16,
+      "clear_age_h": 223.69,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1129,7 +1334,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T15:15:09Z",
-      "clear_age_h": 223.25,
+      "clear_age_h": 223.78,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1142,7 +1347,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1153,7 +1358,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T13:54:03Z",
-      "clear_age_h": 224.6,
+      "clear_age_h": 225.13,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1165,7 +1370,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:23:57Z",
-      "clear_age_h": 234.1,
+      "clear_age_h": 234.63,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1177,7 +1382,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:06:35Z",
-      "clear_age_h": 234.39,
+      "clear_age_h": 234.92,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1189,7 +1394,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T03:56:45Z",
-      "clear_age_h": 234.56,
+      "clear_age_h": 235.09,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -1201,7 +1406,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:13Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1213,7 +1418,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T03:29:44Z",
-      "clear_age_h": 235.01,
+      "clear_age_h": 235.54,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1225,7 +1430,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:28:22Z",
-      "clear_age_h": 234.03,
+      "clear_age_h": 234.56,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1237,7 +1442,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T11:21:59Z",
-      "clear_age_h": 227.14,
+      "clear_age_h": 227.67,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1249,7 +1454,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:55:55Z",
-      "clear_age_h": 235.57,
+      "clear_age_h": 236.1,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1261,7 +1466,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T03:22:59Z",
-      "clear_age_h": 235.12,
+      "clear_age_h": 235.65,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1273,7 +1478,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:42:58Z",
-      "clear_age_h": 235.79,
+      "clear_age_h": 236.32,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1285,7 +1490,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T19:04:13Z",
-      "clear_age_h": 219.43,
+      "clear_age_h": 219.96,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1297,7 +1502,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:47:57Z",
-      "clear_age_h": 235.7,
+      "clear_age_h": 236.23,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1309,7 +1514,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T03:04:11Z",
-      "clear_age_h": 235.43,
+      "clear_age_h": 235.96,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1322,7 +1527,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -1333,7 +1538,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:36:06Z",
-      "clear_age_h": 228.9,
+      "clear_age_h": 229.43,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1345,7 +1550,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:10:03Z",
-      "clear_age_h": 234.34,
+      "clear_age_h": 234.86,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1357,7 +1562,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:47:55Z",
-      "clear_age_h": 235.7,
+      "clear_age_h": 236.23,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1369,7 +1574,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:47:54Z",
-      "clear_age_h": 235.7,
+      "clear_age_h": 236.24,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1381,7 +1586,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:10:02Z",
-      "clear_age_h": 234.34,
+      "clear_age_h": 234.86,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1393,7 +1598,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T02:32:06Z",
-      "clear_age_h": 235.97,
+      "clear_age_h": 236.5,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1405,7 +1610,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:10Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1417,7 +1622,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:09Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1429,7 +1634,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T14:50:31Z",
-      "clear_age_h": 223.66,
+      "clear_age_h": 224.19,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1441,7 +1646,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:52:30Z",
-      "clear_age_h": 236.63,
+      "clear_age_h": 237.16,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1453,7 +1658,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T03:55:21Z",
-      "clear_age_h": 234.58,
+      "clear_age_h": 235.11,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1465,7 +1670,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T15:27:13Z",
-      "clear_age_h": 223.05,
+      "clear_age_h": 223.58,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -1477,7 +1682,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:08Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1489,7 +1694,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:10:17Z",
-      "clear_age_h": 234.33,
+      "clear_age_h": 234.86,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1501,7 +1706,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:12Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1513,7 +1718,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:06Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1525,7 +1730,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:24:19Z",
-      "clear_age_h": 237.1,
+      "clear_age_h": 237.63,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -1537,7 +1742,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:10:00Z",
-      "clear_age_h": 234.34,
+      "clear_age_h": 234.87,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1549,7 +1754,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:02:05Z",
-      "clear_age_h": 234.47,
+      "clear_age_h": 235.0,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1561,7 +1766,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:48:19Z",
-      "clear_age_h": 237.7,
+      "clear_age_h": 238.23,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1573,7 +1778,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T17:15:37Z",
-      "clear_age_h": 221.24,
+      "clear_age_h": 221.77,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1585,7 +1790,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T19:47:37Z",
-      "clear_age_h": 218.71,
+      "clear_age_h": 219.24,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1597,7 +1802,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:29:26Z",
-      "clear_age_h": 237.01,
+      "clear_age_h": 237.54,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1609,7 +1814,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T19:49:40Z",
-      "clear_age_h": 218.68,
+      "clear_age_h": 219.2,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1622,7 +1827,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -1633,7 +1838,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T20:28:03Z",
-      "clear_age_h": 218.03,
+      "clear_age_h": 218.56,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -1645,7 +1850,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:30:29Z",
-      "clear_age_h": 238.0,
+      "clear_age_h": 238.53,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1657,7 +1862,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:49:02Z",
-      "clear_age_h": 236.69,
+      "clear_age_h": 237.22,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1669,7 +1874,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:54:36Z",
-      "clear_age_h": 237.59,
+      "clear_age_h": 238.12,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1682,7 +1887,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1693,7 +1898,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T13:26:16Z",
-      "clear_age_h": 225.06,
+      "clear_age_h": 225.59,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1705,7 +1910,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T09:34:48Z",
-      "clear_age_h": 228.92,
+      "clear_age_h": 229.45,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1718,7 +1923,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -1729,7 +1934,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:00:01Z",
-      "clear_age_h": 237.5,
+      "clear_age_h": 238.03,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1741,7 +1946,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:54:34Z",
-      "clear_age_h": 237.59,
+      "clear_age_h": 238.12,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1753,7 +1958,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:49:24Z",
-      "clear_age_h": 237.68,
+      "clear_age_h": 238.21,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1765,7 +1970,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T23:45:25Z",
-      "clear_age_h": 238.75,
+      "clear_age_h": 239.28,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1778,7 +1983,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -1789,7 +1994,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T22:47:20Z",
-      "clear_age_h": 239.71,
+      "clear_age_h": 240.24,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1801,7 +2006,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T22:06:25Z",
-      "clear_age_h": 240.4,
+      "clear_age_h": 240.93,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1855,25 +2060,13 @@
       "green_since": null
     },
     {
-      "pr": 1259,
-      "head": "4c104df52",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 1258,
       "head": "4ea01a793",
       "draft": false,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T13:41:01Z",
-      "clear_age_h": 224.82,
+      "clear_age_h": 225.35,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1898,7 +2091,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1910,7 +2103,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1933,7 +2126,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T20:08:44Z",
-      "clear_age_h": 242.36,
+      "clear_age_h": 242.89,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1946,7 +2139,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1957,7 +2150,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T11:38:57Z",
-      "clear_age_h": 226.85,
+      "clear_age_h": 227.38,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1970,7 +2163,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1981,7 +2174,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T18:52:36Z",
-      "clear_age_h": 243.62,
+      "clear_age_h": 244.16,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -1993,7 +2186,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T18:47:10Z",
-      "clear_age_h": 243.72,
+      "clear_age_h": 244.25,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2005,7 +2198,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T20:31:38Z",
-      "clear_age_h": 241.97,
+      "clear_age_h": 242.5,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2018,7 +2211,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -2029,7 +2222,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:29:25Z",
-      "clear_age_h": 237.01,
+      "clear_age_h": 237.54,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2042,8 +2235,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -2054,7 +2247,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -2065,7 +2258,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T19:02:47Z",
-      "clear_age_h": 219.46,
+      "clear_age_h": 219.99,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2077,7 +2270,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T19:05:34Z",
-      "clear_age_h": 243.41,
+      "clear_age_h": 243.94,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2114,7 +2307,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -2125,7 +2318,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T17:12:57Z",
-      "clear_age_h": 317.29,
+      "clear_age_h": 317.82,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -2137,7 +2330,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T15:13:59Z",
-      "clear_age_h": 319.27,
+      "clear_age_h": 319.8,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2149,7 +2342,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T16:03:15Z",
-      "clear_age_h": 318.45,
+      "clear_age_h": 318.98,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2185,7 +2378,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T15:14:41Z",
-      "clear_age_h": 247.26,
+      "clear_age_h": 247.79,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2197,7 +2390,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T14:55:39Z",
-      "clear_age_h": 319.57,
+      "clear_age_h": 320.1,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2209,7 +2402,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T14:55:41Z",
-      "clear_age_h": 319.57,
+      "clear_age_h": 320.1,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2221,7 +2414,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T06:54:13Z",
-      "clear_age_h": 327.6,
+      "clear_age_h": 328.13,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2233,7 +2426,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T14:55:40Z",
-      "clear_age_h": 319.57,
+      "clear_age_h": 320.1,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2257,7 +2450,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:07Z",
-      "clear_age_h": 233.82,
+      "clear_age_h": 234.35,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2269,7 +2462,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T04:32:42Z",
-      "clear_age_h": 329.96,
+      "clear_age_h": 330.49,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2281,7 +2474,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T17:56:02Z",
-      "clear_age_h": 316.57,
+      "clear_age_h": 317.1,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2293,7 +2486,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:20:16Z",
-      "clear_age_h": 332.17,
+      "clear_age_h": 332.69,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2305,7 +2498,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:30:19Z",
-      "clear_age_h": 332.0,
+      "clear_age_h": 332.53,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2317,7 +2510,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:09Z",
-      "clear_age_h": 233.82,
+      "clear_age_h": 234.35,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2329,7 +2522,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:33:00Z",
-      "clear_age_h": 331.95,
+      "clear_age_h": 332.48,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2341,7 +2534,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:36:53Z",
-      "clear_age_h": 236.89,
+      "clear_age_h": 237.42,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2365,7 +2558,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T17:52:41Z",
-      "clear_age_h": 316.62,
+      "clear_age_h": 317.15,
       "review": "skipped",
       "gating_green": false,
       "green_since": null
@@ -2377,7 +2570,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:40:39Z",
-      "clear_age_h": 332.82,
+      "clear_age_h": 333.35,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2389,7 +2582,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:16:03Z",
-      "clear_age_h": 238.24,
+      "clear_age_h": 238.76,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2401,7 +2594,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T04:11:24Z",
-      "clear_age_h": 330.31,
+      "clear_age_h": 330.84,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2413,7 +2606,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:20:39Z",
-      "clear_age_h": 333.16,
+      "clear_age_h": 333.69,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2425,7 +2618,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:12:24Z",
-      "clear_age_h": 238.3,
+      "clear_age_h": 238.83,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2437,7 +2630,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:29:41Z",
-      "clear_age_h": 333.01,
+      "clear_age_h": 333.54,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2449,7 +2642,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:29:40Z",
-      "clear_age_h": 333.01,
+      "clear_age_h": 333.54,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -2473,21 +2666,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:58:05Z",
-      "clear_age_h": 334.53,
+      "clear_age_h": 335.06,
       "review": "cancelled",
       "gating_green": true,
-      "green_since": null
-    },
-    {
-      "pr": 1150,
-      "head": "ae88b0eb9",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
       "green_since": null
     },
     {
@@ -2497,7 +2678,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:47:35Z",
-      "clear_age_h": 334.71,
+      "clear_age_h": 335.24,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2510,8 +2691,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -2521,7 +2702,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:13:06Z",
-      "clear_age_h": 234.28,
+      "clear_age_h": 234.81,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2533,7 +2714,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:55:10Z",
-      "clear_age_h": 334.58,
+      "clear_age_h": 335.11,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2545,7 +2726,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:12:11Z",
-      "clear_age_h": 335.3,
+      "clear_age_h": 335.83,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2557,7 +2738,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T13:28:07Z",
-      "clear_age_h": 225.03,
+      "clear_age_h": 225.56,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2569,7 +2750,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T22:57:22Z",
-      "clear_age_h": 335.55,
+      "clear_age_h": 336.08,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2593,7 +2774,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T22:59:57Z",
-      "clear_age_h": 335.5,
+      "clear_age_h": 336.03,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2605,7 +2786,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:05:29Z",
-      "clear_age_h": 335.41,
+      "clear_age_h": 335.94,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2617,7 +2798,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T22:50:41Z",
-      "clear_age_h": 335.66,
+      "clear_age_h": 336.19,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2629,7 +2810,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T22:57:21Z",
-      "clear_age_h": 335.55,
+      "clear_age_h": 336.08,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2642,7 +2823,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -2653,7 +2834,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:00:58Z",
-      "clear_age_h": 333.49,
+      "clear_age_h": 334.02,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2665,7 +2846,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:00:50Z",
-      "clear_age_h": 333.49,
+      "clear_age_h": 334.02,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2677,7 +2858,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:59:05Z",
-      "clear_age_h": 332.52,
+      "clear_age_h": 333.05,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -2689,7 +2870,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:05:09Z",
-      "clear_age_h": 233.42,
+      "clear_age_h": 233.95,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2701,7 +2882,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:59:06Z",
-      "clear_age_h": 332.52,
+      "clear_age_h": 333.05,
       "review": "cancelled",
       "gating_green": true,
       "green_since": null
@@ -2713,7 +2894,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:24:26Z",
-      "clear_age_h": 332.1,
+      "clear_age_h": 332.62,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2725,7 +2906,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:11:17Z",
-      "clear_age_h": 332.31,
+      "clear_age_h": 332.85,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2737,7 +2918,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:53:25Z",
-      "clear_age_h": 333.61,
+      "clear_age_h": 334.14,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2749,7 +2930,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T20:32:24Z",
-      "clear_age_h": 337.96,
+      "clear_age_h": 338.49,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2761,7 +2942,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T19:50:59Z",
-      "clear_age_h": 338.65,
+      "clear_age_h": 339.18,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2773,7 +2954,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:52:53Z",
-      "clear_age_h": 236.62,
+      "clear_age_h": 237.15,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2785,7 +2966,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:16:53Z",
-      "clear_age_h": 332.22,
+      "clear_age_h": 332.75,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2797,7 +2978,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:25:51Z",
-      "clear_age_h": 335.07,
+      "clear_age_h": 335.6,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2809,7 +2990,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:02:25Z",
-      "clear_age_h": 327.46,
+      "clear_age_h": 327.99,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2821,7 +3002,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:56:12Z",
-      "clear_age_h": 334.56,
+      "clear_age_h": 335.1,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2833,7 +3014,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T14:47:42Z",
-      "clear_age_h": 223.71,
+      "clear_age_h": 224.24,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -2845,7 +3026,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T16:13:02Z",
-      "clear_age_h": 342.28,
+      "clear_age_h": 342.81,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -2857,7 +3038,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:15:18Z",
-      "clear_age_h": 332.25,
+      "clear_age_h": 332.78,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2869,7 +3050,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T14:25:35Z",
-      "clear_age_h": 344.08,
+      "clear_age_h": 344.61,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -2893,7 +3074,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T03:40:56Z",
-      "clear_age_h": 330.82,
+      "clear_age_h": 331.35,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2917,7 +3098,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:07:46Z",
-      "clear_age_h": 238.37,
+      "clear_age_h": 238.9,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2929,7 +3110,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T20:51:19Z",
-      "clear_age_h": 337.65,
+      "clear_age_h": 338.18,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -2953,7 +3134,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T09:49:02Z",
-      "clear_age_h": 324.69,
+      "clear_age_h": 325.22,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -2965,7 +3146,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:47:31Z",
-      "clear_age_h": 334.71,
+      "clear_age_h": 335.24,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -2977,7 +3158,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T09:49:04Z",
-      "clear_age_h": 324.69,
+      "clear_age_h": 325.22,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -2989,7 +3170,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:30:54Z",
-      "clear_age_h": 233.99,
+      "clear_age_h": 234.52,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3002,7 +3183,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -3013,7 +3194,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:52:43Z",
-      "clear_age_h": 333.62,
+      "clear_age_h": 334.15,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3037,7 +3218,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T03:51:20Z",
-      "clear_age_h": 330.65,
+      "clear_age_h": 331.18,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3049,7 +3230,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:46:40Z",
-      "clear_age_h": 233.72,
+      "clear_age_h": 234.25,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3061,7 +3242,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:48Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3073,7 +3254,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T11:40:06Z",
-      "clear_age_h": 226.83,
+      "clear_age_h": 227.36,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3110,7 +3291,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -3122,7 +3303,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3133,7 +3314,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:10Z",
-      "clear_age_h": 233.82,
+      "clear_age_h": 234.35,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3146,7 +3327,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3194,7 +3375,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3241,7 +3422,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T14:13:29Z",
-      "clear_age_h": 224.28,
+      "clear_age_h": 224.81,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3266,7 +3447,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3313,7 +3494,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:08:52Z",
-      "clear_age_h": 329.35,
+      "clear_age_h": 329.88,
       "review": "success",
       "gating_green": true,
       "green_since": "2026-11-14T11:20:42Z"
@@ -3349,7 +3530,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:31:19Z",
-      "clear_age_h": 237.98,
+      "clear_age_h": 238.51,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3361,7 +3542,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T11:42:04Z",
-      "clear_age_h": 226.8,
+      "clear_age_h": 227.33,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3409,7 +3590,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:56:35Z",
-      "clear_age_h": 333.56,
+      "clear_age_h": 334.09,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3421,7 +3602,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:55:47Z",
-      "clear_age_h": 333.57,
+      "clear_age_h": 334.1,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3445,7 +3626,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:48:24Z",
-      "clear_age_h": 333.69,
+      "clear_age_h": 334.23,
       "review": "cancelled",
       "gating_green": true,
       "green_since": null
@@ -3457,7 +3638,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T19:26:52Z",
-      "clear_age_h": 339.06,
+      "clear_age_h": 339.58,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -3481,7 +3662,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:52:59Z",
-      "clear_age_h": 236.62,
+      "clear_age_h": 237.15,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3493,7 +3674,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:53:00Z",
-      "clear_age_h": 236.62,
+      "clear_age_h": 237.15,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3517,7 +3698,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:20:36Z",
-      "clear_age_h": 335.16,
+      "clear_age_h": 335.69,
       "review": "cancelled",
       "gating_green": true,
       "green_since": null
@@ -3529,7 +3710,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T23:17:00Z",
-      "clear_age_h": 215.22,
+      "clear_age_h": 215.75,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3542,8 +3723,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -3553,7 +3734,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T15:20:18Z",
-      "clear_age_h": 247.16,
+      "clear_age_h": 247.7,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3566,7 +3747,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3590,7 +3771,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3625,7 +3806,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:46:10Z",
-      "clear_age_h": 345.73,
+      "clear_age_h": 346.26,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3662,7 +3843,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3673,7 +3854,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:20:34Z",
-      "clear_age_h": 335.16,
+      "clear_age_h": 335.69,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -3721,7 +3902,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T10:43:17Z",
-      "clear_age_h": 227.78,
+      "clear_age_h": 228.31,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3734,8 +3915,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -3745,7 +3926,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T15:10:57Z",
-      "clear_age_h": 247.32,
+      "clear_age_h": 247.85,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -3769,7 +3950,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T13:25:42Z",
-      "clear_age_h": 321.07,
+      "clear_age_h": 321.6,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3878,8 +4059,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -3914,7 +4095,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3949,7 +4130,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T05:10:18Z",
-      "clear_age_h": 233.33,
+      "clear_age_h": 233.86,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4010,7 +4191,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4058,7 +4239,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4190,7 +4371,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4213,7 +4394,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:36:52Z",
-      "clear_age_h": 236.89,
+      "clear_age_h": 237.42,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4226,8 +4407,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -4237,7 +4418,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:32:28Z",
-      "clear_age_h": 345.96,
+      "clear_age_h": 346.49,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4249,7 +4430,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T08:48:50Z",
-      "clear_age_h": 229.69,
+      "clear_age_h": 230.22,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4262,7 +4443,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4333,7 +4514,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T06:29:41Z",
-      "clear_age_h": 232.01,
+      "clear_age_h": 232.54,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -4393,7 +4574,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:58:22Z",
-      "clear_age_h": 237.53,
+      "clear_age_h": 238.06,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4430,7 +4611,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4441,7 +4622,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:36:50Z",
-      "clear_age_h": 236.89,
+      "clear_age_h": 237.42,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -4489,7 +4670,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T15:13:23Z",
-      "clear_age_h": 247.28,
+      "clear_age_h": 247.81,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4501,7 +4682,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:52Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -4525,7 +4706,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T13:13:55Z",
-      "clear_age_h": 345.27,
+      "clear_age_h": 345.8,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4561,7 +4742,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:12Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.35,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4573,7 +4754,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:17:31Z",
-      "clear_age_h": 238.21,
+      "clear_age_h": 238.74,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4586,7 +4767,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4639,18 +4820,6 @@
       "green_since": null
     },
     {
-      "pr": 895,
-      "head": "5e5b93309",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 894,
       "head": "49ebb65ea",
       "draft": true,
@@ -4658,7 +4827,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -4669,7 +4838,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T17:37:54Z",
-      "clear_age_h": 220.87,
+      "clear_age_h": 221.4,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4699,25 +4868,13 @@
       "green_since": null
     },
     {
-      "pr": 886,
-      "head": "44be2f6b3",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 885,
       "head": "7a3841840",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T01:07:16Z",
-      "clear_age_h": 333.38,
+      "clear_age_h": 333.91,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -4735,18 +4892,6 @@
       "green_since": null
     },
     {
-      "pr": 882,
-      "head": "a59be74e4",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 881,
       "head": "55f431ad4",
       "draft": true,
@@ -4754,7 +4899,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4765,7 +4910,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T15:50:21Z",
-      "clear_age_h": 318.66,
+      "clear_age_h": 319.19,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4777,7 +4922,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T17:42:35Z",
-      "clear_age_h": 244.79,
+      "clear_age_h": 245.32,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -4802,8 +4947,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -4814,7 +4959,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4849,7 +4994,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T00:12:43Z",
-      "clear_age_h": 334.29,
+      "clear_age_h": 334.82,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -4862,20 +5007,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 869,
-      "head": "c4a333eab",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -4922,20 +5055,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 858,
-      "head": "44c8bf3d4",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -4957,7 +5078,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:13Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.34,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4969,7 +5090,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:25:53Z",
-      "clear_age_h": 335.07,
+      "clear_age_h": 335.6,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -4981,7 +5102,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:15Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.34,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -4994,8 +5115,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5017,7 +5138,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:16Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.34,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5030,8 +5151,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5042,8 +5163,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5053,7 +5174,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T14:47:44Z",
-      "clear_age_h": 223.71,
+      "clear_age_h": 224.24,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5065,7 +5186,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:35:57Z",
-      "clear_age_h": 328.9,
+      "clear_age_h": 329.43,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5149,7 +5270,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:56Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5197,7 +5318,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T15:52:25Z",
-      "clear_age_h": 246.63,
+      "clear_age_h": 247.16,
       "review": "success",
       "gating_green": true,
       "green_since": "2026-11-17T17:46:25Z"
@@ -5209,7 +5330,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:58Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5246,8 +5367,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5257,7 +5378,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:59Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5270,8 +5391,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5318,7 +5439,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -5353,7 +5474,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:44:59Z",
-      "clear_age_h": 233.75,
+      "clear_age_h": 234.28,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5377,7 +5498,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T03:43:10Z",
-      "clear_age_h": 330.78,
+      "clear_age_h": 331.31,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -5389,7 +5510,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:07:29Z",
-      "clear_age_h": 407.38,
+      "clear_age_h": 407.91,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5413,7 +5534,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:33:12Z",
-      "clear_age_h": 406.95,
+      "clear_age_h": 407.48,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5426,8 +5547,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5497,7 +5618,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:47:24Z",
-      "clear_age_h": 345.71,
+      "clear_age_h": 346.24,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5509,7 +5630,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:17Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.34,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5642,8 +5763,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -5677,7 +5798,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:59:15Z",
-      "clear_age_h": 406.52,
+      "clear_age_h": 407.05,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5689,7 +5810,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T20:43:20Z",
-      "clear_age_h": 337.78,
+      "clear_age_h": 338.31,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -5737,7 +5858,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T00:18:10Z",
-      "clear_age_h": 238.2,
+      "clear_age_h": 238.73,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5755,25 +5876,13 @@
       "green_since": null
     },
     {
-      "pr": 724,
-      "head": "f64384720",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 723,
       "head": "d5516fecf",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:22Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5785,7 +5894,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:24Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5797,7 +5906,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:50Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "success",
       "gating_green": false,
       "green_since": null
@@ -5821,7 +5930,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T22:24:22Z",
-      "clear_age_h": 336.1,
+      "clear_age_h": 336.63,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5833,7 +5942,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:25Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5845,7 +5954,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:27Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5857,7 +5966,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:45:59Z",
-      "clear_age_h": 325.74,
+      "clear_age_h": 326.27,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5869,7 +5978,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T16:13:54Z",
-      "clear_age_h": 318.27,
+      "clear_age_h": 318.8,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -5881,7 +5990,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:47:29Z",
-      "clear_age_h": 345.71,
+      "clear_age_h": 346.24,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5893,7 +6002,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T21:37:03Z",
-      "clear_age_h": 336.88,
+      "clear_age_h": 337.42,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -5906,7 +6015,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -5918,7 +6027,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -5966,8 +6075,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6026,7 +6135,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -6038,8 +6147,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6049,7 +6158,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T21:01:18Z",
-      "clear_age_h": 337.48,
+      "clear_age_h": 338.01,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6086,8 +6195,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6098,8 +6207,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6122,8 +6231,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6133,7 +6242,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T21:58:02Z",
-      "clear_age_h": 336.53,
+      "clear_age_h": 337.06,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6157,7 +6266,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:00Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.27,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6193,7 +6302,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T16:13:54Z",
-      "clear_age_h": 318.27,
+      "clear_age_h": 318.8,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6206,8 +6315,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6218,8 +6327,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6230,7 +6339,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -6241,7 +6350,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T17:11:33Z",
-      "clear_age_h": 317.31,
+      "clear_age_h": 317.84,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6254,8 +6363,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6278,7 +6387,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -6337,7 +6446,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T06:17:10Z",
-      "clear_age_h": 328.22,
+      "clear_age_h": 328.75,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6361,7 +6470,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:38:13Z",
-      "clear_age_h": 334.87,
+      "clear_age_h": 335.4,
       "review": "success",
       "gating_green": true,
       "green_since": null
@@ -6385,7 +6494,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:31:02Z",
-      "clear_age_h": 328.98,
+      "clear_age_h": 329.52,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6409,7 +6518,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:20:05Z",
-      "clear_age_h": 335.17,
+      "clear_age_h": 335.7,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6422,7 +6531,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -6457,7 +6566,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:02Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.27,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6469,7 +6578,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:43Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6493,7 +6602,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:49Z",
-      "clear_age_h": 326.97,
+      "clear_age_h": 327.5,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6505,7 +6614,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T16:10:39Z",
-      "clear_age_h": 318.32,
+      "clear_age_h": 318.85,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6565,7 +6674,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:25:50Z",
-      "clear_age_h": 335.07,
+      "clear_age_h": 335.6,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -6577,7 +6686,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:47:26Z",
-      "clear_age_h": 345.71,
+      "clear_age_h": 346.24,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6613,7 +6722,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T16:07:26Z",
-      "clear_age_h": 318.38,
+      "clear_age_h": 318.91,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6661,7 +6770,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:53:14Z",
-      "clear_age_h": 236.61,
+      "clear_age_h": 237.15,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6697,7 +6806,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T21:09:42Z",
-      "clear_age_h": 241.34,
+      "clear_age_h": 241.87,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -6753,18 +6862,6 @@
     {
       "pr": 548,
       "head": "292e8d4bf",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 545,
-      "head": "b83af4e7a",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
@@ -6925,7 +7022,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:03Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.27,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6937,7 +7034,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T03:47:32Z",
-      "clear_age_h": 330.71,
+      "clear_age_h": 331.24,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -6998,8 +7095,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7033,7 +7130,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:44Z",
-      "clear_age_h": 325.72,
+      "clear_age_h": 326.25,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7069,7 +7166,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T13:00:59Z",
-      "clear_age_h": 345.49,
+      "clear_age_h": 346.02,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7142,7 +7239,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -7177,7 +7274,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T04:41:19Z",
-      "clear_age_h": 233.81,
+      "clear_age_h": 234.34,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -7225,7 +7322,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T16:34:20Z",
-      "clear_age_h": 413.93,
+      "clear_age_h": 414.46,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7285,7 +7382,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:18Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -7297,7 +7394,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:20Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7358,8 +7455,8 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7369,7 +7466,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:59:55Z",
-      "clear_age_h": 345.5,
+      "clear_age_h": 346.03,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -7405,7 +7502,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:59:46Z",
-      "clear_age_h": 345.51,
+      "clear_age_h": 346.04,
       "review": "cancelled",
       "gating_green": false,
       "green_since": null
@@ -7441,7 +7538,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T20:52:25Z",
-      "clear_age_h": 337.63,
+      "clear_age_h": 338.16,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7453,7 +7550,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:16Z",
-      "clear_age_h": 325.73,
+      "clear_age_h": 326.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7489,8 +7586,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-17T20:24:42Z",
-      "clear_age_h": 242.09,
-      "review": null,
+      "clear_age_h": 242.62,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -7531,18 +7628,6 @@
       "green_since": null
     },
     {
-      "pr": 285,
-      "head": "d27a1f5e6",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": "2026-11-19T04:22:07Z",
-      "clear_age_h": 210.13,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 278,
       "head": "e8f940ff1",
       "draft": true,
@@ -7561,9 +7646,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T09:49:05Z",
-      "clear_age_h": 324.69,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 325.22,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7573,8 +7658,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T07:31:45Z",
-      "clear_age_h": 326.97,
-      "review": null,
+      "clear_age_h": 327.5,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -7597,9 +7682,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:56:42Z",
-      "clear_age_h": 328.56,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 329.09,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7621,8 +7706,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T23:21:56Z",
-      "clear_age_h": 335.14,
-      "review": null,
+      "clear_age_h": 335.67,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7675,18 +7760,6 @@
       "green_since": null
     },
     {
-      "pr": 249,
-      "head": "0dc0e5201",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": "2026-11-19T00:39:02Z",
-      "clear_age_h": 213.85,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
       "pr": 247,
       "head": "125b08fdf",
       "draft": true,
@@ -7705,9 +7778,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:22:22Z",
-      "clear_age_h": 329.13,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 329.66,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7730,7 +7803,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7765,8 +7838,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T02:18:06Z",
-      "clear_age_h": 332.2,
-      "review": null,
+      "clear_age_h": 332.73,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7777,9 +7850,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:25:57Z",
-      "clear_age_h": 329.07,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 329.6,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7803,7 +7876,7 @@
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
-      "gating_green": false,
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7885,9 +7958,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T05:27:48Z",
-      "clear_age_h": 329.04,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 329.57,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7910,7 +7983,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7921,8 +7994,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-18T01:36:54Z",
-      "clear_age_h": 236.89,
-      "review": null,
+      "clear_age_h": 237.42,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7946,7 +8019,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -7957,8 +8030,8 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-13T12:56:49Z",
-      "clear_age_h": 345.56,
-      "review": null,
+      "clear_age_h": 346.08,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
@@ -7969,9 +8042,9 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-14T08:46:17Z",
-      "clear_age_h": 325.73,
-      "review": null,
-      "gating_green": false,
+      "clear_age_h": 326.26,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7982,7 +8055,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     }
@@ -7995,28 +8068,9 @@
   },
   "coverage": {
     "open_prs": 619,
-    "checks_read": 272,
-    "unread": 347,
-    "priority_unread": [
-      133,
-      139,
-      159,
-      166,
-      192,
-      204,
-      232,
-      233,
-      246,
-      249,
-      258,
-      260,
-      263,
-      270,
-      273,
-      285,
-      332,
-      334
-    ],
+    "checks_read": 376,
+    "unread": 243,
+    "priority_unread": [],
     "clears_complete": true
   }
 }
