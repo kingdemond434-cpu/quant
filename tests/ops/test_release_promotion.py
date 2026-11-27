@@ -324,6 +324,7 @@ def test_the_launcher_guard_root_and_decision_follow_the_authority() -> None:
     assert 'git -C $RepoRoot merge-base --is-ancestor $script:GuardHead $r' in s
     assert '"refs/quant/release-gate/tip"' in s
     assert 'git -C $guardDir merge-base' not in s
+    assert "adopt_guard.py" in s and 'Invoke-AdoptGuard @("pre", "--target", $gateTarget)' in s
 
 
 def test_adopt_remote_reads_env_then_file_and_never_writes_git_config(
@@ -363,7 +364,6 @@ def test_an_unreachable_forge_decides_from_the_last_fetched_tip_only_under_audit
     monkeypatch.setenv(rp.AUTHORITY_ENV, rp.AUTHORITY_RELEASE)
     with pytest.raises(rp.GitError):                     # the CI rule still fails closed
         rp.gate(box)
-    assert "adopt_guard.py" in s and 'Invoke-AdoptGuard @("pre", "--target", $gateTarget)' in s
 
 
 def test_unverifiable_release_diff_never_adopts_the_tip() -> None:
