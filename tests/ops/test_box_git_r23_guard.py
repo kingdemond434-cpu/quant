@@ -45,7 +45,8 @@ def test_a_red_risk_run_fails() -> None:
 
 def test_static_problem_or_ceiling_raise_is_the_owners() -> None:
     assert _d(static=["x.py: new import requests"]).cls == "TRUST"
-    assert _d(raises=["/a: 1 -> 2"]).cls == "TRUST"
+    v = _d(raises=["/a: 1 -> 2"])  # RISK AUTONOMY: journalled, not blocked
+    assert v.ok and "ceilings raised: /a: 1 -> 2" in v.why
     assert _d(raises=None).cls == "FAIL"
 
 

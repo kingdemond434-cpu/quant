@@ -19,8 +19,9 @@ THE CHECKS (first refusal wins; every one is a measurement, and UNMEASURED refus
      tests/ when the money reading is UNMEASURED (static_problems): no NEW network, model,
      subprocess, ctypes, dynamic-code import or call, and no literal naming a guard, trust, halt
      or token path. Counted base vs head, so code that already had them is not blocked.
-  3. ceilings: a raise of any number in ops/release/ceilings.json is TRUST (owner), a lowering or
-     an unchanged file is not (D4). The prop firms' own caps stay REFUSE in the checker.
+  3. ceilings: an unreadable ops/release/ceilings.json fails; a raise is journalled in the
+     verdict and never blocks (RISK AUTONOMY, zuck 11-14 and 2026-11-27 13:50Z). The prop firms'
+     own caps stay REFUSE in the pinned checker (hard_caps): the one hard bound.
   4. money path only: the pinned risk invariants and risk suites (box_loop.risk_job, from the
      BASE), then the live entry files' import smoke (adopt_guard.smoke) under quantci.
   5. a cap on money-path merges per day (MONEY_MERGES_PER_DAY) and never a head the adopter
@@ -274,16 +275,17 @@ def decide(sha: str, base: str, *, trust: tuple[bool, str, str], static: Sequenc
         return v(False, "TRUST", "needs the owner: " + "; ".join(static[:4]), ["trust", "static"])
     if raises is None:
         return v(False, "FAIL", f"{CEILINGS} UNMEASURED", ["trust", "static", "ceilings"])
-    if raises:
-        return v(False, "TRUST", "needs the owner: ceiling raised: " + "; ".join(raises[:4]),
-                 ["trust", "static", "ceilings"])
+    # RISK AUTONOMY (zuck 2026-11-14, reconfirmed 2026-11-27 13:50Z): limits move autonomously in
+    # either direction; the one hard bound is the firms' own rules, which the pinned checker
+    # REFUSEs (hard_caps). A raise is journalled in the verdict, never a block.
+    raised = f"; ceilings raised: {'; '.join(raises[:4])}" if raises else ""
     if rolled_back is None:
         return v(False, "FAIL", "rollback record UNMEASURED", ["trust", "static", "ceilings"])
     if sha in rolled_back:
         return v(False, "FAIL", "this head was rolled back once", ["rollback"])
     checks = ["trust", "static", "ceilings", "rollback"]
     if not is_money:
-        return v(True, "PASS", "not money path: trust, static and ceilings pass", checks)
+        return v(True, "PASS", f"not money path: trust, static and ceilings pass{raised}", checks)
     if merges_today is None:
         return v(False, "FAIL", "money merge ledger UNMEASURED", checks)
     if merges_today >= MONEY_MERGES_PER_DAY:
@@ -294,4 +296,5 @@ def decide(sha: str, base: str, *, trust: tuple[bool, str, str], static: Sequenc
     if smoke is None or not smoke[0]:
         return v(False, "FAIL", f"smoke: {smoke[1] if smoke else 'did not run'}",
                  [*checks, "risk", "smoke"])
-    return v(True, "PASS", f"money path: {risk[1]}; {smoke[1]}", [*checks, "risk", "smoke"])
+    return v(True, "PASS", f"money path: {risk[1]}; {smoke[1]}{raised}",
+             [*checks, "risk", "smoke"])
