@@ -207,7 +207,12 @@ foreach ($g in @('hooks', 'info')) {
     & icacls $gp /setowner '*S-1-5-32-544' | Out-Null
     & icacls $gp /deny "${RunUser}:(OI)(CI)(W,D,DC,WDAC,WO)" | Out-Null
 }
-& icacls $Live /deny "${RunUser}:(DC)" | Out-Null
+# the root itself: owned by Administrators, never renamed, deleted or re-ACLed by quantrun (this
+# folder only), and its parent takes no new folder or file from quantrun -- so no swapped tree
+# with its own .git can appear at the same path after the check passes (Audit, r6 hold).
+& icacls $Live /setowner '*S-1-5-32-544' | Out-Null
+& icacls $Live /deny "${RunUser}:(D,DC,WDAC,WO)" | Out-Null
+& icacls (Split-Path -Parent $Live) /deny "${RunUser}:(WD,AD,DC,WDAC,WO)" | Out-Null
 . (Join-Path $tree 'ops\box_git\runas\git_acl.ps1')
 $unsealed = Test-GitAclSealed -RepoRoot $Live -RunUser $RunUser
 if ($unsealed.Count -gt 0) { Stop-Here ("the live .git is not sealed against ${RunUser}: " + ($unsealed -join '; ')) }

@@ -5,7 +5,8 @@
 #   - .git and .git\config are owned by Administrators or SYSTEM;
 #   - quantrun (directly or via Users/Everyone/Authenticated Users/INTERACTIVE/BATCH/SERVICE) has
 #     no Delete, ChangePermissions or TakeOwnership on .git, no write/append/Delete/re-ACL on
-#     .git\config, and no DeleteSubdirectoriesAndFiles on the tree root, after quantrun's own
+#     .git\config, no Delete/DeleteSubdirectoriesAndFiles/re-ACL on the tree root (which is owned
+#     by Administrators too) and no create/delete-child/re-ACL on its parent, after quantrun's own
 #     explicit deny ACEs;
 #   - neither .git\commondir nor .git\config.worktree exists.
 # Returns the list of reasons it is NOT sealed (empty = sealed). Dot-sourced by the pinned
@@ -21,7 +22,13 @@ function Test-GitAclSealed {
            Risky = [int]($F::Delete -bor $F::ChangePermissions -bor $F::TakeOwnership) },
         @{ Path = (Join-Path $gitDir 'config'); Owner = $true
            Risky = [int]($F::WriteData -bor $F::AppendData -bor $F::Delete -bor $F::ChangePermissions -bor $F::TakeOwnership) },
-        @{ Path = $RepoRoot; Owner = $false; Risky = [int]$F::DeleteSubdirectoriesAndFiles }
+        # the root itself: no rename/delete (it would let a swapped tree, with its own .git, sit
+        # under the same path once this check had passed) and no re-ACL (Audit, r6 hold)
+        @{ Path = $RepoRoot; Owner = $true
+           Risky = [int]($F::Delete -bor $F::DeleteSubdirectoriesAndFiles -bor $F::ChangePermissions -bor $F::TakeOwnership) },
+        # its parent: no new folder, no file and no delete-child, so no second tree can be put there
+        @{ Path = (Split-Path -Parent $RepoRoot); Owner = $false
+           Risky = [int]($F::CreateFiles -bor $F::CreateDirectories -bor $F::DeleteSubdirectoriesAndFiles -bor $F::ChangePermissions -bor $F::TakeOwnership) }
     )
     $why = @()
     foreach ($c in $checks) {

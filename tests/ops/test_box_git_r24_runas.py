@@ -512,7 +512,10 @@ def test_the_live_git_is_sealed_before_any_system_git_reads_it() -> None:
         assert need in acl, need
     ins = _ps("ops/box_git/install_guard.ps1")
     for need in ("/setowner '*S-1-5-32-544'", '/deny "${RunUser}:(D,WDAC,WO)"',
-                 '/deny "${RunUser}:(W,D,WDAC,WO)"', '& icacls $Live /deny "${RunUser}:(DC)"',
+                 '/deny "${RunUser}:(W,D,WDAC,WO)"',
+                 '& icacls $Live /deny "${RunUser}:(D,DC,WDAC,WO)"',
+                 "& icacls $Live /setowner '*S-1-5-32-544'",
+                 '& icacls (Split-Path -Parent $Live) /deny "${RunUser}:(WD,AD,DC,WDAC,WO)"',
                  "Test-GitAclSealed -RepoRoot $Live", "'runas\\git_acl.ps1'"):
         assert need in ins, need
     # the pinned adopter checks the seal before its first git invocation, and again before sealing
@@ -549,3 +552,21 @@ def test_the_fence_refuses_unpickling(tmp_path) -> None:
                          timeout=60, check=False)
     assert out.returncode == 0, out.stderr
     assert "REFUSED True" in out.stdout
+
+
+def test_the_tree_root_cannot_be_swapped_after_the_check() -> None:
+    """Audit hold on r6: the root row of Test-GitAclSealed requires an admin owner and refuses
+    Delete, delete-child and re-ACL on the root, and create/delete-child on its parent."""
+    acl = _ps("ops/box_git/runas/git_acl.ps1")
+    root = acl[acl.index("@{ Path = $RepoRoot;"):acl.index("# its parent")]
+    assert "Owner = $true" in root
+    for bit in ("Delete", "DeleteSubdirectoriesAndFiles", "ChangePermissions", "TakeOwnership"):
+        assert f"$F::{bit}" in root, bit
+    parent = acl[acl.index("(Split-Path -Parent $RepoRoot)"):acl.index("$why = @()")]
+    for bit in ("CreateFiles", "CreateDirectories", "DeleteSubdirectoriesAndFiles"):
+        assert f"$F::{bit}" in parent, bit
+    ins = _ps("ops/box_git/install_guard.ps1")
+    # the root's deny lands after the Modify grant, and the check after both
+    grant = ins.index('& icacls $Live /grant "${RunUser}:(OI)(CI)M"')
+    deny = ins.index('& icacls $Live /deny "${RunUser}:(D,DC,WDAC,WO)"')
+    assert grant < deny < ins.index("Test-GitAclSealed -RepoRoot $Live")
