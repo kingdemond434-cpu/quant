@@ -437,6 +437,9 @@ function Invoke-StateApply {
 # A HELD box (no new release to adopt) calls this too, from the sealed tree it is already on: a
 # hold that lasts days must not leave a declared task unregistered for days.
 function Invoke-EnsureManifestTasks {
+    # (Audit C4) AS SYSTEM NOTHING UNDER -RepoRoot RUNS: the checker and every installer live in the
+    # tree, so under -Pinned this step is the r24 rule (log, install nothing).
+    if ($Pinned) { Log "ensure-task: skipped under -Pinned (checker and installers live in the tree)"; return }
     $ensured = @{}
     try {
         $checker = Join-Path $RepoRoot "scripts\check_box_tasks.py"
@@ -777,7 +780,8 @@ Invoke-EnsureManifestTasks
 # it failed rc 1 every hour. ops\retired_tasks.json declares retirements; a declared task is
 # DISABLED (never unregistered, never deleted) only when its action target script no longer exists.
 # The XML is exported first so the registration can be restored. Fail-soft: logs and continues.
-try {
+# (Audit C4) the retired list is tree data that disables tasks; not acted on as SYSTEM.
+if ($Pinned) { Log "retired-task: skipped under -Pinned" } else { try {
     $retiredFile = Join-Path $desk "ops\retired_tasks.json"
     if (Test-Path $retiredFile) {
         $retiredDecl = (Get-Content -Raw -LiteralPath $retiredFile | ConvertFrom-Json).retired
@@ -816,7 +820,7 @@ try {
     }
 } catch {
     Log ("retired-task: step failed: {0}" -f $_.Exception.Message)
-}
+} }
 
 # ------------------------------------------------------------ 2a. the box's release signing key
 # EVERY RELEASE.json THIS BOX EVER WROTE WAS UNSIGNED (measured 2026-09-30): `release.seal` signs
