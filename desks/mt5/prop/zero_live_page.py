@@ -20,6 +20,7 @@ reports/ZERO_LIVE_PAGE.json, which the Hourly pass board reads.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 from datetime import UTC, datetime
@@ -33,6 +34,7 @@ E8_BOOK = DESK / "reports" / "E8_BOOK.json"
 FTMO_BOOK = DESK / "reports" / "FTMO_ALLOCATOR.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 PAUSE = DESK / "data" / "GATEWAY_PAUSED"
+E8_GOLD = DESK / "reports" / "E8_GOLD.json"
 #: E8_BOOK is rebuilt every pass and the executor itself refuses a book older than 2h; the
 #: allocators run hourly. Six hours is several missed rebuilds, never one late one.
 BOOK_MAX_AGE_H = 6.0
@@ -130,9 +132,31 @@ def fusion(path: Path | None = None, pause: Path | None = None) -> dict[str, Any
         [(r.get("admission") or {}).get("why") for r in standby], key="why")}
 
 
-def assess(now: datetime | None = None) -> dict[str, Any]:
+def roster(now: datetime, *, exposure: bool = False) -> dict[str, Any]:
+    """The one live roster (prop/live_roster, root R10) over the same books this page reads."""
+    try:
+        from prop import live_roster as lr
+    except ModuleNotFoundError:                         # pragma: no cover - path
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from prop import live_roster as lr
+    return lr.build(now, exposure=exposure,
+                    paths={"e8_gold": E8_GOLD, "e8_book": E8_BOOK, "ftmo": FTMO_BOOK,
+                           "fusion": SLEEVES, "pause": PAUSE})
+
+
+def assess(now: datetime | None = None, *, live: dict[str, Any] | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     accounts = {"e8": e8(now), "ftmo": ftmo(now), "fusion": fusion()}
+    # E8 TRADES ITS GOLD WINDOWS OUTSIDE E8_BOOK (root R10, 2026-11-27): the page read the
+    # non-gold book only, so the account filling gold at 05:06Z read ZERO_LIVE. The roster's E8
+    # gold rows count as E8's live book.
+    with contextlib.suppress(Exception):
+        live = live if live is not None else roster(now)
+        gold = [r for r in live.get("rows") or [] if r.get("lane") == "e8_gold"]
+        if gold and accounts["e8"]["status"] in (ZERO, UNMEASURED):
+            accounts["e8"] = {"status": LIVE, "n": len(gold), "via": "e8_gold",
+                              "book_status": accounts["e8"]["status"]}
     trading = market_day(now)
     down = sorted(a for a, v in accounts.items() if v["status"] in (ZERO, UNMEASURED))
     page = trading and bool(down)
@@ -170,7 +194,13 @@ def _send(doc: dict[str, Any]) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    doc = assess()
+    now = datetime.now(tz=UTC)
+    live: dict[str, Any] = {}
+    with contextlib.suppress(Exception):
+        from prop import live_roster as lr
+        live = roster(now, exposure=True)
+        lr.publish(now, out=lr.OUT, doc=live)
+    doc = assess(now, live=live or None)
     doc["pager"] = _send(doc) if "--no-page" not in (argv or sys.argv[1:]) else {"sent": False,
                                                                                   "why": "--no-page"}
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -30,6 +30,7 @@ def books(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(z, "FTMO_BOOK", tmp_path / "FTMO_ALLOCATOR.json")
     monkeypatch.setattr(z, "SLEEVES", tmp_path / "sleeves.json")
     monkeypatch.setattr(z, "PAUSE", tmp_path / "GATEWAY_PAUSED")
+    monkeypatch.setattr(z, "E8_GOLD", tmp_path / "E8_GOLD.json")      # never the box's report
     return tmp_path
 
 
