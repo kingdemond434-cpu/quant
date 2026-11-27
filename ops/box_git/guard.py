@@ -15,7 +15,8 @@ head blocks) but its CLEAR is no longer needed.
 
 THE CHECKS (first refusal wins; every one is a measurement, and UNMEASURED refuses):
   1. trust class by the PINNED trust checker: REFUSE refused; TRUST parked for the owner.
-  2. static money rules on every changed .py file (static_problems): no NEW network, model,
+  2. static money rules on every changed money-path .py file, or every changed .py outside
+     tests/ when the money reading is UNMEASURED (static_problems): no NEW network, model,
      subprocess, ctypes, dynamic-code import or call, and no literal naming a guard, trust, halt
      or token path. Counted base vs head, so code that already had them is not blocked.
   3. ceilings: a raise of any number in ops/release/ceilings.json is TRUST (owner), a lowering or

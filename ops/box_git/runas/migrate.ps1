@@ -67,8 +67,10 @@ function Restart-Moved([string[]] $names) {
     $markers = @()
     foreach ($n in $names) {
         foreach ($a in (Get-ScheduledTask -TaskName $n).Actions) {
-            $m = [regex]::Matches("$($a.Arguments)", '[\w\\/.-]+\.(py|cmd|ps1)') | ForEach-Object { $_.Value }
-            $markers += $m
+            $wd = if ($a.WorkingDirectory) { $a.WorkingDirectory } else { 'C:\opt\quant' }
+            foreach ($m in [regex]::Matches("$($a.Arguments)", '[\w:\\/.-]+\.(py|cmd|ps1)')) {
+                $markers += if ([IO.Path]::IsPathRooted($m.Value)) { $m.Value } else { Join-Path $wd $m.Value }
+            }
         }
     }
     if ($markers.Count) { & $Py -I $Plan kill-old @markers | ForEach-Object { Say "kill-old: $_" } }

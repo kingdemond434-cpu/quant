@@ -88,13 +88,21 @@ from ops.box_git import runas_plan as R  # noqa: E402
 
 
 def _t(name, user, exe="cmd.exe", args=r"/c C:\opt\quant\x.cmd", rl="Limited"):
-    return {"name": name, "principal": {"user": user, "runlevel": rl},
-            "actions": [{"execute": exe, "arguments": args, "workdir": ""}]}
+    return {
+        "name": name,
+        "principal": {"user": user, "runlevel": rl},
+        "actions": [{"execute": exe, "arguments": args, "workdir": ""}],
+    }
 
 
-TASKS = [_t("MT5-Gateway", "Administrator", rl="Highest"), _t("MT5-Hourly", "SYSTEM"),
-         _t("MT5-AdoptRelease", "SYSTEM"), _t("Other", "SYSTEM", args="/c C:\\elsewhere\\y"),
-         _t("Done", "quantrun"), {"name": "Hidden", "principal": {}, "actions": None}]
+TASKS = [
+    _t("MT5-Gateway", "Administrator", rl="Highest"),
+    _t("MT5-Hourly", "SYSTEM"),
+    _t("MT5-AdoptRelease", "SYSTEM"),
+    _t("Other", "SYSTEM", args="/c C:\\elsewhere\\y"),
+    _t("Done", "quantrun"),
+    {"name": "Hidden", "principal": {}, "actions": None},
+]
 
 
 def test_only_live_tree_principals_move_and_only_to_quantrun() -> None:
@@ -104,8 +112,10 @@ def test_only_live_tree_principals_move_and_only_to_quantrun() -> None:
     assert adopter_still_runs_head_code["elevated_live_tree"] == ["MT5-AdoptRelease"]
     assert R.new_principal() == {"user": "quantrun", "logon": "S4U", "runlevel": "Limited"}
     snap = R.snapshot(TASKS, R.to_move(TASKS))
-    assert snap == {"MT5-Gateway": {"user": "Administrator", "runlevel": "Highest"},
-                    "MT5-Hourly": {"user": "SYSTEM", "runlevel": "Limited"}}
+    assert snap == {
+        "MT5-Gateway": {"user": "Administrator", "runlevel": "Highest"},
+        "MT5-Hourly": {"user": "SYSTEM", "runlevel": "Limited"},
+    }
 
 
 def test_the_weekend_window() -> None:
@@ -119,16 +129,23 @@ def test_the_state_machine_never_reregisters_after_a_move() -> None:
     now = datetime(2026, 11, 28, 12, tzinfo=UTC)
     assert R.step({}, now, probes={}) == ("PROBE", "probe")
     assert R.step({}, now, probes={"attach": {"ok": True}}) == ("WAIT_WINDOW", "wait:attach")
-    assert R.step({}, now, probes={"attach": {"ok": False}, "portable": {"ok": True}})[1] == \
-        "wait:portable"
+    assert (
+        R.step({}, now, probes={"attach": {"ok": False}, "portable": {"ok": True}})[1]
+        == "wait:portable"
+    )
     assert R.step({}, now, probes={"attach": {"ok": False}}) == ("BLOCKED", "alarm")
-    assert R.step({"state": "WAIT_WINDOW", "mode": "attach"}, now, probes={}, window=False) == \
-        ("WAIT_WINDOW", "wait")
-    assert R.step({"state": "WAIT_WINDOW", "mode": "attach"}, now, probes={}, window=True) == \
-        ("MOVED", "move:attach")
+    assert R.step({"state": "WAIT_WINDOW", "mode": "attach"}, now, probes={}, window=False) == (
+        "WAIT_WINDOW",
+        "wait",
+    )
+    assert R.step({"state": "WAIT_WINDOW", "mode": "attach"}, now, probes={}, window=True) == (
+        "MOVED",
+        "move:attach",
+    )
     for s in ("MOVED", "WATCH", "DONE", "BLOCKED", "ROLLED_BACK"):
-        assert not R.step({"state": s}, now, probes={"attach": {"ok": True}},
-                          window=True)[1].startswith("move")
+        assert not R.step({"state": s}, now, probes={"attach": {"ok": True}}, window=True)[
+            1
+        ].startswith("move")
 
 
 def test_the_monday_watch() -> None:
@@ -137,13 +154,20 @@ def test_the_monday_watch() -> None:
     now = opened + timedelta(hours=1)
     kw = {"market_open_since": opened, "consecutive_rejects": 0}
     assert R.watch_verdict(moved, now, heartbeat_at=now, **kw) == "ok"
-    assert R.watch_verdict(moved, now, heartbeat_at=now - timedelta(minutes=16), **kw) == \
-        "rollback"
-    assert R.watch_verdict(moved, now, heartbeat_at=now, market_open_since=opened,
-                           consecutive_rejects=3) == "rollback"
+    assert R.watch_verdict(moved, now, heartbeat_at=now - timedelta(minutes=16), **kw) == "rollback"
+    assert (
+        R.watch_verdict(
+            moved, now, heartbeat_at=now, market_open_since=opened, consecutive_rejects=3
+        )
+        == "rollback"
+    )
     assert R.watch_verdict(moved, opened + timedelta(hours=7), heartbeat_at=None, **kw) == "done"
-    assert R.watch_verdict(moved, now, heartbeat_at=None, market_open_since=None,
-                           consecutive_rejects=9) == "ok"  # closed market: nothing to judge
+    assert (
+        R.watch_verdict(
+            moved, now, heartbeat_at=None, market_open_since=None, consecutive_rejects=9
+        )
+        == "ok"
+    )  # closed market: nothing to judge
 
 
 def test_proof_and_the_guards_reading_of_it() -> None:
@@ -160,17 +184,95 @@ def test_proof_and_the_guards_reading_of_it() -> None:
 
 
 def test_the_loop_requires_the_seat_until_the_flip_and_again_on_a_bad_proof(
-        monkeypatch, tmp_path) -> None:
+    monkeypatch, tmp_path
+) -> None:
     from types import SimpleNamespace as NS
 
     from ops.box_git import box_loop as L
+
     cfg = NS(guard_dir=tmp_path)
     assert L.seat_required(cfg)[0]  # r24 ships with the flag on
     monkeypatch.setattr(L, "REQUIRE_SEAT_CLEAR", False)
     assert L.seat_required(cfg) == (True, "RUN_AS.json missing")
     now = datetime(2026, 11, 28, 12, tzinfo=UTC)
     import json
+
     (tmp_path / "runas").mkdir()
-    (tmp_path / L.RUN_AS_PROOF).write_text(json.dumps(
-        R.proof([_t("MT5-Gateway", "quantrun")], {"guard": True}, {}, now)), encoding="utf-8")
+    (tmp_path / L.RUN_AS_PROOF).write_text(
+        json.dumps(R.proof([_t("MT5-Gateway", "quantrun")], {"guard": True}, {}, now)),
+        encoding="utf-8",
+    )
     assert L.seat_required(cfg, now) == (False, "independent")
+
+
+def test_uncleared_head_code_never_runs_while_the_seat_is_required(monkeypatch) -> None:
+    """Audit MF1 (r24 a9a46e82d): quantci may reach the terminals like any account, so a PR's own
+    code runs before a CLEAR only once the seat is no longer required."""
+    from ops.box_git import box_loop as L
+
+    class F:
+        def gh(self, path, *a, **k):
+            if path.endswith("/check-runs"):
+                return {"check_runs": []}
+            return []  # no CLEAR on the PR
+
+    pr = {"number": 1, "head": {"sha": "b" * 40}}
+    assert L._eligible(F(), [pr], set(), need_clear=True) == []
+    assert L._eligible(F(), [pr], set(), need_clear=False) == [pr]
+    assert L.seat_required(object())[0]  # r24 ships with the seat required
+
+
+def test_kill_old_matches_full_paths_only(monkeypatch) -> None:
+    import sys
+    import types
+
+    psutil = types.ModuleType("psutil")
+    monkeypatch.setitem(sys.modules, "psutil", psutil)
+
+    class P:
+        def __init__(self, pid, name, cmd, user, cwd):
+            self.info = {"pid": pid, "name": name, "cmdline": cmd, "username": user}
+            self._cwd, self.killed = cwd, False
+
+        def cwd(self):
+            return self._cwd
+
+        def kill(self):
+            self.killed = True
+
+    procs = [
+        P(
+            1,
+            "python.exe",
+            ["py", "research\\hourly_cycle.py"],
+            "SYSTEM",
+            "C:\\opt\\quant\\desks\\mt5",
+        ),
+        P(
+            2,
+            "python.exe",
+            ["py", "research\\hourly_cycle_extra.py"],
+            "SYSTEM",
+            "C:\\opt\\quant\\desks\\mt5",
+        ),
+        P(
+            3,
+            "python.exe",
+            ["py", "research\\hourly_cycle.py"],
+            "BOX\\quantrun",
+            "C:\\opt\\quant\\desks\\mt5",
+        ),
+        P(
+            4,
+            "terminal64.exe",
+            ["t", "research\\hourly_cycle.py"],
+            "SYSTEM",
+            "C:\\opt\\quant\\desks\\mt5",
+        ),
+    ]
+    monkeypatch.setattr(psutil, "process_iter", lambda *a: procs, raising=False)
+    import ntpath
+    import os
+
+    monkeypatch.setattr(os, "path", ntpath)
+    assert R.kill_old(["C:\\opt\\quant\\desks\\mt5\\research\\hourly_cycle.py"]) == [1]

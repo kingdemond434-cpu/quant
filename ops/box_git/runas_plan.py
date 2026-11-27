@@ -159,20 +159,31 @@ def proof_holds(doc: Mapping[str, Any] | None, now: datetime) -> tuple[bool, str
 
 
 # ------------------------------------------------------------------ the CLI migrate.ps1 calls
-def kill_old(script_markers: Sequence[str], keep_user: str = RUN_USER) -> list[int]:
+def _same(a: str, b: str) -> bool:
+    import os
+    return os.path.normcase(os.path.normpath(a)) == os.path.normcase(os.path.normpath(b))
+
+
+def kill_old(scripts: Sequence[str], keep_user: str = RUN_USER) -> list[int]:
     """After a moved task is stopped, end the processes its OLD principal left running (a stopped
-    cmd.exe can leave its python child): python processes whose command line names one of the
-    task's scripts and whose owner is not quantrun. Never a terminal64, never another script."""
+    cmd.exe can leave its python child): python processes owned by anyone but quantrun one of
+    whose arguments, resolved against the process's own working folder, IS one of the task's
+    script paths (full paths, never a substring). Never a terminal64, never another script."""
+    import os
+
     import psutil
     killed = []
     for p in psutil.process_iter(["pid", "name", "cmdline", "username"]):
         try:
-            name = str(p.info["name"] or "").lower()
-            if not name.startswith("python"):
+            if not str(p.info["name"] or "").lower().startswith("python"):
                 continue
-            cmd = " ".join(p.info["cmdline"] or [])
             owner = str(p.info["username"] or "").split("\\")[-1].lower()
-            if owner != keep_user and any(m and m.lower() in cmd.lower() for m in script_markers):
+            if owner == keep_user:
+                continue
+            cwd = p.cwd()
+            args = [os.path.join(cwd, x) for x in (p.info["cmdline"] or [])[1:]
+                    if x.lower().endswith((".py", ".cmd", ".ps1"))]
+            if any(_same(x, s) for x in args for s in scripts if s):
                 p.kill()
                 killed.append(int(p.info["pid"]))
         except Exception:

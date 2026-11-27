@@ -814,7 +814,7 @@ def pr_parallel(cores: int | None = None) -> int:
 
 
 def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
-              skip: set[str]) -> list[Mapping[str, Any]]:
+              skip: set[str], need_clear: bool = True) -> list[Mapping[str, Any]]:
     """`prs` arrive in pr_order already (pr_tick sorts: pr_order's one named caller)."""
     out = []
     for p in prs:
@@ -823,9 +823,9 @@ def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
             continue
         if checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue
-        if not GUARD_LIVE and not audited_clear(
+        if need_clear and not audited_clear(
                 f.gh(f"repos/x/y/issues/{p.get('number')}/comments"), head):
-            continue  # Audit MF-2 (r23: head code runs only as quantci, Audit D1)
+            continue  # Audit MF-2: unreviewed code never runs on the trading box
         out.append(p)
     return out
 
@@ -1104,7 +1104,10 @@ def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S, *,
             if (time.monotonic() < until or not started) and len(running) < k:
                 prs = pr_order(f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
                                or [])
-                for p in _eligible(f, prs, started)[:k - len(running)]:
+                # (r24, Audit MF1) head code runs before a CLEAR only once the seat is no longer
+                # required: until then quantci could reach the terminals like any account
+                need = not GUARD_LIVE or seat_required(cfg)[0]
+                for p in _eligible(f, prs, started, need)[:k - len(running)]:
                     hold, why = RES.take(cfg, 1 if fast_path() else None, FAST_CHECK_WORKTREES)
                     if hold is None:
                         waited = f"PR #{p.get('number')} waits: {why}"
