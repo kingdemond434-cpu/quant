@@ -47,7 +47,8 @@ def test_trust_set_lists_the_guardian() -> None:
 
 
 BARRED = [
-    r"\bSet-Content\b", r"\bAdd-Content\b", r"\bOut-File\b", r"\bNew-Item\b", r"\bRemove-Item\b(?!\s+Env:)",
+    r"\bSet-Content\b", r"\bAdd-Content\b", r"\bOut-File\b", r"\bNew-Item\b",
+    r"\bRemove-Item\b(?!\s+Env:)",
     r"\bMove-Item\b", r"\bCopy-Item\b", r"\bRename-Item\b", r"\bicacls\b", r"\bSet-Acl\b",
     r"\bSet-ScheduledTask\b", r"\bRegister-ScheduledTask\b", r"\bUnregister-ScheduledTask\b",
     r"\bStart-ScheduledTask\b", r"\bStop-ScheduledTask\b", r"\bDisable-ScheduledTask\b",
@@ -66,7 +67,8 @@ def test_no_write_outside_write_status() -> None:
     outside = code[:a] + code[b + 1:]
     for pat in BARRED:
         # quoted strings are log text or paths, not commands; stream merges are not redirects
-        lines = [re.sub(r"'[^']*'|\"[^\"]*\"|2>\$null|2>&1", "", ln) for ln in outside.splitlines()]
+        strip = r"'[^']*'|\"[^\"]*\"|2>\$null|2>&1"
+        lines = [re.sub(strip, "", ln) for ln in outside.splitlines()]
         hits = [ln for ln in lines if re.search(pat, ln)]
         assert not hits, f"{pat} outside Write-Status: {hits}"
 
@@ -77,7 +79,8 @@ def test_write_status_refuses_any_other_path_and_targets_the_log() -> None:
     body = code[a:b]
     assert 'if ($path -ne $Status) { throw' in body
     assert "$Status = Join-Path $LogDir 'guard_status.log'" in TEXT
-    assert "$LogDir = Join-Path $Q 'logs'" in TEXT and "$Q      = 'C:\\ProgramData\\QuantBox'" in TEXT
+    assert "$LogDir = Join-Path $Q 'logs'" in TEXT
+    assert "$Q      = 'C:\\ProgramData\\QuantBox'" in TEXT
     # every Write-Status call passes $Status, and only Say calls it
     calls = re.findall(r"Write-Status\s+(\S+)", code)
     assert calls and all(c == "$Status" for c in calls if c != "([string]")
@@ -86,6 +89,10 @@ def test_write_status_refuses_any_other_path_and_targets_the_log() -> None:
 def test_no_link_writes_as_system() -> None:
     assert "ReparsePoint" in TEXT and "hardlink list" in TEXT
     assert "if (-not (Test-PlainFile $Status)) { return }" in TEXT
+    # a log a non-admin pre-created or can write is neither appended to nor trusted for the
+    # hourly throttle (Audit 21:40Z)
+    assert "return (Test-AdminFile $p)" in TEXT
+    assert "(Test-Path -LiteralPath $Status) -and (Test-AdminFile $Status)" in TEXT
 
 
 def test_never_logs_an_environment_value() -> None:

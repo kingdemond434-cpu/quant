@@ -44,7 +44,28 @@ function Test-PlainFile([string] $p) {
     if (-not (Test-Path -LiteralPath $p)) { return $true }
     if ((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }
     $links = @(& "$env:SystemRoot\System32\fsutil.exe" hardlink list $p 2>$null)
-    return (-not $LASTEXITCODE) -and $links.Count -eq 1
+    if ($LASTEXITCODE -or $links.Count -ne 1) { return $false }
+    return (Test-AdminFile $p)
+}
+function Test-AdminFile([string] $p) {
+    # (Audit 21:40Z) a file a non-admin pre-created or can write is not ours: its lines (and the
+    # hourly throttle read from them) could be spoofed. Owner Administrators or SYSTEM, and no
+    # allow ACE granting any write to anyone else.
+    try {
+        $acl = Get-Acl -LiteralPath $p
+        $own = (New-Object Security.Principal.NTAccount($acl.Owner)).Translate([Security.Principal.SecurityIdentifier]).Value
+        if (@('S-1-5-32-544', 'S-1-5-18') -notcontains $own) { return $false }
+        $w = [int]([Security.AccessControl.FileSystemRights]::WriteData -bor [Security.AccessControl.FileSystemRights]::AppendData -bor
+                    [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor
+                    [Security.AccessControl.FileSystemRights]::TakeOwnership) -bor 0x50000000
+        foreach ($r in $acl.Access) {
+            if ("$($r.AccessControlType)" -ne 'Allow') { continue }
+            $sid = $r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+            if (@('S-1-5-32-544', 'S-1-5-18') -contains $sid) { continue }
+            if ([int]$r.FileSystemRights -band $w) { return $false }
+        }
+        return $true
+    } catch { return $false }
 }
 function Write-Status([string] $path, [string] $line) {
     # THE ONLY WRITE IN THIS FILE. Any other target is refused, so a later edit cannot widen it
@@ -77,7 +98,7 @@ function Cut([string] $s, [int] $n = 400) {
 # Once an hour is enough to diagnose; the mover runs this every 5 minutes. The hour is read from
 # the log itself (its last 'guardian status' line), so no second file is ever written.
 try {
-    if (Test-Path -LiteralPath $Status) {
+    if ((Test-Path -LiteralPath $Status) -and (Test-AdminFile $Status)) {
         $last = Get-Content -LiteralPath $Status -Tail 400 | Where-Object { $_ -match '^\S+  guardian status begin' } | Select-Object -Last 1
         if ($last) {
             $at = [datetime]::Parse(($last -split '  ')[0], [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal -bor [Globalization.DateTimeStyles]::AdjustToUniversal)
