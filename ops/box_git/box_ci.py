@@ -147,6 +147,23 @@ def promotable(state: Mapping[str, Any], is_ancestor: Any) -> str | None:
     return best
 
 
+def direct_promotable(state: Mapping[str, Any], live: str, is_ancestor: Any,
+                      code_diff: Any) -> str | None:
+    """(boot r21, direct live) LIVE's head itself, as soon as it lands: no full run is waited
+    for. Nothing when it IS the last promotion, does not descend from it, or differs from it only
+    by the seal (`code_diff(a, b)` lists the changed paths other than RELEASE.json), so the seal
+    commit a promotion lands on LIVE is never promoted again."""
+    live = (live or "").strip()
+    if len(live) != 40:
+        return None
+    last = state.get("promoted")
+    if not last:
+        return live
+    if live == last or not is_ancestor(last, live):
+        return None
+    return live if str(code_diff(last, live) or "").strip() else None
+
+
 def record(state: dict[str, Any], *, head: str, kind: str, ok: bool, why: str,
            now: datetime | None = None) -> dict[str, Any]:
     rows = [*(state.get("full_results") or []),

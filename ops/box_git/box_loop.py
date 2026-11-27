@@ -57,6 +57,17 @@ from ops.box_git import (  # noqa: E402
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 GATING = ("quality", "mt5-money-path", "coverage-floor")
+#: (boot r21) DIRECT LIVE. zuck 2026-11-27 11:40Z "no more tests no releases no merges js built n
+#: direct live", 11:42Z (on keeping only the automatic safety check on code that places real
+#: trades) "ok only that nth else". The one delivery gate is now the Auditor's CLEAR at the exact
+#: head plus, ONLY when the diff touches the money path (ops/release/replay_shadow.is_money, read
+#: from LIVE's own tree), the risk invariants: the ceilings, the prop-firm rules and the survival
+#: suites. No replay-shadow, no impacted tests, no full suite, no all-green release: LIVE's newest
+#: head is promoted on the next light round (90 s) and the box's adoption task is started at once.
+#: The trust boundary at the door (protect.py) and the runtime rails are unchanged. False is r20.
+DIRECT_LIVE = True
+DIRECT_ENV = "QUANT_FORGE_DIRECT"
+ADOPT_TASK = "MT5-AdoptRelease"
 RELEASE_JSON = "desks/mt5/data/RELEASE.json"
 
 
@@ -557,7 +568,8 @@ def gate_tick(cfg: Config, live: str) -> str:
                forge_api.FORGE_CA_ENV: str(cfg.ca), forge_api.FORGE_BARE_ENV: str(cfg.bare),
                forge_api.FORGE_TOKEN_FILE_ENV: str(cfg.tokens / "merge-gate.token"),
                "QUANT_TRUST_CHECKER": str(cfg.trust_checker or ""),
-               "QUANT_TRUST_PIN": str(cfg.trust_pin or "")}
+               "QUANT_TRUST_PIN": str(cfg.trust_pin or ""),
+               DIRECT_ENV: "1" if DIRECT_LIVE else ""}
         rc, out = _run([cfg.python, ".github/scripts/audit_gate.py", "--repo",
                         forge_api.FORGE_REPO, "--sweep", "--box"], cwd=root, env=env, timeout=1800)
     return f"gate rc={rc}: {out.strip().splitlines()[-1][:200] if out.strip() else ''}"
@@ -791,6 +803,8 @@ def check_pr(cfg: Config, p: Mapping[str, Any], hold: Hold | None = None) -> str
     head = str((p.get("head") or {}).get("sha") or "")
     base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
     changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
+    if DIRECT_LIVE:
+        return direct_check(cfg, p, base, head, changed)
     with worktree(cfg, head) as root:
         if fast_path():
             rok, rwhy = fast_risk(cfg, root, base, head)
@@ -822,6 +836,64 @@ def check_pr(cfg: Config, p: Mapping[str, Any], hold: Hold | None = None) -> str
         post(cfg, head, "success" if sok else "failure", f"box: {swhy}", ("replay-shadow",))
     return (f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
             f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
+
+
+#: Run in LIVE's (the merge base's) own checkout by the CI worker: which changed files are money
+#: path, by the same classifier replay-shadow uses (MONEY_PATH directories, the entry points'
+#: import closure, every script unless a reviewed exception). Prints one JSON list.
+_MONEY_PROBE = (
+    "import json, sys; from pathlib import Path; sys.path.insert(0, 'ops/release');"
+    "import replay_shadow as r; b, h = Path('.'), Path(sys.argv[2]);"
+    "c = r.import_closure(b) | r.import_closure(h); ex = r.exempt_scripts((b, h), c);"
+    "ch = Path(sys.argv[1]).read_text(encoding='utf-8').split();"
+    "print('MONEY=' + json.dumps(sorted(f for f in ch if r.is_money(f, c, exempt=ex))))")
+
+
+def money_changes(cfg: Config, base_root: Path, head_root: Path,
+                  changed: Sequence[str]) -> tuple[list[str] | None, str]:
+    """The changed files that are money path, or None when that could not be measured (which the
+    caller treats as money: an unmeasured diff never skips the risk check)."""
+    lst = cfg.work / f"money_{uuid_hex()}.txt"
+    try:
+        lst.write_text("\n".join(sorted(set(changed))) + "\n", encoding="utf-8")
+        rc, out = _run_untrusted(cfg, [cfg.python, "-I", "-c", _MONEY_PROBE, str(lst),
+                                       str(head_root)], cwd=base_root, timeout=900)
+    finally:
+        lst.unlink(missing_ok=True)
+    m = re.search(r"^MONEY=(\[.*\])\s*$", out or "", re.M)
+    if rc != 0 or not m:
+        return None, f"money path UNMEASURED (rc={rc}): {(out or '').strip()[-120:]}"
+    try:
+        got = json.loads(m.group(1))
+    except ValueError:
+        return None, "money path UNMEASURED: unreadable classifier answer"
+    if not isinstance(got, list):
+        return None, "money path UNMEASURED: unreadable classifier answer"
+    return [str(f) for f in got], f"{len(got)} money-path file(s) of {len(set(changed))}"
+
+
+def uuid_hex() -> str:
+    import uuid
+    return uuid.uuid4().hex[:12]
+
+
+def direct_check(cfg: Config, p: Mapping[str, Any], base: str, head: str,
+                 changed: Sequence[str]) -> str:
+    """(boot r21) The ONE box check of direct live: the risk invariants, run only when the diff
+    touches the money path. A diff that does not gets a success that says so, with the count."""
+    n = p.get("number")
+    with worktree(cfg, base) as b, worktree(cfg, head) as root:
+        money, mwhy = money_changes(cfg, b, root, changed)
+        if money == []:
+            post(cfg, head, "success",
+                 f"box: direct live, no money-path file changed ({mwhy}): no check applies",
+                 (RISK_CONTEXT,))
+            return f"PR #{n}: direct live, not money path"
+        rok, rwhy = risk_job(cfg, root, base, head, suite_timeout_s=FAST_RISK_TIMEOUT_S)
+        rok, rwhy = _fast(rok, rwhy)
+        post(cfg, head, "success" if rok else "failure", f"box: {rwhy} [{mwhy}]",
+             (RISK_CONTEXT,))
+    return f"PR #{n}: direct live, money path ({mwhy}), risk {'ok' if rok else 'FAIL'}"
 
 
 def _held(hold: Hold, fn: Callable[..., str], cfg: Config, p: Mapping[str, Any]) -> str:
@@ -923,7 +995,12 @@ def promote_tick(cfg: Config) -> str:
     def anc(a: str, b: str) -> bool:
         return _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", a, b])[0] == 0
 
-    head = box_ci.promotable(state, anc)
+    if DIRECT_LIVE:
+        head = box_ci.direct_promotable(state, git(cfg, "rev-parse", f"refs/heads/{LIVE}"), anc,
+                                        lambda a, b: git(cfg, "diff", "--name-only", a, b, "--",
+                                                         ".", f":(exclude){RELEASE_JSON}"))
+    else:
+        head = box_ci.promotable(state, anc)
     if not head:
         return "nothing new to promote"
     seal = seal_and_push(cfg, head)
@@ -939,7 +1016,18 @@ def promote_tick(cfg: Config) -> str:
         state["promoted"] = head
         box_ci.save_state(cfg.state, state)
     last = out.strip().splitlines()[-1][:160] if out.strip() else ""
-    return f"promote {head[:9]}: rc={rc} {last}"
+    adopt = start_adoption() if rc == 0 and DIRECT_LIVE else ""
+    return f"promote {head[:9]}: rc={rc} {last}{adopt}"
+
+
+def start_adoption() -> str:
+    """(r21) Start the box's own adoption task now instead of waiting for its hourly slot. The
+    task (Adopt-And-Seal.ps1) keeps every one of its own checks; this only moves its start."""
+    if os.name != "nt":
+        return ""
+    rc, out = _run(["schtasks.exe", "/Run", "/TN", ADOPT_TASK], timeout=60)
+    return f"; adoption {ADOPT_TASK} started" if rc == 0 else (
+        f"; adoption start refused rc={rc}: {out.strip()[-120:]} (its hourly slot still runs)")
 
 
 def seal_and_push(cfg: Config, tested: str) -> str | None:
@@ -1215,7 +1303,8 @@ def leadtime_tick(cfg: Config, now: datetime | None = None) -> str:
     doc = delivery_leadtime.build(
         prs, comments, statuses,
         full_results=box_ci.load_state(cfg.state).get("full_results") or [],
-        production=_production_commits(cfg), adopted=None, is_ancestor=anc, now=t)
+        production=_production_commits(cfg), adopted=None, is_ancestor=anc, now=t,
+        direct=DIRECT_LIVE)
     box_ci.save_state(out, doc)
     s = doc["summary"]
     sl = s.get("sla") or {}
@@ -1242,7 +1331,8 @@ def leadtime_tick(cfg: Config, now: datetime | None = None) -> str:
 #: mover still sees one pass at a time and nothing outlives it.
 LIGHT_EVERY_S = 90.0
 LIGHT = ("drop", "inbox", "state", "gate", "sign", "promote", "leadtime")
-HEAVY = ("pr", "full")
+#: (r21) direct live runs no full suite: the pr stage is the only heavy one.
+HEAVY = ("pr",) if DIRECT_LIVE else ("pr", "full")
 
 
 def _locked(fn: Callable[[], str]) -> str:

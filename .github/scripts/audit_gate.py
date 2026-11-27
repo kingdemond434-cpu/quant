@@ -273,6 +273,8 @@ FORGE_REQUIRED = ("risk-invariants", "replay-shadow")
 
 
 FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
+#: (boot r21) set by the box loop when DIRECT_LIVE is on: the risk invariants are the one check.
+DIRECT_ENV = "QUANT_FORGE_DIRECT"
 
 
 def forge_need(need: tuple[str, ...]) -> tuple[str, ...]:
@@ -1891,6 +1893,12 @@ def run(
             # QUANT_FORGE_FULL_GATING=1 restores all.
             if os.environ.get(FULL_GATING_ENV, "").strip() not in {"1", "true", "yes"}:
                 need = FORGE_REQUIRED
+            # DIRECT LIVE (boot r21; zuck 2026-11-27 11:40-11:42Z "js built n direct live",
+            # "ok only that nth else"): the Auditor CLEAR at the exact head plus the risk
+            # invariants, which the box runs only on a money-path diff (else it posts a success
+            # that says no check applies). replay-shadow no longer gates.
+            if os.environ.get(DIRECT_ENV, "").strip() in {"1", "true", "yes"}:
+                need = (RISK_JOB,)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break

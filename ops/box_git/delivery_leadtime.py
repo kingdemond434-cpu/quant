@@ -234,9 +234,13 @@ SLA_MIN: dict[str, float] = {
 }
 #: No box-ci status at all for this long while a CLEARed PR waits for its first check.
 CI_SILENT_MIN = 30.0
+#: (boot r21, direct live) no full run is waited for: a merged change is due in production
+#: within minutes of landing on LIVE, and `full_green` is not a stage of its path.
+DIRECT_SLA_MIN: dict[str, float] = {**SLA_MIN, "live": 10.0}
 
 
-def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
+def sla(rows: Sequence[Mapping[str, Any]], now: datetime, *,
+        direct: bool = False) -> dict[str, Any]:
     """Open changes past their current stage's SLA, and the CI zero-output alarm. Read only.
     A change held at 'ci_end' by a code red is the code's answer, not a breach of the loop."""
     breaches: dict[str, list[dict[str, Any]]] = {}
@@ -252,7 +256,8 @@ def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
             continue
         if r.get("state") not in (None, "open") and not st.get("live"):
             continue  # closed unmerged: nothing to deliver
-        reached = sorted(((k, t) for k in STAGES if (t := st.get(k))), key=lambda kv: kv[1])
+        reached = sorted(((k, t) for k in STAGES if (t := st.get(k))
+                          and not (direct and k == "full_green")), key=lambda kv: kv[1])
         stage, since = reached[-1]
         causes = [c for c in r.get("ci_causes") or [] if c != "env"]
         if stage == "ci_end" and causes:
@@ -260,7 +265,7 @@ def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
         if stage in ("clear", "forge_pr"):
             waiting_first.append(r.get("pr"))
         mins = round((now - since).total_seconds() / 60, 1)
-        limit = SLA_MIN.get(stage)
+        limit = (DIRECT_SLA_MIN if direct else SLA_MIN).get(stage)
         if limit is not None and mins > limit:
             breaches.setdefault(stage, []).append({"pr": r.get("pr"), "waited_min": mins})
     alarms = []
@@ -268,7 +273,8 @@ def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
     if waiting_first and (silent is None or silent > CI_SILENT_MIN):
         alarms.append({"alarm": "ci_zero_output", "silent_min": silent,
                        "waiting": len(waiting_first), "limit_min": CI_SILENT_MIN})
-    out = {"targets_min": SLA_MIN, "ok": not breaches and not alarms, "alarms": alarms,
+    out = {"targets_min": DIRECT_SLA_MIN if direct else SLA_MIN, "direct": direct,
+           "ok": not breaches and not alarms, "alarms": alarms,
            "breaches": {k: {"n": len(v), "oldest_min": max(i["waited_min"] for i in v),
                             "prs": [i["pr"] for i in
                                     sorted(v, key=lambda i: -i["waited_min"])][:10]}
@@ -277,7 +283,7 @@ def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
 
 
 def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[str, Any]],
-            now: datetime) -> dict[str, Any]:
+            now: datetime, *, direct: bool = False) -> dict[str, Any]:
     since = now - WEEK
     lead, adopt_n = [], 0
     backlog: list[float] = []
@@ -314,7 +320,7 @@ def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[st
         "bottleneck": next(iter(held), None),
         "unmeasured_stages": UNMEASURED_STAGES,
         "stuck": stuck(rows, now),
-        "sla": sla(rows, now),
+        "sla": sla(rows, now, direct=direct),
     }
 
 
@@ -323,7 +329,8 @@ def build(prs: Sequence[Mapping[str, Any]], comments: Mapping[int, Sequence[Mapp
           full_results: Sequence[Mapping[str, Any]],
           production: Sequence[tuple[datetime, str]],
           adopted: Sequence[tuple[datetime, str]] | None,
-          is_ancestor: IsAncestor, now: datetime | None = None) -> dict[str, Any]:
+          is_ancestor: IsAncestor, now: datetime | None = None,
+          direct: bool = False) -> dict[str, Any]:
     t = now or datetime.now(UTC)
     greens = [(at, str(f.get("head"))) for f in full_results
               if f.get("kind") == "full" and f.get("ok") is True and (at := _ts(f.get("at")))]
@@ -332,7 +339,7 @@ def build(prs: Sequence[Mapping[str, Any]], comments: Mapping[int, Sequence[Mapp
                 greens, production, adopted or (), is_ancestor)
             for p in sorted(prs, key=lambda p: int(p.get("number") or 0))]
     doc = {"schema": SCHEMA, "at": _iso(t), "stages": list(STAGES),
-           "summary": summary(rows, full_results, t), "changes": rows}
+           "summary": summary(rows, full_results, t, direct=direct), "changes": rows}
     if adopted is None:
         doc["summary"]["unmeasured_stages"] = {
             "adopted": "no adoption record was given to this pass", **UNMEASURED_STAGES}
