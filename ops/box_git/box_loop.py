@@ -250,18 +250,67 @@ def post(cfg: Config, sha: str, state: str, desc: str,
             {"state": state, "context": ctx, "description": desc[:250]})
 
 
-def _resources(cfg: Config) -> tuple[bool, int, str]:
-    try:
+@dataclass
+class Hold:
+    workers: int
+    worktrees: int
+
+
+class Reservations:
+    """(boot r20, Audit HOLD MF1) ONE locked budget for every concurrent CI job on the box.
+
+    The sum of workers held never exceeds box_ci.idle_workers() of the cores measured now (at
+    most MAX_WORKERS, RESERVE_CORES kept back); free disk minus every held and requested checkout
+    (WORKTREE_GB each) stays at or above DISK_FLOOR_GB; available RAM minus RAM_PER_CHECK_GB for
+    every held and requested job stays at or above RAM_FLOOR_GB. Anything unmeasured grants
+    nothing: the job waits."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.workers = 0
+        self.worktrees = 0
+        self.jobs = 0
+
+    def _measure(self, cfg: Config) -> tuple[float, list[float], float]:
         import psutil  # type: ignore[import-untyped,unused-ignore]
         free = psutil.disk_usage(str(cfg.work.anchor or cfg.work)).free / 1024 ** 3
-        cores = psutil.cpu_percent(interval=2.0, percpu=True)
-    except Exception as exc:  # unmeasured resources start nothing
-        return False, 0, f"resources UNMEASURED ({type(exc).__name__})"
-    ok, why = box_ci.disk_ok(free)
-    n = box_ci.idle_workers(cores)
-    if ok and n == 0:
-        return False, 0, "no idle cores right now: CI waits"
-    return ok, n, why
+        cores = psutil.cpu_percent(interval=1.0, percpu=True)
+        ram = psutil.virtual_memory().available / 1024 ** 3
+        return free, cores, ram
+
+    def take(self, cfg: Config, want: int | None, worktrees: int) -> tuple[Hold | None, str]:
+        with self._lock:
+            try:
+                free, cores, ram = self._measure(cfg)
+            except Exception as exc:  # unmeasured resources start nothing
+                return None, f"resources UNMEASURED ({type(exc).__name__})"
+            total = box_ci.idle_workers(cores)
+            spare = total - self.workers
+            if spare < 1:
+                return None, f"no worker slot: {self.workers} of {total} held"
+            left = free - (self.worktrees + worktrees) * box_ci.WORKTREE_GB
+            ok, why = box_ci.disk_ok(left)
+            if not ok:
+                return None, f"disk after checkouts: {why}"
+            if ram - (self.jobs + 1) * box_ci.RAM_PER_CHECK_GB < box_ci.RAM_FLOOR_GB:
+                return None, (f"RAM {ram:.1f} GB available, {self.jobs} job(s) running: under the "
+                              f"{box_ci.RAM_FLOOR_GB:.0f} GB floor")
+            n = spare if want is None else max(1, min(want, spare))
+            self.workers += n
+            self.worktrees += worktrees
+            self.jobs += 1
+            return Hold(n, worktrees), why
+
+    def release(self, hold: Hold) -> None:
+        with self._lock:
+            self.workers -= hold.workers
+            self.worktrees -= hold.worktrees
+            self.jobs -= 1
+
+
+RES = Reservations()
+#: A fast-path check holds one worker and three checkouts (the head's, and replay's base + head).
+FAST_CHECK_WORKTREES = 3
 
 
 # ------------------------------------------------------------------ untrusted code (Audit MF-2)
@@ -728,8 +777,17 @@ def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
     return out
 
 
-def check_pr(cfg: Config, p: Mapping[str, Any]) -> str:
-    """One PR's box checks, posted as statuses. Unchanged in substance from the serial stage."""
+def check_pr(cfg: Config, p: Mapping[str, Any], hold: Hold | None = None) -> str:
+    """One PR's box checks, posted as statuses, inside a reservation `hold` from RES (pr_tick
+    takes it before the check starts and releases it after)."""
+    if hold is None:
+        hold, why = RES.take(cfg, 1 if fast_path() else None, FAST_CHECK_WORKTREES)
+        if hold is None:
+            return f"PR #{p.get('number')} waits: {why}"
+        try:
+            return check_pr(cfg, p, hold)
+        finally:
+            RES.release(hold)
     head = str((p.get("head") or {}).get("sha") or "")
     base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
     changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
@@ -748,9 +806,7 @@ def check_pr(cfg: Config, p: Mapping[str, Any]) -> str:
             return f"PR #{p.get('number')}: fast lane"
         if sel == []:
             post(cfg, head, "success", "box CI: no change any test can observe")
-        ok, n, why = _resources(cfg)
-        if not ok:
-            return f"PR #{p.get('number')} waits: {why}"
+        n = hold.workers   # the shared reservation's grant (Audit MF1), never a fresh sample
         passed, scope = True, "no observable test"
         if sel != []:
             post(cfg, head, "pending", f"box CI running on {n} idle cores")
@@ -768,6 +824,13 @@ def check_pr(cfg: Config, p: Mapping[str, Any]) -> str:
             f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
 
 
+def _held(hold: Hold, fn: Callable[..., str], cfg: Config, p: Mapping[str, Any]) -> str:
+    try:
+        return fn(cfg, p, hold)
+    finally:
+        RES.release(hold)
+
+
 def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S, *,
             parallel: int | None = None, relist_s: float = PR_RELIST_S) -> str:
     import concurrent.futures as cf
@@ -780,14 +843,21 @@ def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S, *,
     with cf.ThreadPoolExecutor(max_workers=k, thread_name_prefix="pr-check") as pool:
         while True:
             # the stage stops STARTING after its budget, but one check always runs
+            waited = ""
             if (time.monotonic() < until or not started) and len(running) < k:
                 prs = pr_order(f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
                                or [])
                 for p in _eligible(f, prs, started)[:k - len(running)]:
+                    hold, why = RES.take(cfg, 1 if fast_path() else None, FAST_CHECK_WORKTREES)
+                    if hold is None:
+                        waited = f"PR #{p.get('number')} waits: {why}"
+                        break  # the box is full: no further check starts until one finishes
                     head = str((p.get("head") or {}).get("sha") or "")
                     started.add(head)
-                    running[pool.submit(check_pr, cfg, p)] = f"PR #{p.get('number')}"
+                    running[pool.submit(_held, hold, check_pr, cfg, p)] = f"PR #{p.get('number')}"
             if not running:
+                if waited:
+                    done.append(waited)
                 break
             fin, _ = cf.wait(list(running), timeout=relist_s, return_when=cf.FIRST_COMPLETED)
             if GUARD is not None:
@@ -812,9 +882,10 @@ def full_tick(cfg: Config, live: str) -> str:
         if not plan.start:
             box_ci.save_state(cfg.state, state)
             return plan.why
-    ok, n, why = _resources(cfg)
-    if not ok:
+    hold, why = RES.take(cfg, None, 1)   # every spare worker, from the shared reservation
+    if hold is None:
         return f"full run waits: {why}"
+    n = hold.workers
     with STATE_LOCK:
         state = box_ci.load_state(cfg.state)
         state["full_running"] = plan.start
@@ -842,6 +913,7 @@ def full_tick(cfg: Config, live: str) -> str:
                 state["full_pending"] = None
             box_ci.record(state, head=plan.start, kind=box_ci.FULL, ok=passed, why=why + counts)
             box_ci.save_state(cfg.state, state)
+        RES.release(hold)
     return f"full {plan.start[:9]}: {'GREEN' if passed else 'RED'} ({why}){counts}"
 
 

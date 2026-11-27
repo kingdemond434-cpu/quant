@@ -42,7 +42,7 @@ def test_one_failing_stage_never_stops_the_others(tmp_path: Path, monkeypatch) -
 def test_a_full_run_that_dies_is_recorded_red_and_frees_the_slot(tmp_path: Path,
                                                                  monkeypatch) -> None:
     cfg = _cfg(tmp_path)
-    monkeypatch.setattr(L, "_resources", lambda cfg: (True, 4, "ok"))
+    monkeypatch.setattr(L.RES, "_measure", lambda cfg: (500.0, [0.0] * 18, 64.0))
 
     def boom(cfg, sha):
         raise RuntimeError("worktree failed")
@@ -56,7 +56,9 @@ def test_a_full_run_that_dies_is_recorded_red_and_frees_the_slot(tmp_path: Path,
 
 def test_resources_unmeasured_start_nothing(tmp_path: Path, monkeypatch) -> None:
     cfg = _cfg(tmp_path)
-    monkeypatch.setattr(L, "_resources", lambda cfg: (False, 0, "no idle cores right now"))
+    def unmeasured(cfg):
+        raise OSError("no counters")
+    monkeypatch.setattr(L.RES, "_measure", unmeasured)
     assert "waits" in L.full_tick(cfg, "h1")
     assert box_ci.load_state(cfg.state).get("full_running") is None
 

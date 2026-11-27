@@ -37,6 +37,7 @@ def _wire(monkeypatch, prs, clock):
     monkeypatch.setattr(L, "worktree", lambda cfg, head: contextlib.nullcontext(Path(".")))
     monkeypatch.setattr(L, "fast_path", lambda: True)
     monkeypatch.setattr(L, "post", lambda *a, **k: None)
+    monkeypatch.setattr(L.RES, "_measure", lambda cfg: (500.0, [0.0] * 18, 64.0))
 
     def risk(cfg, root, base, head):
         seen.append(int(head))

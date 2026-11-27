@@ -62,7 +62,7 @@ def test_pr_checks_run_in_parallel_and_pick_up_prs_imported_mid_stage(monkeypatc
     monkeypatch.setattr(L, "audited_clear", lambda comments, head: True)
     live, peak, lock = [0], [0], threading.Lock()
 
-    def check(cfg, p):
+    def check(cfg, p, hold=None):
         with lock:
             live[0] += 1
             peak[0] = max(peak[0], live[0])
@@ -72,6 +72,8 @@ def test_pr_checks_run_in_parallel_and_pick_up_prs_imported_mid_stage(monkeypatc
         return f"PR #{p['number']}: ok"
 
     monkeypatch.setattr(L, "check_pr", check)
+    monkeypatch.setattr(L, "fast_path", lambda: True)
+    monkeypatch.setattr(L.RES, "_measure", lambda cfg: (500.0, [0.0] * 18, 64.0))
     out = L.pr_tick(SimpleNamespace(), budget_s=30, parallel=3, relist_s=0.05)
     assert peak[0] == 3                                   # three at once, not one per pass
     for n in (1, 2, 3, 9):
@@ -88,12 +90,14 @@ def test_one_pr_raising_never_stops_the_others(monkeypatch) -> None:
     monkeypatch.setattr(L, "_forge", lambda cfg, acct: F())
     monkeypatch.setattr(L, "audited_clear", lambda comments, head: True)
 
-    def check(cfg, p):
+    def check(cfg, p, hold=None):
         if p["number"] == 1:
             raise RuntimeError("boom")
         return "PR #2: ok"
 
     monkeypatch.setattr(L, "check_pr", check)
+    monkeypatch.setattr(L, "fast_path", lambda: True)
+    monkeypatch.setattr(L.RES, "_measure", lambda cfg: (500.0, [0.0] * 18, 64.0))
     out = L.pr_tick(SimpleNamespace(), budget_s=30, parallel=2, relist_s=0.05)
     assert "PR #1: ERROR RuntimeError" in out and "PR #2: ok" in out
 
@@ -211,3 +215,70 @@ def test_a_code_red_waiting_at_ci_end_is_not_a_loop_breach() -> None:
     r = _row(127, forge_pr=900, clear=899, ci_start=800, ci_end=700)
     r["ci_causes"] = ["other"]
     assert delivery_leadtime.sla([r], NOW)["ok"]
+
+
+# ------------------------------------------- 6. one shared reservation (Audit HOLD MF1, 03:07Z)
+def _res(free: float, idle: int, ram: float, busy: int = 0) -> L.Reservations:
+    r = L.Reservations()
+    r._measure = lambda cfg: (free, [0.0] * idle + [99.0] * busy, ram)  # type: ignore[method-assign]
+    return r
+
+
+def test_workers_are_one_budget_across_every_check() -> None:
+    r = _res(free=10_000, idle=18, ram=1_000)
+    holds = [r.take(None, 1, 0)[0] for _ in range(8)]          # min(MAX_WORKERS 8, 18 - 2)
+    assert all(h is not None for h in holds) and r.workers == 8
+    h, why = r.take(None, 1, 0)
+    assert h is None and "no worker slot: 8 of 8" in why
+    r.release(holds[0])
+    assert r.take(None, 1, 0)[0] is not None
+    full = _res(free=10_000, idle=18, ram=1_000)
+    assert full.take(None, None, 1)[0].workers == 8            # a full run takes the spare, no more
+    assert full.take(None, None, 1)[0] is None
+
+
+def test_every_held_checkout_is_charged_against_the_disk_floor() -> None:
+    r = _res(free=box_ci.DISK_FLOOR_GB + 3 * box_ci.WORKTREE_GB + 1, idle=18, ram=1_000)
+    assert r.take(None, 1, L.FAST_CHECK_WORKTREES)[0] is not None
+    h, why = r.take(None, 1, L.FAST_CHECK_WORKTREES)
+    assert h is None and why.startswith("disk after checkouts")
+
+
+def test_a_ram_floor_keeps_the_terminal_memory_free() -> None:
+    ram = box_ci.RAM_FLOOR_GB + 2 * box_ci.RAM_PER_CHECK_GB
+    r = _res(free=10_000, idle=18, ram=ram)
+    assert r.take(None, 1, 0)[0] is not None and r.take(None, 1, 0)[0] is not None
+    h, why = r.take(None, 1, 0)
+    assert h is None and "RAM" in why
+
+
+def test_unmeasured_resources_grant_nothing() -> None:
+    r = L.Reservations()
+
+    def boom(cfg):
+        raise OSError("no counters")
+    r._measure = boom  # type: ignore[method-assign]
+    h, why = r.take(None, 1, 1)
+    assert h is None and "UNMEASURED" in why and r.workers == 0
+
+
+def test_a_full_box_starts_no_further_check(monkeypatch) -> None:
+    prs = [{"number": n, "head": {"sha": f"{n:040x}", "ref": "x"}} for n in (1, 2, 3)]
+
+    class F:
+        def gh(self, path: str):
+            return prs if "/pulls" in path else {"check_runs": []}
+
+    monkeypatch.setattr(L, "_forge", lambda cfg, acct: F())
+    monkeypatch.setattr(L, "audited_clear", lambda comments, head: True)
+    monkeypatch.setattr(L, "fast_path", lambda: True)
+    monkeypatch.setattr(L, "RES", _res(free=10_000, idle=0, ram=1_000, busy=18))
+    ran = []
+    monkeypatch.setattr(L, "check_pr", lambda cfg, p, hold=None: ran.append(p) or "x")
+    # idle 0 still grants FLOOR_WORKERS (4) slots: three checks run, none beyond the budget
+    out = L.pr_tick(SimpleNamespace(), budget_s=30, parallel=6, relist_s=0.05)
+    assert len(ran) == 3 and L.RES.workers == 0
+    monkeypatch.setattr(L, "RES", _res(free=1.0, idle=18, ram=1_000))
+    ran.clear()
+    out = L.pr_tick(SimpleNamespace(), budget_s=30, parallel=6, relist_s=0.05)
+    assert ran == [] and "waits: disk after checkouts" in out

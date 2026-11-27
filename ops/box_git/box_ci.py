@@ -44,6 +44,12 @@ IDLE_THRESHOLD_PCT = 20.0
 #: behind it -- a queue measured in a day. Idle class cannot take a cycle research wants, so more
 #: idle workers only collect more of the leftovers.
 FLOOR_WORKERS = 4
+#: (boot r20, Audit HOLD MF1 2026-11-27 03:07Z) Concurrent checks share ONE reservation: each
+#: checkout is charged WORKTREE_GB against the disk floor before it is made, and each running
+#: check RAM_PER_CHECK_GB above a RAM floor that keeps the trading terminal's memory free.
+WORKTREE_GB = 4.0
+RAM_FLOOR_GB = 8.0
+RAM_PER_CHECK_GB = 2.0
 KEEP_RESULTS = 500
 
 FULL = "full"
