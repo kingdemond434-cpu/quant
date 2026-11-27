@@ -1,21 +1,21 @@
 {
- "at": "2026-11-27T10:43:50+00:00",
+ "at": "2026-11-27T11:41:56+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 67836,
+  "free_phys_mb": 67612,
   "commit_limit_mb": 262137,
-  "commit_free_mb": 126777,
+  "commit_free_mb": 155369,
   "cpu_source": "psutil",
-  "busy_other_cores": 13.15,
-  "busy_judge_cores": 0.01,
+  "busy_other_cores": 13.06,
+  "busy_judge_cores": 0.03,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
-  "n_python": 109,
+  "n_python": 91,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -44,16 +44,16 @@
   "judge_env_torn_frames": 0,
   "judge_env_source": "GAUNTLET_PASSES.json",
   "source_at": "2026-11-24T08:16:22.509611+00:00",
-  "source_age_seconds": 267945.799599,
+  "source_age_seconds": 271447.512044,
   "file_at": "2026-11-26T07:50:02+00:00",
-  "file_age_seconds": 96726.309234,
+  "file_age_seconds": 100228.021732,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity",
   "alarm": {
    "code": "BACKPRESSURE_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/research/gauntlet_backpressure.py",
-   "file_age_seconds": 96726.309234,
-   "sweep_age_seconds": 267945.799599,
+   "file_age_seconds": 100228.021732,
+   "sweep_age_seconds": 271447.512044,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the backpressure file itself has not been republished inside 6h: its producer is not running or not finishing"
@@ -70,7 +70,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "backlog_growing",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 44, commit 82 at 768MB a worker; the binding one is backlog_growing",
+  "why": "cores 15 (reserved 3), memory 44, commit 101 at 768MB a worker; the binding one is backlog_growing",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -127,12 +127,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "11/27/2026 11:46:00 AM",
+   "next_run_before": "11/27/2026 12:46:00 PM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.14673360000597 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.038043400039896 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.14673360000597 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.038043400039896 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -145,8 +145,8 @@
    "code": "BACKPRESSURE_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/research/gauntlet_backpressure.py",
-   "file_age_seconds": 96726.309234,
-   "sweep_age_seconds": 267945.799599,
+   "file_age_seconds": 100228.021732,
+   "sweep_age_seconds": 271447.512044,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the backpressure file itself has not been republished inside 6h: its producer is not running or not finishing"
@@ -154,7 +154,7 @@
  ],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-11-27T10:42:08+00:00",
+  "at": "2026-11-27T11:40:30+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
@@ -164,7 +164,7 @@
    "counts": {
     "1h": 0,
     "24h": 0,
-    "7d": 128579,
+    "7d": 122728,
     "build_step_lo": 0,
     "build_step_hi": 0
    },
@@ -172,7 +172,7 @@
    "first_terminal_counts": {
     "1h": 0,
     "24h": 0,
-    "7d": 72122,
+    "7d": 70405,
     "build_step_lo": 0,
     "build_step_hi": 0
    },
@@ -180,23 +180,23 @@
    "first_terminal_per_hour": {
     "1h": 0.0,
     "24h": 0.0,
-    "7d": 429.298
+    "7d": 419.077
    },
    "per_hour": {
     "1h": 0.0,
     "24h": 0.0,
-    "7d": 765.351
+    "7d": 730.524
    }
   },
   "created": {
    "status": "MEASURED",
    "counts": {
     "24h": 5625,
-    "7d": 119239
+    "7d": 118191
    },
    "per_hour": {
     "24h": 234.375,
-    "7d": 709.756
+    "7d": 703.518
    }
   },
   "verdicts_per_hour": 0.0,
@@ -217,8 +217,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-11-27T10:41:41+00:00",
-   "pid": 25128
+   "started_at": "2026-11-27T11:39:58+00:00",
+   "pid": 17528
   }
  },
  "blas_single_thread": {
@@ -257,11 +257,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 130.6,
+ "measure_seconds": 119.7,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-27T10:41:41+00:00",
-  "pid": 25128
+  "started_at": "2026-11-27T11:39:58+00:00",
+  "pid": 17528
  },
- "seconds": 221.2
+ "seconds": 210.6
 }
