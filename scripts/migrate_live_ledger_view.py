@@ -11,11 +11,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-CODE = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(CODE))
-#: (boot r24.1) the pinned adopter runs this file from its own checkout and names the tree it
-#: adopts here; code is always imported from CODE, never from that tree.
-ROOT = Path(os.environ.get("QUANT_LEDGER_ROOT") or CODE).resolve()
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from libs.ops.live_ledger_migration import authorized_handoff, migration_bytes  # noqa: E402
 from libs.ops.release_promotion import Git, gate  # noqa: E402
