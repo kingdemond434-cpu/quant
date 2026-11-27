@@ -153,7 +153,13 @@ def stage_packets(folder: Path | None, checkout: Path, keep: Path | None = None)
     if folder is None or not folder.is_dir() or folder.is_symlink():
         return []
     rows: list[str] = []
-    found = [p for p in folder.iterdir() if p.is_file() and not p.is_symlink()]
+    try:
+        found = [p for p in folder.iterdir() if p.is_file() and not p.is_symlink()]
+    except OSError as exc:
+        # (r25d) an unreadable packets inbox must never stop the pass: from 2026-11-27 18:29Z the
+        # loop account could not list it (WinError 5), every round died here before deliver(),
+        # and no drop, boot or merge moved for hours. The admin drop still delivers.
+        return [f"packets unreadable: {type(exc).__name__}: {str(exc)[:200]}"]
     for p in sorted(found, key=lambda q: order(q.name)):
         rel = p.name
         cap = wanted(rel)

@@ -75,3 +75,16 @@ def test_pull_stages_packets_after_drop_local(tmp_path) -> None:
         "stage_packets(packets, drop.checkout, keep=local)")
     assert i < j
     assert Path(r"C:\opt\bridge\quant\packets_inbox") == D.PACKETS_LOCAL
+
+
+def test_an_unreadable_packets_inbox_never_stops_the_pass(tmp_path, monkeypatch) -> None:
+    """r25d: 2026-11-27 18:29Z on, iterdir() on the inbox raised WinError 5 for the loop account and
+    every round died before deliver(). It must report and carry on."""
+    box, co = tmp_path / "packets", tmp_path / "co"
+    box.mkdir()
+    co.mkdir()
+    def denied(self):  # noqa: ANN001
+        raise PermissionError(5, "Access is denied", str(self))
+    monkeypatch.setattr(type(box), "iterdir", denied)
+    rows = D.stage_packets(box, co)
+    assert len(rows) == 1 and rows[0].startswith("packets unreadable: PermissionError")
