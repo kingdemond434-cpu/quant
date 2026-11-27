@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-27T15:45:04.215641+00:00",
+  "swept_at": "2026-11-27T16:00:10.003917+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1395,7 +1395,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 72,
-      "shadow_exp_r": 0.2107,
+      "shadow_exp_r": 0.2154,
       "woke_on_shadow": false
     },
     "USDMXN|carry_asia": {
@@ -1603,8 +1603,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 26,
-      "shadow_exp_r": 0.054,
+      "shadow_n": 53,
+      "shadow_exp_r": -0.6387,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
@@ -1615,7 +1615,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2329,
+      "shadow_exp_r": -0.2383,
       "woke_on_shadow": false
     },
     "USDTHB|pca_residual_asia": {
@@ -1626,7 +1626,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1689,
+      "shadow_exp_r": -0.1743,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {
@@ -1702,8 +1702,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 36,
-      "shadow_exp_r": 0.0975,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.3588,
       "woke_on_shadow": false
     },
     "XAGEUR|pca_residual_asia": {
@@ -1713,8 +1713,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.2144,
+      "shadow_n": 61,
+      "shadow_exp_r": -0.2048,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_asia": {
