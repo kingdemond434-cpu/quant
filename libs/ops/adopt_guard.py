@@ -72,6 +72,7 @@ again.
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import hashlib
 import json
 import os
@@ -299,6 +300,55 @@ def box_published(root: Path, base: str, target: str) -> dict[str, str]:
     return blobs
 
 
+#: MONEY CODE ONLY (zuck 2026-11-27 11:40Z "only Audit CLEAR on money path"; Audit 21:49Z ruling
+#: (b) on lock 3). A code path needs an auditor's row only when the money closure or the protected
+#: list names it. Non-money code ships on smoke, health and rollback alone, which still cover every
+#: path. The lists are read from THREE places and unioned -- the sealed release, the target and the
+#: guard checkout running this file -- so a target can add a path to either list but can never take
+#: one off. If no copy of the closure is readable anywhere, every code path is governed.
+MONEY_CLOSURE_REL = "ops/money_closure.txt"
+PROTECTED_REL = "ops/release/protected_paths.txt"
+_GUARD_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _list_rows(text: str | None) -> list[str]:
+    if not text:
+        return []
+    out = []
+    for ln in text.splitlines():
+        ln = ln.split("#", 1)[0].strip()
+        if ln:
+            out.append(ln.split()[0])
+    return out
+
+
+def _list_texts(root: Path, rel: str, commits: Iterable[str]) -> list[str | None]:
+    texts: list[str | None] = []
+    for c in commits:
+        b = _show(root, c, rel)
+        texts.append(b.decode("utf-8", "replace") if b is not None else None)
+    try:
+        texts.append((_GUARD_ROOT / rel).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        texts.append(None)
+    return texts
+
+
+def money_governed(root: Path, *commits: str) -> Callable[[str], bool]:
+    """Which code paths need a CLEAR: in any copy of the money closure, or matching any copy of
+    the protected list (fnmatch, "*" crosses "/"). Every path when no closure copy is readable."""
+    closures = _list_texts(root, MONEY_CLOSURE_REL, commits)
+    if not any(t is not None for t in closures):
+        return lambda rel: True
+    closure = {r for t in closures for r in _list_rows(t)}
+    pats = sorted({r for t in _list_texts(root, PROTECTED_REL, commits) for r in _list_rows(t)})
+
+    def governed(rel: str) -> bool:
+        return rel in closure or any(fnmatch.fnmatchcase(rel, pat) for pat in pats)
+
+    return governed
+
+
 def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> list[str]:
     """Every path this adoption would change on the box that needs an auditor's word.
 
@@ -315,7 +365,8 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     box_changed = set(_changed(root, mb, head)) if HEX40.match(mb) else set()
     origin_changed = set(_changed(root, mb, target)) if HEX40.match(mb) else set()
     t_tree, h_tree = _tree(root, target), _tree(root, head)
-    code = {p for p in _changed(root, sealed, target) if is_code(p)}
+    money = money_governed(root, sealed, target)
+    code = {p for p in _changed(root, sealed, target) if is_code(p) and money(p)}
     published = box_published(root, mb, target) if HEX40.match(mb) else {}
     state = {
         p
