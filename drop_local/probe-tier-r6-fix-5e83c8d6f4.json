@@ -1,0 +1,1 @@
+{"branch": "claude/probe-tier-r6-fix", "head": "5e83c8d6f4363fd2f02a95b11e593e3bb8143df0", "title": "probe tier r6 fix: test_tier_s_organs count 2 -> 3 (on r6-closure)", "body": "On release-train r6 closure ef2d21b1a. Supersedes r6-closure's PR once merged.", "comments": []}
