@@ -1,0 +1,1300 @@
+{
+ "_why": "Output-based health (zuck R2, 2026-11-27 16:59Z): a task is healthy only when its declared output is fresh; exit codes and heartbeats are ignored. In T: every edit is Audit + 10-minute veto. max_age_min defaults to max(3 x interval, interval + 30). restart: auto | alarm | auto_dead_only (GatewayResident: Start only, outside the broker rollover hour, only when its task is not running). Guard tasks and movers are alarm-only in code whatever this says. A row with no outputs is UNDECLARED and flagged.",
+ "version": 1,
+ "tasks": [
+  {
+   "task": "Claude-Bridge-Watchdog",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Codex-H1-Diagnostic",
+   "outputs": [
+    "C:\\opt\\quant\\.codex_diag_task.log"
+   ],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "E8-Book",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "E8-Executor",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "E8-Gold",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "E8-Spreads",
+   "outputs": [],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-AccountState",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-AccountState.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-AdoptRelease",
+   "outputs": [],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-AllocatorFast",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-AllocatorFast.log"
+   ],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-AuditLane",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-AuditLane.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-AxisIngest",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-AxisIngest.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-BoxHeartbeat",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-BoxHeartbeat.log"
+   ],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-CacheWarm",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-CacheWarm.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-CEODocket",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-CEODocket.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ClockFixer",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ClockFixer.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ContractTerms",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ContractTerms.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ConvertSwarm",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ConvertSwarm.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-CostState",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-CostState.log"
+   ],
+   "interval_min": 1440,
+   "max_age_min": 4320,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-CycleMidnight",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-CycleNoon",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-Daily",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\daily_cycle.log"
+   ],
+   "interval_min": 1440,
+   "max_age_min": 4320,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-DashboardFence",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-DataAxis",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-DataAxis.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Deepening",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Deepening.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-DeepenUniverse",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-DeepSeek",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-DeepSeek.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Data",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Data.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Execution",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Execution.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-Dept-Forward",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Forward.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Intel",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Intel.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Japan",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Japan.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Macro",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Macro.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Mathlab",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Mathlab.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Meta",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Meta.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Regions",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Regions.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Rest",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Rest.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Dept-Validate",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Dept-Validate.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-DeskDashboard",
+   "outputs": [],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-DeskState",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-DeskState.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-DeskTunnel",
+   "outputs": [],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-E8WindowGuard",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-E8WindowGuard.log"
+   ],
+   "interval_min": 1,
+   "max_age_min": 31,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-ExplorationLane",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ExplorationLane.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-FetchUniverse-Repair",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FetchUniverse-Repair.log"
+   ],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Africa",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Africa.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Asean",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Asean.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-China",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-China.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Europe",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Europe.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Korea",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Korea.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Latam",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Latam.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Mena",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Mena.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-NorthAmerica",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-NorthAmerica.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-Oceania",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-Oceania.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-RussiaCis",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-RussiaCis.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Forest-SouthAsia",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Forest-SouthAsia.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ForwardReconcile",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ForwardReconcile.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Frontier",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Frontier.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-FrontierAudit",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FrontierAudit.log"
+   ],
+   "interval_min": 75,
+   "max_age_min": 225,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-FTMO-Allocator",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FTMO-Allocator.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-FTMO-Executor",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-FTMO-Follower",
+   "outputs": [],
+   "interval_min": 1,
+   "max_age_min": 31,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-FTMO-VenueReader",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-FusionDeadman",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FusionDeadmanLive.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-FusionDeadmanDryRun",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FusionDeadmanDryRun.log"
+   ],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-FusionDeadmanLive",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-FusionDeadmanLive.log"
+   ],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-GateAttest",
+   "outputs": [],
+   "interval_min": 120,
+   "max_age_min": 360,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-Gateway",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Gateway.log"
+   ],
+   "interval_min": 1,
+   "max_age_min": 31,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-GatewayResident",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\data\\gateway_state.json"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": true,
+   "restart": "auto_dead_only"
+  },
+  {
+   "task": "MT5-Gauntlet",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Gauntlet.log"
+   ],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Healers",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Healers.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Hourly",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Hourly.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-HourlyCore",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-HourlyCore.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-IdentityHealer",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-IdentityHealer.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-IndependenceIntake",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-IndependenceIntake.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-IntelShip",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-LawGate",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-LocalConvert",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-LocalConvert.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-LocalDashboard",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-LogRotate",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-MergeDocket",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-MergeDocket.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-MoatCapture",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-MoatCapture.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Moat-Exploit",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Moat-Exploit.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Moat-Explore",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Moat-Explore.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-MoatFence",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-MoatMiner",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-MoatMiner.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-MoatRecorder",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-MoatRecorder-Watchdog",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-Moat-Resurrect",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Moat-Resurrect.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-MoatSilver",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-MoatSilver.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-NeverStale",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-NeverStale.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-NewsDesk",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-NewsDesk.log"
+   ],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-NoLog",
+   "outputs": [],
+   "interval_min": 1440,
+   "max_age_min": 4320,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-OffsiteBackup",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-OffsiteBackup.log"
+   ],
+   "interval_min": 360,
+   "max_age_min": 1080,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-PlumbingWatchdog",
+   "outputs": [],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-ProcessHealth",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ProcessHealth.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-PushBacklog",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\push_backlog_runner.log"
+   ],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-QQuantGatesCertify",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-QQuantGatesCertify.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-QQuantShadow",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-QQuantShadow.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ReapGitWriters",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ReapGitWriters.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-RebootDrill",
+   "outputs": [],
+   "interval_min": 1440,
+   "max_age_min": 4320,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-RegimeMonitor",
+   "outputs": [],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-ReleaseAuthority",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ReleaseAuthority.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-ResearchReports",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ResearchReports.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ResearchSupervisor",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-RiskUnitsFence",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-RiskUnitsFence.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ScientistTournament",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ScientistTournament.log"
+   ],
+   "interval_min": 1440,
+   "max_age_min": 4320,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-SealIfClean",
+   "outputs": [],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-Shadow",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Shadow.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-ShadowSync",
+   "outputs": [],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-ShiftWatch",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-ShiftWatch.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-SshGuard",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-StallWatch",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-StallWatch.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-StateVector",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-StateVector.log"
+   ],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-TapeFeatures",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-TapeFeatures.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-TerminalBoot",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-TerminalBoot.log"
+   ],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": true,
+   "restart": "alarm"
+  },
+  {
+   "task": "MT5-TickIntegrity",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "MT5-TickRecorder",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-TickRecorder.log"
+   ],
+   "interval_min": 15,
+   "max_age_min": 45,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-UniversalGate",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-UniversalGate.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "MT5-Universe",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\MT5-Universe.log"
+   ],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "Quant-BootRecord",
+   "outputs": [],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-BootSession",
+   "outputs": [],
+   "interval_min": null,
+   "max_age_min": null,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-CpuShaper",
+   "outputs": [],
+   "interval_min": 2,
+   "max_age_min": 32,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "QuantForge-BootMove",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "QuantForge-CI",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "QuantForge-DashPush",
+   "outputs": [],
+   "interval_min": 1,
+   "max_age_min": 31,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "QuantForge-Loop",
+   "outputs": [
+    "C:\\ProgramData\\QuantBox\\forge\\log\\loop.log"
+   ],
+   "interval_min": null,
+   "max_age_min": 360,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "QuantForge-Pin",
+   "outputs": [],
+   "interval_min": 20,
+   "max_age_min": 60,
+   "money_path": false,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "QuantGuard-RunAs",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-JudgeCoreTrial",
+   "outputs": [],
+   "interval_min": 2,
+   "max_age_min": 32,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-ReleaseAuthority",
+   "outputs": [],
+   "interval_min": 30,
+   "max_age_min": 90,
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-SideChannelMiners",
+   "outputs": [
+    "C:\\opt\\quant\\desks\\mt5\\logs\\Quant-SideChannelMiners.log"
+   ],
+   "interval_min": 120,
+   "max_age_min": 360,
+   "money_path": false,
+   "restart": "auto"
+  },
+  {
+   "task": "Quant-SignTrain",
+   "outputs": [],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-StatePublisher",
+   "outputs": [],
+   "interval_min": 5,
+   "max_age_min": 35,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-VideoCells",
+   "outputs": [],
+   "interval_min": 60,
+   "max_age_min": 180,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  },
+  {
+   "task": "Quant-WorkflowGate",
+   "outputs": [],
+   "interval_min": 10,
+   "max_age_min": 40,
+   "money_path": false,
+   "restart": "auto",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+  }
+ ]
+}

@@ -21,8 +21,8 @@ def _body_without_comments() -> str:
                      for line in s.splitlines())
 
 
-def _write_status_span(code: str) -> tuple[int, int]:
-    start = code.index("function Write-Status")
+def _write_status_span(code: str, fn: str = "Write-Status") -> tuple[int, int]:
+    start = code.index(f"function {fn}")
     depth, i = 0, code.index("{", start)
     for j in range(i, len(code)):
         if code[j] == "{":
@@ -61,34 +61,55 @@ BARRED = [
 ]
 
 
+#: each allowed primitive, and the one function it may appear in
+ALLOWED_IN = {
+    r"WriteAllText": "Write-Status", r"AppendAllText": "Write-Status",
+    r"\[IO\.File\]::Create": "New-AdminFile",
+    r"\bStart-ScheduledTask\b": "Restart-Declared", r"\bStop-ScheduledTask\b": "Restart-Declared",
+    r"\bgit\b": "Get-Declarations",
+}
+
+
+def _strip_fns(code: str, names: list[str]) -> str:
+    for n in names:
+        a, b = _write_status_span(code, n)
+        code = code[:a] + code[b + 1:]
+    return code
+
+
 def test_no_write_outside_write_status() -> None:
     code = _body_without_comments()
-    a, b = _write_status_span(code)
-    outside = code[:a] + code[b + 1:]
+    outside = _strip_fns(code, ["Write-Status", "New-AdminFile", "Restart-Declared", "Get-Declarations"])
     for pat in BARRED:
         # quoted strings are log text or paths, not commands; stream merges are not redirects
         strip = r"'[^']*'|\"[^\"]*\"|2>\$null|2>&1"
         lines = [re.sub(strip, "", ln) for ln in outside.splitlines()]
         hits = [ln for ln in lines if re.search(pat, ln)]
-        assert not hits, f"{pat} outside Write-Status: {hits}"
+        assert not hits, f"{pat} outside its one allowed function: {hits}"
+    # and each allowed primitive appears only in its own function
+    for pat, fn in ALLOWED_IN.items():
+        others = _strip_fns(code, [fn])
+        lines = [re.sub(r"'[^']*'|\"[^\"]*\"", "", ln) for ln in others.splitlines()]
+        assert not [ln for ln in lines if re.search(pat, ln)], f"{pat} outside {fn}"
 
 
 def test_write_status_refuses_any_other_path_and_targets_the_log() -> None:
     code = _body_without_comments()
     a, b = _write_status_span(code)
     body = code[a:b]
-    assert 'if ($path -ne $Status) { throw' in body
+    assert "if (@($Status, $Health) -notcontains $path) { throw" in body
     assert "$Status = Join-Path $LogDir 'guard_status.log'" in TEXT
+    assert "$Health = Join-Path $LogDir 'task_health.json'" in TEXT
     assert "$LogDir = Join-Path $Q 'logs'" in TEXT
     assert "$Q      = 'C:\\ProgramData\\QuantBox'" in TEXT
     # every Write-Status call passes $Status, and only Say calls it
     calls = re.findall(r"Write-Status\s+(\S+)", code)
-    assert calls and all(c == "$Status" for c in calls if c != "([string]")
+    assert calls and all(c in ("$Status", "$Health") for c in calls if c != "([string]")
 
 
 def test_no_link_writes_as_system() -> None:
     assert "ReparsePoint" in TEXT and "hardlink list" in TEXT
-    assert "if (-not (Test-PlainFile $Status)) { return }" in TEXT
+    assert "if (-not (Test-PlainFile $path)) { return }" in TEXT
     # a log a non-admin pre-created or can write is neither appended to nor trusted for the
     # hourly throttle (Audit 21:40Z)
     assert "return (Test-AdminFile $p)" in TEXT
@@ -106,11 +127,84 @@ def test_runs_only_the_pinned_python_probe() -> None:
     code = _body_without_comments()
     invokes = re.findall(r"&\s+(\S+)", code)
     # & $py -c $code (the probe) and & fsutil (hardlink list); dot-source of the guard's git_acl
-    assert set(invokes) <= {"$py", '"$env:SystemRoot\\System32\\fsutil.exe"'}, invokes
+    assert set(invokes) <= {"$py", '"$env:SystemRoot\\System32\\fsutil.exe"', "git"}, invokes
+    gits = re.findall(r"&\s+git\b[^\n]*", code)
+    assert len(gits) == 1 and " show " in gits[0] and "core.hooksPath=NUL" in gits[0], gits
     assert "& $py -c $code" in code
     assert ". (Join-Path $tree 'ops\\box_git\\runas\\git_acl.ps1')" in code
 
 
-def test_throttled_to_hourly_and_always_exits_zero() -> None:
-    assert "TotalMinutes -lt 55) { exit 0 }" in TEXT
+def test_status_hourly_health_every_pass_and_always_exits_zero() -> None:
+    assert "TotalMinutes -lt 55) { $doStatus = $false }" in TEXT
+    assert "if ($doStatus) { Invoke-Status }" in TEXT
+    assert "try { Invoke-Health } catch" in TEXT
     assert TEXT.rstrip().endswith("exit 0")
+    assert TEXT.count("exit 0") == 1
+
+
+# ---- phase 3 bounds (Audit 21:52Z) --------------------------------------------------------
+
+DECL = json.loads((ROOT / "ops" / "box_git" / "guardian" / "task_outputs.json").read_text("utf-8"))
+
+
+def test_task_control_is_start_stop_only_by_exact_name() -> None:
+    code = _body_without_comments()
+    a, b = _write_status_span(code, "Restart-Declared")
+    body = code[a:b]
+    assert "Start-ScheduledTask -TaskName $name" in body
+    assert "Stop-ScheduledTask -TaskName $name" in body
+    for bad in ("Enable-ScheduledTask", "Set-ScheduledTask", "Register-ScheduledTask",
+                "New-ScheduledTaskPrincipal", "-Principal", "-Action", "-Trigger", "-Settings"):
+        assert bad not in body, bad
+    # the task name passed to the cmdlets is never a glob
+    assert not re.search(r"ScheduledTask\s+-TaskName\s+['\"][^'\"]*[*?]", body)
+    assert "$byName[$name]" in code   # rows are found by exact name, never by pattern
+
+
+def test_guard_tasks_and_movers_are_alarm_only_in_code() -> None:
+    m = re.search(r"\$NeverRestart = @\(([^)]*)\)", TEXT)
+    assert m
+    names = set(re.findall(r"'([^']+)'", m.group(1)))
+    assert {"QuantGuard-RunAs", "QuantForge-BootMove", "QuantForge-Pin", "MT5-AdoptRelease"} <= names
+    assert TEXT.count("$name -like 'QuantGuard-*'") == 2
+    code = _body_without_comments()
+    a, b = _write_status_span(code, "Restart-Declared")
+    assert "throw" in code[a:b]
+
+
+def test_defers_to_the_runas_migrator_and_rate_limits() -> None:
+    assert "@('WAIT_WINDOW', 'MOVED', 'WATCH') -contains" in TEXT
+    assert "elseif ($busy) { $why = 'run-as migrator busy' }" in TEXT
+    assert "elseif ($restartedThisPass) { $why = 'one restart per pass' }" in TEXT
+    assert "[int]$row.fails -ge 2) { $row.verdict = 'ALARM' }" in TEXT
+    assert "-not $row.last_restart" in TEXT          # one restart per max-age window
+
+
+def test_gateway_is_start_only_when_dead_and_outside_rollover() -> None:
+    assert "auto_dead_only' -and $running) { $why = 'alive but stale" in TEXT
+    assert "(Get-BrokerHour) -eq 0) { $why = 'broker rollover hour' }" in TEXT
+    assert "Restart-Declared $name $running ($mode -eq 'auto_dead_only')" in TEXT
+    gw = [r for r in DECL["tasks"] if r["task"] == "MT5-GatewayResident"][0]
+    assert gw["restart"] == "auto_dead_only"
+
+
+def test_declarations_cover_the_census_and_money_defaults_to_alarm() -> None:
+    rows = DECL["tasks"]
+    assert len(rows) == len({r["task"] for r in rows}) == 134
+    for r in rows:
+        assert r["restart"] in ("auto", "alarm", "auto_dead_only")
+        assert not any(ch in r["task"] for ch in "*?[")
+        if r["money_path"] and r["task"] != "MT5-GatewayResident":
+            assert r["restart"] == "alarm", r["task"]
+        if r["max_age_min"] and r["interval_min"]:
+            assert r["max_age_min"] >= max(3 * r["interval_min"], r["interval_min"] + 30) or \
+                r["task"] == "QuantForge-Loop"
+    for n in ("E8-Executor", "MT5-FTMO-Executor", "MT5-ShadowSync", "MT5-LawGate", "MT5-CycleNoon",
+              "MT5-AllocatorFast", "MT5-FTMO-Allocator"):
+        assert [r for r in rows if r["task"] == n][0]["restart"] == "alarm", n
+
+
+def test_declarations_are_read_from_the_boot_never_a_writable_file() -> None:
+    assert "show \"${boot}:ops/box_git/guardian/task_outputs.json\"" in TEXT
+    t = json.loads((ROOT / "ops" / "box_git" / "TRUST_SET.json").read_text(encoding="utf-8"))
+    assert any(fnmatch.fnmatch("ops/box_git/guardian/task_outputs.json", g) for g in t["files"])
