@@ -83,23 +83,33 @@ GUARD_LIVE = True
 #: that runs C:\opt\quant runs as a non-admin account denied those folders (boot r24), a PASS
 #: also needs the Auditor's CLEAR of the exact head. The checks run at once and in parallel with
 #: the review (quantci is already isolated), so the CLEAR adds no wait beyond the review itself.
-REQUIRE_SEAT_CLEAR = True
 RUN_AS_PROOF = "runas/RUN_AS.json"  # (r24) the pinned SYSTEM migrator writes it; quantgate reads
 
 
 def seat_required(cfg: Any, now: datetime | None = None) -> tuple[bool, str]:
-    r"""(r24, Audit MF-B) Re-read every cycle. While REQUIRE_SEAT_CLEAR is on (until the owner's
-    flip packet) the seat is required. After the flip, it is required again by itself the moment
-    guard\RUN_AS.json is missing, stale or shows an elevated live-tree task."""
-    if REQUIRE_SEAT_CLEAR:
-        return True, "REQUIRE_SEAT_CLEAR"
+    """(r24.1, Audit MF-B; zuck 13:51Z: no recurring asks) Re-read every cycle. The seat's CLEAR
+    is required unless guard\\runas\\RUN_AS.json is fresh and independent NOW and has been for
+    an unbroken FLIP_AFTER (7 days) in RUN_AS_HISTORY.jsonl. No owner flip: the switch is the
+    measured proof, and it returns by itself on the first stale or failing one."""
     from ops.box_git import runas_plan
+    now = now or datetime.now(UTC)
+    d = guard_dir(cfg) / "runas"
     try:
         doc = json.loads((guard_dir(cfg) / RUN_AS_PROOF).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         doc = None
-    ok, why = runas_plan.proof_holds(doc, now or datetime.now(UTC))
-    return (not ok), why
+    ok, why = runas_plan.proof_holds(doc, now)
+    if not ok:
+        return True, why
+    try:
+        hist = (d / "RUN_AS_HISTORY.jsonl").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return True, "RUN_AS history unreadable"
+    since = runas_plan.independent_since(hist, now)
+    if since is None or now - since < runas_plan.FLIP_AFTER:
+        held = "no unbroken run" if since is None else f"independent {now - since} of 7 days"
+        return True, f"proof holds; {held}"
+    return False, f"independent since {since.isoformat(timespec='minutes')}"
 
 
 @dataclass(frozen=True)

@@ -31,6 +31,9 @@ ALLOWED_ELEVATED = frozenset({"QuantForge-BootMove", "QuantForge-Pin", "QuantGua
 NEVER_MOVE = frozenset({"MT5-AdoptRelease"})
 ELEVATED = frozenset({"SYSTEM", "NT AUTHORITY\\SYSTEM", "S-1-5-18", "ADMINISTRATOR"})
 PROOF_MAX_AGE = timedelta(minutes=15)
+#: (r24.1, zuck 13:51Z "I don't want it even once a month") the seat CLEAR switches off by
+#: itself after this long of unbroken independent proof, and back on at the first bad one.
+FLIP_AFTER = timedelta(days=7)
 WATCH_FOR = timedelta(hours=6)
 HEARTBEAT_MAX = timedelta(minutes=15)
 REJECTS_MAX = 3
@@ -121,8 +124,33 @@ def watch_verdict(moved_at: datetime, now: datetime, *, market_open_since: datet
     return "ok"
 
 
+def elevated_processes(procs: Iterable[Mapping[str, Any]], live: str = r"C:\opt\quant",
+                       allowed_roots: Sequence[str] = (r"C:\ProgramData\QuantBox\guard",)
+                       ) -> list[str]:
+    """(Audit C5) The process-level half of the proof: running processes owned by SYSTEM or
+    Administrator whose command line or working folder is in the live tree. MetaQuotes'
+    terminal64 is not repository code; anything run from the pinned guard folder is allowed."""
+    out = []
+    lv = live.lower()
+    for p in procs:
+        owner = str(p.get("user") or "").split("\\")[-1].upper()
+        if owner not in {"SYSTEM", "ADMINISTRATOR"}:
+            continue
+        name = str(p.get("name") or "").lower()
+        if name == "terminal64.exe":
+            continue
+        cmd = str(p.get("cmdline") or "").lower()
+        cwd = str(p.get("cwd") or "").lower()
+        if any(r.lower() in cmd for r in allowed_roots):
+            continue
+        if lv in cmd or cwd.startswith(lv):
+            out.append(f"{p.get('pid')} {name} ({owner})")
+    return sorted(out)
+
+
 def proof(tasks: Iterable[Mapping[str, Any]], write_probes: Mapping[str, bool],
-          terminal_checks: Mapping[str, bool], now: datetime) -> dict[str, Any]:
+          terminal_checks: Mapping[str, bool], now: datetime,
+          processes: Sequence[str] | None = None) -> dict[str, Any]:
     """What guard\\RUN_AS.json says (Audit MF-A/MF-B/Q2). `independent` is true only when no
     live-tree task outside the allowed list is elevated, no task is unreadable, every write probe
     as quantrun was DENIED (value True means denied), and every terminal check holds (no EA, no DLL
@@ -133,10 +161,37 @@ def proof(tasks: Iterable[Mapping[str, Any]], write_probes: Mapping[str, bool],
     unread = sorted(str(t["name"]) for t in rows if t.get("actions") is None)
     writable = sorted(k for k, denied in write_probes.items() if not denied)
     term_bad = sorted(k for k, ok in terminal_checks.items() if not ok)
-    ok = not bad and not unread and not writable and not term_bad and bool(write_probes)
+    procs = list(processes) if processes is not None else ["UNMEASURED"]
+    ok = (not bad and not unread and not writable and not term_bad and bool(write_probes)
+          and not procs)
     return {"at": now.astimezone(UTC).isoformat(timespec="seconds"), "independent": ok,
             "elevated_live_tree": bad, "unreadable_tasks": unread,
-            "writable_by_quantrun": writable, "terminal_checks_failed": term_bad}
+            "writable_by_quantrun": writable, "terminal_checks_failed": term_bad,
+            "elevated_processes": procs}
+
+
+def independent_since(history: Iterable[str], now: datetime) -> datetime | None:
+    """The start of the CURRENT unbroken run of independent proofs in RUN_AS_HISTORY.jsonl: no
+    failing row and no gap longer than PROOF_MAX_AGE inside it, and its last row fresh. None when
+    there is no such run (or a row is unreadable)."""
+    start: datetime | None = None
+    last: datetime | None = None
+    for ln in history:
+        if not ln.strip():
+            continue
+        try:
+            row = __import__("json").loads(ln)
+            at = datetime.fromisoformat(str(row["at"]))
+        except (ValueError, KeyError, TypeError):
+            return None
+        if not row.get("independent") or (last is not None and at - last > PROOF_MAX_AGE):
+            start = at if row.get("independent") else None
+        elif start is None:
+            start = at
+        last = at
+    if last is None or now - last > PROOF_MAX_AGE:
+        return None
+    return start
 
 
 def proof_holds(doc: Mapping[str, Any] | None, now: datetime) -> tuple[bool, str]:
@@ -152,7 +207,8 @@ def proof_holds(doc: Mapping[str, Any] | None, now: datetime) -> tuple[bool, str
         return False, f"RUN_AS.json stale ({int((now - at).total_seconds() // 60)} min)"
     if not doc.get("independent"):
         why = [f"{k}={doc.get(k)}" for k in ("elevated_live_tree", "unreadable_tasks",
-                                             "writable_by_quantrun", "terminal_checks_failed")
+                                             "writable_by_quantrun", "terminal_checks_failed",
+                                             "elevated_processes")
                if doc.get(k)]
         return False, "not independent: " + "; ".join(why)[:300]
     return True, "independent"
@@ -213,10 +269,26 @@ def main(argv: list[str] | None = None) -> int:
                           "snapshot": snapshot(tasks, to_move(tasks))}))
         return 0
     if a[:1] == ["proof"]:
-        doc = proof(load(a[1]) or [], load(a[2]) or {}, load(a[3]) or {}, now)
+        try:
+            import psutil
+            rows = []
+            for p in psutil.process_iter(["pid", "name", "cmdline", "username"]):
+                try:
+                    cwd = p.cwd()
+                except Exception:
+                    cwd = ""
+                rows.append({"pid": p.info["pid"], "name": p.info["name"],
+                             "cmdline": " ".join(p.info["cmdline"] or []),
+                             "user": p.info["username"], "cwd": cwd})
+            procs: list[str] | None = elevated_processes(rows)
+        except Exception:
+            procs = None
+        doc = proof(load(a[1]) or [], load(a[2]) or {}, load(a[3]) or {}, now, procs)
         tmp = Path(a[4] + ".part")
         tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
         tmp.replace(a[4])
+        with Path(a[4]).with_name("RUN_AS_HISTORY.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": doc["at"], "independent": doc["independent"]}) + "\n")
         print(json.dumps(doc))
         return 0 if doc["independent"] else 1
     if a[:1] == ["watch"]:

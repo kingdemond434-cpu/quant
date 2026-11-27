@@ -173,36 +173,79 @@ def test_the_monday_watch() -> None:
 def test_proof_and_the_guards_reading_of_it() -> None:
     now = datetime(2026, 11, 28, 12, tzinfo=UTC)
     moved = [_t("MT5-Gateway", "quantrun"), _t("QuantForge-BootMove", "SYSTEM")]
-    good = R.proof(moved, {"guard": True, "trust": True}, {"no_ea": True}, now)
+    good = R.proof(moved, {"guard": True, "trust": True}, {"no_ea": True}, now, [])
     assert good["independent"] and R.proof_holds(good, now) == (True, "independent")
     assert not R.proof_holds(good, now + timedelta(minutes=16))[0]
     assert not R.proof(TASKS, {"guard": True}, {}, now)["independent"]  # elevated + unreadable
-    assert not R.proof(moved, {"guard": False}, {}, now)["independent"]
-    assert not R.proof(moved, {}, {}, now)["independent"]  # no write probe ran
-    assert not R.proof(moved, {"guard": True}, {"dll_off": False}, now)["independent"]
+    assert not R.proof(moved, {"guard": False}, {}, now, [])["independent"]
+    assert not R.proof(moved, {}, {}, now, [])["independent"]  # no write probe ran
+    assert not R.proof(moved, {"guard": True}, {"dll_off": False}, now, [])["independent"]
     assert R.proof_holds(None, now) == (False, "RUN_AS.json missing")
 
 
-def test_the_loop_requires_the_seat_until_the_flip_and_again_on_a_bad_proof(
-    monkeypatch, tmp_path
-) -> None:
+def test_the_seat_switches_off_only_after_7_days_of_unbroken_proof(tmp_path) -> None:
+    import json
     from types import SimpleNamespace as NS
 
     from ops.box_git import box_loop as L
 
     cfg = NS(guard_dir=tmp_path)
-    assert L.seat_required(cfg)[0]  # r24 ships with the flag on
-    monkeypatch.setattr(L, "REQUIRE_SEAT_CLEAR", False)
-    assert L.seat_required(cfg) == (True, "RUN_AS.json missing")
-    now = datetime(2026, 11, 28, 12, tzinfo=UTC)
-    import json
+    now = datetime(2026, 12, 6, 12, tzinfo=UTC)
+    assert L.seat_required(cfg, now) == (True, "RUN_AS.json missing")
+    d = tmp_path / "runas"
+    d.mkdir()
+    good = R.proof([_t("MT5-Gateway", "quantrun")], {"guard": True}, {}, now, [])
+    (tmp_path / L.RUN_AS_PROOF).write_text(json.dumps(good), encoding="utf-8")
 
-    (tmp_path / "runas").mkdir()
-    (tmp_path / L.RUN_AS_PROOF).write_text(
-        json.dumps(R.proof([_t("MT5-Gateway", "quantrun")], {"guard": True}, {}, now)),
-        encoding="utf-8",
-    )
-    assert L.seat_required(cfg, now) == (False, "independent")
+    def hist(days, gap_at=None, bad_at=None):
+        rows, t = [], now - timedelta(days=days)
+        while t <= now:
+            if gap_at is None or not (gap_at <= t < gap_at + timedelta(minutes=30)):
+                rows.append(json.dumps({"at": t.isoformat(), "independent": t != bad_at}))
+            t += timedelta(minutes=5)
+        (d / "RUN_AS_HISTORY.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    hist(6)
+    assert L.seat_required(cfg, now)[0]
+    hist(8)
+    assert L.seat_required(cfg, now)[0] is False
+    hist(8, gap_at=now - timedelta(days=2))
+    assert L.seat_required(cfg, now)[0]  # a gap restarts the clock
+    hist(8, bad_at=(now - timedelta(days=1)).replace(minute=0))
+    assert L.seat_required(cfg, now)[0]  # one bad proof restarts it
+    bad = dict(good, independent=False, elevated_processes=["7 python.exe (SYSTEM)"])
+    (tmp_path / L.RUN_AS_PROOF).write_text(json.dumps(bad), encoding="utf-8")
+    hist(8)
+    assert L.seat_required(cfg, now)[0]  # fails back at once
+
+
+def test_process_proof() -> None:
+    procs = [
+        {"pid": 1, "name": "python.exe", "cmdline": r"py C:\opt\quant\x.py", "user": "SYSTEM"},
+        {
+            "pid": 2,
+            "name": "python.exe",
+            "cmdline": "py x.py",
+            "user": "BOX\\Administrator",
+            "cwd": r"C:\opt\quant\desks\mt5",
+        },
+        {
+            "pid": 3,
+            "name": "python.exe",
+            "cmdline": r"py C:\opt\quant\x.py",
+            "user": "BOX\\quantrun",
+        },
+        {"pid": 4, "name": "terminal64.exe", "cmdline": r"C:\opt\quant", "user": "SYSTEM"},
+        {
+            "pid": 5,
+            "name": "powershell.exe",
+            "cmdline": r"-File C:\ProgramData\QuantBox\guard\adopt\a.ps1 C:\opt\quant",
+            "user": "SYSTEM",
+        },
+    ]
+    assert R.elevated_processes(procs) == ["1 python.exe (SYSTEM)", "2 python.exe (ADMINISTRATOR)"]
+    now = datetime(2026, 11, 28, 12, tzinfo=UTC)
+    assert not R.proof([], {"g": True}, {}, now)["independent"]  # processes unmeasured
 
 
 def test_uncleared_head_code_never_runs_while_the_seat_is_required(monkeypatch) -> None:

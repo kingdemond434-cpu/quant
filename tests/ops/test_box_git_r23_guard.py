@@ -122,7 +122,7 @@ def test_money_merges_and_rollbacks(tmp_path: Path) -> None:
 
 # ------------------------------------------------------------------ wiring
 def test_r23_switches() -> None:
-    assert L.GUARD_LIVE is True and L.REQUIRE_SEAT_CLEAR is True
+    assert L.GUARD_LIVE is True and L.seat_required(SimpleNamespace(guard_dir=Path('/nope')))[0]
 
 
 def _wire(monkeypatch, tmp_path, *, money, risk=(True, "risk ok"), trust=OK):
