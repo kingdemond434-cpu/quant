@@ -231,9 +231,43 @@ def _read(path: Path, note: dict[str, str]) -> Any:
     return None
 
 
+def _tail_lines(path: Path, tail: int, block: int = 1 << 20) -> list[str]:
+    """The last `tail` lines of `path`, read backwards from the end in 1 MiB blocks.
+
+    THE OLD READ LOADED THE WHOLE FILE TO KEEP ITS TAIL. `read_text().splitlines()[-tail:]` on
+    the box's hypothesis_graph.jsonl (4.59 GB, 7.3 M lines, measured 2026-11-10) decodes the
+    whole file into one string and splits all of it to keep the last 80,000 lines, so the daily
+    chain's FIRST step, research_gap_map, sat silent for 19+ minutes on 2026-11-10 21:50Z before
+    the bandit was ever reached. Reading from the end costs what the tail costs. Lines split on
+    b"\n" only (a trailing \r is dropped), so a JSON row carrying a raw U+2028 stays one row
+    instead of being cut in two by str.splitlines.
+    """
+    if tail <= 0:
+        return []
+    with open(path, "rb") as fh:
+        fh.seek(0, 2)
+        pos = fh.tell()
+        chunks: list[bytes] = []
+        newlines = 0
+        while pos > 0 and newlines <= tail:
+            step = min(block, pos)
+            pos -= step
+            fh.seek(pos)
+            buf = fh.read(step)
+            chunks.append(buf)
+            newlines += buf.count(b"\n")
+    raw = b"".join(reversed(chunks))
+    parts = raw.split(b"\n")
+    if pos > 0:
+        parts = parts[1:]  # the first piece starts mid-line
+    if parts and parts[-1] == b"":
+        parts = parts[:-1]
+    return [p.rstrip(b"\r").decode("utf-8", errors="replace") for p in parts[-tail:]]
+
+
 def _read_jsonl(path: Path, note: dict[str, str], tail: int) -> list[dict[str, Any]]:
     try:
-        lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()[-tail:]
+        lines = _tail_lines(Path(path), tail)
     except FileNotFoundError:
         note[str(path)] = "ABSENT"
         return []
