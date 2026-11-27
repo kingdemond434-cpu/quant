@@ -11,6 +11,8 @@
 #      still classifies every boot, runs the 10-minute veto on trust changes and requires an
 #      owner file for the core. Residual: any program running as the non-elevated Administrator
 #      could stage a boot there.
+#   5. Copies Audit's CLEAR verdict for One pipe's LIVE merge, claude/live-merge-r25 at 34d751ad43,
+#      byte for byte into drop_local\verdicts, so the forge lands that PR with no further act.
 # Nothing else: no task, no trading file, no live position, no trust file is touched.
 param([switch] $AllowClaudeStaging)
 $ErrorActionPreference = 'Stop'
@@ -23,6 +25,10 @@ $Bundle  = Join-Path $Here "$Name.bundle"
 $RB      = 'C:\opt\bridge\quant\drop_local\forge_reboot'
 $OA      = 'C:\ProgramData\QuantBox\forge\owner_approvals'
 $Log     = 'C:\ProgramData\QuantBox\final_r25.log'
+$LiveVerdictName = 'live-merge-r25-34d751ad43.json'
+$LiveVerdict = '{"branch":"claude/live-merge-r25","line":"AUDIT CLEAR 34d751ad438ae5659ee8a5cad57e04faf98e595d merge"}' + "`n"
+$DLV     = 'C:\opt\bridge\quant\drop_local\verdicts'
+$LiveVerdictSha = '8625a6523739bc7dfe9082793ffe96d2d87e09d35c056faa0a38a5590e615461'
 function Say([string] $m) { $l = "{0}  {1}" -f (Get-Date).ToUniversalTime().ToString('s'), $m; Add-Content -LiteralPath $Log -Value $l; $l }
 function Stop-Here([string] $m) { Say "STOPPED: $m"; exit 1 }
 
@@ -57,10 +63,19 @@ if (-not (Test-Path -LiteralPath $OA -PathType Container)) { Stop-Here "no $OA (
 [IO.File]::WriteAllText((Join-Path $OA "$Head.txt"), "zuck (owner) approves boot r25 ${Head}: box guardian phase 1, read-only status`n", $U8)
 Say "owner approval written for $Head"
 
+if (-not (Test-Path -LiteralPath $DLV)) { $null = New-Item -ItemType Directory -Force -Path $DLV }
+$vb = $U8.GetBytes($LiveVerdict)
+$vh = (([Security.Cryptography.SHA256]::Create().ComputeHash($vb)) | ForEach-Object { $_.ToString('x2') }) -join ''
+if ($vh -ne $LiveVerdictSha) { Stop-Here "the LIVE merge verdict text is not sha256 $LiveVerdictSha" }
+[IO.File]::WriteAllBytes((Join-Path $DLV $LiveVerdictName), $vb)
+$wh = (Get-FileHash -LiteralPath (Join-Path $DLV $LiveVerdictName) -Algorithm SHA256).Hash.ToLower()
+if ($wh -ne $LiveVerdictSha) { Stop-Here "the written LIVE merge verdict is $wh, not $LiveVerdictSha" }
+Say "Audit's verdict for claude/live-merge-r25 34d751ad43 copied to $DLV"
+
 if ($AllowClaudeStaging) {
     & icacls $RB /grant 'Administrator:(OI)(CI)M' | Out-Null
     if ($LASTEXITCODE) { Stop-Here 'could not grant staging on forge_reboot' }
     Say "future boots: the non-elevated Administrator may stage in $RB (the mover still gates every move)"
 }
-Say 'DONE: r25 staged and approved; the mover takes it on its next pass'
+Say 'DONE: r25 staged and approved, LIVE merge verdict delivered; the box takes both on its next pass'
 'ALL DONE - nothing more is needed from you'
