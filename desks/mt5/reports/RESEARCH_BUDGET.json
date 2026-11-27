@@ -1,5 +1,5 @@
 {
- "at": "2026-11-27T05:02:56+00:00",
+ "at": "2026-11-27T05:12:18+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-27T05:02:49+00:00",
+   "at": "2026-11-27T05:12:02+00:00",
    "bandit_at": "2026-11-27T01:43:54.260116+00:00",
    "hour": "2026-11-27T05",
    "arm": "treated",
@@ -21,14 +21,14 @@
    "surplus_s": 1708.7,
    "surplus_why": "department 'discovery' measured spare 1709s/hour",
    "contract": {
-    "n_treated": 33,
+    "n_treated": 32,
     "n_control": 11,
-    "mean_treated": 0.424242,
+    "mean_treated": 0.4375,
     "mean_control": 0.181818,
-    "delta": 0.242424,
-    "t": 1.495,
+    "delta": 0.255682,
+    "t": 1.56,
     "verdict": "UNDECIDED",
-    "why": "Welch t=1.495 over 33 treated vs 11 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.56 over 32 treated vs 11 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -50,7 +50,7 @@
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: unmeasured; par",
    "paradigm_factor": 1.0,
-   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0175 vs equal share 0.0667 = x0.26 -> x1.00 (one-sided)",
+   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0180 vs equal share 0.0667 = x0.27 -> x1.00 (one-sided)",
    "factor": 2.0,
    "applied_s": 480,
    "applied": true,
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": false,
- "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=1.495 over 33 treated vs 11 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
+ "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=1.56 over 32 treated vs 11 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -124,14 +124,14 @@
   "admitted": 0.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 33,
+    "n_treated": 32,
     "n_control": 11,
-    "mean_treated": 0.424242,
+    "mean_treated": 0.4375,
     "mean_control": 0.181818,
-    "delta": 0.242424,
-    "t": 1.495,
+    "delta": 0.255682,
+    "t": 1.56,
     "verdict": "UNDECIDED",
-    "why": "Welch t=1.495 over 33 treated vs 11 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.56 over 32 treated vs 11 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
