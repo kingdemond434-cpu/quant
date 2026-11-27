@@ -2190,18 +2190,25 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     sleeve that silently disappears from a roster is indistinguishable from one nobody wrote."""
     if not path.exists():
         return [], []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        live = [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
-    except Exception:
-        return [], []
+    # ONE BAD ROW NEVER EMPTIES THE ROSTER (root R3, 2026-11-27): before this, a single
+    # non-object row made `s.get` raise and the whole LIVE roster read as []. Rows are now checked
+    # one by one; a malformed row is quarantined, named here and counted in
+    # reports/STATE_QUARANTINE.json, and every good LIVE row still trades.
+    from mt5desk import state_rows as _sr
+    rep = (path.parent.parent / "reports" if path.parent.name == "data" else path.parent)
+    got = _sr.sleeve_rows(path, report=rep / "STATE_QUARANTINE.json")
+    if got.status != _sr.OK:
+        return [], ([f"sleeves.json {got.status}: {got.why}"] if got.why else [])
+    live = [s for s in got.rows if s.get("status") == "LIVE"]
+    quarantine_notes = [f"sleeves.json row {q['index']} ({q.get('name')}) quarantined: {q['why']}"
+                        for q in got.quarantined]
     try:
         from mt5desk.live_policy import admit
     except ImportError:                                    # pragma: no cover - box path only
-        return live, []
+        return live, quarantine_notes
     keep, refused = admit(live)
-    notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
-             for r, why in refused]
+    notes = quarantine_notes + [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
+                                for r, why in refused]
     # FEED HEALTH IS AN INPUT, NEVER A FILTER (LAWS 5m observatory; GROWTH_GOVERNANCE Rule 1).
     # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
     # file; the reading rides on the row for entry timing to read and drops nothing.

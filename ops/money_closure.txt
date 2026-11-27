@@ -374,3 +374,4 @@ desks/mt5/mt5desk/family_coint_pairs.py
 desks/mt5/mt5desk/family_global_methods.py
 desks/mt5/research/probe_tier.py
 desks/mt5/mt5desk/fill_tape.py
+desks/mt5/mt5desk/state_rows.py

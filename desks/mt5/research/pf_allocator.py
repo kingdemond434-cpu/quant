@@ -332,6 +332,23 @@ def _log(msg: str) -> None:
 _FORWARD_JOIN: dict[str, Any] = {}
 
 
+
+def _sleeve_rows() -> list[dict[str, Any]]:
+    """sleeves.json through the shared loader (root R3, 2026-11-27): a malformed row is
+    quarantined and counted (reports/STATE_QUARANTINE.json), never fatal to the solve. An absent
+    or unreadable file raises OSError / ValueError, which every caller already treats as "no
+    roster", exactly as the raw read did."""
+    from mt5desk import state_rows as _sr
+    got = _sr.sleeve_rows(BASE / "data" / "sleeves.json",
+                          report=BASE / "reports" / "STATE_QUARANTINE.json")
+    if got.status == _sr.ABSENT:
+        raise OSError(got.why)
+    if got.status != _sr.OK:
+        raise ValueError(got.why)
+    for q in got.quarantined:
+        _log(f"sleeves.json row {q['index']} ({q.get('name')}) quarantined: {q['why']}")
+    return got.rows
+
 def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """The daily-R matrix for every priced sleeve, plus forward days per sleeve.
 
@@ -417,7 +434,7 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     zero: dict[str, str] = {}
     unmeasured: dict[str, str] = {}
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
     except (OSError, ValueError, AttributeError):
         return {}, zero, unmeasured
     try:
@@ -3433,7 +3450,7 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     priced = {e.name for e in ev}
     rostered: set[str] = set()
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
         # STANDBY rows too (2026-10-13): a priced STANDBY certificate the solve gives nothing
         # gets the same recorded zero, so the promoter reads a refusal, not "never priced".
         rostered = {str(r.get("name")) for r in rows
@@ -3526,7 +3543,7 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
     except Exception as exc:                                   # pragma: no cover - import guard
         return frozenset(), {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
     except (OSError, ValueError, AttributeError):
         rows = []
     by_name: dict[str, list[dict[str, Any]]] = {}
