@@ -160,11 +160,56 @@ def trust_refusals(updates: Iterable[tuple[str, str, str]], trust_dir: str,
     return out
 
 
+#: (boot r24.1, Audit C3) the seal commit a promotion lands on LIVE changes this file alone
+SEAL_PATH = "desks/mt5/data/RELEASE.json"
+GUARD_CLASSES = frozenset({"PASS", "TRUST"})
+
+
+def guard_refusals(updates: Iterable[tuple[str, str, str]], guard_dir: str,
+                   git: Callable[..., str] | None = None) -> list[Verdict]:
+    """Rule 7 (boot r24.1): every move of LIVE is ONE step, and that step is either a merge whose
+    second parent holds the box guard's verdict (PASS, or TRUST that rule 6 then judges) in the
+    guard folder only Administrators, SYSTEM and the gate can write, or a single-parent seal
+    commit that changes RELEASE.json alone. Anything else, or anything unreadable, refuses."""
+    import json
+    from pathlib import Path
+
+    def run(*a: str) -> str:
+        if git is not None:
+            return git(*a)
+        return subprocess.run(["git", *a], capture_output=True, text=True, timeout=60,
+                              check=True).stdout
+    out = []
+    for o, n, r in updates:
+        if r != f"refs/heads/{LIVE_BRANCH}" or n == ZERO or o == ZERO:
+            continue
+        try:
+            parents = run("rev-list", "--parents", "-n", "1", n).split()[1:]
+            if not parents or parents[0] != o:
+                out.append(Verdict(False, r, "guard door: LIVE moves one commit at a time"))
+                continue
+            if len(parents) == 1:
+                changed = [x for x in run("diff", "--name-only", o, n).splitlines() if x]
+                if changed != [SEAL_PATH]:
+                    out.append(Verdict(False, r, "guard door: a direct commit on LIVE may only "
+                                                 "seal RELEASE.json"))
+                continue
+            head = parents[1]
+            doc = json.loads((Path(guard_dir) / "verdicts" / f"{head}.json")
+                             .read_text(encoding="utf-8"))
+            if doc.get("sha") != head or doc.get("cls") not in GUARD_CLASSES:
+                out.append(Verdict(False, r, f"guard door: no guard verdict for {head[:12]}"))
+        except Exception as exc:  # unmeasured: nothing moves LIVE
+            out.append(Verdict(False, r, f"guard door unavailable ({type(exc).__name__})"))
+    return out
+
+
 def main(stdin: Iterable[str] | None = None, env: dict[str, str] | None = None,
          argv: list[str] | None = None) -> int:
     """git pre-receive: `<old> <new> <ref>` per line on stdin. Exit 0 accepts the whole push."""
     args = list(sys.argv[1:] if argv is None else argv)
     trust_dir = args[args.index("--trust-dir") + 1] if "--trust-dir" in args else None
+    guard_dir = args[args.index("--guard-dir") + 1] if "--guard-dir" in args else None
     updates = []
     for line in stdin if stdin is not None else sys.stdin:
         parts = line.split()
@@ -175,6 +220,8 @@ def main(stdin: Iterable[str] | None = None, env: dict[str, str] | None = None,
     bad = [v for v in verdicts if not v.ok]
     if not bad and trust_dir:
         bad = trust_refusals(updates, trust_dir)
+    if not bad and guard_dir:
+        bad = guard_refusals(updates, guard_dir)
     for v in bad:
         print(f"box-git: REFUSED {v.ref}: {v.why}", file=sys.stderr)
     return 1 if bad or not updates else 0

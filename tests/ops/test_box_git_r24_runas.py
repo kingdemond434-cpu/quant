@@ -319,3 +319,29 @@ def test_kill_old_matches_full_paths_only(monkeypatch) -> None:
 
     monkeypatch.setattr(os, "path", ntpath)
     assert R.kill_old(["C:\\opt\\quant\\desks\\mt5\\research\\hourly_cycle.py"]) == [1]
+
+
+def test_the_door_needs_a_guard_verdict_or_a_seal(tmp_path) -> None:
+    """Audit C3: rule 7 of protect.py."""
+    import json
+
+    from ops.box_git import protect as D
+    old, mrg, head, seal = "1" * 40, "2" * 40, "3" * 40, "4" * 40
+    live = f"refs/heads/{D.LIVE_BRANCH}"
+    (tmp_path / "verdicts").mkdir()
+
+    def git(*a):
+        if a[0] == "rev-list":
+            return {mrg: f"{mrg} {old} {head}", seal: f"{seal} {old}",
+                    "5" * 40: f"{'5' * 40} {'9' * 40}"}[a[-1]]
+        return {seal: D.SEAL_PATH + "\n"}.get(a[-1], "x.py\n")
+    assert D.guard_refusals([(old, mrg, live)], str(tmp_path), git)  # no verdict yet
+    (tmp_path / "verdicts" / f"{head}.json").write_text(
+        json.dumps({"sha": head, "cls": "FAIL"}), encoding="utf-8")
+    assert D.guard_refusals([(old, mrg, live)], str(tmp_path), git)
+    (tmp_path / "verdicts" / f"{head}.json").write_text(
+        json.dumps({"sha": head, "cls": "PASS"}), encoding="utf-8")
+    assert D.guard_refusals([(old, mrg, live)], str(tmp_path), git) == []
+    assert D.guard_refusals([(old, seal, live)], str(tmp_path), git) == []
+    assert D.guard_refusals([(old, "5" * 40, live)], str(tmp_path), git)  # not one step
+    assert D.guard_refusals([(old, mrg, "refs/heads/claude/x")], str(tmp_path), git) == []

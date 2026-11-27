@@ -108,6 +108,29 @@ $deny = @($Guard, (Join-Path $QB 'trust'), (Join-Path $QB 'tokens'), (Join-Path 
 foreach ($v in $venues) { $deny += $v.install; $deny += $v.data_dirs }
 foreach ($d in $deny) { if (Test-Path -LiteralPath $d) { & icacls $d /deny "${RunUser}:(OI)(CI)(W,D,DC,WDAC,WO)" | Out-Null; Say "write denied to quantrun: $d" } }
 
+# (Audit MF1 (b)) quantci, which runs PR code, may not read the terminals or the MT5 package
+$mt5pkg = Join-Path (Split-Path -Parent $py) 'Lib\site-packages\MetaTrader5'
+foreach ($d in @($venues | ForEach-Object { $_.install }) + @($mt5pkg)) {
+    if (Test-Path -LiteralPath $d) { & icacls $d /deny "quantci:(OI)(CI)(RX)" | Out-Null; Say "quantci denied: $d" }
+}
+
+# (Audit C3) the door: protect.py rule 7, every LIVE move needs a guard verdict or is a seal.
+# The pinned copy in trust\ is replaced from this checkout and the hook gains --guard-dir.
+$trust = Join-Path $QB 'trust'
+Copy-Item -LiteralPath (Join-Path $src 'protect.py') -Destination (Join-Path $trust 'protect.py') -Force
+$hook = Get-ChildItem -Path (Join-Path $QB 'forge') -Recurse -Filter 'box-protect' -ErrorAction SilentlyContinue |
+    Where-Object { $_.DirectoryName -like '*pre-receive.d' } | Select-Object -First 1
+if (-not $hook) { Stop-Here 'could not find the forge pre-receive hook box-protect' }
+$text = Get-Content -LiteralPath $hook.FullName -Raw
+if ($text -notmatch '--guard-dir') {
+    $gFwd = ($Guard -replace '\\','/')
+    $text = $text -replace '(--trust-dir "[^"]+")', "`$1 --guard-dir `"$gFwd`""
+    Set-Content -LiteralPath $hook.FullName -Value $text -Encoding ascii
+}
+& icacls (Join-Path $Guard 'verdicts') /grant "quantforge:(OI)(CI)RX" | Out-Null
+& icacls $Guard /grant "quantforge:(RX)" | Out-Null
+Say "door: protect.py pinned in trust\, hook reads guard\verdicts ($($hook.FullName))"
+
 # 4. the pinned migrator
 $pinned = @{}
 foreach ($f in @('runas_plan.py', 'runas_probe.py', 'runas\migrate.ps1')) {
