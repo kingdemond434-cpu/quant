@@ -220,6 +220,30 @@ if (-not $resolved) {
     exit 3
 }
 Write-Cycle "agent $($resolved.Source)"
+# AN ELEVATED LANE RUNS ONLY A SIGNED AGENT (2026-11-27). MT5-CycleNoon runs this script as an
+# elevated Administrator and MT5-CycleMidnight as SYSTEM, but the CLI it finds lives in a user
+# profile (.local\bin, %APPDATA%\npm) that the non-elevated Administrator can overwrite. Without this
+# check, whoever can write that profile gets code run elevated at noon and as SYSTEM at midnight.
+# So when this process is elevated, the agent must be an .exe whose Authenticode signature is
+# Valid; an npm .cmd shim or an unsigned or tampered binary is refused, loudly, non-zero.
+$elevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator)
+if ($elevated) {
+    $agentPath = "$($resolved.Source)"
+    $sig = $null
+    if ($agentPath -match '(?i)\.exe$' -and (Test-Path -LiteralPath $agentPath)) {
+        $sig = Get-AuthenticodeSignature -LiteralPath $agentPath -ErrorAction SilentlyContinue
+    }
+    if (-not $sig -or "$($sig.Status)" -ne 'Valid') {
+        $why = if (-not $sig) { 'not a signed .exe (an npm .cmd shim or a script cannot be verified)' } else { "signature status $($sig.Status)" }
+        Write-Cycle "FATAL: refusing to run $agentPath elevated: $why."
+        Write-Cycle "  This lane runs as an elevated Administrator or SYSTEM, and that path is writable by the"
+        Write-Cycle "  non-elevated user, so an unverified binary there would run with full rights. Install a"
+        Write-Cycle "  signed CLI build, or pass -AgentCommand with the full path to a signed .exe."
+        exit 3
+    }
+    Write-Cycle ("agent signature Valid: {0}" -f (($sig.SignerCertificate.Subject -split ',')[0]))
+}
 
 # HEADLESS, WITH SCOPED PERMISSIONS. Piping a brief into a bare `claude` or `codex` opens the
 # interactive UI, which has no console under Task Scheduler and dies before reading a word -- the

@@ -406,3 +406,17 @@ def test_the_agent_may_never_skip_the_hooks() -> None:
     for pattern in ("Bash(git push --no-verify:*)", "Bash(git push origin --no-verify:*)",
                     "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)"):
         assert f'"{pattern}"' in denied
+
+
+def test_an_elevated_lane_runs_only_a_signed_agent_exe() -> None:
+    # MT5-CycleNoon runs elevated and MT5-CycleMidnight as SYSTEM, but the agent CLI is found in a
+    # user profile the non-elevated Administrator can write: unverified, it would run with full
+    # rights. When elevated, only an .exe with a Valid Authenticode signature may run (2026-11-27).
+    src = LAUNCHER.read_text("utf-8")
+    check = src.index("AN ELEVATED LANE RUNS ONLY A SIGNED AGENT")
+    first_use = src.index("HEADLESS, WITH SCOPED PERMISSIONS")
+    assert src.index('Write-Cycle "agent $($resolved.Source)"') < check < first_use
+    body = src[check:first_use]
+    assert "WindowsBuiltInRole]::Administrator" in body
+    assert "Get-AuthenticodeSignature" in body and "-ne 'Valid'" in body
+    assert "(?i)\\.exe$" in body and "exit 3" in body
