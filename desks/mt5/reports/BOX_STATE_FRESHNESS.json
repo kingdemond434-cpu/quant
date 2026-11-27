@@ -1,10 +1,10 @@
 {
   "schema": "box_state_freshness/1",
-  "measured_at": "2026-11-27T12:12:40+00:00",
+  "measured_at": "2026-11-27T22:35:38+00:00",
   "threshold_h": 6.0,
   "box_author": "Contabo",
-  "age_h": 199.14,
-  "box_state_age_hours": 199.14,
+  "age_h": 209.52,
+  "box_state_age_hours": 209.52,
   "box_state_flow": {
     "verdict": "FLOWING",
     "why": "origin carries box state 0.0h old",
@@ -30,7 +30,7 @@
   },
   "stall_watch_alerts": {
     "status": "MEASURED",
-    "checked_at": "2026-11-27T11:51:08.1195542Z",
+    "checked_at": "2026-11-27T22:20:45.6830004Z",
     "state_flow": "STALLED",
     "state_flow_watch": "METER_SILENT",
     "alerts_armed": 0,
@@ -82,10 +82,12 @@
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json": "2026-11-19T00:52:31+00:00",
     "desks/mt5/reports/BOX_BACKLOG.json": "2026-11-18T22:23:35+00:00"
   },
-  "stamps_ignored_not_box_written": {},
+  "stamps_ignored_not_box_written": {
+    "desks/mt5/reports/PR_BLOCKERS.json": "TimeoutExpired: Command '['git', '-C', 'C:\\\\opt\\\\quant', 'log', '-1', '--format=%an%x09%s', 'refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3', '--', 'desks/mt5/reports/PR_BLOCKERS.json']' timed out after 120 seconds"
+  },
   "newest_stamp_inside_state": "2026-11-19T05:04:24+00:00",
   "basis": "stamp_inside_state",
   "verdict": "STALE",
-  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 199.1h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
+  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 209.5h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
   "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
 }
