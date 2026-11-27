@@ -60,8 +60,9 @@ def test_symlinks_oversize_and_foreign_names_are_ignored(tmp_path) -> None:
     box, co = tmp_path / "packets", tmp_path / "co"
     co.mkdir()
     _mk(box, "notes.txt")
-    _mk(box, "../evil.json") if False else None
     _mk(box, "big_abc.json", b"x" * (D.MAX_JSON + 1))
+    _mk(tmp_path, "outside_abc.json", b"{}")
+    (box / "link_abc.json").symlink_to(tmp_path / "outside_abc.json")
     rows = D.stage_packets(box, co)
     assert rows == [f"packets refused big_abc.json: {D.MAX_JSON + 1} bytes over the "
                     f"{D.MAX_JSON} cap"]
