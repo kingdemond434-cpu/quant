@@ -84,6 +84,22 @@ GUARD_LIVE = True
 #: also needs the Auditor's CLEAR of the exact head. The checks run at once and in parallel with
 #: the review (quantci is already isolated), so the CLEAR adds no wait beyond the review itself.
 REQUIRE_SEAT_CLEAR = True
+RUN_AS_PROOF = "runas/RUN_AS.json"  # (r24) the pinned SYSTEM migrator writes it; quantgate reads
+
+
+def seat_required(cfg: Any, now: datetime | None = None) -> tuple[bool, str]:
+    r"""(r24, Audit MF-B) Re-read every cycle. While REQUIRE_SEAT_CLEAR is on (until the owner's
+    flip packet) the seat is required. After the flip, it is required again by itself the moment
+    guard\RUN_AS.json is missing, stale or shows an elevated live-tree task."""
+    if REQUIRE_SEAT_CLEAR:
+        return True, "REQUIRE_SEAT_CLEAR"
+    from ops.box_git import runas_plan
+    try:
+        doc = json.loads((guard_dir(cfg) / RUN_AS_PROOF).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    ok, why = runas_plan.proof_holds(doc, now or datetime.now(UTC))
+    return (not ok), why
 
 
 @dataclass(frozen=True)
@@ -1045,8 +1061,9 @@ def guard_merge_tick(cfg: Config) -> str:
         if _held_by_audit(cfg, n, head):
             out.append(f"#{n} HOLD")
             continue
-        if REQUIRE_SEAT_CLEAR and not audited_clear(comments, head):
-            out.append(f"#{n} guard PASS, waits for the Auditor's CLEAR (until boot r24)")
+        need, nwhy = seat_required(cfg)
+        if need and not audited_clear(comments, head):
+            out.append(f"#{n} guard PASS, waits for the Auditor's CLEAR ({nwhy})")
             continue
         behind = _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", live, head],
                       timeout=120)[0] != 0
