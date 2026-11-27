@@ -714,8 +714,9 @@ def pr_parallel(cores: int | None = None) -> int:
 
 def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
               skip: set[str]) -> list[Mapping[str, Any]]:
+    """`prs` arrive in pr_order already (pr_tick sorts: pr_order's one named caller)."""
     out = []
-    for p in pr_order(prs):
+    for p in prs:
         head = str((p.get("head") or {}).get("sha") or "")
         if not head or head in skip:
             continue
@@ -778,9 +779,11 @@ def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S, *,
     running: dict[cf.Future[str], str] = {}
     with cf.ThreadPoolExecutor(max_workers=k, thread_name_prefix="pr-check") as pool:
         while True:
-            if time.monotonic() < until and len(running) < k:
-                prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
-                for p in _eligible(f, prs or [], started)[:k - len(running)]:
+            # the stage stops STARTING after its budget, but one check always runs
+            if (time.monotonic() < until or not started) and len(running) < k:
+                prs = pr_order(f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
+                               or [])
+                for p in _eligible(f, prs, started)[:k - len(running)]:
                     head = str((p.get("head") or {}).get("sha") or "")
                     started.add(head)
                     running[pool.submit(check_pr, cfg, p)] = f"PR #{p.get('number')}"

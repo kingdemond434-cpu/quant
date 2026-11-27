@@ -110,7 +110,7 @@ class _Forge:
         return STATUSES[path.split("/commits/")[1].split("/")[0]]
 
 
-def test_the_loop_stage_writes_the_report_read_only_and_not_more_than_every_30_min(
+def test_the_loop_stage_writes_the_report_read_only_and_not_more_than_every_5_min(
         tmp_path, monkeypatch):
     cfg = box_loop.Config(forge_url="x", bare=tmp_path, work=tmp_path, tokens=tmp_path,
                           ca=tmp_path, state=tmp_path / "state.json")
@@ -124,15 +124,17 @@ def test_the_loop_stage_writes_the_report_read_only_and_not_more_than_every_30_m
     assert "backlog 2" in why          # ancestry stubbed: nothing reached production
     assert all(not c.startswith("POST") for c in forge.calls)
     n = len(forge.calls)
-    again = box_loop.leadtime_tick(cfg, now=NOW + timedelta(minutes=10))
+    again = box_loop.leadtime_tick(cfg, now=NOW + timedelta(minutes=3))  # (r20) 5 min
     assert again.startswith("lead time fresh")
     assert len(forge.calls) == n
 
 
 def test_the_loop_runs_the_lead_time_stage_last():
     import inspect
+    # (r20) the light stages run in LIGHT's order, every round and once more after the heavy ones
+    assert box_loop.LIGHT[-1] == "leadtime" and "promote" in box_loop.LIGHT
     src = inspect.getsource(box_loop.tick)
-    assert src.index('"promote"') < src.index('"leadtime"')
+    assert src.count("for name in LIGHT") == 3
 
 
 def _c(body: str, h: float, login: str) -> dict:

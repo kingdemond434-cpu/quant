@@ -61,6 +61,13 @@ def test_the_merge_gate_needs_the_risk_job_and_replay_shadow_on_the_forge():
     assert "need = FORGE_REQUIRED" in s
     assert 'FORGE_REQUIRED = ("risk-invariants", "replay-shadow")' in s
     src = (ROOT / "ops/box_git/box_loop.py").read_text(encoding="utf-8")
-    i = src.index("def pr_tick")
-    body = src[i:src.index("\ndef ", i + 10)]
-    assert body.index("audited_clear") < body.index("fast_path()") < body.index("impacted.select")
+    def body(name: str) -> str:
+        i = src.index(f"def {name}(")
+        return src[i:src.index("\ndef ", i + 10)]
+
+    # (r20) eligibility (Audit MF-2: a CLEAR of the exact head) is decided before any check is
+    # started; the check itself takes the fast path before any impacted-test selection
+    assert body("pr_tick").index("_eligible(") < body("pr_tick").index("check_pr")
+    assert "audited_clear" in body("_eligible")
+    cp = body("check_pr")
+    assert "audited_clear" not in cp and cp.index("fast_path()") < cp.index("impacted.select")
