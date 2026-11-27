@@ -7,9 +7,14 @@
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "96c8ae1259f9b7a396ce8bd43beb37df3c2de61c6ead683d997487ac31e62ab2",
+   "action_scripts": [
+    "OUTSIDE:C:\\ProgramData\\ClaudeBridge\\bin\\bridge_watchdog.ps1"
+   ],
+   "why_alarm": "money: OUTSIDE:C:\\ProgramData\\ClaudeBridge\\bin\\bridge_watchdog.ps1: not a repository .py file; never restarted (code); no declared output"
   },
   {
    "task": "Codex-H1-Diagnostic",
@@ -18,8 +23,13 @@
    ],
    "interval_min": null,
    "max_age_min": null,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "bf279fc0062e50894ba26370503bb0d22bff7658cd17d85c89d8e09fa840a4a0",
+   "action_scripts": [
+    ".codex_diag_h1.py"
+   ],
+   "why_alarm": "money: .codex_diag_h1.py: not a repository .py file"
   },
   {
    "task": "E8-Book",
@@ -28,7 +38,12 @@
    "max_age_min": 180,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "4ac66e78a4d1daa3b603efb21bb91a71f2bce19c761d020cad085a3c0960bd1d",
+   "action_scripts": [
+    "desks/mt5/prop/e8_book.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/e8_book.py: on the money path; no declared output"
   },
   {
    "task": "E8-Executor",
@@ -37,7 +52,12 @@
    "max_age_min": 35,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "532828633a973f12c242cdac6a382509573b7d7f3e9ea90b3025a926ca03b148",
+   "action_scripts": [
+    "desks/mt5/prop/e8_executor.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/e8_executor.py: on the money path; no declared output"
   },
   {
    "task": "E8-Gold",
@@ -46,7 +66,12 @@
    "max_age_min": 35,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "e99c52cfb3151d940ce7c57a07c1e9cbbbdd9f359ba7b796e94c248dbeff9df1",
+   "action_scripts": [
+    "desks/mt5/prop/e8_gold.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/e8_gold.py: on the money path; no declared output"
   },
   {
    "task": "E8-Spreads",
@@ -55,7 +80,12 @@
    "max_age_min": null,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "739a4313b47f8baf13944bd17c6f39a84cf983156214b38e9acd1cc733c1de66",
+   "action_scripts": [
+    "desks/mt5/prop/e8_spread_sampler.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/e8_spread_sampler.py: on the money path; no declared output"
   },
   {
    "task": "MT5-AccountState",
@@ -65,16 +95,24 @@
    "interval_min": 15,
    "max_age_min": 45,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "dfb55fedce5c3b89ce86726afc8eb2b7c26179a9f482c0fb7967ff4fe924686f",
+   "action_scripts": [
+    "ops/run_account_state.cmd"
+   ],
+   "why_alarm": "was alarm; money: ops/run_account_state.cmd: not a repository .py file"
   },
   {
    "task": "MT5-AdoptRelease",
    "outputs": [],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
+   "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread; never restarted (code); no declared output"
   },
   {
    "task": "MT5-AllocatorFast",
@@ -84,7 +122,12 @@
    "interval_min": 5,
    "max_age_min": 35,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "8c90760f148a2fab5741b1f71a6ce53e0d48d906a293822a3bacd51f247b6bc8",
+   "action_scripts": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/research/pf_allocator.py: on the money path"
   },
   {
    "task": "MT5-AuditLane",
@@ -93,8 +136,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "3d212c9e557840b462f1b74321fd62fcf5ae5b671e00a29a2553fab96fa35c18",
+   "action_scripts": [
+    "ops/run_audit_lane.cmd"
+   ],
+   "why_alarm": "money: ops/run_audit_lane.cmd: not a repository .py file"
   },
   {
    "task": "MT5-AxisIngest",
@@ -103,8 +151,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4a59e90d194ed4b5dbc8e23cb969ab172b70bc1a45d7721a23975edcc5c1ab53",
+   "action_scripts": [
+    "ops/run_axis_ingest.cmd"
+   ],
+   "why_alarm": "money: ops/run_axis_ingest.cmd: not a repository .py file"
   },
   {
    "task": "MT5-BoxHeartbeat",
@@ -113,8 +166,13 @@
    ],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "360db720a76e66d28e88f977db39dd1e0d1d209f9aab733f66f478c20f53b3b3",
+   "action_scripts": [
+    "UNRESOLVED:desks\\mt5\\scripts\\box_heartbeat.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:desks\\mt5\\scripts\\box_heartbeat.py: not a repository .py file"
   },
   {
    "task": "MT5-CacheWarm",
@@ -123,8 +181,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4a4b94ec132ecb0eacecce1cc6782f028d7ecf5436e5e3d00e23590f67ed6752",
+   "action_scripts": [
+    "UNRESOLVED:scripts\\warm_gauntlet_cache.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:scripts\\warm_gauntlet_cache.py: not a repository .py file"
   },
   {
    "task": "MT5-CEODocket",
@@ -133,8 +196,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "af49e1275f3a4f83732088155f1223b28917d81d6fd62a14bcba79301d764999",
+   "action_scripts": [
+    "ops/run_ceo_docket.cmd"
+   ],
+   "why_alarm": "money: ops/run_ceo_docket.cmd: not a repository .py file"
   },
   {
    "task": "MT5-ClockFixer",
@@ -143,8 +211,13 @@
    ],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "a2615d611f8496498e764a928a752a8a58280e2f20074171337b22dec3acb23a",
+   "action_scripts": [
+    "desks/mt5/research/clock_fixer.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/clock_fixer.py: dispatches at run time; never restarted (code)"
   },
   {
    "task": "MT5-ContractTerms",
@@ -153,8 +226,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "c57b0a4897f0310eeda6a50b2ecef1d591d055ae6daeae525d167a11f8a69117",
+   "action_scripts": [
+    "UNRESOLVED:MOD:mt5desk.tape"
+   ],
+   "why_alarm": "money: UNRESOLVED:MOD:mt5desk.tape: not a repository .py file"
   },
   {
    "task": "MT5-ConvertSwarm",
@@ -163,8 +241,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "15aa3418f8bf28dd08d191df4a237eb80198f87a7779c2b0c53dd707af7682d8",
+   "action_scripts": [
+    "ops/run_convert_swarm.cmd"
+   ],
+   "why_alarm": "money: ops/run_convert_swarm.cmd: not a repository .py file"
   },
   {
    "task": "MT5-CostState",
@@ -173,8 +256,15 @@
    ],
    "interval_min": 1440,
    "max_age_min": 4320,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "a398bd7f4483371d0791fb05939c26a5e0269ab2a3e5042b6ee219a9f7ec7a88",
+   "action_scripts": [
+    "research/cost_surface.py",
+    "research/carry_state.py",
+    "research/cost_honesty.py"
+   ],
+   "why_alarm": "money: research/cost_surface.py: not a repository .py file"
   },
   {
    "task": "MT5-CycleMidnight",
@@ -183,7 +273,12 @@
    "max_age_min": 180,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "ff5248a7e2d150b0937fbe3f500d45a5937b1b2943c0479d63c1c88890f505dc",
+   "action_scripts": [
+    "desks/mt5/scripts/Run-DeskCycle.ps1"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/scripts/Run-DeskCycle.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-CycleNoon",
@@ -192,7 +287,12 @@
    "max_age_min": 180,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "b92f08ca32129cefcf4b4c7a8e39aadbbc0427e028d00aa58d7d1a5fbbaf1b08",
+   "action_scripts": [
+    "desks/mt5/scripts/Run-DeskCycle.ps1"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/scripts/Run-DeskCycle.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-Daily",
@@ -201,17 +301,27 @@
    ],
    "interval_min": 1440,
    "max_age_min": 4320,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "f5cf0c0b3fe0e6d8ce5d02e3ff2520bb0b1f4cf4d5f8ddc9e135631557a272ef",
+   "action_scripts": [
+    "desks/mt5/research/daily_cycle.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/daily_cycle.py: dispatches at run time"
   },
   {
    "task": "MT5-DashboardFence",
    "outputs": [],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "cf77c55699172c8a53d33b8698ba99e498f80c70d9c67afccc597ec8d6cf530a",
+   "action_scripts": [
+    "scripts/check_dashboard_publication.py"
+   ],
+   "why_alarm": "money: scripts/check_dashboard_publication.py: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-DataAxis",
@@ -220,8 +330,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "5e91e4c08ece0d91d8b8652ebda60eb874e3553c8ecb3cbc3e1482c81bad37f5",
+   "action_scripts": [
+    "ops/run_data_axis_miner.cmd"
+   ],
+   "why_alarm": "money: ops/run_data_axis_miner.cmd: not a repository .py file"
   },
   {
    "task": "MT5-Deepening",
@@ -230,17 +345,27 @@
    ],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4241f052c50ba920a4f0ea932882fe9cba45c996e78856c703f0f5e4ff134eae",
+   "action_scripts": [
+    "research/deepening_worker.py"
+   ],
+   "why_alarm": "money: research/deepening_worker.py: not a repository .py file"
   },
   {
    "task": "MT5-DeepenUniverse",
    "outputs": [],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "cbf6dc2ebd7bde263ec5faaa6792ff8d8d0fb23926fc7d6cf4cb159bac6041b1",
+   "action_scripts": [
+    "ops/run_deepen_universe.cmd"
+   ],
+   "why_alarm": "money: ops/run_deepen_universe.cmd: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-DeepSeek",
@@ -249,8 +374,11 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread"
   },
   {
    "task": "MT5-Dept-Data",
@@ -259,8 +387,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "1fe0e187eee120f81b36a6698dd1677cf65778051324b31b6aab68f28cf7eded",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Execution",
@@ -270,7 +403,12 @@
    "interval_min": 10,
    "max_age_min": 40,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "b349cc4e6766648093a17f2d67c256db675bd8a993ce35721179ad7e47a53c07",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Forward",
@@ -279,8 +417,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "6bb3324fdd7f214d08767daea50a259de63da74a57134ccfcd55e9f3732e91a6",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Intel",
@@ -289,8 +432,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4f3ef0b2dcee49deca823111017a8ec72a3ce91672d2631941e1c1b57fe02665",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Japan",
@@ -299,8 +447,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4d9b9537879bb7d1c33049f47df6c50e42bc8dc03f254c7c4090b9e6f510b18a",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Macro",
@@ -309,8 +462,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "74be90f5d22b0f84f7c4bbf34306b818a40926b6481d1a66bc95cef833fc2bb1",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Mathlab",
@@ -319,8 +477,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "7a37b4a1b05a152e74ba1b4b47a931dc83612b0af9759ecbec5ff657daef52ce",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Meta",
@@ -329,8 +492,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "f24d9cfbf9970e8ab428e110137f5b98ceaa7c1518f431d764fab1f094c7895c",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Regions",
@@ -339,8 +507,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "5832e3f3bb79f00e8349a1e06497e7281e6cf39a0e20bcc7f6ae55ecbf84f6c7",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Rest",
@@ -349,8 +522,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "c9c7946ecf7530f1e1f4d6437a679ccc3250e8987215e3c2b9f4128c6b7f2f74",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Dept-Validate",
@@ -359,17 +537,27 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "608746fdbc95e768f0cc74baa399737ba0d28bbef7dac60768265f00d173acc7",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-DeskDashboard",
    "outputs": [],
    "interval_min": null,
    "max_age_min": null,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "7fcdbd6def5536b09586674e50b8c1b8dc352a783d4c7479417813bfb0e75c4f",
+   "action_scripts": [
+    "scripts/serve_dashboard.py"
+   ],
+   "why_alarm": "money: scripts/serve_dashboard.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-DeskState",
@@ -378,17 +566,27 @@
    ],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "745097747be8bd88c92b22b886f3ade420a62c6483826829c0c496b029054178",
+   "action_scripts": [
+    "UNRESOLVED:scripts\\build_zentech_state.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:scripts\\build_zentech_state.py: not a repository .py file"
   },
   {
    "task": "MT5-DeskTunnel",
    "outputs": [],
    "interval_min": null,
    "max_age_min": null,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "6aa1cf1eff10e06769dc5f2606fea54e43146d6772df6ce94d5ec5d78ca02544",
+   "action_scripts": [
+    "scripts/run_tunnel.py"
+   ],
+   "why_alarm": "money: scripts/run_tunnel.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-E8WindowGuard",
@@ -398,7 +596,10 @@
    "interval_min": 1,
    "max_age_min": 31,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread"
   },
   {
    "task": "MT5-ExplorationLane",
@@ -407,8 +608,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "626196b26db1d39df73bb0f9f63c635485d45a00c50f6291c8545c7dc38e58fd",
+   "action_scripts": [
+    "ops/run_exploration_lane.cmd"
+   ],
+   "why_alarm": "money: ops/run_exploration_lane.cmd: not a repository .py file"
   },
   {
    "task": "MT5-FetchUniverse-Repair",
@@ -418,7 +624,12 @@
    "interval_min": null,
    "max_age_min": null,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "b1914822e5ed10324ffdf6d59da3a338983b432533d2f673b62d676ad9849dce",
+   "action_scripts": [
+    "desks/mt5/research/fetch_universe.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/research/fetch_universe.py: shutdown; never restarted (code)"
   },
   {
    "task": "MT5-Forest-Africa",
@@ -427,8 +638,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "27a0f931e2e957a7c07c836992f47264ce972b9ee65ab90b6dbc55d6b55d9cf1",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Asean",
@@ -437,8 +653,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "2dd407ce2e9e3bfc41519bb07a02a3b528dc8b04c21ecbfae66018dd94463695",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-China",
@@ -447,8 +668,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "cac874db4c3aaa4035895754ea26109f4135f2d3f32d93ae32a9295029c57f15",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Europe",
@@ -457,8 +683,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "df2f603d035a7f25c5b45639c04da6de23eab0bcda30145e97f81713cd7ea567",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Korea",
@@ -467,8 +698,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "8d3a6a94c19958b7454da4730f4d340020083243e50215678afdf1fe9ae79433",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Latam",
@@ -477,8 +713,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "aca3ce032f42fd9ce8022de158cff42a35d7ac2debb75617b52afb3adbc59ea7",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Mena",
@@ -487,8 +728,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "06487c8c271df02b96658e2cac62ef66be97366c25f6270b422bdd887cc29620",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-NorthAmerica",
@@ -497,8 +743,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "bdcc8d27400db29985e681e383f0e06f745249bcca8c421e90c08102fd8f7df2",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-Oceania",
@@ -507,8 +758,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "a4acf4fc68f82bcced156d54706abd05d9cea27365e1912d06c22764df5942da",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-RussiaCis",
@@ -517,8 +773,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "9d879249d9d1ab241d46c2c837d090c0c248c17eda795b7dedff0770e7efd8d1",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-Forest-SouthAsia",
@@ -527,8 +788,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "07fc9d6496b0ebb82f607a539d3089b87cd8301dd8a23062fdcd4b6ea070cacb",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-ForwardReconcile",
@@ -537,8 +803,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4f6694e9fa526d47660efd384e1b1a8bc186e49271e328998c6f3ed56a091af8",
+   "action_scripts": [
+    "ops/run_forward_reconcile.cmd"
+   ],
+   "why_alarm": "money: ops/run_forward_reconcile.cmd: not a repository .py file"
   },
   {
    "task": "MT5-Frontier",
@@ -548,7 +819,12 @@
    "interval_min": 60,
    "max_age_min": 180,
    "money_path": false,
-   "restart": "auto"
+   "restart": "auto",
+   "action_sha256": "8908c89f5d01550a21c963e12af65a90c9147976d1740939fc3b2ac0c647e70c",
+   "action_scripts": [
+    "desks/mt5/frontier_intel/frontier_supervisor.py"
+   ],
+   "why_alarm": ""
   },
   {
    "task": "MT5-FrontierAudit",
@@ -557,8 +833,11 @@
    ],
    "interval_min": 75,
    "max_age_min": 225,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread"
   },
   {
    "task": "MT5-FTMO-Allocator",
@@ -568,7 +847,10 @@
    "interval_min": 60,
    "max_age_min": 180,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread"
   },
   {
    "task": "MT5-FTMO-Executor",
@@ -577,7 +859,12 @@
    "max_age_min": 35,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "ea832f3045da5d8c43b7d80eb415c56d7c045c65cd78c7a89ae2a409c70e8f4c",
+   "action_scripts": [
+    "desks/mt5/prop/ftmo_executor.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/ftmo_executor.py: on the money path; no declared output"
   },
   {
    "task": "MT5-FTMO-Follower",
@@ -586,7 +873,12 @@
    "max_age_min": 31,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "2ea11637313de6332f66ad24e96032e5f5d98b9e874dca9747e7d2d700863b4b",
+   "action_scripts": [
+    "desks/mt5/prop/ftmo_follower.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/ftmo_follower.py: on the money path; no declared output"
   },
   {
    "task": "MT5-FTMO-VenueReader",
@@ -595,7 +887,12 @@
    "max_age_min": 35,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "22bd71031999fbd3ae1099e65d7819b15c778e03b53c2b1f7e9e52d334519ebe",
+   "action_scripts": [
+    "desks/mt5/prop/ftmo_venue_reader.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/prop/ftmo_venue_reader.py: on the money path; no declared output"
   },
   {
    "task": "MT5-FusionDeadman",
@@ -605,7 +902,10 @@
    "interval_min": 30,
    "max_age_min": 90,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread"
   },
   {
    "task": "MT5-FusionDeadmanDryRun",
@@ -615,7 +915,10 @@
    "interval_min": 5,
    "max_age_min": 35,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread"
   },
   {
    "task": "MT5-FusionDeadmanLive",
@@ -625,16 +928,24 @@
    "interval_min": 5,
    "max_age_min": 35,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread"
   },
   {
    "task": "MT5-GateAttest",
    "outputs": [],
    "interval_min": 120,
    "max_age_min": 360,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "20dbebf09a64f9e121bbc878185e6363dda7e41368a0443d3e59fe17df15259c",
+   "action_scripts": [
+    "scripts/run_gate_attestation.py"
+   ],
+   "why_alarm": "money: scripts/run_gate_attestation.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-Gateway",
@@ -644,7 +955,12 @@
    "interval_min": 1,
    "max_age_min": 31,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "287c00fdc0e68a3fdefd46f6804a3af0cfebbef956d34906380acb0620af2aca",
+   "action_scripts": [
+    "desks/mt5/research/run_gateway_loop.py"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/research/run_gateway_loop.py: on the money path"
   },
   {
    "task": "MT5-GatewayResident",
@@ -654,7 +970,12 @@
    "interval_min": 10,
    "max_age_min": 40,
    "money_path": true,
-   "restart": "auto_dead_only"
+   "restart": "auto_dead_only",
+   "action_sha256": "661a844d54ec6d448065f7168130c9b2ca1b6f0a8829372c98c46794da87cebc",
+   "action_scripts": [
+    "desks/mt5/research/gateway_resident.py"
+   ],
+   "why_alarm": ""
   },
   {
    "task": "MT5-Gauntlet",
@@ -663,8 +984,13 @@
    ],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "126743b9594b0d0b9f578c26bb26853a1e1b7c120fbbe60131ff51084fac9919",
+   "action_scripts": [
+    "desks/mt5/scripts/run_sharded_gauntlet.py"
+   ],
+   "why_alarm": "money: desks/mt5/scripts/run_sharded_gauntlet.py: on the money path"
   },
   {
    "task": "MT5-Healers",
@@ -673,8 +999,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "00d01dd7a8bc9ded0cb2b091c7d2484184f7c52ba00bbe9f514a69d071f9961b",
+   "action_scripts": [
+    "ops/run_healers.cmd"
+   ],
+   "why_alarm": "money: ops/run_healers.cmd: not a repository .py file; never restarted (code)"
   },
   {
    "task": "MT5-Hourly",
@@ -683,8 +1014,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "9f4901f9525ebdcb82d187acb5d4dc8aa96344cb341d5811cf2dcf61059d3250",
+   "action_scripts": [
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/department_resident.py: dispatches at run time"
   },
   {
    "task": "MT5-HourlyCore",
@@ -693,8 +1029,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "d701f5af37ed31befda60c093839e29d3744d7d4fb5c7ecd8ca6faeda6212cdc",
+   "action_scripts": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/hourly_cycle.py: dispatches at run time"
   },
   {
    "task": "MT5-IdentityHealer",
@@ -703,8 +1044,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "d1f44c22e42b243c977954c6ee1edb7da6e886dd16ee6718ae8e31dd0f1828da",
+   "action_scripts": [
+    "UNRESOLVED:scripts\\heal_identity_broken_clocks.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:scripts\\heal_identity_broken_clocks.py: not a repository .py file; never restarted (code)"
   },
   {
    "task": "MT5-IndependenceIntake",
@@ -714,16 +1060,26 @@
    "interval_min": 15,
    "max_age_min": 45,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "890404cb860919cc7046f6f4db41eeb85f2bb7e5e9e2f81d61b884f040a66148",
+   "action_scripts": [
+    "desks/mt5/research/independence_intake.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/research/h1_source.py: shutdown"
   },
   {
    "task": "MT5-IntelShip",
    "outputs": [],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "55b7619cc324229e9e9d9a09fbd1fa2a494c1e083ff420826c7149b5e7c42f93",
+   "action_scripts": [
+    "desks/mt5/scripts/intel_ship_adopt.ps1"
+   ],
+   "why_alarm": "money: desks/mt5/scripts/intel_ship_adopt.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-LawGate",
@@ -732,7 +1088,12 @@
    "max_age_min": 180,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "d2dd8d311fc38bdf8a3be107d19218a6b8b223e44e86cd2c0268fb5bb8cf52ed",
+   "action_scripts": [
+    "scripts/run_law_gate.py"
+   ],
+   "why_alarm": "was alarm; money: scripts/run_law_gate.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-LocalConvert",
@@ -741,17 +1102,25 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "d8ab57afa7a8a0b9b031d55eb021a652785bdd324de9c03c0ae725f8c187bddf",
+   "action_scripts": [
+    "ops/run_local_convert.cmd"
+   ],
+   "why_alarm": "money: ops/run_local_convert.cmd: not a repository .py file"
   },
   {
    "task": "MT5-LocalDashboard",
    "outputs": [],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "fc678842d89cb8a7a513f74da40565c07ddcd08362665f1f678e4b82ffb9c9dd",
+   "action_scripts": [],
+   "why_alarm": "money: no script named; no declared output"
   },
   {
    "task": "MT5-LogRotate",
@@ -759,8 +1128,13 @@
    "interval_min": 5,
    "max_age_min": 35,
    "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "f73d38596c374641fe7c389b98a826a67e812da4e7eb4ceed43f781a78fb6d58",
+   "action_scripts": [
+    "ops/rotate_logs.py"
+   ],
+   "why_alarm": "no declared output"
   },
   {
    "task": "MT5-MergeDocket",
@@ -769,8 +1143,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "459298a82a1e0cda61e47dcd5a72364bf2a08231402b7c3333decfb511c6ee86",
+   "action_scripts": [
+    "UNRESOLVED:research\\merge_hypotheses.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:research\\merge_hypotheses.py: not a repository .py file"
   },
   {
    "task": "MT5-MoatCapture",
@@ -779,8 +1158,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "43b4e7dfdcdde9df13d684bc93505ecfcd8dfb37d070d2517812054c90c25029",
+   "action_scripts": [
+    "ops/run_moat_capture.cmd"
+   ],
+   "why_alarm": "money: ops/run_moat_capture.cmd: not a repository .py file"
   },
   {
    "task": "MT5-Moat-Exploit",
@@ -789,8 +1173,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "3302a00f0b8db679cfcd5914f06501b1f14af79f9f7b623254c787a9c354830c",
+   "action_scripts": [
+    "desks/mt5/research/moat_swarms.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/moat_swarms.py: dispatches at run time"
   },
   {
    "task": "MT5-Moat-Explore",
@@ -799,8 +1188,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "da63b903ba6d0dc3310424c96d1323ea5c50a53b1a51e917a743f0cbee60f7e6",
+   "action_scripts": [
+    "desks/mt5/research/moat_swarms.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/moat_swarms.py: dispatches at run time"
   },
   {
    "task": "MT5-MoatFence",
@@ -808,8 +1202,13 @@
    "interval_min": 30,
    "max_age_min": 90,
    "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "ff901e96a5496cd40ea58775781e3d5ddea30c1e4b63c492351ebbed70588ac0",
+   "action_scripts": [
+    "desks/mt5/moat/moat_fence.py"
+   ],
+   "why_alarm": "no declared output"
   },
   {
    "task": "MT5-MoatMiner",
@@ -819,25 +1218,40 @@
    "interval_min": 30,
    "max_age_min": 90,
    "money_path": false,
-   "restart": "auto"
+   "restart": "auto",
+   "action_sha256": "36167245499e1c6c1b09a315b3ea1b2549d836530e8c43fabd20434f90b7301e",
+   "action_scripts": [
+    "desks/mt5/moat/moat_miner.py"
+   ],
+   "why_alarm": ""
   },
   {
    "task": "MT5-MoatRecorder",
    "outputs": [],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "7529d2a4f749722bc0c459981898534ab317023f145e2925eb257349a459f274",
+   "action_scripts": [
+    "desks/mt5/moat/moat_recorder.py"
+   ],
+   "why_alarm": "money: desks/mt5/moat/moat_recorder.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-MoatRecorder-Watchdog",
    "outputs": [],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "7529d2a4f749722bc0c459981898534ab317023f145e2925eb257349a459f274",
+   "action_scripts": [
+    "desks/mt5/moat/moat_recorder.py"
+   ],
+   "why_alarm": "money: desks/mt5/moat/moat_recorder.py: dispatches at run time; never restarted (code); no declared output"
   },
   {
    "task": "MT5-Moat-Resurrect",
@@ -846,8 +1260,13 @@
    ],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "f6ef07cbc8442b13850585fc367b84c32e60b60778d996f5adcdf197b409564a",
+   "action_scripts": [
+    "desks/mt5/research/moat_swarms.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/moat_swarms.py: dispatches at run time"
   },
   {
    "task": "MT5-MoatSilver",
@@ -857,7 +1276,12 @@
    "interval_min": 60,
    "max_age_min": 180,
    "money_path": false,
-   "restart": "auto"
+   "restart": "auto",
+   "action_sha256": "035242695a07003c12dec6990e166bf375e0058f47ca4febbf00c2de3213f2f1",
+   "action_scripts": [
+    "desks/mt5/moat/moat_silver.py"
+   ],
+   "why_alarm": ""
   },
   {
    "task": "MT5-NeverStale",
@@ -866,8 +1290,13 @@
    ],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "3bce0e7b612b943b90b49ba616afa24cfeb508d20e4d67152aea3ebc7a14f798",
+   "action_scripts": [
+    "ops/run_never_stale.cmd"
+   ],
+   "why_alarm": "money: ops/run_never_stale.cmd: not a repository .py file"
   },
   {
    "task": "MT5-NewsDesk",
@@ -877,7 +1306,12 @@
    "interval_min": null,
    "max_age_min": null,
    "money_path": false,
-   "restart": "auto"
+   "restart": "auto",
+   "action_sha256": "f9294f045c58a7cd47f78985a19a89492369d29c746adff209167f56bc13125a",
+   "action_scripts": [
+    "desks/mt5/research/news_desk.py"
+   ],
+   "why_alarm": ""
   },
   {
    "task": "MT5-NoLog",
@@ -885,8 +1319,13 @@
    "interval_min": 1440,
    "max_age_min": 4320,
    "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "9b3fb63ff987f54e9e4732360262122a1567a09160c8be1f0731017b9c4adf8b",
+   "action_scripts": [
+    "desks/mt5/research/no_log.py"
+   ],
+   "why_alarm": "no declared output"
   },
   {
    "task": "MT5-OffsiteBackup",
@@ -895,17 +1334,27 @@
    ],
    "interval_min": 360,
    "max_age_min": 1080,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "7120a5ca80bd3678222464a99cdf1e82aff0294821c190307976c979281b8999",
+   "action_scripts": [
+    "UNRESOLVED:desks\\mt5\\scripts\\offsite_backup.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:desks\\mt5\\scripts\\offsite_backup.py: not a repository .py file"
   },
   {
    "task": "MT5-PlumbingWatchdog",
    "outputs": [],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "0f7ef9909c19a5667127c9baabcadb0f8d194ab7d8975593df55c2f284f2aadf",
+   "action_scripts": [
+    "desks/mt5/research/plumbing_watchdog.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/plumbing_watchdog.py: dispatches at run time; never restarted (code); no declared output"
   },
   {
    "task": "MT5-ProcessHealth",
@@ -914,8 +1363,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "e588006ae04a42ed78c1f6806d678b16a77af25ca3959c04d6a7e8a5cdbaf12a",
+   "action_scripts": [
+    "ops/run_process_health.cmd"
+   ],
+   "why_alarm": "money: ops/run_process_health.cmd: not a repository .py file; never restarted (code)"
   },
   {
    "task": "MT5-PushBacklog",
@@ -924,8 +1378,13 @@
    ],
    "interval_min": null,
    "max_age_min": null,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "9158947e0826ac436e4c0b024783154559ca905caebce230d9ddf1994aa3121b",
+   "action_scripts": [
+    "scripts/push_backlog_runner.py"
+   ],
+   "why_alarm": "money: scripts/push_backlog_runner.py: not a repository .py file"
   },
   {
    "task": "MT5-QQuantGatesCertify",
@@ -934,8 +1393,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "1061836f2bb755091dda561b0dd0d80b4ec6f3fc48d4682b12ed0523d4d14e58",
+   "action_scripts": [
+    "desks/mt5/research/certifier_launcher.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/certifier_launcher.py: dispatches at run time"
   },
   {
    "task": "MT5-QQuantShadow",
@@ -945,7 +1409,12 @@
    "interval_min": 30,
    "max_age_min": 90,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "02b61a5d5ed406ee8b978a7867fb9a3ccf55ca166aa15ed14faf52dfe830e787",
+   "action_scripts": [
+    "desks/mt5/research/qquant_shadow.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/research/h1_source.py: shutdown"
   },
   {
    "task": "MT5-ReapGitWriters",
@@ -954,17 +1423,27 @@
    ],
    "interval_min": 15,
    "max_age_min": 45,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "98e4b60529d550409235b05d8a706e123a1c1306261bc032ee81410f13111b01",
+   "action_scripts": [
+    "UNRESOLVED:scripts\\reap_hung_git_writers.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:scripts\\reap_hung_git_writers.py: not a repository .py file; never restarted (code)"
   },
   {
    "task": "MT5-RebootDrill",
    "outputs": [],
    "interval_min": 1440,
    "max_age_min": 4320,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "19373fffe9c073b73b1c77c8d7293138b295de1db80e862b3d97825a146ffd29",
+   "action_scripts": [
+    "ops/reboot_drill.ps1"
+   ],
+   "why_alarm": "money: ops/reboot_drill.ps1: not a repository .py file; never restarted (code); no declared output"
   },
   {
    "task": "MT5-RegimeMonitor",
@@ -972,8 +1451,13 @@
    "interval_min": 15,
    "max_age_min": 45,
    "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "52485a18e5641b7d3c9ba4b6fbc6dc6ea0024bcb01e8058044ca1eed1b4f3678",
+   "action_scripts": [
+    "desks/mt5/research/regime_monitor.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/mt5desk/cross_account.py: os.kill; no declared output"
   },
   {
    "task": "MT5-ReleaseAuthority",
@@ -983,7 +1467,12 @@
    "interval_min": 15,
    "max_age_min": 45,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "90d98b76fc496fcfd03191837242739cdd98fdbea9efa68b0117a9b6e180cb11",
+   "action_scripts": [
+    "ops/run_release_authority.cmd"
+   ],
+   "why_alarm": "was alarm; money: ops/run_release_authority.cmd: not a repository .py file"
   },
   {
    "task": "MT5-ResearchReports",
@@ -992,17 +1481,27 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "d5c94f09812ca40eb5dd224a5592441dca9c8fa6160f6fad5a5711f2da277322",
+   "action_scripts": [
+    "desks/mt5/scripts/run_research_reports.py"
+   ],
+   "why_alarm": "money: desks/mt5/scripts/run_research_reports.py: on the money path"
   },
   {
    "task": "MT5-ResearchSupervisor",
    "outputs": [],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "3c20c55e63cf3183dad633a31e8a0716be4197d36c2cb3141e65f31f8b89ce8b",
+   "action_scripts": [
+    "desks/mt5/research/research_supervisor.py"
+   ],
+   "why_alarm": "money: desks/mt5/research/research_supervisor.py: dispatches at run time; no declared output"
   },
   {
    "task": "MT5-RiskUnitsFence",
@@ -1012,7 +1511,12 @@
    "interval_min": 60,
    "max_age_min": 180,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "55172fe7fd46adda5152314b0d311750cc92a0b195274152c9e847d1e3d990fe",
+   "action_scripts": [
+    "scripts/check_risk_units.py"
+   ],
+   "why_alarm": "acts on the box: libs/core/reproducibility.py: git commit"
   },
   {
    "task": "MT5-ScientistTournament",
@@ -1021,8 +1525,13 @@
    ],
    "interval_min": 1440,
    "max_age_min": 4320,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "40750888fb72e370b6d3f9af81109fcafdb727c70f6ef43d6c46c6b1e7863e2a",
+   "action_scripts": [
+    "ops/run_scientist_tournament.cmd"
+   ],
+   "why_alarm": "money: ops/run_scientist_tournament.cmd: not a repository .py file"
   },
   {
    "task": "MT5-SealIfClean",
@@ -1031,7 +1540,12 @@
    "max_age_min": 40,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "2b15abeed1dc03bd686634b40bf6517991ca3259035ba97d5a2d8402a093dd04",
+   "action_scripts": [
+    "desks/mt5/scripts/Seal-IfClean.ps1"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/scripts/Seal-IfClean.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-Shadow",
@@ -1041,7 +1555,12 @@
    "interval_min": 60,
    "max_age_min": 180,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "bec7eea868ee997b3ad3bd4ee8ec0077aefacf2f2ab78543f0dae949ddcf1cc9",
+   "action_scripts": [
+    "desks/mt5/research/shadow_cycle.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/research/shadow_cycle.py: shutdown"
   },
   {
    "task": "MT5-ShadowSync",
@@ -1050,7 +1569,12 @@
    "max_age_min": 45,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "d870627b57c845ed73198135171ef562b8cfc61f21587390e8b18935ac2a9f56",
+   "action_scripts": [
+    "desks/mt5/scripts/sync_shadow_to_git.ps1"
+   ],
+   "why_alarm": "was alarm; money: desks/mt5/scripts/sync_shadow_to_git.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "MT5-ShiftWatch",
@@ -1059,17 +1583,27 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "26a9266f5b0e4b974e4bf0567b3c7d05f29d2faac44017a8727a8f33647928ed",
+   "action_scripts": [
+    "ops/run_shift_watch.cmd"
+   ],
+   "why_alarm": "money: ops/run_shift_watch.cmd: not a repository .py file"
   },
   {
    "task": "MT5-SshGuard",
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "5091c8ebc309fd9e9944c053ad88828c4356a2de55a5c1fd451cdd2594e9cf03",
+   "action_scripts": [
+    "desks/mt5/scripts/ssh_guard.ps1"
+   ],
+   "why_alarm": "money: desks/mt5/scripts/ssh_guard.ps1: not a repository .py file; never restarted (code); no declared output"
   },
   {
    "task": "MT5-StallWatch",
@@ -1078,8 +1612,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "4c235f657b5bfdac64106dd8990f3bd7cf6c1245903fbbe9c62a6ea09da55cd7",
+   "action_scripts": [
+    "desks/mt5/scripts/stall_watch.ps1"
+   ],
+   "why_alarm": "money: desks/mt5/scripts/stall_watch.ps1: not a repository .py file"
   },
   {
    "task": "MT5-StateVector",
@@ -1088,8 +1627,13 @@
    ],
    "interval_min": 30,
    "max_age_min": 90,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "0c531c3f534feb49a0c0b83cba2ea6b4fbe1c056e65d645dee9c4befe7ed3ed2",
+   "action_scripts": [
+    "UNRESOLVED:research\\state_vector_build.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:research\\state_vector_build.py: not a repository .py file"
   },
   {
    "task": "MT5-TapeFeatures",
@@ -1098,8 +1642,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "a496b3c8b8c42ac9fe89222eace4cde2d2aebc14c57aeae57bb2d08e06754b61",
+   "action_scripts": [
+    "UNRESOLVED:MOD:recorders.tape_features"
+   ],
+   "why_alarm": "money: UNRESOLVED:MOD:recorders.tape_features: not a repository .py file"
   },
   {
    "task": "MT5-TerminalBoot",
@@ -1109,16 +1658,24 @@
    "interval_min": 10,
    "max_age_min": 40,
    "money_path": true,
-   "restart": "alarm"
+   "restart": "alarm",
+   "action_sha256": "0e8bed3159522d7f073a2d99f741609b65079197a5b52d794c551df13a4fc822",
+   "action_scripts": [
+    "ops/ensure_terminal.cmd"
+   ],
+   "why_alarm": "was alarm; money: ops/ensure_terminal.cmd: not a repository .py file"
   },
   {
    "task": "MT5-TickIntegrity",
    "outputs": [],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "ff76922b7c65663758e99aac53b970d22864d006cf2175d9685f4ee0cc7340d8",
+   "action_scripts": [],
+   "why_alarm": "money: no script named; no declared output"
   },
   {
    "task": "MT5-TickRecorder",
@@ -1128,7 +1685,12 @@
    "interval_min": 15,
    "max_age_min": 45,
    "money_path": false,
-   "restart": "auto"
+   "restart": "alarm",
+   "action_sha256": "eb6249f354fe29e9e59ab6a66b9f061fcde31f6237d13549f9b5a3f962e17a3e",
+   "action_scripts": [
+    "desks/mt5/recorders/tick_recorder.py"
+   ],
+   "why_alarm": "acts on the box: desks/mt5/recorders/tick_source.py: shutdown"
   },
   {
    "task": "MT5-UniversalGate",
@@ -1137,8 +1699,13 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "54c3ab49cbd3fca1524c9054518da6e4f31b04a40fa86639c3466fd5dd97f7f1",
+   "action_scripts": [
+    "UNRESOLVED:research\\universal_gate.py"
+   ],
+   "why_alarm": "money: UNRESOLVED:research\\universal_gate.py: not a repository .py file"
   },
   {
    "task": "MT5-Universe",
@@ -1147,62 +1714,89 @@
    ],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "793dfd31fd1549630ad17e742c79b3e7e42eab872bbc9edda8aef5d91aebb864",
+   "action_scripts": [
+    "ops/run_universe.cmd"
+   ],
+   "why_alarm": "money: ops/run_universe.cmd: not a repository .py file"
   },
   {
    "task": "Quant-BootRecord",
    "outputs": [],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "436be612fda849332d77b9962f3a76565816b1cec0174c674710b6275d9bd6ad",
+   "action_scripts": [
+    "OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\unattended_boot.ps1"
+   ],
+   "why_alarm": "money: OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\unattended_boot.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "Quant-BootSession",
    "outputs": [],
    "interval_min": null,
    "max_age_min": null,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "ccf6bcdf935e9e0d9bdc82ded53a280f13fcfa427cf503e62d3154cc152a06c6",
+   "action_scripts": [
+    "OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\unattended_boot.ps1"
+   ],
+   "why_alarm": "money: OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\unattended_boot.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "Quant-CpuShaper",
    "outputs": [],
    "interval_min": 2,
    "max_age_min": 32,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; never restarted (code); no declared output"
   },
   {
    "task": "QuantForge-BootMove",
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
+   "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread; never restarted (code); no declared output"
   },
   {
    "task": "QuantForge-CI",
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; no declared output"
   },
   {
    "task": "QuantForge-DashPush",
    "outputs": [],
    "interval_min": 1,
    "max_age_min": 31,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; no declared output"
   },
   {
    "task": "QuantForge-Loop",
@@ -1211,35 +1805,47 @@
    ],
    "interval_min": null,
    "max_age_min": 360,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; never restarted (code)"
   },
   {
    "task": "QuantForge-Pin",
    "outputs": [],
    "interval_min": 20,
    "max_age_min": 60,
-   "money_path": false,
+   "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread; never restarted (code); no declared output"
   },
   {
    "task": "QuantGuard-RunAs",
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
+   "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread; never restarted (code); no declared output"
   },
   {
    "task": "Quant-JudgeCoreTrial",
    "outputs": [],
    "interval_min": 2,
    "max_age_min": 32,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; no declared output"
   },
   {
    "task": "Quant-ReleaseAuthority",
@@ -1248,7 +1854,10 @@
    "max_age_min": 90,
    "money_path": true,
    "restart": "alarm",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "was alarm; money: action unread; no declared output"
   },
   {
    "task": "Quant-SideChannelMiners",
@@ -1257,44 +1866,65 @@
    ],
    "interval_min": 120,
    "max_age_min": 360,
-   "money_path": false,
-   "restart": "auto"
+   "money_path": true,
+   "restart": "alarm",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread"
   },
   {
    "task": "Quant-SignTrain",
    "outputs": [],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "a565a42aa06222311572773eed661a2b8fdc4f4d330954cae3e13c45a3a5c20e",
+   "action_scripts": [
+    "OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\sign_train_leg.ps1"
+   ],
+   "why_alarm": "money: OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\sign_train_leg.ps1: not a repository .py file; never restarted (code); no declared output"
   },
   {
    "task": "Quant-StatePublisher",
    "outputs": [],
    "interval_min": 5,
    "max_age_min": 35,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "",
+   "action_scripts": [],
+   "why_alarm": "money: action unread; no declared output"
   },
   {
    "task": "Quant-VideoCells",
    "outputs": [],
    "interval_min": 60,
    "max_age_min": 180,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "083ef6d9936fa46755f330bdb5da11adb7f6677b6e50ca56de1340875b7629aa",
+   "action_scripts": [
+    "scripts/run_video_cells_box.ps1"
+   ],
+   "why_alarm": "money: scripts/run_video_cells_box.ps1: not a repository .py file; no declared output"
   },
   {
    "task": "Quant-WorkflowGate",
    "outputs": [],
    "interval_min": 10,
    "max_age_min": 40,
-   "money_path": false,
-   "restart": "auto",
-   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)"
+   "money_path": true,
+   "restart": "alarm",
+   "note": "UNDECLARED: name its real output (census 2026-11-27 found none)",
+   "action_sha256": "d4f716d9ccaa1cfbafc30796548fdfa47e2c24fae16f286c3f1ff834e010c875",
+   "action_scripts": [
+    "OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\workflow_gate.ps1"
+   ],
+   "why_alarm": "money: OUTSIDE:C:\\ProgramData\\QuantBox\\bin\\workflow_gate.ps1: not a repository .py file; no declared output"
   }
  ]
 }

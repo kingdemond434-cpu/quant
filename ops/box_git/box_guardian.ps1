@@ -30,8 +30,9 @@
 
     PHASE 3 (output-based health, below) adds exactly two powers: it rewrites
     C:\ProgramData\QuantBox\logs\task_health.json (same file checks as the log), and it may
-    Start-ScheduledTask / Stop-ScheduledTask a task NAMED in task_outputs.json at the current boot,
-    within the bounds listed at that section. It reads boot-src with `git show` only.
+    Start-ScheduledTask a task NAMED in task_outputs.json at the current boot that is NOT running,
+    within the bounds listed at that section. It never stops a task (Audit r25c MF1). It reads
+    boot-src with `git show` only, and process command lines through CIM with a timeout.
 #>
 $ErrorActionPreference = 'Continue'
 $Q      = 'C:\ProgramData\QuantBox'
@@ -218,23 +219,84 @@ function Invoke-Status {
 # every change to what SYSTEM may restart is a TRUST change (Audit + the 10-minute veto).
 # Bounds (Audit 21:52Z), enforced here and pinned by tests:
 #   * exact task names only; a disabled task is reported, never enabled; no principal, action,
-#     trigger or setting is ever touched -- only Start-ScheduledTask / Stop-ScheduledTask;
+#     trigger or setting is ever touched -- only Start-ScheduledTask, and never Stop (MF1: an
+#     output mtime under C:\opt\quant is writable by adopted code, so "stale" is never a reason
+#     to kill anything). A RUNNING task with stale output is HUNG: alarm only;
+#   * a row restarts only when its restart is exactly 'auto' or 'auto_dead_only', it has outputs,
+#     its live action is exactly the declared one, the action passes the fail-closed money test
+#     (Test-MoneyAction), and it is not a box-acting task (MF2/MF3); everything else is alarm;
 #   * the guard's own tasks and the movers are alarm-only whatever the JSON says;
 #   * nothing starts or stops while the run-as migrator is mid-cutover or running;
 #   * one restart per task per max-age window, one restart per pass, two restarts that did not
 #     move the output escalate the row to ALARM and it is never restarted again by this script;
 #   * GatewayResident ('auto_dead_only'): Start only, outside the broker rollover hour, and only
-#     when its task is not running (a running, stale gateway may be mid-order: alarm only).
-$NeverRestart = @('QuantGuard-RunAs', 'QuantForge-BootMove', 'QuantForge-Pin', 'MT5-AdoptRelease', 'QuantForge-Loop')
+#     when its task is not running and no gateway python process is alive (MF4: matched by command
+#     line through CIM; an unreadable process table means alive).
+$NeverRestart = @('QuantGuard-RunAs', 'QuantForge-BootMove', 'QuantForge-Pin', 'MT5-AdoptRelease', 'QuantForge-Loop',
+    'MT5-RebootDrill', 'MT5-ReapGitWriters', 'MT5-ClockFixer', 'MT5-ProcessHealth', 'MT5-Healers', 'MT5-IdentityHealer',
+    'MT5-PlumbingWatchdog', 'MT5-MoatRecorder-Watchdog', 'MT5-FetchUniverse-Repair', 'MT5-SshGuard', 'Quant-CpuShaper',
+    'Claude-Bridge-Watchdog', 'Quant-SignTrain')
+# replay_shadow.MONEY_PATH and ENTRY_POINTS (a test pins these to that file), plus its MONEY_WORDS
+$MoneyPrefixes = @('desks/mt5/mt5desk/', 'desks/mt5/prop/', 'desks/mt5/data/', 'desks/mt5/scripts/',
+    'desks/mt5/ops/', 'data/', 'libs/execution/', 'libs/risk/', 'libs/portfolio/')
+$MoneyEntries = @('desks/mt5/research/run_gateway_loop.py', 'desks/mt5/research/gateway_resident.py',
+    'desks/mt5/research/pf_allocator.py', 'desks/mt5/proposals/fusion_deadman.py',
+    'desks/mt5/prop/e8_executor.py', 'desks/mt5/prop/e8_gold.py', 'desks/mt5/prop/e8_book.py',
+    'desks/mt5/prop/ftmo_follower.py')
+$MoneyWords = 'terminal64|metatrader|autotrading|mt5[-_]?gateway|ftmo|fusion|(?<![a-z0-9])e8(?![0-9])|order_send|order_check|positions_get'
+function Get-BootFile([string] $rel) {
+    # the ONLY git in this file: `git show` of one of two committed files at the current boot
+    if (@('ops/box_git/guardian/task_outputs.json', 'ops/money_closure.txt') -notcontains $rel) { throw "box_guardian: $rel is not a boot file it reads" }
+    $boot = "$((Get-Content -Raw -LiteralPath (Join-Path $Forge 'loop.json') | ConvertFrom-Json).boot)".Trim()
+    if ($boot -notmatch '^[0-9a-f]{40}$') { return $null }
+    $src = Join-Path $Forge 'boot-src'
+    $raw = @(& git -c safe.directory=* -c core.hooksPath=NUL -c core.fsmonitor=false -C $src show "${boot}:$rel" 2>$null)
+    if ($LASTEXITCODE) { return $null }
+    return ($raw -join "`n")
+}
 function Get-Declarations {
     try {
-        $boot = "$((Get-Content -Raw -LiteralPath (Join-Path $Forge 'loop.json') | ConvertFrom-Json).boot)".Trim()
-        if ($boot -notmatch '^[0-9a-f]{40}$') { return $null }
-        $src = Join-Path $Forge 'boot-src'
-        $raw = @(& git -c safe.directory=* -c core.hooksPath=NUL -c core.fsmonitor=false -C $src show "${boot}:ops/box_git/guardian/task_outputs.json" 2>$null)
-        if ($LASTEXITCODE) { return $null }
-        return (($raw -join "`n") | ConvertFrom-Json)
+        $j = Get-BootFile 'ops/box_git/guardian/task_outputs.json'
+        if (-not $j) { return $null }
+        return ($j | ConvertFrom-Json)
     } catch { return $null }
+}
+function Get-ActionText($t) {
+    # the same text the declarations carry: Execute|Arguments|WorkingDirectory per action, runs of
+    # five or more digits replaced by <N> (no account login is ever written down)
+    $parts = foreach ($a in @($t.Actions)) { "{0}|{1}|{2}" -f $a.Execute, $a.Arguments, $a.WorkingDirectory }
+    return ((@($parts) -join ' || ') -replace '\d{5,}', '<N>')
+}
+function Get-ActionHash([string] $text) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return (($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($text)) | ForEach-Object { $_.ToString('x2') }) -join '') }
+    finally { $sha.Dispose() }
+}
+function Test-MoneyAction([string] $text, $scripts, $closure) {
+    # FAIL CLOSED: true unless the live action names no venue word and every script it runs (the
+    # declared, hash-matched list) is a repository .py file off the money path. The test rebuilds
+    # the declared money_path from the import closure; this is the runtime floor under it.
+    if ($text -match $MoneyWords) { return $true }
+    $all = @($scripts | Where-Object { $_ })
+    if (-not $all.Count) { return $true }
+    foreach ($s in $all) {
+        $r = "$s".ToLowerInvariant()
+        if ($r -notmatch '^[a-z0-9_][a-z0-9_./-]*\.py$' -or $r.Contains('..')) { return $true }
+        if ($MoneyEntries -contains $r -or $closure -contains $r) { return $true }
+        foreach ($pfx in $MoneyPrefixes) { if ($r.StartsWith($pfx)) { return $true } }
+    }
+    return $false
+}
+function Test-GatewayAlive {
+    # MF4: a detached gateway outlives its task, so the process table decides, by command line
+    try {
+        $ps = @(Get-CimInstance -ClassName Win32_Process -Filter "Name LIKE 'python%'" -OperationTimeoutSec 20 -ErrorAction Stop)
+        foreach ($p in $ps) {
+            if ($null -eq $p.CommandLine) { return $true }
+            if ($p.CommandLine -match 'gateway_resident|run_gateway_loop') { return $true }
+        }
+        return $false
+    } catch { return $true }
 }
 function Get-NewestOutput($row) {
     $newest = $null
@@ -264,10 +326,10 @@ function Test-RunasBusy {
     } catch { }
     return $false
 }
-function Restart-Declared([string] $name, [bool] $running, [bool] $startOnly) {
-    # THE ONLY TASK CONTROL IN THIS FILE: exact name, Stop (unless start-only) then Start.
+function Start-Declared([string] $name) {
+    # THE ONLY TASK CONTROL IN THIS FILE: exact name, Start only, and only a task that is not running
     if ($NeverRestart -contains $name -or $name -like 'QuantGuard-*') { throw "box_guardian: $name is alarm-only" }
-    if ($running -and -not $startOnly) { Stop-ScheduledTask -TaskName $name -ErrorAction Stop }
+    if ("$((Get-ScheduledTask -TaskName $name -ErrorAction Stop).State)" -ne 'Ready') { throw "box_guardian: $name is not Ready" }
     Start-ScheduledTask -TaskName $name -ErrorAction Stop
 }
 function Invoke-Health {
@@ -279,6 +341,8 @@ function Invoke-Health {
     }
     $byName = @{}
     if ($decl) { foreach ($r in @($decl.tasks)) { $byName["$($r.task)"] = $r } }
+    $closure = @()
+    try { $closure = @(((Get-BootFile 'ops/money_closure.txt') -split "`n") | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ -and -not $_.StartsWith('#') }) } catch { }
     $busy = Test-RunasBusy
     $restartedThisPass = $false
     $rows = @()
@@ -289,13 +353,24 @@ function Invoke-Health {
         $d = $byName[$name]
         $p = $prev[$name]
         $row = [ordered]@{ task = $name; state = "$($t.State)"; verdict = ''; newest_output = $null; age_min = $null
-                           max_age_min = $null; restart = ''; last_restart = $null; restart_out = $null; fails = 0; action = '' }
+                           max_age_min = $null; restart = ''; last_restart = $null; restart_out = $null; fails = 0; action = ''
+                           action_text = ''; action_sha256 = '' }
+        $live = Get-ActionText $t
+        $row.action_text = $live; $row.action_sha256 = Get-ActionHash $live
         if ($p) { $row.last_restart = $p.last_restart; $row.restart_out = $p.restart_out; $row.fails = [int]$p.fails }
         if (-not $d -or -not @($d.outputs | Where-Object { $_ }).Count) {
             $row.verdict = 'UNDECLARED'; $rows += [pscustomobject]$row; continue
         }
         $row.max_age_min = $d.max_age_min
-        $row.restart = if ($NeverRestart -contains $name -or $name -like 'QuantGuard-*') { 'alarm' } else { "$($d.restart)" }
+        # MF2/MF3: alarm is the default; a row earns a restart mode only by passing every test here
+        $mode = "$($d.restart)"
+        if (@('auto', 'auto_dead_only') -notcontains $mode) { $mode = 'alarm' }
+        elseif ($NeverRestart -contains $name -or $name -like 'QuantGuard-*') { $mode = 'alarm' }
+        elseif ($d.money_path -and $name -ne 'MT5-GatewayResident') { $mode = 'alarm' }
+        elseif ("$($d.action_sha256)" -ne $row.action_sha256) { $mode = 'alarm'; $row.action = 'none: live action differs from the declared one' }
+        elseif ($mode -eq 'auto' -and (Test-MoneyAction $live @($d.action_scripts) $closure)) { $mode = 'alarm' }
+        elseif ($mode -eq 'auto_dead_only' -and $name -ne 'MT5-GatewayResident') { $mode = 'alarm' }
+        $row.restart = $mode
         $newest = Get-NewestOutput $d
         if ($newest) { $row.newest_output = $newest.ToString('s'); $row.age_min = [math]::Round(($now - $newest).TotalMinutes, 1) }
         # did the last restart move the output?
@@ -310,23 +385,22 @@ function Invoke-Health {
         elseif ($row.age_min -le [double]$d.max_age_min) { $row.verdict = 'FRESH'; $row.fails = 0 }
         elseif ([int]$row.fails -ge 2) { $row.verdict = 'ALARM' }
         else { $row.verdict = 'STALE' }
+        if ($row.verdict -eq 'STALE' -and "$($t.State)" -eq 'Running') { $row.verdict = 'HUNG' }
         if ($row.verdict -eq 'STALE' -and -not $row.last_restart) {
-            $mode = $row.restart
-            $running = "$($t.State)" -eq 'Running'
             $why = $null
             if ($mode -eq 'alarm') { $why = 'alarm-only' }
+            elseif ("$($t.State)" -ne 'Ready') { $why = "task is $($t.State)" }
             elseif ($busy) { $why = 'run-as migrator busy' }
             elseif ($restartedThisPass) { $why = 'one restart per pass' }
-            elseif ($mode -eq 'auto_dead_only' -and $running) { $why = 'alive but stale (may be mid-order): alarm only' }
             elseif ($mode -eq 'auto_dead_only' -and (Get-BrokerHour) -eq 0) { $why = 'broker rollover hour' }
-            elseif (@('auto', 'auto_dead_only') -notcontains $mode) { $why = "unknown restart mode $mode" }
-            if ($why) { $row.action = "none: $why" }
+            elseif ($mode -eq 'auto_dead_only' -and (Test-GatewayAlive)) { $why = 'a gateway process is alive: alarm only' }
+            if ($why) { if (-not $row.action) { $row.action = "none: $why" } }
             else {
                 try {
-                    Restart-Declared $name $running ($mode -eq 'auto_dead_only')
+                    Start-Declared $name
                     $restartedThisPass = $true
                     $row.last_restart = $now.ToString('s'); $row.restart_out = $row.newest_output
-                    $row.action = if ($running -and $mode -ne 'auto_dead_only') { 'restarted (stop+start)' } else { 'started' }
+                    $row.action = 'started'
                     Say ("health: {0} output {1} min old (max {2}) -> {3}" -f $name, $row.age_min, $d.max_age_min, $row.action)
                 } catch { $row.action = "restart failed: $(Cut $_.Exception.Message 200)" }
             }
@@ -334,7 +408,7 @@ function Invoke-Health {
         $rows += [pscustomobject]$row
     }
     $counts = [ordered]@{}
-    foreach ($v in @('FRESH', 'STALE', 'ALARM', 'UNDECLARED', 'NO_OUTPUT_YET', 'NOT_PERIODIC', 'DISABLED')) {
+    foreach ($v in @('FRESH', 'STALE', 'HUNG', 'ALARM', 'UNDECLARED', 'NO_OUTPUT_YET', 'NOT_PERIODIC', 'DISABLED')) {
         $counts[$v] = @($rows | Where-Object { $_.verdict -eq $v }).Count
     }
     $doc = [ordered]@{ generated_at = $now.ToString('s'); declarations = [bool]$decl; runas_busy = $busy

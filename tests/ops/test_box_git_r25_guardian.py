@@ -65,8 +65,8 @@ BARRED = [
 ALLOWED_IN = {
     r"WriteAllText": "Write-Status", r"AppendAllText": "Write-Status",
     r"\[IO\.File\]::Create": "New-AdminFile",
-    r"\bStart-ScheduledTask\b": "Restart-Declared", r"\bStop-ScheduledTask\b": "Restart-Declared",
-    r"\bgit\b": "Get-Declarations",
+    r"\bStart-ScheduledTask\b": "Start-Declared",
+    r"\bgit\b": "Get-BootFile",
 }
 
 
@@ -79,7 +79,7 @@ def _strip_fns(code: str, names: list[str]) -> str:
 
 def test_no_write_outside_write_status() -> None:
     code = _body_without_comments()
-    outside = _strip_fns(code, ["Write-Status", "New-AdminFile", "Restart-Declared", "Get-Declarations"])
+    outside = _strip_fns(code, ["Write-Status", "New-AdminFile", "Start-Declared", "Get-BootFile"])
     for pat in BARRED:
         # quoted strings are log text or paths, not commands; stream merges are not redirects
         strip = r"'[^']*'|\"[^\"]*\"|2>\$null|2>&1"
@@ -149,10 +149,9 @@ DECL = json.loads((ROOT / "ops" / "box_git" / "guardian" / "task_outputs.json").
 
 def test_task_control_is_start_stop_only_by_exact_name() -> None:
     code = _body_without_comments()
-    a, b = _write_status_span(code, "Restart-Declared")
+    a, b = _write_status_span(code, "Start-Declared")
     body = code[a:b]
     assert "Start-ScheduledTask -TaskName $name" in body
-    assert "Stop-ScheduledTask -TaskName $name" in body
     for bad in ("Enable-ScheduledTask", "Set-ScheduledTask", "Register-ScheduledTask",
                 "New-ScheduledTaskPrincipal", "-Principal", "-Action", "-Trigger", "-Settings"):
         assert bad not in body, bad
@@ -168,7 +167,7 @@ def test_guard_tasks_and_movers_are_alarm_only_in_code() -> None:
     assert {"QuantGuard-RunAs", "QuantForge-BootMove", "QuantForge-Pin", "MT5-AdoptRelease"} <= names
     assert TEXT.count("$name -like 'QuantGuard-*'") == 2
     code = _body_without_comments()
-    a, b = _write_status_span(code, "Restart-Declared")
+    a, b = _write_status_span(code, "Start-Declared")
     assert "throw" in code[a:b]
 
 
@@ -181,9 +180,8 @@ def test_defers_to_the_runas_migrator_and_rate_limits() -> None:
 
 
 def test_gateway_is_start_only_when_dead_and_outside_rollover() -> None:
-    assert "auto_dead_only' -and $running) { $why = 'alive but stale" in TEXT
     assert "(Get-BrokerHour) -eq 0) { $why = 'broker rollover hour' }" in TEXT
-    assert "Restart-Declared $name $running ($mode -eq 'auto_dead_only')" in TEXT
+    assert "Start-Declared $name" in TEXT
     gw = [r for r in DECL["tasks"] if r["task"] == "MT5-GatewayResident"][0]
     assert gw["restart"] == "auto_dead_only"
 
@@ -205,6 +203,136 @@ def test_declarations_cover_the_census_and_money_defaults_to_alarm() -> None:
 
 
 def test_declarations_are_read_from_the_boot_never_a_writable_file() -> None:
-    assert "show \"${boot}:ops/box_git/guardian/task_outputs.json\"" in TEXT
+    assert "show \"${boot}:$rel\"" in TEXT
+    assert "if (@('ops/box_git/guardian/task_outputs.json', 'ops/money_closure.txt') -notcontains $rel) { throw" in TEXT
     t = json.loads((ROOT / "ops" / "box_git" / "TRUST_SET.json").read_text(encoding="utf-8"))
     assert any(fnmatch.fnmatch("ops/box_git/guardian/task_outputs.json", g) for g in t["files"])
+
+
+# ---- r25c.1: Audit HOLD 22:01Z (MF1..MF4) --------------------------------------------------
+
+def _rs():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("replay_shadow", ROOT / "ops/release/replay_shadow.py")
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+#: a script that can reach anything at run time: static imports prove nothing about it
+DISPATCH = re.compile(r"\bsubprocess\b|\bPopen\b|os\.system|\brunpy\b|\bimportlib\b|__import__|\bexec\(")
+#: acting on the box itself: reboot, kill, re-register, clock, ACL, git ref, signing (MF2)
+DANGER = re.compile(
+    r"shutdown|Restart-Computer|os\.kill|\.kill\(|\.terminate\(|taskkill|schtasks|ScheduledTask"
+    r"|w32tm|Set-Date|SetSystemTime|icacls|Set-Acl|SetAccessControl|takeown|signtool"
+    r"|AuthenticodeSignature|update-ref|\bgit\b[^\n]{0,40}\b(push|reset|commit|checkout|branch|tag)\b"
+    r"|[\"'](push|reset|commit|checkout|update-ref)[\"']",
+    re.IGNORECASE)
+
+
+def money_and_why(row: dict, rs=None, files: set[str] | None = None) -> tuple[bool, str]:
+    """MF3, mechanical: rebuild a row's money_path from the scripts its live action runs. Fail
+    closed: anything this cannot follow is money."""
+    rs = rs or _rs()
+    files = files if files is not None else rs.tree_files(ROOT)
+    closure = {x.strip().lower() for x in (ROOT / "ops/money_closure.txt").read_text("utf-8").splitlines()
+               if x.strip() and not x.startswith("#")}
+    if not row.get("action_sha256"):
+        return True, "action unread"
+    scripts = row.get("action_scripts") or []
+    if not scripts:
+        return True, "no script named"
+    for s in scripts:
+        if not s.endswith(".py") or s not in files:
+            return True, f"{s}: not a repository .py file"
+        if s.startswith(rs.MONEY_PATH) or s in rs.ENTRY_POINTS or s.lower() in closure:
+            return True, f"{s}: on the money path"
+        if rs.MONEY_WORDS.search(s):
+            return True, f"{s}: venue word"
+        if DISPATCH.search(rs.read(ROOT, s) or ""):
+            return True, f"{s}: dispatches at run time"
+        reach = rs.import_closure(ROOT, (s,)) & set(rs.ENTRY_POINTS)
+        if reach:
+            return True, f"{s}: imports {sorted(reach)[0]}"
+    return False, "off the money path"
+
+
+def acts_on_box(row: dict, rs=None) -> str:
+    rs = rs or _rs()
+    for s in row.get("action_scripts") or []:
+        for f in sorted(rs.import_closure(ROOT, (s,)) | {s}):
+            m = DANGER.search(rs.read(ROOT, f) or "")
+            if m:
+                return f"{f}: {m.group(0)}"
+    return ""
+
+
+def test_never_stops_a_task_and_starts_only_a_ready_one() -> None:
+    code = _body_without_comments()
+    assert "Stop-ScheduledTask" not in code
+    a, b = _write_status_span(code, "Start-Declared")
+    body = code[a:b]
+    assert "-ne 'Ready') { throw" in body
+    assert "if ($row.verdict -eq 'STALE' -and \"$($t.State)\" -eq 'Running') { $row.verdict = 'HUNG' }" in TEXT
+    assert "elseif (\"$($t.State)\" -ne 'Ready') { $why = \"task is $($t.State)\" }" in TEXT
+
+
+def test_alarm_is_the_code_default() -> None:
+    assert "if (@('auto', 'auto_dead_only') -notcontains $mode) { $mode = 'alarm' }" in TEXT
+    assert "elseif ($d.money_path -and $name -ne 'MT5-GatewayResident') { $mode = 'alarm' }" in TEXT
+    assert "elseif (\"$($d.action_sha256)\" -ne $row.action_sha256) { $mode = 'alarm'" in TEXT
+    assert "elseif ($mode -eq 'auto' -and (Test-MoneyAction $live @($d.action_scripts) $closure)) { $mode = 'alarm' }" in TEXT
+    assert "elseif ($mode -eq 'auto_dead_only' -and $name -ne 'MT5-GatewayResident') { $mode = 'alarm' }" in TEXT
+    # a row with no outputs is never restarted
+    assert "if (-not $d -or -not @($d.outputs | Where-Object { $_ }).Count) {" in TEXT
+
+
+AUDIT_BOX_ACTING = {"MT5-RebootDrill", "MT5-ReapGitWriters", "MT5-ClockFixer", "MT5-ProcessHealth",
+                    "MT5-Healers", "MT5-IdentityHealer", "MT5-PlumbingWatchdog",
+                    "MT5-MoatRecorder-Watchdog", "MT5-FetchUniverse-Repair", "MT5-SshGuard",
+                    "Quant-CpuShaper", "Claude-Bridge-Watchdog", "Quant-SignTrain"}
+
+
+def test_box_acting_tasks_are_alarm_in_code_and_in_the_declarations() -> None:
+    m = re.search(r"\$NeverRestart = @\(([^)]*)\)", TEXT)
+    assert m
+    assert AUDIT_BOX_ACTING <= set(re.findall(r"'([^']+)'", m.group(1)))
+    rows = {r["task"]: r for r in DECL["tasks"]}
+    for n in AUDIT_BOX_ACTING:
+        assert rows[n]["restart"] == "alarm", n
+
+
+def test_money_path_is_rebuilt_from_the_actions_and_no_auto_row_acts_on_the_box() -> None:
+    rs = _rs()
+    files = rs.tree_files(ROOT)
+    for r in DECL["tasks"]:
+        money, why = money_and_why(r, rs, files)
+        assert r["money_path"] == money, (r["task"], why)
+        if r["restart"] == "auto":
+            assert not money, (r["task"], why)
+            assert not acts_on_box(r, rs), (r["task"], acts_on_box(r, rs))
+            assert r["outputs"], r["task"]
+
+
+def test_guardian_money_lists_match_replay_shadow() -> None:
+    rs = _rs()
+    def arr(name: str) -> tuple[str, ...]:
+        m = re.search(r"\$" + name + r" = @\(([^)]*)\)", TEXT)
+        assert m, name
+        return tuple(re.findall(r"'([^']+)'", m.group(1)))
+    assert arr("MoneyPrefixes") == rs.MONEY_PATH
+    assert arr("MoneyEntries") == rs.ENTRY_POINTS
+    m = re.search(r"\$MoneyWords = '([^']+)'", TEXT)
+    assert m and m.group(1) == rs.MONEY_WORDS.pattern
+
+
+def test_gateway_start_needs_no_live_gateway_process() -> None:
+    code = _body_without_comments()
+    a, b = _write_status_span(code, "Test-GatewayAlive")
+    body = code[a:b]
+    assert "Win32_Process" in body and "-OperationTimeoutSec 20" in body
+    assert "gateway_resident|run_gateway_loop" in body
+    assert "if ($null -eq $p.CommandLine) { return $true }" in body
+    assert "} catch { return $true }" in body
+    assert "elseif ($mode -eq 'auto_dead_only' -and (Test-GatewayAlive)) { $why =" in TEXT
