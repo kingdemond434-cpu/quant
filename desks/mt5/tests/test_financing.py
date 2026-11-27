@@ -20,7 +20,7 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk.financing import (  # noqa: E402
-    ROLLOVER_HOUR_UTC, TRIPLE_SWAP_NIGHTS, TRIPLE_SWAP_WEEKDAY, assess, breakeven_swap_per_lot,
+    ROLLOVER_HOUR_SERVER, TRIPLE_SWAP_NIGHTS, TRIPLE_SWAP_WEEKDAY, assess, breakeven_swap_per_lot,
     drag_r, profile, rollover_nights, stamp_provenance)
 
 UTC = timezone.utc
@@ -35,13 +35,14 @@ def at(day: int, hour: int, minute: int = 0) -> datetime:
 
 class TestTheStampIsHalfOpen:
     def test_a_trade_opened_on_the_stamp_is_not_yet_financed(self) -> None:
-        # Opening at 22:00:00 and closing at 23:00 has not been held overnight. Charging it
-        # double-counts every trade that both opens and closes on a stamp, and on hourly bars
-        # that alignment is the common one rather than a corner case.
-        assert rollover_nights(at(17, ROLLOVER_HOUR_UTC), at(17, 23)) == 0
+        # Opening on the stamp (server midnight) and closing an hour later has not been held
+        # overnight. Charging it double-counts every trade that both opens and closes on a stamp,
+        # and on hourly bars that alignment is the common one rather than a corner case.
+        assert ROLLOVER_HOUR_SERVER == 24
+        assert rollover_nights(at(18, 0), at(18, 1)) == 0
 
     def test_a_trade_closed_on_the_stamp_IS_financed(self) -> None:
-        assert rollover_nights(at(17, 20), at(17, ROLLOVER_HOUR_UTC)) == 1
+        assert rollover_nights(at(17, 20), at(18, 0)) == 1
 
     def test_a_trade_entirely_inside_one_session_crosses_nothing(self) -> None:
         assert rollover_nights(at(17, 8), at(17, 16)) == 0
@@ -55,19 +56,26 @@ class TestTheStampIsHalfOpen:
         entry = at(17, 8)                       # Monday morning
         # Mon stamp 1; +Tue stamp 2; +Wed stamp is TRIPLE so 5, not 3; +Thu stamp 6.
         assert rollover_nights(entry, at(18, 8)) == 1
-        assert rollover_nights(entry, at(18, 23)) == 2
-        assert rollover_nights(entry, at(19, 23)) == 5
-        assert rollover_nights(entry, at(20, 23)) == 6
+        assert rollover_nights(entry, at(18, 23)) == 1      # Tuesday's stamp is at 19 00:00
+        assert rollover_nights(entry, at(19, 1)) == 2
+        assert rollover_nights(entry, at(20, 1)) == 5
+        assert rollover_nights(entry, at(21, 1)) == 6
 
 
 class TestWednesdayIsTriple:
     def test_the_wednesday_stamp_charges_three_nights(self) -> None:
         assert at(19, 0).weekday() == TRIPLE_SWAP_WEEKDAY
-        assert rollover_nights(at(19, 20), at(19, 23)) == TRIPLE_SWAP_NIGHTS
+        assert rollover_nights(at(19, 20), at(20, 1)) == TRIPLE_SWAP_NIGHTS
 
     def test_every_other_weekday_stamp_charges_one(self) -> None:
         for day in (17, 18, 20, 21):
-            assert rollover_nights(at(day, 20), at(day, 23)) == 1
+            assert rollover_nights(at(day, 20), at(day + 1, 1)) == 1
+
+    def test_the_weekend_days_end_in_no_stamp(self) -> None:
+        # Saturday 22nd and Sunday 23rd: the venue is shut, and the weekend is inside the triple.
+        assert rollover_nights(at(22, 20), at(23, 1)) == 0
+        assert rollover_nights(at(23, 20), at(24, 1)) == 0
+        assert rollover_nights(at(17, 0), at(24, 0)) == 7          # one whole week: 1+1+3+1+1
 
     def test_ignoring_the_triple_understates_a_continuous_hold_by_two_sevenths(self) -> None:
         """The size of the error, so it cannot be dismissed as a detail: 29% of the annual
@@ -76,17 +84,17 @@ class TestWednesdayIsTriple:
         entry, exit_ = at(17, 0), at(17, 0) + timedelta(days=70)
         with_triple = rollover_nights(entry, exit_)
         without = rollover_nights(entry, exit_, triple_weekday=None)
-        assert with_triple / without == pytest.approx(9 / 7, rel=0.02)
+        assert with_triple / without == pytest.approx(7 / 5, rel=0.02)
 
     def test_the_rule_can_be_disabled_for_instruments_that_do_not_settle_T2(self) -> None:
         # Index and energy CFDs are financed daily and take no weekend stamp.
-        assert rollover_nights(at(19, 20), at(19, 23), triple_weekday=None) == 1
+        assert rollover_nights(at(19, 20), at(20, 1), triple_weekday=None) == 1
 
 
 class TestTheStampHourIsAnAssumptionAndSaysSo:
     def test_the_provenance_string_refuses_to_imply_it_was_read(self) -> None:
         p = stamp_provenance()
-        assert "NOT read" in p and "22:00" in p
+        assert "not read" in p and "server hour 24" in p
 
     def test_a_different_broker_clock_can_be_passed(self) -> None:
         assert rollover_nights(at(17, 20), at(17, 22), hour=21) == 1
@@ -198,7 +206,7 @@ class TestAnAbsentRateIsLOUDRatherThanZero:
             "an UNMEASURED verdict that still published a post-swap expectancy would be zero "
             "wearing a warning label -- the exact laundering L1.28a forbids")
         assert v.breakeven_per_lot == pytest.approx(0.0957 * 40.0 / 1.481)
-        assert "UNMEASURED" in v.why and "NOT read" in v.why
+        assert "UNMEASURED" in v.why and "not read" in v.why
 
     def test_a_supplied_rate_gives_MEASURED_with_both_halves_of_the_arithmetic(self) -> None:
         v = assess("XAUUSD.afternoon", expectancy_r=0.0957, mean_nights=1.481,

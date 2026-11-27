@@ -121,7 +121,7 @@ def test_fusion_clock_and_the_rollover_rule_is_verified_from_the_repo() -> None:
     mid = mc.state_at(V["FUSION"], datetime(2025, 8, 6, 10, 0, tzinfo=UTC), "forex")
     assert mid.session_state == "CONTINUOUS" and mid.settlement_state == "CFD_ROLLOVER"
     roll = next(r for r in V["FUSION"].rules if r.kind == "rollover")
-    assert roll.spec["rollover_hour_utc"] == 21 and roll.spec["triple_swap_weekday"] == 2
+    assert roll.spec["rollover_hour_server"] == 24 and roll.spec["triple_swap_weekday"] == 2
     assert roll.source.verified == mc.VERIFIED and "engine.py" in roll.source.citation
     close = next(r for r in V["FUSION"].rules if r.kind == "desk_close")
     assert close.spec["close_utc"] == "19:30" and close.source.verified == mc.VERIFIED
@@ -264,8 +264,9 @@ def test_compile_constraints_joins_the_registry_to_the_rules_and_names_absent_ax
     assert gold["tick"]["status"] == "MEASURED" and gold["tick"]["tick_size"] == 0.01
     assert gold["tick"]["stops_level"] is None and "symbol_info" in gold["tick"]["stops_level_why"]
     assert gold["margin"]["status"] == "UNMEASURED" and "margin" in gold["margin"]["why"]
-    assert gold["settlement"] == {"state": "CFD_ROLLOVER", "rollover_hour_utc": 21,
-                                  "triple_swap_weekday": 2, "swap_long": -61.76,
+    assert gold["settlement"] == {"state": "CFD_ROLLOVER", "rollover_hour_server": 24,
+                                  "triple_swap_weekday": 2,
+                                  "rollover_weekdays": [0, 1, 2, 3, 4], "swap_long": -61.76,
                                   "swap_short": 29.45, "currency_profit": "USD",
                                   "underlying_settlement": None}
     assert gold["rule_version"].startswith(mc.RULES_VERSION) and gold["rule_ids"]
@@ -285,7 +286,7 @@ def test_compile_constraints_joins_the_registry_to_the_rules_and_names_absent_ax
     oil = doc["symbols"]["XTIUSD"]
     assert oil["sessions"]["status"] == "UNMEASURED"
     assert oil["sessions"]["state_now"] == "UNDECLARED"
-    assert oil["settlement"]["rollover_hour_utc"] == 21          # the '*' clauses still apply
+    assert oil["settlement"]["rollover_hour_server"] == 24          # the '*' clauses still apply
     assert doc["unmeasured_axes"] == {"margin": 4, "tick": 1, "sessions": 1}
     assert doc["by_status"] == {mc.PARTIAL: 3, "UNMEASURED": 1}
     # the weekend reads closed today, and the Sunday row names the next open day's closure too

@@ -478,14 +478,36 @@ class BacktestResult:
         }
 
 
-#: UTC hour of the broker's rollover. Fusion's server runs UTC+2 in winter and UTC+3 in summer,
-#: so server midnight is 22:00 UTC or 21:00 UTC. 21 is used and the choice is deliberately the
-#: EARLIER one: it can only count a rollover a position did not quite reach, never miss one it
-#: paid. A cost model that errs must err expensive.
-ROLLOVER_HOUR_UTC = 21
+#: THE ROLLOVER IS SERVER MIDNIGHT, IN THE CLOCK THE BARS ARE STAMPED IN (2026-10-13).
+#:
+#: The bars and every trade time this engine sees are BROKER stamps under a UTC label: the venue
+#: clock is New York + 7 h (`libs/regime/session_clock`), so the 17:00 New York rollover is stamped
+#: 00:00 on every day of the year, DST or not. This constant was 21, read as "21:00 UTC, the
+#: earlier of the two DST answers" -- but it was applied to SERVER stamps, so it charged the night
+#: at 21:00 server = 18:00 UTC in summer, three hours before the venue does (audit of #269). Every
+#: position opened between 21:00 and 00:00 server paid a night it never held, and one closed in
+#: that window skipped the night it did hold. A rollover instant is the END of server day d,
+#: `d + ROLLOVER_HOUR_SERVER`; the triple weekday names that day d (Wednesday night).
+ROLLOVER_HOUR_SERVER = 24
 #: Weekday whose rollover carries three days' financing, because its value date spans the
 #: weekend. Monday=0, so 2 is Wednesday -- the standard FX convention on every retail venue.
 TRIPLE_SWAP_WEEKDAY = 2
+#: The server days that END in a rollover: Monday to Friday. The venue is shut from Friday's
+#: close to Sunday's open, so Saturday and Sunday server days carry no stamp -- the weekend is
+#: paid once, inside Wednesday's triple. Charging all seven days billed 9 nights a week, not 7.
+ROLLOVER_WEEKDAYS = frozenset(range(5))
+
+
+def night_weight(weekday: int) -> int:
+    """Nights charged at the rollover ending a server day of this weekday: 3 on the triple day,
+    1 on another weekday, 0 at the weekend."""
+    if weekday not in ROLLOVER_WEEKDAYS:
+        return 0
+    return 3 if weekday == TRIPLE_SWAP_WEEKDAY else 1
+
+
+#: Nights charged by seven consecutive server days, whichever day the run starts on.
+_WEEK_NIGHTS = sum(night_weight(d) for d in range(7))
 
 
 def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
@@ -512,7 +534,8 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     if not (b > a):
         return 0.0
     # The first rollover instant strictly after the entry.
-    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    off = pd.Timedelta(hours=ROLLOVER_HOUR_SERVER)
+    cur = a.normalize() + off
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
     if cur > b:
@@ -523,9 +546,9 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     # gauntlet's build path it cost more than the bar loop it sits under; the count below is the
     # same integer (so the same float), with no loop.
     k = int((b - cur) // pd.Timedelta(days=1)) + 1
-    first_triple = (TRIPLE_SWAP_WEEKDAY - cur.weekday()) % 7
-    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
-    return float(k + 2 * triples)
+    wd0 = (cur - off).weekday()                                       # the server day it ends
+    full, rest = divmod(k, 7)
+    return float(full * _WEEK_NIGHTS + sum(night_weight((wd0 + i) % 7) for i in range(rest)))
 
 
 def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, last_bar: int,
@@ -547,23 +570,24 @@ def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, la
         b = b.tz_convert("UTC").tz_localize(None)
     if not (b > a):
         return 0.0
-    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    off = pd.Timedelta(hours=ROLLOVER_HOUR_SERVER)
+    cur = a.normalize() + off
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
     if cur > b:
         return 0.0
     k = int((b - cur) // pd.Timedelta(days=1)) + 1
     inst = cur.value + np.arange(k, dtype="int64") * (86_400 * 10**9)
-    weekday = (cur.weekday() + np.arange(k)) % 7
-    w = np.where(weekday == TRIPLE_SWAP_WEEKDAY, 3.0, 1.0)
+    weekday = ((cur - off).weekday() + np.arange(k)) % 7
+    w = np.array([float(night_weight(d)) for d in range(7)])[weekday]
     pos = np.searchsorted(idx_ns, inst, side="left") - 1
     pos = np.clip(pos, first_bar, last_bar)
     return float(np.sum(w * px[pos].astype(float)))
 
 
-#: Nanoseconds in a day and the rollover's offset into a UTC day, for `_rollover_nights_ns`.
+#: Nanoseconds in a day and the rollover's offset into a server day, for `_rollover_nights_ns`.
 _NS_PER_DAY = 86_400 * 10**9
-_ROLLOVER_NS = ROLLOVER_HOUR_UTC * 3_600 * 10**9
+_ROLLOVER_NS = ROLLOVER_HOUR_SERVER * 3_600 * 10**9
 #: `pd.NaT.value`; an epoch-ns of NaT is not a time and takes the Timestamp path instead.
 _NAT_NS = int(np.iinfo("int64").min)
 
@@ -589,9 +613,11 @@ def _rollover_nights_ns(a: int, b: int) -> float:
     if cur > b:
         return 0.0
     k = (b - cur) // _NS_PER_DAY + 1
-    first_triple = (TRIPLE_SWAP_WEEKDAY - (cur // _NS_PER_DAY + 3) % 7) % 7
-    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
-    return float(k + 2 * triples)
+    # The server day the first rollover ENDS (the instant minus the offset), as in
+    # `rollovers_between`: weekend days carry no night, the triple day carries three.
+    wd0 = ((cur - _ROLLOVER_NS) // _NS_PER_DAY + 3) % 7
+    full, rest = divmod(k, 7)
+    return float(full * _WEEK_NIGHTS + sum(night_weight((wd0 + i) % 7) for i in range(rest)))
 
 
 class _LegMemo:
