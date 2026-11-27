@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-27T08:30:03.222038+00:00",
+  "swept_at": "2026-11-27T08:45:03.339642+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -108,7 +108,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1575,
+      "shadow_exp_r": -0.1583,
       "woke_on_shadow": false
     },
     "AUDNZD|overnight_gap_decay_asia": {
@@ -118,8 +118,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 16,
-      "shadow_exp_r": 0.1388,
+      "shadow_n": 29,
+      "shadow_exp_r": 0.5922,
       "woke_on_shadow": false
     },
     "AUDSGD|carry_asia": {
