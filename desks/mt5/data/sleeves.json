@@ -59062,7 +59062,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-26T19:24:03+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "CHFDKK.carry.asia@M15#input_symbol=CHFDKK_require_quiet=True_session=ny",
@@ -59098,7 +59100,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-26T19:24:03+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "CHFDKK.carry.asia@M15#session=ny",
@@ -59132,7 +59136,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-26T19:24:03+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "XBRUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
@@ -59174,7 +59180,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-26T20:35:38+00:00",
       "retire_reason": "XBRUSD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "xbrusd|cross_asset_residual|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "GBPZAR.carry.asia@M15#input_symbol=GBPZAR_session=ny",
@@ -59209,7 +59217,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-27T00:48:41+00:00",
       "retire_reason": "GBPZAR is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpzar|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "GBPCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
@@ -59256,7 +59266,10 @@
       "exec": "family_market",
       "retired_at": "2026-11-27T02:33:19+00:00",
       "retire_reason": "GBPCHF is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpchf|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
-  ]
+  ],
+  "identity_stamped_at": "2026-11-27T03:21:28+00:00"
 }
