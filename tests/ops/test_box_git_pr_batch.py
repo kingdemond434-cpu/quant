@@ -56,6 +56,7 @@ def test_trains_first_then_oldest():
 
 
 def test_many_prs_are_checked_in_one_pass_until_the_budget(monkeypatch):
+    monkeypatch.setattr(L, "DIRECT_LIVE", False)  # pins r20 behaviour (r21 is direct live)
     prs = [_pr(n, f"claude/p{n}") for n in range(1, 11)]
     clock = [0.0]
     seen = _wire(monkeypatch, prs, clock)
@@ -65,6 +66,7 @@ def test_many_prs_are_checked_in_one_pass_until_the_budget(monkeypatch):
 
 
 def test_a_pr_in_hand_always_finishes_and_one_always_runs(monkeypatch):
+    monkeypatch.setattr(L, "DIRECT_LIVE", False)  # pins r20 behaviour (r21 is direct live)
     clock = [0.0]
     seen = _wire(monkeypatch, [_pr(1, "claude/a"), _pr(2, "claude/b")], clock)
     out = L.pr_tick(None, budget_s=0)              # type: ignore[arg-type]

@@ -31,6 +31,7 @@ def test_a_completed_status_means_checked_and_a_dead_pending_is_retried() -> Non
 
 
 def test_one_failing_stage_never_stops_the_others(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(L, "DIRECT_LIVE", False)  # pins r20 behaviour (r21 is direct live)
     monkeypatch.setattr(L, "live_head", lambda cfg: (_ for _ in ()).throw(RuntimeError("no git")))
     monkeypatch.setattr(L, "pr_tick", lambda cfg: "no PR waiting for checks")
     monkeypatch.setattr(L, "promote_tick", lambda cfg: "nothing new to promote")

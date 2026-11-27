@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_direct_live_is_on_and_runs_no_full_suite() -> None:
     assert L.DIRECT_LIVE is True
-    assert "full" not in L.HEAVY and "pr" in L.HEAVY
+    assert L.heavy_stages() == ("pr",)
     assert "promote" in L.LIGHT  # promotion every light round (90 s)
 
 

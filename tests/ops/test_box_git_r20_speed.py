@@ -128,7 +128,8 @@ def test_the_worker_runs_jobs_concurrently_and_takes_new_ones(tmp_path: Path) ->
 
 
 # ------------------------------------------------------------------ 3. the light loop
-def test_light_stages_repeat_while_the_heavy_stages_run() -> None:
+def test_light_stages_repeat_while_the_heavy_stages_run(monkeypatch) -> None:
+    monkeypatch.setattr(L, "DIRECT_LIVE", False)  # pins r20 behaviour (r21 is direct live)
     count = {"drop": 0}
 
     def drop() -> str:

@@ -1331,8 +1331,12 @@ def leadtime_tick(cfg: Config, now: datetime | None = None) -> str:
 #: mover still sees one pass at a time and nothing outlives it.
 LIGHT_EVERY_S = 90.0
 LIGHT = ("drop", "inbox", "state", "gate", "sign", "promote", "leadtime")
-#: (r21) direct live runs no full suite: the pr stage is the only heavy one.
-HEAVY = ("pr",) if DIRECT_LIVE else ("pr", "full")
+HEAVY = ("pr", "full")
+
+
+def heavy_stages() -> tuple[str, ...]:
+    """(r21) direct live runs no full suite: the pr stage is the only heavy one."""
+    return tuple(n for n in HEAVY if not (DIRECT_LIVE and n == "full"))
 
 
 def _locked(fn: Callable[[], str]) -> str:
@@ -1390,7 +1394,7 @@ def tick(cfg: Config, *, light_every_s: float = LIGHT_EVERY_S,
         if name in fns:
             run(name)
     heavy = [threading.Thread(target=run, args=(n,), name=f"stage-{n}", daemon=True)
-             for n in HEAVY if n in fns]
+             for n in heavy_stages() if n in fns]
     for t in heavy:
         t.start()
     rounds = 1
