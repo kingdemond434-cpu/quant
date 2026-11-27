@@ -76,6 +76,13 @@ def sent_stop(intents: Path, side: str, day: str, *, qty: float | None = None,
               entry: float | None = None) -> float | None:
     """The stop of E8's SENT leg on `side` ("buy"/"sell") dated `day` that matches `qty` and is
     nearest `entry`; None when no leg matches or two match equally well (never a guess)."""
+    leg = sent_leg(intents, side, day, qty=qty, entry=entry)
+    return None if leg is None else leg[1]
+
+
+def sent_leg(intents: Path, side: str, day: str, *, qty: float | None = None,
+             entry: float | None = None) -> tuple[float, float] | None:
+    """(entry price, stop) of the matching SENT leg, by the rule in `sent_stop`."""
     want = f"{side}_stop"
     try:
         lines = intents.read_text(encoding="utf-8", errors="replace").splitlines()[-4000:]
@@ -97,11 +104,11 @@ def sent_stop(intents: Path, side: str, day: str, *, qty: float | None = None,
     if not cands:
         return None
     if entry is None:
-        return next(iter(cands.values())) if len(cands) == 1 else None
+        return next(iter(cands)) if len(cands) == 1 else None
     ranked = sorted(cands, key=lambda k: abs(k[0] - entry))
     if len(ranked) > 1 and abs(ranked[0][0] - entry) == abs(ranked[1][0] - entry):
         return None
-    return cands[ranked[0]]
+    return ranked[0]
 
 
 def compose(closed: list[dict[str, Any]], pl_total: float | None, *, now: datetime,
@@ -178,9 +185,35 @@ def _symbol_resolver(venue: Any) -> Any:
     return of
 
 
+TAPE_NAME = "fill_tape.jsonl"
+
+
+def tape_new_entries(cur: dict[str, Any], before: dict[str, Any], missing: dict[str, Any], *,
+                     now: datetime, intents: Path, tape: Path) -> int:
+    """ROOT R5 (2026-11-27): a position seen for the FIRST time is an E8 entry fill. One
+    fill-tape row each: intended = its matched SENT stop-entry price (null when no single leg
+    matches, never a guess), fill = the venue's avgPrice. Never raises."""
+    n = 0
+    with contextlib.suppress(Exception):
+        from mt5desk import fill_tape as ft
+        for pid, s in cur.items():
+            if pid in before or pid in missing:
+                continue
+            day = str(s.get("seen_at") or now.isoformat())[:10]
+            leg = sent_leg(intents, str(s.get("side") or ""), day, qty=s.get("qty"),
+                           entry=s.get("entry"))
+            n += ft.record(ft.row(book=BOOK, venue="tradelocker", lane="e8_gold",
+                                  symbol=s.get("symbol"), side=str(s.get("side") or ""),
+                                  intended=None if leg is None else leg[0],
+                                  fill=s.get("entry"), volume=s.get("qty"), deal=pid,
+                                  kind="entry", at=now,
+                                  provenance="e8_fills:position_first_seen"), path=tape)
+    return n
+
+
 def observe(venue: Any, *, now: datetime | None = None, state: Path = STATE,
             ledger: Path = LEDGER, intents: Path = INTENTS,
-            symbol_of: Any = None) -> dict[str, Any]:
+            symbol_of: Any = None, tape: Path | None = None) -> dict[str, Any]:
     """One snapshot; a row for every close confirmed on two reads. Never raises."""
     now = now or datetime.now(UTC)
     try:
@@ -191,6 +224,7 @@ def observe(venue: Any, *, now: datetime | None = None, state: Path = STATE,
         prev = _load(state)
         before = prev.get("positions") if isinstance(prev.get("positions"), dict) else {}
         missing = prev.get("missing") if isinstance(prev.get("missing"), dict) else {}
+        prev_missing = dict(missing)
         pbal = _f(prev.get("balance"))
         if not cur and before and bal is not None and pbal is not None and bal == pbal:
             return {"open": None, "closed": 0, "written": 0,
@@ -213,9 +247,15 @@ def observe(venue: Any, *, now: datetime | None = None, state: Path = STATE,
             n = append(compose([v["snap"] for v in confirmed.values()], pl, now=now,
                                intents=intents, only=alone), ledger)
             missing = {k: v for k, v in missing.items() if k not in confirmed}
+        tp = tape if tape is not None else state.parent / TAPE_NAME
+        taped = tape_new_entries(cur, before, prev_missing, now=now, intents=intents, tape=tp)
+        with contextlib.suppress(Exception):
+            # The per-account slip the cost organs read (every book on the tape, not only E8).
+            from mt5desk import fill_tape as _ft
+            _ft.publish(tape=tp, out=tp.parent / "PROP_SLIP.json", now=now)
         _save(state, {"at": now.isoformat(timespec="seconds"), "balance": bal,
                       "positions": cur, "missing": missing})
         return {"open": len(cur), "closed": len(confirmed), "pending": len(missing),
-                "written": n}
+                "written": n, "taped": taped}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}

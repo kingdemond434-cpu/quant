@@ -156,6 +156,41 @@ def in_doubt_path() -> Path:
     return _data_dir() / IN_DOUBT_NAME
 
 
+def _quote(mt5: Any, symbol: Any) -> tuple[float | None, float | None]:
+    """(bid, ask) at the send for the fill tape; (None, None) on any failure. Never raises."""
+    with contextlib.suppress(Exception):
+        t = mt5.symbol_info_tick(str(symbol))
+        if t is not None:
+            return _num(getattr(t, "bid", None)), _num(getattr(t, "ask", None))
+    return None, None
+
+
+def _tape(mt5: Any, kind: str, req: Mapping[str, Any], res: Any, caller: str,
+          quote: tuple[float | None, float | None], at: datetime) -> None:
+    """ROOT R5 (2026-11-27): every MT5 market deal the venue DONE-filled becomes one fill-tape row
+    at the moment of the fill. Intended = the request price, fill = the venue's deal price. Never
+    raises and never changes the answer the caller gets."""
+    with contextlib.suppress(Exception):
+        if req.get("action") != _const(mt5, "TRADE_ACTION_DEAL") or kind not in (OPEN, CLOSE):
+            return
+        if getattr(res, "retcode", None) not in (RETCODE_DONE, RETCODE_DONE_PARTIAL):
+            return
+        fill = _num(getattr(res, "price", None))
+        if not (fill or 0.0) > 0:
+            return
+        t = req.get("type")
+        buy, sell = getattr(mt5, "ORDER_TYPE_BUY", 0), getattr(mt5, "ORDER_TYPE_SELL", 1)
+        side = "buy" if t == buy else "sell" if t == sell else ""
+        from mt5desk import fill_tape as _ft
+        _ft.record(_ft.row(book=_ft.book_of(caller), venue="mt5", lane=caller or "door",
+                           symbol=req.get("symbol"), side=side, intended=req.get("price"),
+                           fill=fill, volume=getattr(res, "volume", None), bid=quote[0],
+                           ask=quote[1], deal=getattr(res, "deal", None),
+                           kind="entry" if kind == OPEN else "exit", at=at,
+                           provenance="order_door.send"),
+                   path=_data_dir() / "fill_tape.jsonl")
+
+
 def _default_log(msg: str) -> None:
     print(f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} ORDER-DOOR {msg}",
           file=sys.stderr)
@@ -517,6 +552,8 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
         _emit(log, f"{where}: FAIL-OPEN -- {ccomment}; the pre-check is UNMEASURED and the "
                    f"order is sent on the venue's own answer")
 
+    quote = (_quote(mt5, req.get("symbol"))
+             if req.get("action") == _const(mt5, "TRADE_ACTION_DEAL") else (None, None))
     t0 = time.perf_counter()
     try:
         res = mt5.order_send(req)
@@ -557,6 +594,7 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
     elif vverdict != "ok":
         _emit(log, f"{where}: {vverdict.upper()} -- {'; '.join(notes)}")
     append_ledger(row, log=log)
+    _tape(mt5, kind, req, res, caller, quote, t_now)
     return res
 
 
