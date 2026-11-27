@@ -110,6 +110,10 @@ def test_only_live_tree_principals_move_and_only_to_quantrun() -> None:
     now = datetime(2026, 11, 28, 12, tzinfo=UTC)
     adopter_still_runs_head_code = R.proof([_t("MT5-AdoptRelease", "SYSTEM")], {"g": True}, {}, now)
     assert adopter_still_runs_head_code["elevated_live_tree"] == ["MT5-AdoptRelease"]
+    pin_args = ('-File "C:\\ProgramData\\QuantBox\\guard\\adopt\\tree\\desks\\mt5\\scripts\\'
+                'Adopt-And-Seal.ps1" -RepoRoot "C:\\opt\\quant" -Pinned')
+    pinned = _t("MT5-AdoptRelease", "SYSTEM", exe="powershell.exe", args=pin_args)
+    assert R.proof([pinned], {"g": True}, {}, now, [])["elevated_live_tree"] == []
     assert R.new_principal() == {"user": "quantrun", "logon": "S4U", "runlevel": "Limited"}
     snap = R.snapshot(TASKS, R.to_move(TASKS))
     assert snap == {
@@ -345,3 +349,25 @@ def test_the_door_needs_a_guard_verdict_or_a_seal(tmp_path) -> None:
     assert D.guard_refusals([(old, seal, live)], str(tmp_path), git) == []
     assert D.guard_refusals([(old, "5" * 40, live)], str(tmp_path), git)  # not one step
     assert D.guard_refusals([(old, mrg, "refs/heads/claude/x")], str(tmp_path), git) == []
+
+
+def test_the_pinned_adopter_runs_no_tree_code(monkeypatch, tmp_path) -> None:
+    """Audit C4: with QUANT_ADOPT_PINNED=1 the guard's helpers come from its own checkout and the
+    smoke imports nothing from the tree it adopts."""
+    from libs.ops import adopt_guard as G
+    monkeypatch.setenv(G.PINNED_ENV, "1")
+    assert G.code_root(tmp_path) == G.OWN_ROOT
+    ran = []
+    code, doc = G.smoke(tmp_path, runner=lambda *a, **k: ran.append(a))
+    assert code == G.GO and doc["decision"] == "SMOKE_PINNED_SKIPPED" and ran == []
+    monkeypatch.delenv(G.PINNED_ENV)
+    assert G.code_root(tmp_path) == tmp_path
+
+
+def test_the_adopter_script_takes_pinned() -> None:
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[2] / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text(
+        encoding="utf-8")
+    assert "[switch] $Pinned" in src and "$env:QUANT_ADOPT_PINNED = \"1\"" in src
+    assert "core.hooksPath=NUL" in src and "QUANT_LEDGER_ROOT = $RepoRoot" in src
+    assert 'Join-Path $script:DeciderRoot "scripts\\migrate_live_ledger_view.py"' in src

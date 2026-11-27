@@ -25,9 +25,8 @@ LIVE_TREE = re.compile(r"(?i)C:\\opt\\quant|desks\\mt5")
 #: May stay elevated: owner-installed movers and pinned guard tasks, which execute no head code.
 ALLOWED_ELEVATED = frozenset({"QuantForge-BootMove", "QuantForge-Pin", "QuantGuard-RunAs",
                               "QuantGuard-Risk"})
-#: Never moved (it must restart the gateway and reseal as SYSTEM), but NOT allowed elevated either:
-#: today it runs Adopt-And-Seal.ps1 and adopt_guard.py from the live tree, which is head code
-#: (Audit (b)). So the proof stays "not independent" until a pinned adopter replaces it (r24.1).
+#: Never moved (it must restart the gateway and reseal as SYSTEM). It counts as independent only
+#: while its action runs the PINNED copy in guard\\adopt (install_guard.ps1, Audit (b)/C4).
 NEVER_MOVE = frozenset({"MT5-AdoptRelease"})
 ELEVATED = frozenset({"SYSTEM", "NT AUTHORITY\\SYSTEM", "S-1-5-18", "ADMINISTRATOR"})
 PROOF_MAX_AGE = timedelta(minutes=15)
@@ -44,6 +43,16 @@ def runs_live_tree(task: Mapping[str, Any]) -> bool:
     blob = " ".join(f"{a.get('execute', '')} {a.get('arguments', '')} {a.get('workdir', '')}"
                     for a in acts)
     return bool(LIVE_TREE.search(blob))
+
+
+PINNED_FILE = re.compile(r'(?i)-File\s+"?C:\\ProgramData\\QuantBox\\guard\\')
+
+
+def runs_pinned(task: Mapping[str, Any]) -> bool:
+    """(r24.1) Its script is the owner-installed copy in guard\\ (the pinned adopter), so the
+    live-tree path in its arguments is the tree it ACTS ON, not code it runs."""
+    acts = task.get("actions") or []
+    return bool(acts) and all(PINNED_FILE.search(str(a.get("arguments") or "")) for a in acts)
 
 
 def _user(task: Mapping[str, Any]) -> str:
@@ -157,7 +166,8 @@ def proof(tasks: Iterable[Mapping[str, Any]], write_probes: Mapping[str, bool],
     imports)."""
     rows = list(tasks)
     bad = sorted(str(t["name"]) for t in rows if t.get("actions") is not None
-                 and runs_live_tree(t) and elevated(t) and t["name"] not in ALLOWED_ELEVATED)
+                 and runs_live_tree(t) and elevated(t) and t["name"] not in ALLOWED_ELEVATED
+                 and not (t["name"] in NEVER_MOVE and runs_pinned(t)))
     unread = sorted(str(t["name"]) for t in rows if t.get("actions") is None)
     writable = sorted(k for k, denied in write_probes.items() if not denied)
     term_bad = sorted(k for k, ok in terminal_checks.items() if not ok)

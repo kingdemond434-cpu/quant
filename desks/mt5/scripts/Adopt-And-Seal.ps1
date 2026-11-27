@@ -64,7 +64,13 @@ param(
     # QUANT_ADOPT_UNRELEASED=1 do the same for the scheduled task. Each is logged by name.
     [switch] $AllowUnreleased,
     # See .PARAMETER GuardRoot. Logged by name on every run that uses it.
-    [string] $GuardRoot
+    [string] $GuardRoot,
+    # (boot r24.1, Audit C4) THE PINNED ADOPTER: the scheduled task runs this script from the
+    # owner-installed checkout C:\ProgramData\QuantBox\guard\adopt\tree with -GuardRoot set to
+    # it. As SYSTEM it then executes nothing from -RepoRoot: python is the pinned one, the guard's
+    # helpers are its own (QUANT_ADOPT_PINNED=1), git never runs the tree's hooks or fsmonitor,
+    # and the tree's code is first imported by the restarted non-admin gateway.
+    [switch] $Pinned
 )
 
 # NATIVE STDERR IS NOT AN ERROR. git reports a successful fetch on stderr; under `Stop` that
@@ -86,6 +92,17 @@ if (-not (Test-Path $py)) {
     if (Get-Command py -ErrorAction SilentlyContinue) { $py = "py"; $pyArgs = @("-3") }
     elseif (Get-Command python -ErrorAction SilentlyContinue) { $py = "python" }
     else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
+}
+
+if ($Pinned) {
+    if (-not $GuardRoot) { "adopt-and-seal: -Pinned needs -GuardRoot"; exit 2 }
+    $pinPy = Join-Path (Split-Path -Parent $GuardRoot) "python.txt"
+    if (-not (Test-Path -LiteralPath $pinPy)) { "adopt-and-seal: -Pinned has no $pinPy"; exit 2 }
+    $py = (Get-Content -LiteralPath $pinPy -TotalCount 1).Trim(); $pyArgs = @()
+    $env:QUANT_ADOPT_PINNED = "1"
+    $env:PYTHONPATH = $GuardRoot
+    $env:QUANT_LEDGER_ROOT = $RepoRoot
+    $env:GIT_CONFIG_PARAMETERS = "'core.hooksPath=NUL' 'core.fsmonitor=false' 'core.pager=' 'diff.external='"
 }
 
 # EVERY LINE ALSO GOES TO A FILE, BECAUSE A SCHEDULED TASK'S STDOUT GOES NOWHERE (2026-09-14).
@@ -290,8 +307,10 @@ if ($GuardRoot) {
     # RELEASED CODE ONLY, BEFORE IT RUNS ANYTHING (adopt_once audit SF1): heal and state-verify
     # run from here before the release gate, so the checkout must already be inside production
     # (the ref ci.yml's promote job fast-forwards), which adopt_once fetches into the checkout.
-    & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    # A pinned checkout is the owner's own install (install_guard.ps1), which is the stronger
+    # warrant: it need not sit inside production.
+    if (-not $Pinned) { & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null }
+    if (-not $Pinned -and $LASTEXITCODE -ne 0) {
         Log ("GUARD ROOT head {0} is not inside origin/production in {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardDir)
         Done 8 "guard-root-not-released"
     }
@@ -580,7 +599,7 @@ if ($adoptExit -ne 0) {
 }
 
 # The released reader requires an explicit state handoff: ordinary adoption preserves box state.
-$ledgerMigration = Join-Path $RepoRoot "scripts\migrate_live_ledger_view.py"
+$ledgerMigration = Join-Path $script:DeciderRoot "scripts\migrate_live_ledger_view.py"
 if (Test-Path -LiteralPath $ledgerMigration) {
     $migrationOut = @(& $py @pyArgs $ledgerMigration --target $gateTarget --apply 2>&1 |
                      ForEach-Object { "$_" })

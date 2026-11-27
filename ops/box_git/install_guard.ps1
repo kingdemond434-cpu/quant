@@ -143,6 +143,34 @@ foreach ($f in @('runas_plan.py', 'runas_probe.py', 'runas\migrate.ps1')) {
 $pinned | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Runas 'PINNED.json') -Encoding utf8
 Say ("pinned: " + (($pinned.GetEnumerator() | ForEach-Object { "$($_.Key) $($_.Value.Substring(0,12))" }) -join ', '))
 
+# (Audit C4) THE PINNED ADOPTER: a clean checkout of THIS boot commit in guard\adopt\tree, run by
+# MT5-AdoptRelease with -Pinned. Only its action changes; its principal stays SYSTEM. The tree's
+# .git config, hooks and info are denied to quantrun so no adopted code can plant a git hook.
+$adopt = Join-Path $Guard 'adopt'; $tree = Join-Path $adopt 'tree'
+$repo = Split-Path -Parent (Split-Path -Parent $src)
+$bootSha = ((& git -C $repo rev-parse HEAD) | Out-String).Trim()
+if ($bootSha -notmatch '^[0-9a-f]{40}$') { Stop-Here "cannot read this checkout's HEAD" }
+$null = New-Item -ItemType Directory -Force -Path $adopt
+if (Test-Path -LiteralPath $tree) { Remove-Item -LiteralPath $tree -Recurse -Force }
+& git -c core.hooksPath=NUL clone -q --no-checkout $repo $tree
+& git -c core.hooksPath=NUL -C $tree checkout -q $bootSha
+if ($LASTEXITCODE -ne 0) { Stop-Here "could not check out $bootSha into $tree" }
+Set-Content -LiteralPath (Join-Path $adopt 'python.txt') -Value $py -Encoding ascii
+& icacls $adopt /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
+foreach ($g in @('config', 'hooks', 'info')) {
+    $gp = Join-Path $Live ".git\$g"
+    if (Test-Path -LiteralPath $gp) { & icacls $gp /deny "${RunUser}:(OI)(CI)(W,D,DC,WDAC,WO)" | Out-Null }
+}
+$ar = Get-ScheduledTask -TaskName 'MT5-AdoptRelease' -ErrorAction SilentlyContinue
+if (-not $ar) { Stop-Here 'MT5-AdoptRelease not found' }
+$pinScript = Join-Path $tree 'desks\mt5\scripts\Adopt-And-Seal.ps1'
+$newAct = New-ScheduledTaskAction -Execute 'powershell.exe' -WorkingDirectory $Live `
+    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$pinScript`" -RepoRoot `"$Live`" -GuardRoot `"$tree`" -Pinned"
+Set-ScheduledTask -TaskName 'MT5-AdoptRelease' -TaskPath $ar.TaskPath -Action $newAct | Out-Null
+@{ boot = $bootSha; old_actions = @($ar.Actions | ForEach-Object { @{ execute = "$($_.Execute)"; arguments = "$($_.Arguments)"; workdir = "$($_.WorkingDirectory)" } }) } |
+    ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $adopt 'old_action.json') -Encoding utf8
+Say "pinned adopter: $tree at $($bootSha.Substring(0,12)); MT5-AdoptRelease now runs it with -Pinned (old action kept in old_action.json)"
+
 # 6. the migrator's task
 $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Runas\migrate.ps1`""
 $trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)

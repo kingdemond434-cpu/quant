@@ -632,10 +632,28 @@ GATE_BY = "audit-gate"
 LIVE_REF = "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3"
 
 
+#: (boot r24.1, Audit C4) THE PINNED ADOPTER. MT5-AdoptRelease runs as SYSTEM; set by its task,
+#: QUANT_ADOPT_PINNED=1 makes this guard execute nothing from the tree it adopts (--root): its
+#: helpers come from its OWN checkout (guard\adopt, owner-installed), and the steps that would
+#: import or run the tree's code (smoke, prestart, the pre-commit guards) are left to the health
+#: check of the restarted, non-admin gateway, which is the real test and rolls back on failure.
+PINNED_ENV = "QUANT_ADOPT_PINNED"
+OWN_ROOT = Path(__file__).resolve().parents[2]
+
+
+def pinned() -> bool:
+    return os.environ.get(PINNED_ENV, "").strip() == "1"
+
+
+def code_root(root: Path) -> Path:
+    """Where this guard's own helper code is read from: its checkout when pinned."""
+    return OWN_ROOT if pinned() else root
+
+
 def _adopt_rows(root: Path) -> Any:
     import importlib.util
 
-    f = root / "ops" / "release" / "adopt_rows.py"
+    f = code_root(root) / "ops" / "release" / "adopt_rows.py"
     spec = importlib.util.spec_from_file_location("_guard_adopt_rows", f)
     if spec is None or spec.loader is None:
         raise ImportError(str(f))
@@ -885,6 +903,11 @@ def _default_runner(*a: Any, **k: Any) -> subprocess.CompletedProcess[str]:
 def smoke(root: Path, *, runner: Runner | None = None) -> tuple[int, dict[str, Any]]:
     """Import every live entry file the way its task runs it (cwd desks/mt5, never as __main__),
     then run prestart_check.py if the box has one. Each in its own interpreter."""
+    if pinned():
+        return GO, {"decision": "SMOKE_PINNED_SKIPPED",
+                    "reason": "pinned adopter runs no tree code as SYSTEM; the health check of "
+                              "the restarted non-admin gateway decides",
+                    "ran": []}
     pol = load_policy(root)
     run = runner or _default_runner
     desk = root / "desks" / "mt5"
@@ -1182,7 +1205,7 @@ def rollback(root: Path, to: str, *, bad: str, why: str) -> tuple[int, dict[str,
     if stage:
         _git(root, "add", "-A", "--", *stage)
     for guard in ("scripts/moneypath_precommit_guard.py", "scripts/check_protected_records.py"):
-        g = root / guard
+        g = code_root(root) / guard
         if g.exists():
             gp = subprocess.run(
                 [*_python(), str(g)],
