@@ -202,7 +202,8 @@ def tape_new_entries(cur: dict[str, Any], before: dict[str, Any], missing: dict[
             day = str(s.get("seen_at") or now.isoformat())[:10]
             leg = sent_leg(intents, str(s.get("side") or ""), day, qty=s.get("qty"),
                            entry=s.get("entry"))
-            n += ft.record(ft.row(book=BOOK, venue="tradelocker", lane="e8_gold",
+            lane = "e8_gold" if str(s.get("symbol") or "").upper() == "XAUUSD" else "e8_sleeve"
+            n += ft.record(ft.row(book=BOOK, venue="tradelocker", lane=lane,
                                   symbol=s.get("symbol"), side=str(s.get("side") or ""),
                                   intended=None if leg is None else leg[0],
                                   fill=s.get("entry"), volume=s.get("qty"), deal=pid,

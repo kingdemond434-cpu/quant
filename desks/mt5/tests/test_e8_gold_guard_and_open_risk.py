@@ -117,6 +117,13 @@ def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, placed: tuple[s
              guard: dict | None = None) -> Path:
     for name in ("OUT", "INTENTS", "LOG", "KELLY_FILE", "CERT_BOOK_FILE"):
         monkeypatch.setattr(g, name, tmp_path / f"{name.lower()}.json")
+    # The pass re-measures the bracket slip into BRACKET_SLIP_FILE; a test never rewrites the
+    # desk's committed E8_GOLD_SLIP.json (Audit, 2026-11-27). The copy keeps the same reading.
+    _slip = tmp_path / "e8_gold_slip.json"
+    if g.BRACKET_SLIP_FILE.exists():
+        _slip.write_bytes(g.BRACKET_SLIP_FILE.read_bytes())
+    monkeypatch.setattr(g, "BRACKET_SLIP_FILE", _slip)
+    monkeypatch.setattr(g, "STOP_EXITS", tmp_path / "e8_gold_stop_exits.jsonl")
     # These tests are about the guard and open-risk mechanics across all three windows, so the
     # principal's code pin of london_am/afternoon (decision_core.PRINCIPAL_ZERO["e8"], r6) is
     # lifted here; test_fusion_book_r6.py pins that the pin itself holds.

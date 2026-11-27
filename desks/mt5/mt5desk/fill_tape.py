@@ -110,7 +110,7 @@ def record(r: Mapping[str, Any], *, path: Path | None = None) -> bool:
         finally:
             os.close(fd)
         return True
-    except Exception:  # noqa: BLE001 -- a recorder never costs the order
+    except Exception:                   # a recorder never costs the order
         return False
 
 

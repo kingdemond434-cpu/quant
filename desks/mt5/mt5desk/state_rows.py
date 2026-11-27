@@ -130,7 +130,7 @@ def load_rows(path: Path, *, key: str | None = None,
         if why is None and check is not None:
             try:
                 why = check(r)
-            except Exception as exc:  # noqa: BLE001 -- a checker bug quarantines, never kills
+            except Exception as exc:    # a checker bug quarantines the row, never kills
                 why = f"check raised {type(exc).__name__}"
         if why:
             out.quarantined.append({"index": i, "why": why,
@@ -157,9 +157,8 @@ def _publish(name: str, out: Loaded, now: datetime, report: Path | None, on: boo
                  "rows": len(out.rows), "quarantined": len(out.quarantined),
                  "sample": out.quarantined[:SAMPLE],
                  "age_s": None if out.age_s is None else round(out.age_s)}
-        if {k: prev.get(k) for k in ("status", "rows", "quarantined")} == \
-                {k: block[k] for k in ("status", "rows", "quarantined")} and prev.get("at", "")[:13] \
-                == block["at"][:13]:
+        same = all(prev.get(k) == block[k] for k in ("status", "rows", "quarantined"))
+        if same and str(prev.get("at", ""))[:13] == block["at"][:13]:
             return                      # same reading this hour: no rewrite on every pass
         inputs[name] = block
         doc = {"schema": "state-quarantine-v1", "generated_at": block["at"], "inputs": inputs}
