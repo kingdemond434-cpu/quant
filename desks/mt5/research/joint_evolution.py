@@ -573,6 +573,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     if doc.get("status") == "UNMEASURED":
         print(f"joint evolution: UNMEASURED -- {doc.get('why')}")
+        if a.apply:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            print(f"-> {OUT}  (UNMEASURED written, L1.28a: absence is an answer)")
         return 0
     print(f"joint evolution: {doc['status']}   {doc['n_surfaces']} surface(s), "
           f"{doc['n_genomes_evaluated']} genome(s) evaluated")

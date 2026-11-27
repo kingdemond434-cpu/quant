@@ -330,7 +330,8 @@
    "readers": [
     "desks/mt5/research/repo_miner.py",
     "libs/data/papers.py",
-    "desks/mt5/side_channels/github_miner.py"
+    "desks/mt5/side_channels/github_miner.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Mine the EliteQuant list",
    "note": "fine-grained token, only kingdemond434-cpu/quant, Contents: Read and write; public repos stay readable",
@@ -347,7 +348,8 @@
     "libs/ops/llm_seat.py",
     "libs/research/proposer_seat.py",
     "libs/research/event_factors_llm.py",
-    "ops/convert_swarm.py"
+    "ops/convert_swarm.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Finish the old committees work",
    "file_fallback": "data/secrets/llm_panel.json"
@@ -423,7 +425,8 @@
    "signup": "https://platform.deepseek.com/api_keys",
    "unlocks": "optional extra LLM seat",
    "readers": [
-    "libs/ops/llm_seat.py"
+    "libs/ops/llm_seat.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Finish the old committees work"
   },
@@ -1107,6 +1110,137 @@
     "desks/mt5/research/alt_proxies.py"
    ],
    "owner": "Tier S research institution build"
+  },
+  {
+   "name": "CLOUDFLARE_AI",
+   "group": "free_llm",
+   "cost": "free tier (10,000 Neurons/day)",
+   "machine": "box",
+   "signup": "https://dash.cloudflare.com/profile/api-tokens",
+   "unlocks": "cloudflare Workers AI seat of the LLM idea swarm (gpt-oss-120b/20b; public prompts only, 20 calls/day); needs CLOUDFLARE_ACCOUNT_ID too; ALLOWED by the principal (zuck 2026-11-25T02:30Z)",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal's token, installed on the box as CLOUDFLARE_AI (Machine env); LLM research lab (swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "CLOUDFLARE_ACCOUNT_ID",
+   "group": "free_llm",
+   "cost": "free (identifier, not a secret)",
+   "machine": "box",
+   "signup": "https://dash.cloudflare.com (Account ID on the account home page)",
+   "unlocks": "the account part of the Workers AI base URL for the cloudflare swarm seat",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal",
+   "file_fallback": "none"
+  },
+  {
+   "name": "GROQ",
+   "group": "free_llm",
+   "cost": "free tier (30 RPM, 1000 RPD, 200K tokens/day per model)",
+   "machine": "box",
+   "signup": "https://console.groq.com/keys",
+   "unlocks": "groq seat of the LLM idea swarm (gpt-oss-120b, gpt-oss-20b, qwen3-32b; public prompts only, 90 calls/day); ALLOWED by the principal (zuck 2026-11-25T02:27Z)",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal's key, installed on the box as GROQ (Machine env); LLM research lab (swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "SILICONFLOW",
+   "group": "free_llm",
+   "cost": "free models (0-price, rate-limited)",
+   "machine": "box",
+   "signup": "https://cloud.siliconflow.com/account/ak",
+   "unlocks": "siliconflow seat of the LLM idea swarm (its permanently free Qwen/GLM/DeepSeek-distill models; public prompts only); ALLOWED by the principal (zuck 2026-11-25T02:35Z)",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal's key, installed on the box as SILICONFLOW (Machine env); LLM research lab (swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "HCNSEC",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.hcnsec.cn",
+   "unlocks": "hcnsec relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "AGENTROUTER",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://agentrouter.org",
+   "unlocks": "AgentRouter relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "YJS",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.yjs.im",
+   "unlocks": "yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "YJSS",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.yjs.im",
+   "unlocks": "alias of YJS (the principal saved the yjs key under this name, 2026-11-17); yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "CEREBRAS",
+   "aliases": [
+    "CEREBRAS_API_KEY"
+   ],
+   "group": "free_llm",
+   "cost": "free tier (~1M tokens/day, 30 RPM)",
+   "machine": "box",
+   "signup": "https://cloud.cerebras.ai (API keys)",
+   "unlocks": "cerebras route of the shared free LLM chain (libs/ops/free_chain; gpt-oss-120b, qwen-3, llama-3.3; 150 calls/day, CEREBRAS_DAILY)",
+   "readers": [
+    "libs/ops/free_chain.py"
+   ],
+   "owner": "principal's own key (2026-11-25)"
+  },
+  {
+   "name": "GITHUB_MODELS_TOKEN",
+   "group": "free_llm",
+   "cost": "free tier (50-150 requests/day by model tier)",
+   "machine": "box",
+   "signup": "https://github.com/settings/personal-access-tokens/new (fine-grained, Models: read)",
+   "unlocks": "github_models route of the shared free LLM chain (models.github.ai/inference); GITHUB_TOKEN is read when this name is unset",
+   "readers": [
+    "libs/ops/free_chain.py"
+   ],
+   "owner": "principal's own key (2026-11-25)"
   }
  ],
  "config": [

@@ -5895,7 +5895,7 @@
     "desks/mt5/research/clock_fixer.py",
     "libs/research/layers.py"
    ],
-   "scheduled_by": "hourly_cycle:forest_korea, hourly_cycle:forest_china, hourly_cycle:forest_russia_cis, hourly_cycle:forest_south_asia, hourly_cycle:forest_asean, hourly_cycle:forest_oceania, hourly_cycle:forest_europe, hourly_cycle:forest_north_america, hourly_cycle:forest_latam, hourly_cycle:forest_mena, hourly_cycle:forest_africa, hourly_cycle:forest_global_web, hourly_cycle:forest_global_academic_code, hourly_cycle:forest_global_physical_data, hourly_cycle:forest_global_market_data",
+   "scheduled_by": "hourly_cycle:forest_korea, hourly_cycle:forest_china, hourly_cycle:forest_russia_cis, hourly_cycle:forest_south_asia, hourly_cycle:forest_asean, hourly_cycle:forest_oceania, hourly_cycle:forest_europe, hourly_cycle:forest_north_america, hourly_cycle:forest_latam, hourly_cycle:forest_mena, hourly_cycle:forest_africa, hourly_cycle:forest_global_web, hourly_cycle:forest_global_academic_code, hourly_cycle:forest_global_physical_data, hourly_cycle:forest_global_market_data, hourly_cycle:forest_japan, hourly_cycle:forest_global_macro",
    "artifact": "desks/mt5/reports/FOREST_KOREA.json",
    "consumer": "the canonical registry (discoveries, provenance, sources, source_yield); the docket through proposer_common.donate; data/axes for the PIT series; data/forest_runs.jsonl",
    "gap": "LANDED 2026-09-17. ELEVEN new residents (MT5-Forest-Korea .. MT5-Forest-Africa) are declared in the manifest and healed by clock_fixer; japan and global_macro keep the residents they already had and the four global-LAYER forests ride MT5-Dept-Regions. Registration of the eleven tasks ON the box is the coordinator's step after this ships, so until it runs their residents read DEAD/task_missing rather than ALIVE. north_america has no country pack on this box: its scout runs from the mandate's own terms and its other ten roles report UNMEASURED by name, which is the measurement.",
@@ -9238,6 +9238,31 @@
    "next_step": "none"
   },
   {
+   "id": "CHC1",
+   "item": "Conversion-handoff converter: the judge's parked cells (data/hypotheses/conversion_handoff.json, 718,558 rows on the box 2026-11-11, none resolved) get a consumer -- build_failed aggregated into a family defect report, short_history_after_cut routed to a same-class cross_asset_transplant with one trial charged per new transplant, lockbox_consumed_history refused under the holdout rail, never_fires relaxed along the family grid (up to 2 charged children), too_rare moved to a coarser chart or pooled onto a same-class peer in a class book, and build_input_missing ranked in a data-gap report and minted once its input exists -- all under a trial budget derived from the judge's measured spare capacity (never fed past it; a shortfall against the 150k/day floor is published as judge_gap_per_day; UNMEASURED fallback), round-robin across trial_family, every row ending with an outcome",
+   "domain": "C",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/conversion_handoff_converter.py",
+    "desks/mt5/research/conversion_handoff_common.py",
+    "desks/mt5/research/conversion_handoff_io.py",
+    "desks/mt5/research/conversion_handoff_routes.py",
+    "desks/mt5/research/conversion_handoff_children.py",
+    "desks/mt5/tests/test_conversion_handoff_converter.py",
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "scheduled_by": "hourly_cycle:conversion_handoff_converter",
+   "artifact": "desks/mt5/reports/CONVERSION_HANDOFF.json",
+   "consumer": "Transplants enter the judge's intake through proposer_common.donate (data/intelligence/conversion_handoff_converter/discoveries_*_<family>.json + registry research_candidates), and libs/research/experiment_ledger.py _proposer_counts charges their tests_run to the family; family owners read desks/mt5/reports/FAMILY_BUILD_DEFECTS.json; research/issue_board.py watches CONVERSION_HANDOFF.json for staleness",
+   "gap": "PARTIAL 2026-11-11: built and wired as an hourly leg; never yet run against the box's 718k-row handoff. Every handoff reason now has a route (no reason is held; an unknown reason is counted UNHANDLED_REASON). The regime_child, event_study and proxy_series axes have no converter yet. Params of a parked cell are recovered from the registry (id / donated_cell) or the docket; a cell in neither is UNMEASURED and re-asked daily. The day's trial budget at the measured box capacity is ~262k children against a ~1.1M-child backlog (about 4 days); whether a 420 s pass can mint its per-pass share (~11k) is UNMEASURED until the first box pass, and the projection is in CONVERSION_HANDOFF.json.",
+   "next_step": "first box pass writes CONVERSION_HANDOFF.json (trial_budget MEASURED, projection), FAMILY_BUILD_DEFECTS.json and BUILD_INPUT_GAPS.json; family owners act on the ranked defects and the fetchers on the ranked input gaps",
+   "landed": [
+    "conversion handoff converter 2026-11-11"
+   ]
+  },
+  {
    "id": "DECAY1",
    "item": "ORDER-SENSITIVE DECAY ON EVERY LIVE AND FORWARD-CLOCK SLEEVE (R0312, SARES archaeology): libs/research/order_sensitive_decay.py was implemented and tested with no caller. Its Edgington mean-p decay verdict now runs hourly on each LIVE roster row's live deals and each forward clock's forward-phase ledger rows, under a split rule frozen in code (4 equal-count blocks by trade index, one-sided t per block, early half vs late half); below 20 trades the row is UNMEASURED_TOO_FEW_TRADES by name. A demote/shrink INPUT only: nothing sizes, gates or edits a roster from it, and the artifact publishes the sizing hook as NOT_WIRED (owner: the Max-growth thread).",
    "domain": "R",
@@ -9315,6 +9340,76 @@
    "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/asia_github/",
    "evidence": [
     "desks/mt5/research/asia_github_miner.py:1-30 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "CCA1",
+   "item": "Cell-conversion audit (principal 2026-11-11, given three times: every research output, producer, miner, yield and idea becomes real, testable breadth cells, nothing missed; same-day scope: every row, raw cell and data-row source too): every hourly leg, off-cycle Tier-1 organ, intelligence seat, idea artifact, IDEA_QUEUE row, parked handoff cell and collected dataset is DERIVED and given a verdict (CONVERTING / PARTIAL with the loss stage / NOT_WIRED / UNMEASURED) with emitted, converted, parked and unconverted counts; the raw-cell funnel (intake -> compiled -> registry -> docket -> judged) is read per stage with STALLED flagged; every gap is an issue_board row; and the mechanical gaps (open idea rows and unwired idea artifacts the compiler's own compile_row takes, lake series no cell consumes) are converted through proposer_common.donate, one donation file per trial_family with tests_run charged per family",
+   "domain": "C",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/cell_conversion_audit.py",
+    "desks/mt5/tests/test_cell_conversion_audit.py",
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/issue_board.py"
+   ],
+   "scheduled_by": "hourly_cycle:cell_conversion_audit",
+   "artifact": "desks/mt5/reports/CELL_CONVERSION_AUDIT.json",
+   "consumer": "the hourly pass's stage-flow scorecard reads parked / converted / still_parked / oldest_parked_age_h and the per-source and per-stage blocks; research/issue_board.py collects its NOT_WIRED / PARTIAL / STALLED issue rows and watches the report for staleness; converted cells enter the judge's intake through proposer_common.donate (data/intelligence/cell_conversion_audit/discoveries_*_cca_<family>.json + registry research_candidates) and libs/research/experiment_ledger.py _proposer_counts charges their tests_run to the family",
+   "gap": "PARTIAL 2026-11-11: built and wired as an hourly leg, never yet run on the box. On the build box the compiler, registry, PRODUCER_BREADTH, PACK_CELLS and handoff artifacts are stale or absent, so most seats and legs read UNMEASURED there. The emitter classifier reads code text (doors and OUT-like idea-shaped constants), so a producer that writes ideas under a report-shaped (ALL-CAPS) name or through an unrecognised door is missed; leg rows that resolve to no module are listed, not classified. IDEA_QUEUE.md lives in the owner threads' project files, not the repository: the audit reads it where the host mounts it and publishes converted_ideas instead of writing the queue's status column. Data sources with no consuming family (BIS/ECB axes on the build box) are flagged, not converted: only lake series have a family (exogenous_conditioner) that takes any series by name.",
+   "next_step": "first box pass writes CELL_CONVERSION_AUDIT.json; owners act on the NOT_WIRED / PARTIAL issue rows (anomaly_candidates.json, options_candidates.json, compiled_proposals.json, axis_proposals.jsonl, the BIS/ECB axes, the judge's conversion_handoff until PR #1017 lands); a family that reads a JSON axis series by name would let the converter take the axes too",
+   "landed": [
+    "cell conversion audit 2026-11-11"
+   ]
+  },
+  {
+   "id": "ASCORE1",
+   "item": "Allocator scorecard: one unified allocator scored on Fusion, E8 and FTMO every pass (growth vs Kelly, risk utilisation, idle proven sleeves, correlation fit), each pass's improvement aimed at the weakest (zuck 2026-11-24 18:09Z)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:allocator_scorecard",
+   "artifact": "desks/mt5/reports/ALLOCATOR_SCORECARD.json",
+   "consumer": "the Hourly pass reads ALLOCATOR_SCORECARD.json",
+   "evidence": [
+    "desks/mt5/research/allocator_scorecard.py:2-33 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "ZLIVE1",
+   "item": "Zero live on a market day is a money-path page: each funded account's own book (E8_BOOK sleeves, FTMO_ALLOCATOR executable, Fusion sleeves.json LIVE) read hourly, a page to Claude with the stop reason when one trades nothing (pass rule I2, 2026-11-25)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:zero_live_page",
+   "artifact": "desks/mt5/reports/ZERO_LIVE_PAGE.json",
+   "consumer": "the Hourly pass reads ZERO_LIVE_PAGE.json",
+   "evidence": [
+    "desks/mt5/prop/zero_live_page.py:1-20 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "JCAL1",
+   "item": "Judge calibration loop (LOOP_COVERAGE L2): matured forward clocks against the certificates' backtest edge -- forward-over-backtest, leaks and false kills per family and per gate; two-sided family priors and gate moves validated leave-one-family-out, charged to the lifetime trial count, proposed to the sealed judge; join families PROVISIONAL until their PIT join is audited (2026-11-25)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:judge_calibration",
+   "artifact": "desks/mt5/reports/JUDGE_CALIBRATION.json",
+   "consumer": "the daily brain and the L3 loop scorecard read JUDGE_CALIBRATION.json; a principal-approved re-seal of research/gate_policy.py reads data/JUDGE_CALIBRATION_PROPOSALS.json",
+   "evidence": [
+    "desks/mt5/research/judge_calibration.py:1-30 why it exists (MEASURED)"
    ],
    "gap": "none",
    "next_step": "none"

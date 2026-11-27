@@ -61,7 +61,8 @@ def _audit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str,
 
 
 def _candidate() -> dict:
-    return {_KEY: {"status": "PROMOTION_CANDIDATE", "n": 60, "exp_r": 0.12}}
+    return {_KEY: {"status": "PROMOTION_CANDIDATE", "n": 60, "exp_r": 0.12,
+                   "spread_basis": "fill_hour"}}
 
 
 def _authority() -> set:

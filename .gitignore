@@ -435,6 +435,11 @@ desks/mt5/reports/tier_s/*
 !desks/mt5/reports/REMINT_STATUS.json
 # THE TICK TAPE'S FRESHNESS VERDICT (2026-10-14), published by $relPaths.
 !desks/mt5/reports/TAPE_FRESHNESS.json
+# THE CERTIFICATE LINEAGE OF EVERY LIVE WINDOW (2026-10-20), published by $relPaths.
+!desks/mt5/reports/CERT_LINEAGE.json
+# THE TWO CACHE-ONLY FILL PROBES (2026-11-25, daily_cycle steps), published by $relPaths.
+!desks/mt5/reports/ENTRY_TIMING_PROBE.json
+!desks/mt5/reports/ASIA_BRACKET_REFILL.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to
@@ -458,6 +463,9 @@ desks/mt5/data/free_data_cache/
 # keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
 # the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
 desks/mt5/data/keyed_sources/
+# macro_desk's publisher cache and host hard-stop file (2026-11-17): raw publisher series and run
+# state stay on the box; data/macro_state.json is the record of what was read.
+desks/mt5/data/macro_sources/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/
@@ -536,7 +544,24 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/JUDGE_CALIBRATION.json
+!desks/mt5/reports/JUDGE_EFFICIENCY.json
+!desks/mt5/reports/FORMULA_LIBRARY.json
+!desks/mt5/reports/EXPRESSION_FACTORY_STATUS.json
 !desks/mt5/reports/MATH_LAB.json
+# the in-process report steps (2026-11-14, hourly_cycle.REPORT_STEPS): fractions, R and
+# verdicts only -- no amount of money, no absolute path, no exception text
+!desks/mt5/reports/E8_HEADROOM.json
+!desks/mt5/reports/COMBINED_PROP_RISK.json
+!desks/mt5/reports/PROP_TAIL_STRESS.json
+!desks/mt5/reports/PROP_JOINT_BREACH.json
+!desks/mt5/reports/counterparty_register.json
+!desks/mt5/reports/bar_spread_z.json
+!desks/mt5/reports/BAR_ILLIQUIDITY.json
+!desks/mt5/reports/RATES_INDEX_STATE.json
+!desks/mt5/reports/TASK_FAILURE_DIGEST.json
+!desks/mt5/reports/REPLICATION_SPEC_ENTRIES.json
+!desks/mt5/reports/USDJPY_ASIA_BREAKOUT_STUDY.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
@@ -544,6 +569,10 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+# macro_desk's state, published by $reportPaths beside cross_asset_anchors.pkl. Not ignored by
+# any rule above today; allowlisted anyway so a future broad `desks/mt5/data/*` rule cannot
+# silently stop it again (tests/scripts/test_box_sync_publishes_macro_state.py pins it).
+!desks/mt5/data/macro_state.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
@@ -555,6 +584,13 @@ desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
 desks/mt5/data/hypotheses/conversion_handoff.json
+# The handoff converter's append-only resolution ledger (~125k rows once drained): box state,
+# read on the box only; its counts are published in reports/CONVERSION_HANDOFF.json.
+desks/mt5/data/hypotheses/conversion_handoff_resolved.jsonl
+# The cell-conversion audit's converted-cell ledger (one row per cell identity, so a cell is
+# charged one trial once): box state, read on the box only; its counts are published in
+# reports/CELL_CONVERSION_AUDIT.json.
+desks/mt5/data/hypotheses/cell_conversion_ledger.jsonl
 # judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
 # copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,
 # a set-aside unreadable manifest, and the atomic-write siblings. Transient box state, written
@@ -634,5 +670,34 @@ desks/mt5/data/donation_ledgers/
 # The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
 !desks/mt5/reports/LOSS_LEARNER.json
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
+# K4 P&L EXPLAIN (2026-11-13): the per-account daily explain carries account-currency amounts and
+# an account label, so it stays on the box. desks/mt5/reports/PNL_EXPLAIN.json is already caught by
+# `**/reports/*`; the publishable view is reports/PNL_EXPLAIN_RATIOS.json (ratios and counts only).
+desks/mt5/data/pnl_explain_daily.jsonl
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# dataset translator ring cursor (2026-11-18): box-local rotation state, rewritten every pass.
+desks/mt5/data/dataset_translation/cursor.json
+# Operator-entered money and account state read by report organs (Auditor MF3/MF4, 2026-11-14).
+# Hand-entered FTMO balance/equity (research/combined_prop_risk.py) and the counterparty
+# register's owner/accounts file (research/counterparty_register.py), plus every temp or backup
+# sibling of either. Last in the file on purpose: no later negation may re-include them.
+desks/mt5/data/ftmo_manual_state.json
+desks/mt5/data/ftmo_manual_state.json*
+desks/mt5/data/ftmo_manual_state*.tmp
+desks/mt5/data/counterparty_accounts.local.json
+desks/mt5/data/counterparty_accounts.local.json*
+desks/mt5/data/counterparty_accounts.local*.tmp
+# Box alerts reach Claude (2026-11-25): the alert feed, its status and the guardian's report ride
+# the box-state sync (sync_shadow_to_git.ps1 $relPaths).
+!desks/mt5/reports/alerts/
+!desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl
+!desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json
+!desks/mt5/reports/DISK_HEADROOM.json
+!desks/mt5/reports/BOX_HEADROOM.json
+!desks/mt5/reports/PASS_FINDINGS.json
+!desks/mt5/reports/DESK_SELF_HEAL.json
+# THE END-TO-END FUNNEL (2026-11-25, research/funnel.py): published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/FUNNEL.json
+# THE PRODUCER HEARTBEAT (2026-11-25, libs/ops/producer_heartbeat.py): published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/PRODUCER_HEARTBEAT.json

@@ -24,10 +24,12 @@ Every pass scores candidate grounds by
           / (selection bias + collection cost + legal/access cost)
 
 and registers them with a `machine_use_allowed` LABEL decided from robots or terms when readable
-and `unknown` otherwise. SINCE LAWS 5e (2026-09-23) NONE OF THOSE READINGS IS A DOOR: `forbidden`
-and `unknown` are provenance carried in `terms_note`, every candidate is registered and mined, and
-the only refusal is one of the five acts of the hard boundary -- an access control, a login, a
-paywall or an antibot challenge, which reading would mean DEFEATING.
+and `unknown` otherwise. SINCE LAWS 5e (2026-09-23) `forbidden` and `unknown` are provenance
+carried in `terms_note` and every candidate is registered; the hard boundary (an access control, a
+login, a paywall or an antibot challenge, which reading would mean DEFEATING) is refused outright.
+AND A ROBOTS "NO" STOPS AN AUTOMATED PAGE FETCH (Auditor ruling 2026-11-18, #1335): a platform
+whose live robots verdict is not `allowed` -- disallowed, unread, HTML, hard stop -- is not fetched
+this pass and the reason is recorded in `robots_refused`.
 
     python desks/mt5/research/archaeology/civilization.py --budget-s 600
     python desks/mt5/research/archaeology/civilization.py --dry-run --no-fetch
@@ -221,9 +223,15 @@ def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
         return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so the label is "
                               "unknown; the ground is mined all the same")
     body, status, err = mc.fetch_text(f"https://{host}/robots.txt")
+    if not body and status in (404, 410):  # RFC 9309: no file means no rules, so allowed
+        return snap.ALLOWED, f"robots.txt on {host} answered {status}: no file, no rules"
     if not body:
         return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
                               ": UNMEASURED policy, recorded as a label and mined")
+    from libs.data.robots_body import is_html_body
+    if is_html_body(body):  # a soft 404 / challenge page is no policy, never an "allowed" label
+        return snap.UNKNOWN, (f"robots.txt on {host} answered HTML, not rules: UNMEASURED "
+                              "policy, recorded as a label and mined")
     low = body.lower()
     for agent in ("claudebot", "anthropic", "gptbot", "ccbot"):
         if agent in low:
@@ -232,7 +240,26 @@ def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
     if "user-agent: *" in low and "disallow: /\n" in low.replace("\r", ""):
         return snap.FORBIDDEN, (f"robots.txt carries a wildcard Disallow: / on {host}: recorded "
                                 f"as a routing label, redistribution withheld")
+    from libs.data.robots_body import robots_rules_or_refusal
+    rules = robots_rules_or_refusal(status or 200, None, body)
+    if isinstance(rules, str):
+        return snap.UNKNOWN, f"robots.txt on {host}: {rules}"
+    if not rules.can_fetch(dfm.ROBOTS_AGENT, url):
+        return snap.FORBIDDEN, f"robots.txt on {host} disallows {urlparse(url).path or '/'}"
     return snap.ALLOWED, f"robots.txt on {host} is readable and refuses neither this agent nor all"
+
+
+def _robots_stop(url: str) -> str:
+    """Why an automated page fetch of `url` must NOT happen, or "" when robots allows it.
+
+    Auditor ruling 2026-11-18 (#1335): for automated fetching a robots "no" -- disallowed, UNKNOWN
+    (unread, HTML, 401/403/429/451, transport failure) -- STOPS the fetch, whatever LAWS 5e's
+    routing-label text says. Only a readable robots.txt that allows the path lets it through."""
+    verdict, why = _machine_use_from_robots(url, fetch=True)
+    if verdict != snap.ALLOWED:
+        return f"refused by robots ({verdict}): {why}"
+    barred = mc.robots_barred(url)
+    return f"refused by robots (measured): {barred}" if barred else ""
 
 
 def v_s(candidate: Mapping[str, Any], *, known_on_host: int = 0,
@@ -597,11 +624,13 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, fetch: bool = True
         "synthesis_top": [], "negative_space_top": {}, "crowding_top": {},
         "source_scout": {}, "families": [], "counterfactuals": 0,
         "archive_layer": {}, "labels": {}, "quarantined": 0, "access_refused_rows": 0,
-        "expansion": {}, "explanation_table": [], "unmeasured": [], "rule": RULE,
+        "robots_refused": [], "expansion": {}, "explanation_table": [], "unmeasured": [],
+        "rule": RULE,
     }
     fam_status: dict[str, dict[str, Any]] = {
         f.name: {"name": f.name, "stage": f.stage, "what": f.what, "ran": False,
                  "produced": {}, "why": ""} for f in FAMILIES}
+    snap.clear_robots_cache()  # robots is read once per host per pass, never carried over
     try:
         report["platforms"] = snap.as_rows()
         budgets = platform_budgets(list(snap.PLATFORMS), budget_s * 0.55, c)
@@ -619,6 +648,18 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, fetch: bool = True
                                             "remainder is owed, not empty")
                 break
             pages = list((fixtures or {}).get(p.name) or [])
+            # A host the hard boundary walls off is refused by `snapshot` and never reached, not
+            # even for its robots.txt; every other host is fetched only on a robots "yes".
+            if fetch and not pages and snap.may_fetch(p)[0]:
+                stop = _robots_stop(p.root)
+                if stop:
+                    report["population"]["by_platform"][p.name] = {
+                        "n": 0, "captures_new": 0, "captures_duplicate": 0,
+                        "machine_use_allowed": snap.machine_use(p)[0], "refused": stop,
+                        "fetched": 0}
+                    report["robots_refused"].append({"platform": p.name, "why": stop})
+                    report["unmeasured"].append(f"{p.name}: {stop}")
+                    continue
             before = snap.load_population(p.name)
             got = snap.snapshot(p, min(by_name.get(p.name, {}).get("budget_s", MIN_PLATFORM_S),
                                        left),

@@ -13,9 +13,11 @@ hard-boundary act (a login, an access control, a paywall) still never opens a so
 """
 from __future__ import annotations
 
+import io
 import json
 import sys
 from datetime import UTC, date, datetime, timedelta
+from email.message import Message
 from pathlib import Path
 from typing import Any
 
@@ -121,9 +123,13 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     opened: list[str] = []
 
     def _spy(req: Any, **_k: Any) -> Any:
+        url = str(getattr(req, "full_url", req))
+        if url.endswith("/robots.txt"):
+            # Every wire fetch reads robots first (Auditor ruling 2026-11-18): answer "no file".
+            raise si.urllib.error.HTTPError(url, 404, "no robots", Message(), io.BytesIO(b""))
         # Record that the door OPENED, then fail the way an offline box fails, so the guard's
         # own error handling runs instead of the test's exception escaping through it.
-        opened.append(str(getattr(req, "full_url", req)))
+        opened.append(url)
         raise si.urllib.error.URLError("no network in this test")
 
     monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
@@ -146,6 +152,84 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     assert payload is None and why.startswith("REFUSED on the hard boundary")
     assert guard.refused == [{"sensor": "walled", "why": why}]
     assert opened == ["https://example.invalid/x"]
+
+
+@pytest.fixture(autouse=True)
+def _robots_ledger_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test may write the desk's real robots ledger."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", tmp_path / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", tmp_path / "ROBOTS_SET_ASIDE.json")
+
+
+def _checked(sid: str = "checked") -> Any:
+    return si.Sensor(sensor_id=sid, latent="global_risk_appetite", what="x",
+                     fetch_class="public_endpoint", source="x", cadence="daily",
+                     pit_lag_days=0.0, machine_use_allowed=True, licence="open", sign=1,
+                     consumers=("US500",), url="https://example.invalid/data/x", robots="checked")
+
+
+def _robots(monkeypatch: pytest.MonkeyPatch, body: str | None) -> list[str]:
+    """Serve `body` as robots.txt (None = unreadable) and record every data URL opened."""
+    opened: list[str] = []
+
+    from research import robots_gate as RG
+
+    def _read(url: str, agent: str, timeout: float) -> str:
+        if body is None:
+            raise si.urllib.error.URLError("robots unreachable")
+        return body
+
+    def _spy(req: Any, **_k: Any) -> Any:
+        opened.append(str(getattr(req, "full_url", req)))
+        raise si.urllib.error.URLError("no network in this test")
+
+    monkeypatch.setattr(RG, "_open", _read)
+    monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
+    return opened
+
+
+def test_a_robots_disallow_on_the_exact_path_stops_the_fetch_and_is_set_aside(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ruling of 2026-11-10 (PR #819): a Disallow covering the exact path is not fetched. The
+    sensor is counted, with a two-sided missed-growth line and a named reopen."""
+    opened = _robots(monkeypatch, "User-agent: *\nDisallow: /data/\n")
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    payload, why = guard.get(_checked())
+    assert payload is None and why.startswith("refused by robots: SET_ASIDE") and opened == []
+    (row,) = guard.set_aside
+    assert row["sensor"] == "checked" and row["access_label"] == "DISALLOWED" and row["reopen"]
+    assert {m["side"] for m in row["missed_growth"]} == {"cost", "gain"}
+    assert all(m["verdict"] == "UNMEASURED" for m in row["missed_growth"])
+    assert row["billed"] is True and row["organ"] == "shadow_institutional"
+
+
+def test_an_unreadable_robots_file_is_not_a_yes(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    opened = _robots(monkeypatch, None)
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    assert guard.robots_ok("https://example.invalid/data/x")[0] is False
+    payload, why = guard.get(_checked())
+    assert payload is None and "next pass" in why and opened == []
+    assert guard.set_aside[0]["access_label"] == "ROBOTS_UNREACHABLE"
+
+
+def test_a_robots_allow_and_a_disallow_elsewhere_both_fetch(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    opened = _robots(monkeypatch, "User-agent: *\nDisallow: /private/\n")
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    guard.get(_checked())
+    assert opened == ["https://example.invalid/data/x"] and guard.set_aside == []
+
+
+def test_no_sensor_in_the_table_is_set_aside_by_construction_today() -> None:
+    """Which sensors DECLARE `robots="checked"`. Since the Auditor's 2026-11-18 ruling (#1335)
+    every wire fetch reads robots whatever the row declares, so this counts declarations only;
+    a row that starts declaring it changes this count on purpose."""
+    table = [s for rows in si.ENSEMBLES.values() for s in rows] + list(si.CRYPTO_SENSORS)
+    declared = [s.sensor_id for s in table if s.robots == "checked"]
+    assert table
+    assert declared == []
 
 
 def test_guard_reads_a_fixture_in_no_fetch_mode(tree: dict[str, Path]) -> None:

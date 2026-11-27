@@ -752,6 +752,14 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
         if any(side_of(p.get("side")) == against for p in st.get("positions") or []):
             return Verdict(False, f"gold OCO: {other} holds an open gold {against}; a {want} "
                                   f"here would open against it", mode)
+        if entry is None and mode in ("oco", "leader") and is_bracket(st):
+            # SAME BRACKET, SAME MOMENT (zuck 2026-11-20: "it should just get the same orders").
+            # A lane resting BOTH sides of gold and holding none is a bracket, not a direction:
+            # this lane may rest the same two legs beside it. The first fill on any account then
+            # sets the day (`claim_fill`), every opposite leg everywhere is cancelled the pass it
+            # is seen (`legs_to_cancel`), and a whipsaw fill against it is flattened
+            # (`positions_to_flatten`) -- rule 7, unchanged. Positions still always block.
+            continue
         if any(side_of(o.get("side")) == against for o in st.get("orders") or []):
             return Verdict(False, f"gold OCO: {other} rests a gold {against} entry; a {want} "
                                   f"here could fill against it", mode)
@@ -769,6 +777,15 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
                               f"nothing until E8's first fill sets the direction ({mode_why})",
                        mode)
     return Verdict(True, f"gold OCO: no direction yet on {date}; {mode} mode", mode)
+
+
+def is_bracket(state: dict[str, Any]) -> bool:
+    """A lane's published gold state is a resting BRACKET: entries on both sides, no position.
+    Pure."""
+    if state.get("positions"):
+        return False
+    sides = {side_of(o.get("side")) for o in state.get("orders") or []}
+    return {"long", "short"} <= sides
 
 
 # ------------------------------------------------------------------ venue readers

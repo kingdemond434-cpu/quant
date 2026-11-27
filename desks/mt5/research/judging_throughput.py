@@ -865,7 +865,58 @@ BUILD_STEP_HOLD_WINDOWS = 2
 BUILD_STEP_MIN_WINDOW_S = 24 * 3600.0
 BUILD_STEP_SWEEPS = 2                  # whole sweeps a regime must hold before it is judged
 BUILD_STEP_HISTORY = 20
-RESIDENT_BUILD_CAP_S = 12 * 3600.0
+#: E10 (judge P0, 2026-11-25): A SWEEP MUST END WITHIN 6 H. The cap was 12 h and the step reached
+#: it (43,200 s, 11-23) -- a 12 h build plus a 1-3 h plan and a 1-14 h merge can never end inside
+#: the window, and a sweep lost late loses its whole build (11-24: 63,787 s, nothing published).
+#: So the cap is now the window itself, and the budget actually published is bounded further by
+#: `build_cap_s`: the window MINUS the measured non-build phases of recent successful sweeps
+#: (`judge_phase_times.json`, written by run_sharded_gauntlet), never under the sealed 2,700 s.
+#: The budget is sized FROM the window, never the window from the budget: cells/s x what remains.
+E10_SWEEP_WINDOW_S = 6 * 3600.0
+RESIDENT_BUILD_CAP_S = E10_SWEEP_WINDOW_S
+PHASE_TIMES = BASE / "data" / "judge_phase_times.json"
+#: The sweep phases the build budget does NOT pay for (prewarm and build_shards are the build).
+NON_BUILD_PHASES = ("plan", "plan_handoff", "collect_and_cut", "rule_shards",
+                    "merge_and_publish")
+#: A phase with no measured history takes this declared seed: the 11-24 sweep (pid 15964) as
+#: read on the box 2026-11-25 -- plan 3,767, plan_handoff 2,768, collect_and_cut 2,108,
+#: rule_shards 90 -- and merge_and_publish at 6,108 s, the longest of the 10-15..10-17 merges
+#: (the 11-24 merge hung and has no honest wall). The plan seed predates the bounded prune.
+E10_SEED_PHASE_S = {"plan": 3767.0, "plan_handoff": 2768.0, "collect_and_cut": 2108.0,
+                    "rule_shards": 90.0, "merge_and_publish": 6108.0}
+#: How many recent successful sweeps each phase's median is taken over.
+E10_PHASE_RECENT = 5
+
+
+def build_cap_s(times: dict[str, Any] | None = None) -> tuple[float, dict[str, Any]]:
+    """The largest build budget that keeps a sweep inside E10: window - measured overhead.
+
+    Each non-build phase is the MEDIAN of its last E10_PHASE_RECENT successful walls (a single
+    pathological merge does not set the bound for good, and one fast one does not lift it), or
+    its declared seed when this box has none. Floored at the sealed 2,700 s, capped at the
+    window. Returns (cap, basis)."""
+    import statistics
+    doc = times if times is not None else _read_json(PHASE_TIMES, {})
+    phases = (doc or {}).get("phases") if isinstance(doc, dict) else None
+    phases = phases if isinstance(phases, dict) else {}
+    per: dict[str, Any] = {}
+    overhead = 0.0
+    for name in NON_BUILD_PHASES:
+        vals = []
+        for v in (phases.get(name) or [])[-E10_PHASE_RECENT:]:
+            with contextlib.suppress(TypeError, ValueError):
+                if float(v) > 0:
+                    vals.append(float(v))
+        if vals:
+            sec, src = float(statistics.median(vals)), f"median of {len(vals)} measured"
+        else:
+            sec, src = E10_SEED_PHASE_S[name], "declared seed (no measured history)"
+        per[name] = {"s": round(sec, 1), "basis": src}
+        overhead += sec
+    cap = max(SEALED_FRESH_BUDGET_SEC, min(RESIDENT_BUILD_CAP_S, E10_SWEEP_WINDOW_S - overhead))
+    return cap, {"window_s": E10_SWEEP_WINDOW_S, "overhead_s": round(overhead, 1),
+                 "cap_s": round(cap, 1), "phases": per,
+                 "floored": E10_SWEEP_WINDOW_S - overhead < SEALED_FRESH_BUDGET_SEC}
 
 
 def _parse_utc(raw: Any) -> datetime | None:
@@ -913,15 +964,27 @@ def regime_cuts(state: Any) -> dict[str, str] | None:
 
 
 def step_build_budget(state: Any, now: datetime, applied_s: float | None,
-                      rows_in_regime: int | None) -> tuple[dict[str, Any], float, str]:
+                      rows_in_regime: int | None, cap_s: float | None = None,
+                      ) -> tuple[dict[str, Any], float, str]:
     """One step of the build-budget controller (see BUILD_STEP_FACTOR). Pure: returns the next
     state, the budget to publish and why. The state has already seen this pass's sweep end
     (`observe_sweep_end`); `rows_in_regime` counts ledger rows in (regime_start, last end], or
     None when unmeasured. A regime is judged on WHOLE sweeps only (audit of 336869467): a fixed
     wall window catches fewer publishes of a longer sweep and would reject a real gain."""
     at = now.isoformat(timespec="seconds")
+    cap = float(build_cap_s()[0] if cap_s is None else cap_s)
+    cap = max(SEALED_FRESH_BUDGET_SEC, min(RESIDENT_BUILD_CAP_S, cap))
     st = dict(state) if isinstance(state, dict) else {}
     budget = st.get("budget_s")
+    if isinstance(budget, (int, float)) and budget > cap:
+        # AN OVER-CAP BUDGET IS CLAMPED ON THE NEXT READ (E10), and a new regime starts at the next
+        # sweep end, so the clamped level is measured before anything steps from it.
+        st.update(budget_s=cap, prev_budget_s=float(budget), phase="hold", changed_at=at,
+                  regime_start=None, sweep_ends=[], hold_left=BUILD_STEP_HOLD_WINDOWS)
+        return st, cap, (f"build step: {float(budget):.0f}s CLAMPED to the {cap:.0f}s E10 cap "
+                         f"({E10_SWEEP_WINDOW_S:.0f}s window minus the measured non-build phases)")
+    if isinstance(applied_s, (int, float)) and applied_s > cap:
+        applied_s = cap
     if not isinstance(budget, (int, float)) or budget < SEALED_FRESH_BUDGET_SEC:
         b0 = (float(applied_s) if isinstance(applied_s, (int, float))
               and applied_s >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
@@ -958,16 +1021,26 @@ def step_build_budget(state: Any, now: datetime, applied_s: float | None,
         return st, to, why
 
     def step_up(level_vph: float, why: str) -> tuple[dict[str, Any], float, str]:
-        up = min(RESIDENT_BUILD_CAP_S, budget * BUILD_STEP_FACTOR)
+        up = min(cap, budget * BUILD_STEP_FACTOR)
         st["baseline_vph"] = round(level_vph, 3)
         if up <= budget:
             st["hold_left"] = BUILD_STEP_HOLD_WINDOWS
-            return restart(budget, "hold", why + f"; at the {RESIDENT_BUILD_CAP_S:.0f}s cap, held")
+            return restart(budget, "hold", why + f"; at the {cap:.0f}s cap, held")
         st["prev_budget_s"] = budget
         return restart(up, "trial", why + f"; stepping {budget:.0f}s -> {up:.0f}s")
 
+    # THE BAR A TRIAL MUST CLEAR IS THE BEST RATE EVER MEASURED AT A SMALLER BUDGET, not only the
+    # level it just left (judge P0, 2026-11-25). MEASURED history: 8,640 s ran at 2,932-3,255
+    # verdicts/h; holds whose rate collapsed for other reasons (stalls: 261, 247) became the
+    # baseline, the next trial beat THAT, was KEPT, and stepped again -- 12,960 -> 19,440 ->
+    # 29,160 -> 43,200 s while every trial measured below what 8,640 s had already delivered.
+    best_below = max((float(h["verdicts_per_hour"]) for h in hist[:-1]
+                      if isinstance(h, dict) and isinstance(h.get("budget_s"), (int, float))
+                      and float(h["budget_s"]) < budget
+                      and isinstance(h.get("verdicts_per_hour"), (int, float))), default=None)
+    bar = max(float(base) if isinstance(base, (int, float)) else 0.0, best_below or 0.0)
     if phase == "trial":
-        if isinstance(base, (int, float)) and vph >= base * (1.0 + BUILD_STEP_TOL):
+        if isinstance(base, (int, float)) and vph >= bar * (1.0 + BUILD_STEP_TOL):
             return step_up(vph, f"build step: {budget:.0f}s KEPT, {vph:.1f} verdicts/h vs "
                                 f"{base:.1f} at {st.get('prev_budget_s')}s")
         prev = st.get("prev_budget_s")
@@ -975,7 +1048,8 @@ def step_build_budget(state: Any, now: datetime, applied_s: float | None,
                 and prev >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
         st["hold_left"] = BUILD_STEP_HOLD_WINDOWS
         return restart(back, "hold", f"build step: {budget:.0f}s REVERTED to {back:.0f}s, "
-                                     f"{vph:.1f} verdicts/h did not beat {base}")
+                                     f"{vph:.1f} verdicts/h did not beat {bar:.1f} (the level "
+                                     f"left {base}, the best at a smaller budget {best_below})")
     if phase == "hold" and int(st.get("hold_left") or 0) > 1:
         st["hold_left"] = int(st["hold_left"]) - 1
         return restart(budget, "hold", f"build step: holding {budget:.0f}s ({vph:.1f} "
@@ -1028,9 +1102,11 @@ def fresh_budget_s(limit_s: float | None,
         want = (max(SEALED_FRESH_BUDGET_SEC, prior)
                 if isinstance(prior, (int, float)) and math.isfinite(prior)
                 else SEALED_FRESH_BUDGET_SEC)
+        cap = build_cap_s()[0]
+        want = min(want, cap)          # the machine env follows the E10 cap on the next pass
         if step is not None:
             sized, why = step
-            sized = max(SEALED_FRESH_BUDGET_SEC, min(RESIDENT_BUILD_CAP_S, float(sized)))
+            sized = max(SEALED_FRESH_BUDGET_SEC, min(cap, float(sized)))
             return (sized if sized > SEALED_FRESH_BUDGET_SEC else None,
                     f"task execution is unlimited; {why}")
         return (want if want > SEALED_FRESH_BUDGET_SEC else None,
@@ -1056,6 +1132,10 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
     fresh = decision.get("fresh_budget_s")
     if isinstance(fresh, (int, float)) and float(fresh) > SEALED_FRESH_BUDGET_SEC:
         env["GAUNTLET_FRESH_BUDGET_SEC"] = str(int(fresh))
+    elif decision.get("fresh_budget_e10_floor"):
+        # THE CLAMP MUST REACH THE MACHINE (E10): omitting the key would leave a stale over-cap
+        # value (43,200) in machine scope, so the floor is written explicitly.
+        env["GAUNTLET_FRESH_BUDGET_SEC"] = str(int(SEALED_FRESH_BUDGET_SEC))
     return env
 
 
@@ -1511,6 +1591,11 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, _step)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
+    _cap_s, _cap_basis = build_cap_s()
+    decision["e10_build_cap"] = _cap_basis
+    if (_fresh is None and _limit == 0 and isinstance(_current_budget, (int, float))
+            and _current_budget > _cap_s):
+        decision["fresh_budget_e10_floor"] = True
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
     decision["task_time_limit_basis"] = _limit_basis
     applied: dict[str, Any] = {"env_file": UNMEASURED, "machine_env": "PENDING",
@@ -1612,6 +1697,17 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                        limiting=decision["limiting_resource"], queue_depth=queue.get("depth"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {_why(exc)}"
+        # THE VERDICT LADDER AND THE PER-VERDICT BREAKDOWN (owner, 2026-11-25), read from the
+        # reports this pass just refreshed: reports/JUDGE_EFFICIENCY.json. Best effort.
+        # Only beside the real report: a run whose OUT was redirected (a test) writes nothing.
+        try:
+            if Path(OUT).resolve() != (BASE / "reports" / "JUDGING_THROUGHPUT.json").resolve():
+                payload["efficiency"] = "NOT_ATTEMPTED (output redirected)"
+            else:
+                from research import judge_efficiency
+                payload["efficiency"] = judge_efficiency.publish(now=now)["ladder"]
+        except Exception as exc:
+            payload["efficiency"] = f"UNMEASURED: {_why(exc)}"
     return payload
 
 

@@ -60,6 +60,10 @@ class _FlatMT5(h._MT5):
 
 #: The journal row of a placed leg, exactly as it was before these rails existed.
 _SENT_KEYS = {
+    # what the adopt canary bounds each send against (Audit 2026-11-25 19:49Z)
+    "equity",
+    "contract_size",
+    "room_to_floor",
     "at",
     "window",
     "side",

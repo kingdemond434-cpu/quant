@@ -843,12 +843,20 @@ def _fate_index(g: Graph) -> tuple[dict[str, tuple[Any, Any, Any]], dict[str, st
         return {}, {}
 
 
+def fate_index(graph: Graph | None = None) -> tuple[dict[str, tuple[Any, Any, Any]],
+                                                    dict[str, str]]:
+    """What `record_gauntlet_verdicts` compares against, read once (see its `fates`)."""
+    return _fate_index(graph or Graph())
+
+
 def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
                              specs_by_cell: Mapping[str, Mapping[str, Any]] | None = None, *,
                              first_judged: Mapping[str, str] | None = None,
                              graph: Graph | None = None,
                              prereg_path: Path | None = None,
-                             at: str | None = None) -> dict[str, Any]:
+                             at: str | None = None,
+                             fates: tuple[dict[str, tuple[Any, Any, Any]],
+                                          dict[str, str]] | None = None) -> dict[str, Any]:
     """Stamp every gauntlet verdict with its pre-registration and record it on the graph.
 
     THE WRITER THE GRAPH NEVER HAD. `record_verdicts` had no production caller: every FAILED /
@@ -861,6 +869,12 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
     row. A graph row is appended only when the cell's fate, terminal gate or pre-registration
     status CHANGED: the judge re-reads ~21,000 cells an hour and restating an unchanged verdict
     is not information (the same rule `_append_gate_ledger` keeps).
+
+    `fates` is `fate_index(graph)` read ONCE by a caller that records several batches against
+    the same graph in one process (the judge's per-shard publication, 2026-11-25): each batch
+    then costs its own rows rather than another stream of the whole ledger. It is updated in
+    place with every row this call appends, so the next batch compares against it; it must have
+    been read from `graph` by this process, which is its only writer while the batches run.
     """
     from libs.research import preregistration as pr
 
@@ -874,7 +888,7 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
     # own first-seen stamps only begin on 2026-09-12 -- the graph's buried rows go back further.
     # Read with the latest (fate, prereg_status, terminal_gate) per node in ONE streamed pass
     # (`_fate_index`): the only three fields the change test below compares.
-    cur, earliest = _fate_index(g)
+    cur, earliest = fates if fates is not None else _fate_index(g)
     out: dict[str, Any] = {"verdicts": 0, "stamped": 0, "recorded": 0, "unchanged": 0,
                            "not_a_verdict": 0, "no_spec": 0,
                            pr.PREREGISTERED: 0, pr.POST_HOC: 0}

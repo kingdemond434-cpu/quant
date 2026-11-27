@@ -61,6 +61,8 @@ def test_every_default_family_is_swept_on_every_chart_and_session_except_the_ban
         (uni / f"EURUSD_{tf}.parquet").write_bytes(b"")
     monkeypatch.setattr(bs, "UNIVERSE", uni)
     monkeypatch.setattr(bs, "CORE", ("EURUSD",))
+    # No judge report: `family_yield_rank` is empty and the order is exactly the chart order.
+    monkeypatch.setattr(bs, "family_yield_rank", lambda path=None: {})
     cells = bs.cells()
     fams = {c["family"] for c in cells}
     assert "discovered" not in fams
@@ -79,3 +81,12 @@ def test_every_default_family_is_swept_on_every_chart_and_session_except_the_ban
     # Most intraday first, so a capped merge reaches the charts ranked highest.
     ranks = [bs._tf_rank(str(c["params"].get("timeframe") or "H1")) for c in cells]
     assert ranks == sorted(ranks)
+    # With a judge report, yield leads (never-mined first) and charts stay ordered INSIDE each
+    # yield tier, so a capped merge still reaches the most intraday chart of every tier first.
+    yr = {"vol_transition": (0, 0.0), "trend_ma_cross": (1, -0.5)}
+    monkeypatch.setattr(bs, "family_yield_rank", lambda path=None: yr)
+    ranked = bs.cells()
+    keys = [(*yr.get(c["family"], (1, 0.0)),
+             bs._tf_rank(str(c["params"].get("timeframe") or "H1"))) for c in ranked]
+    assert keys == sorted(keys)
+    assert ranked[0]["family"] == "vol_transition"

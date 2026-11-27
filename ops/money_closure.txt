@@ -71,6 +71,8 @@ desks/mt5/mt5desk/universe.py
 desks/mt5/mt5desk/universe_registry.py
 desks/mt5/prop/__init__.py
 desks/mt5/prop/e8_book.py
+desks/mt5/prop/stress.py
+desks/mt5/prop/emergency_rules.py
 desks/mt5/prop/e8_evidence.py
 desks/mt5/prop/e8_executor.py
 desks/mt5/prop/e8_gold.py
@@ -155,6 +157,7 @@ libs/data/mt5_source.py
 libs/data/pit.py
 libs/data/pit_stamp.py
 libs/data/quality.py
+libs/data/refused_hosts.py
 libs/data/schema.py
 libs/data/timeframe.py
 libs/data/units.py
@@ -349,6 +352,7 @@ desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
 desks/mt5/research/decay_regime.py
+desks/mt5/research/real_edge.py
 desks/mt5/research/input_ablation.py
 libs/portfolio/input_arms.py
 libs/ops/env_keys.py
@@ -357,3 +361,17 @@ libs/ops/token_refresh.py
 libs/research/forward_ledger.py
 libs/regime/disagreement.py
 desks/mt5/research/decay_backtest.py
+libs/research/formula_catalog.py
+libs/research/formula_ops.py
+desks/mt5/mt5desk/family_tier1_ideas.py
+desks/mt5/mt5desk/account_divergence.py
+desks/mt5/mt5desk/family_hypgen_models.py
+desks/mt5/mt5desk/family_rule_builder.py
+desks/mt5/mt5desk/hypgen_features.py
+desks/mt5/prop/e8_fills.py
+desks/mt5/mt5desk/cot_contracts.py
+desks/mt5/mt5desk/family_coint_pairs.py
+desks/mt5/mt5desk/family_global_methods.py
+desks/mt5/research/probe_tier.py
+desks/mt5/mt5desk/fill_tape.py
+desks/mt5/mt5desk/state_rows.py

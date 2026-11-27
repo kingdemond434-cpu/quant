@@ -143,7 +143,7 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
                       "name": "EURUSD.discovered.asia"}, pol) is not None
     assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
                      pol) is not None
-    for sym in ("EURZAR", "USDZAR", "AUDCHF"):
+    for sym in ("EURZAR", "USDZAR"):        # AUDCHF lifted 2026-11-24 (LIFTED_QUARANTINE)
         name = f"{sym.lower()}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
         assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay", "name": name},
                          pol) is not None

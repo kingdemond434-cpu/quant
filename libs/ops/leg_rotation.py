@@ -83,6 +83,10 @@ ROTATION_WINDOW_H: float = 24.0
 #: that does not finish.
 BUDGET_FILL: float = 0.80
 
+#: Seconds kept clear of the scheduler's limit for the pass epilogue (sync marker, rotation
+#: record). A leg whose declared cap would reach into it is not started.
+KILL_MARGIN_S: float = 120.0
+
 #: What a leg is assumed to cost when the ledger has never seen it. It cannot be zero (a roster
 #: of unknowns would all be admitted and the pass would be killed exactly as before) and it must
 #: not be so large that one unknown crowds out the pass. This is the median declared `--budget-s`
@@ -161,6 +165,9 @@ ALWAYS_RUN: frozenset[str] = frozenset({
 #: NOT A THROTTLE. The same seconds are spent; they stop being spent on the same two legs every
 #: hour while ~150 legs wait. The never-run tier still outranks everything but forced legs.
 DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
+    # (2026-11-25) `tier_s` and `replication_civilization` now run on their own tasks
+    # (hourly_cycle.OWN_CLOCK_LEGS) and are no longer in the core roster, so these two rows are
+    # dormant; they stay as the generic mechanism's worked case and its pinned tests.
     "tier_s": (2.5, 4.0),
     "replication_civilization": (2.5, 4.0),
     # THE CERTIFICATE -> CLOCK CHAIN (principal 2026-11-13: "All certs passed go on forward clocks
@@ -372,7 +379,14 @@ class Decision:
         for something it does not know about)."""
         return leg not in self.deferred
 
-    def should_run(self, leg: str, att: Attendance, elapsed_s: float) -> tuple[bool, str]:
+    @property
+    def limit_s(self) -> float:
+        """The scheduler's own wall-clock limit this plan was sized against (0 = unbounded):
+        the planning budget is BUDGET_FILL of it."""
+        return self.budget_s / BUDGET_FILL if self.budget_s > 0 else 0.0
+
+    def should_run(self, leg: str, att: Attendance, elapsed_s: float,
+                   cap_s: float = 0.0) -> tuple[bool, str]:
         """The runtime half of the decision: admission, then the clock that is actually elapsing.
 
         PLANNED SECONDS ARE AN ESTIMATE AND ESTIMATES ARE WRONG. When the head of a pass overruns
@@ -387,7 +401,19 @@ class Decision:
         """
         if leg in self.deferred:
             return False, self.why.get(leg, "deferred by rotation")
-        if leg in ALWAYS_RUN or leg in self.forced:
+        if leg in ALWAYS_RUN:
+            return True, ""
+        # THE KILL MARGIN (2026-11-25). `tier_s` started with 150-1,832 s left against its own
+        # 1,500 s cap and was killed at the task limit 5 runs of 5, taking whatever it had not
+        # yet written. Never START a leg whose declared cap would run past the limit less a
+        # margin for the epilogue: it yields (nothing is cancelled; it leads the next pass).
+        # Always-run legs are exempt -- they are cheap and money-path, and a kill there loses
+        # only what the pass would have lost anyway.
+        if self.limit_s > 0 and cap_s > 0 and elapsed_s + cap_s > self.limit_s - KILL_MARGIN_S:
+            return False, (f"kill margin: {elapsed_s:.0f}s elapsed + {cap_s:.0f}s cap would pass "
+                           f"the {self.limit_s:.0f}s task limit (margin {KILL_MARGIN_S:.0f}s); "
+                           "it leads the next pass")
+        if leg in self.forced:
             return True, ""
         if self.budget_s > 0 and elapsed_s > self.budget_s and att.runs.get(leg, 0) > 0:
             return False, (f"budget overrun at {elapsed_s:.0f}s of {self.budget_s:.0f}s: this "

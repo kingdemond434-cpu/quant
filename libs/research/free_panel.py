@@ -58,7 +58,8 @@ ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 #: last resort that is most likely to answer when everything specific is rate-limited.
 HEAVY = (
     "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "minimax/minimax-m3:free",
+    # MiniMax replaced on OpenRouter (principal 2026-11-24) by Qwen's largest free reasoning model.
+    "qwen/qwen3-235b-a22b:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "poolside/laguna-s-2.1:free",
     # Transiently 429'd on the first probe rather than refusing. A rate limit is a moment, not a
@@ -69,7 +70,7 @@ HEAVY = (
 LIGHT = (
     "nvidia/nemotron-3.5-lightning:free",
     "inclusionai/ling-3.0-flash-fin:free",
-    "minimax/minimax-m2.7:free",
+    "z-ai/glm-4.5-air:free",                      # replaces minimax-m2.7 (2026-11-24)
     "dots-studio/dots-3-note-preview:free",
     "cohere/north-mini-code:free",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
@@ -90,7 +91,6 @@ LIGHT = (
 #: families, where the search has a blind spot rather than a gap. Those are exactly the questions
 #: worth a free call.
 DEEP = (
-    "minimax/minimax-m3:free",                    # 1,048,576
     "nvidia/nemotron-3.5-lightning:free",         # 1,000,000
     "nvidia/nemotron-3-ultra-550b-a55b:free",     # 1,000,000
     "thinkingmachines/inkling:free",              # 1,048,576 (agentic-gated; tried last)
@@ -209,16 +209,27 @@ class Reply:
 
 
 def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
-        temperature: float = 0.9) -> Reply:
+        temperature: float = 0.9, deadline: float | None = None) -> Reply:
     """Ask the free panel, rotating on rate limits. Never charges the account.
 
     Rotation is the whole design. A single free model is a single point of failure with a rate
     limit attached; thirteen rotated by least-used is a research capacity that runs all day.
+
+    `deadline` (a `time.monotonic()` instant) BOUNDS THE WHOLE ROTATION, not one call. Without it
+    the worst case is every model in the tier at TIMEOUT_S each -- thirteen x 180 s = 39 minutes
+    -- inside a caller that believed it had asked for one completion with a 120 s timeout. That
+    is how math_lab and physics_lab, which ask the seat for mechanism names mid-pass, ran past
+    their 720 s / 700 s leg caps on the box 2026-11-25 with 0 artifacts moved. Each call's
+    timeout is the smaller of TIMEOUT_S and what is left, and the rotation stops at the deadline.
     """
     tier = ROLE_TIER.get(role, LIGHT)
     key = _load_key()
     tried: list[str] = []
     for model in available(tier) or list(tier):
+        left = None if deadline is None else deadline - time.monotonic()
+        if left is not None and left < 1.0:
+            raise PanelExhausted(f"the caller's deadline passed after trying {tried}; a bounded "
+                                 f"ask, not a capacity state")
         body = json.dumps({
             "model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "system", "content": system},
@@ -232,7 +243,8 @@ def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
             from libs.ops import openrouter_guard
             openrouter_guard.check_request(req)
             from libs.data.keyed_sources import keyed_urlopen
-            with keyed_urlopen(req, timeout=TIMEOUT_S) as r:
+            with keyed_urlopen(req, timeout=TIMEOUT_S if left is None
+                               else max(1.0, min(TIMEOUT_S, left))) as r:
                 out = json.loads(r.read())
             msg = out["choices"][0]["message"]
             text = str(msg.get("content") or msg.get("reasoning") or "").strip()

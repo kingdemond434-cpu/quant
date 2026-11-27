@@ -176,6 +176,15 @@ def _arxiv_url(categories: list[str], start: int, size: int) -> str:
             f"&sortBy=submittedDate&sortOrder=descending&start={start}&max_results={size}")
 
 
+def paper_source(feed: str) -> str:
+    """The source a feed's rows are stamped with: its OWN registry row `src:paper:<name>`
+    (source_registry._paper_rows), never the pooled `research_feeds`. Stamped `research_feeds`,
+    every feed resolved to one seat, so a cert from any feed credited the pool and the per-feed
+    rows the yield rule and its region floor allocate by never earned a thing. The two arXiv
+    pages (head, backfill) are one source, `src:paper:arxiv_qfin`."""
+    return "src:paper:" + ("arxiv_qfin" if feed.startswith("arxiv_qfin") else feed)
+
+
 def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row: RowFn,
                         config: dict[str, Any] | None = None,
                         sleep: Callable[[float], None] = time.sleep,
@@ -199,8 +208,9 @@ def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row:
             seen_list.append(k)
             new += 1
             extra = {f: e[f] for f in ("published", "authors", "category") if e.get(f)}
-            out.append(row("research_feeds", kind, e["title"], e.get("url", ""),
-                           e.get("text", ""), feed=feed, institution=institution, **extra))
+            out.append(row(paper_source(feed), kind, e["title"], e.get("url", ""),
+                           e.get("text", ""), feed=feed, institution=institution,
+                           miner="research_feeds", **extra))
         return new
 
     sources: list[tuple[str, str, str, str]] = []
@@ -237,8 +247,8 @@ def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row:
             entries = parse_feed(get_text(url))
         except Exception as exc:
             status[name] = {"at": _now(), "status": "error", "error": str(exc)[:200], "url": url}
-            out.append(row("research_feeds", "fetch_error", f"{name}: {str(exc)[:160]}", url,
-                           needs_selector_work=True, feed=name))
+            out.append(row(paper_source(name), "fetch_error", f"{name}: {str(exc)[:160]}", url,
+                           needs_selector_work=True, feed=name, miner="research_feeds"))
             continue
         new = take(name, kind, inst, entries)
         status[name] = {"at": _now(), "status": "ok" if entries else "empty",

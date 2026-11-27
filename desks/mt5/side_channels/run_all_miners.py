@@ -16,6 +16,15 @@ from pathlib import Path
 # so one hung channel can never stall the hourly pipeline. 2026-08-31: academic
 # miner was observed spinning CPU for 20+ min and never returning.
 MINER_TIMEOUT_S = int(os.environ.get("QUANT_MINER_TIMEOUT_S", "180"))
+#: MEASURED OVERRUNS GET THEIR OWN WALL (2026-11-25). The box's 11:45Z pass: seasonality saved
+#: 416 rows and was then killed at 180 s, every pass. A per-miner wall is still a hard wall; the
+#: rest keep the default. Each value is the measured need with headroom, never "unlimited".
+MINER_TIMEOUT_OVERRIDES_S: dict[str, int] = {"seasonality": 600}
+
+
+def miner_timeout_s(name: str) -> int:
+    """The wall for `name`: its measured override, else the default (env-tunable)."""
+    return int(MINER_TIMEOUT_OVERRIDES_S.get(name, MINER_TIMEOUT_S))
 process_ctx = multiprocessing.get_context("spawn")
 
 
@@ -38,15 +47,16 @@ def _run_miner(name, fn):
     q = process_ctx.Queue()
     p = process_ctx.Process(target=_run_miner_inner, args=(name, fn, q), daemon=True)
     p.start()
-    p.join(timeout=MINER_TIMEOUT_S)
+    wall = miner_timeout_s(name)
+    p.join(timeout=wall)
     if p.is_alive():
         p.terminate()
         p.join(5)
         if p.is_alive():
             p.kill()
             p.join()
-        print(f"  {name}: TIMED OUT after {MINER_TIMEOUT_S}s (killed)")
-        return ("timeout", f"killed after {MINER_TIMEOUT_S}s")
+        print(f"  {name}: TIMED OUT after {wall}s (killed)")
+        return ("timeout", f"killed after {wall}s")
     try:
         return q.get(timeout=5)
     except Exception:
@@ -133,16 +143,29 @@ ALL_MINERS = [
 ]
 
 
+# LAWFUL FEEDS (2026-11-19, the principal's order that all 25 channels run and none is switched
+# off): a channel whose own site bans automated access, or whose terms could not be confirmed,
+# runs on an official keyless API with its terms on record (lawful_substitutes.SUBSTITUTES)
+# and writes to its own seat. The original miner module stays imported for its parsers.
+try:
+    from lawful_substitutes import SUBSTITUTES, runner as _lawful_runner
+except ModuleNotFoundError:
+    from side_channels.lawful_substitutes import SUBSTITUTES, runner as _lawful_runner
+ALL_MINERS = [(name, _lawful_runner(name) if name in SUBSTITUTES else fn)
+              for name, fn in ALL_MINERS]
+
+
 #: Channels that need a configured credential or contact before they may fetch at all; any one of
 #: the names suffices (the EDGAR contact string has carried three, libs/data/credentials.py).
-REQUIRES_ENV = {"sec_edgar": ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")}
+REQUIRES_ENV = {name: ("QUANT_EDGAR_UA", "EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
+                for name in ("sec_edgar", "earnings")}
 
 
 def _configured(names: tuple[str, ...]) -> bool:
     """Any of `names` set where read_key looks (registry included); os.environ when unreachable."""
     try:
         from sec_edgar_miner import edgar_ua
-        if set(names) <= {"QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA"}:
+        if set(names) <= {"QUANT_EDGAR_UA", "EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA"}:
             return bool(edgar_ua())
     except Exception:
         pass
@@ -167,7 +190,7 @@ def run_all_miners() -> dict:
     set_aside = {}
     for name, fn in ALL_MINERS:
         if allow is not None and name not in allow:
-            set_aside[name] = "not in QUANT_MINERS_ALLOW (no clear machine-access terms on this host)"
+            set_aside[name] = "not in QUANT_MINERS_ALLOW (a standing principal rule keeps it off)"
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         need = REQUIRES_ENV.get(name)

@@ -161,6 +161,12 @@ NON_CODE: frozenset[str] = frozenset({
     # Whether the tick tape is still moving (2026-10-14): the hourly `tape_fresh` leg's verdict
     # on each tape's own newest-tick stamp, published on the same wire. An output, never an input.
     "desks/mt5/reports/TAPE_FRESHNESS.json",
+    # The certificate lineage of every live window (scripts/check_cert_lineage.py, 2026-10-20).
+    "desks/mt5/reports/CERT_LINEAGE.json",
+    # The two cache-only fill probes (daily_cycle steps, 2026-11-25): the judge's fill mechanics
+    # and the gold Asia clocks under the old and fixed engine. Reports, never inputs.
+    "desks/mt5/reports/ENTRY_TIMING_PROBE.json",
+    "desks/mt5/reports/ASIA_BRACKET_REFILL.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
@@ -178,6 +184,14 @@ NON_CODE: frozenset[str] = frozenset({
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
+    # box alerts reach Claude (2026-11-25): MT5-Guardian's alert feed, its status and the
+    # guardian's own report ride the box-state sync. State, never code.
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
+    "desks/mt5/reports/PASS_FINDINGS.json",
+    "desks/mt5/reports/DESK_SELF_HEAL.json",
     # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
     "desks/mt5/reports/BACKUP_STATE.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared

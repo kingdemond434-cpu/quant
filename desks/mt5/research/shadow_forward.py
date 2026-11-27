@@ -47,6 +47,8 @@ SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG_PATH = BASE / "logs" / "shadow.log"
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
+#: Forward trades kept per clock for measured co-movement (research/probe_tier.comove_groups).
+R_TAIL_N = 60
 
 
 def _write_state(path: Path, state: dict) -> None:
@@ -57,6 +59,37 @@ def _write_state(path: Path, state: dict) -> None:
     replace in `_atomic_write_text`.
     """
     _persist_state(path, state, final=True)
+
+
+def new_clock_record(stamp: str, hold: str = "") -> dict:
+    """THE ONE SHAPE OF A NEW FORWARD CLOCK (2026-11-25, invariant I1). Written by this engine's
+    enrolment checkpoint, by the certification transaction and by the coverage backfill
+    (`research/clock_coverage.py`), so a clock opened at certification time is byte-for-byte the
+    clock the engine would have opened on its next pass. Zero capital, no authority: promotion
+    stays the promoter's certificate-gated act, and the replay starts at the next pass that
+    reaches it (never-evaluated clocks go early in the rotation)."""
+    row = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+           "first_entry": None, "last_entry": None, "status": "ACTIVE",
+           "enrolled_at": stamp, "promotion_authority": False,
+           "order_authority": False,
+           "evidence_note": "clock enrolled; forward replay pending"}
+    stamp_hold(row, hold)
+    return row
+
+
+def state_lock(path: Path, timeout_s: float = 30.0, stale_s: float = 300.0):
+    """One writer at a time on a forward ledger's read-merge-write (2026-11-25, invariant I1).
+
+    THE ONE LOCK, now owned by `research/ledger_lock.py` so every writer of the three forward
+    ledgers -- engines, reconciler, evacuator, stamper, repair scripts -- takes the same lock
+    without importing this engine. This name stays because the engine's own writes and
+    `clock_coverage` call it. Yields whether the lock was acquired; see `ledger_lock.state_lock`.
+    """
+    try:
+        from ledger_lock import state_lock as _lock
+    except ImportError:
+        from research.ledger_lock import state_lock as _lock  # type: ignore[no-redef]
+    return _lock(path, timeout_s=timeout_s, stale_s=stale_s)
 
 
 def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
@@ -89,12 +122,7 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                 stamp_hold(state[key], hold)
                 changed += 1
             continue
-        state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
-                      "first_entry": None, "last_entry": None, "status": "ACTIVE",
-                      "enrolled_at": stamp, "promotion_authority": False,
-                      "order_authority": False,
-                      "evidence_note": "clock enrolled; forward replay pending"}
-        stamp_hold(state[key], hold)
+        state[key] = new_clock_record(stamp, hold)
         added += 1
     if added or changed:
         state["configured_sleeves"] = len(seen)
@@ -325,8 +353,19 @@ def record_restamp_missed_growth(key: str, st: dict, now: datetime | None = None
     return True
 
 
-def certified_sleeves() -> list[tuple[str, str, dict]]:
+#: certificate name -> {"key": clock key it enrols under} or {"why": why it gets none}, from the
+#: LAST `certified_sleeves()` pass (2026-11-25, invariant I1). `research/clock_coverage.py` reads
+#: it to say, per certificate, which clock owns it -- after the identity and cell collapses, so
+#: an alias names its survivor -- without re-deriving a key the engine already minted.
+CERT_DISPOSITION: dict[str, dict[str, str]] = {}
+
+
+def certified_sleeves(runs: list[dict] | None = None) -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
+
+    `runs` (2026-11-25): the authorized runs to derive from; None reads them from the canon on
+    disk (`shadow_admission.authorized_runs`), which is every production caller. The
+    certification transaction passes the runs of the canon it is about to write.
 
     Authority AND parameters come from `shadow_admission.authorized_runs` -- the same fail-closed
     door, now carrying the parameterization that actually passed the gauntlet. One clock per
@@ -340,6 +379,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
     RESTAMP_HELD.clear()
+    CERT_DISPOSITION.clear()
+    _cert_of_row: dict[int, str] = {}
     restamped = restamped_certificates()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
@@ -347,9 +388,14 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     # already runs is never held. Not a quota: no count, no slot, no ranking.
     gate, clocked, gate_why = _integrity_door()
     try:
-        from shadow_admission import authorized_runs
-        for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
+        if runs is None:
+            from shadow_admission import authorized_runs
+            runs = authorized_runs(BASE)
+        for run in sorted(runs, key=lambda r: (r["symbol"], r["selector"])):
             fam = run["family"]
+            _cert = str(run.get("certificate") or "")
+            CERT_DISPOSITION[_cert] = {"why": "ENROL-GAP: refused at enrolment (logs/shadow.log)"}
+            _cert_of_row[len(rows)] = _cert
             if fam == "session_range_breakout":
                 if run["selector"] not in WINDOWS:
                     slog(f"ENROL-GAP: certified {run['symbol']}.{run['selector']} has no window "
@@ -413,7 +459,19 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+        for _c, _d in CERT_DISPOSITION.items():
+            if "key" not in _d:
+                _d["why"] = f"UNMEASURED: certified_sleeves failed ({type(exc).__name__})"
+    out = _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+    for _i, _c in _cert_of_row.items():
+        if _i < len(rows):
+            _r = rows[_i]
+            try:
+                _k = sleeve_key(_r[0], _r[1], dict(_r[2] or {}), _r[3], _r[4])
+            except Exception:
+                continue
+            CERT_DISPOSITION[_c] = {"key": ALIAS_MERGED.get(_k, _k)}
+    return out
 
 
 def _frozen_clock_params() -> dict[str, dict]:
@@ -438,7 +496,8 @@ def _frozen_clock_params() -> dict[str, dict]:
 
 
 def _one_clock_per_identity(rows: list[tuple], *,
-                            frozen_params: dict[str, dict] | None = None) -> list[tuple]:
+                            frozen_params: dict[str, dict] | None = None,
+                            starts: dict[str, tuple[str, str]] | None = None) -> list[tuple]:
     """Collapse certified rows that the engine cannot tell apart into ONE sleeve.
 
     TWO ROWS THAT SHARE A `sleeve_key` ARE ONE STRATEGY, and keeping both does not give the desk
@@ -502,7 +561,127 @@ def _one_clock_per_identity(rows: list[tuple], *,
     if len(best) != len(rows):
         slog(f"ONE-CLOCK: {len(rows)} certified row(s) -> {len(best)} distinct clock "
              f"identit(ies); {len(rows) - len(best)} duplicate(s) collapsed")
-    return [best[k] for k in sorted(best)]
+    return _one_clock_per_cell([best[k] for k in sorted(best)], starts=starts)
+
+
+#: Families whose clock READS the selector (a breakout window; a hunt16 signal hour). For every
+#: other family the selector is a stamp the engine never reads -- `family_signals` applies only
+#: the params' session -- so `.asia` and `.continuous` of one cell are one trade.
+SELECTOR_FAMILIES = frozenset({"session_range_breakout", "dav_range_filter_adx"})
+#: dropped alias clock key -> the surviving clock key, from the LAST `certified_sleeves()` pass,
+#: published for `forward_reconcile` to name the survivor when it retires the alias.
+ALIAS_MERGED: dict[str, str] = {}
+CLOCK_ALIASES = SHADOW_DIR / "clock_aliases.json"
+
+
+def _cell_alias_key(row: tuple) -> str | None:
+    """The executable cell a certified row runs (`cell_equivalence.canonical_fingerprint`, plus
+    its side and, for a family that reads it, the selector); None when not canonicalisable."""
+    try:
+        from research.cell_equivalence import canonical_fingerprint
+    except ImportError:
+        try:
+            from cell_equivalence import canonical_fingerprint  # type: ignore[no-redef]
+        except ImportError:
+            return None
+    sym, params = row[0], dict(row[2] or {})
+    fam = row[3] if len(row) > 3 else "session_range_breakout"
+    side = row[4] if len(row) > 4 else "LONG"
+    if fam in SELECTOR_FAMILIES:
+        return None                 # the window is the identity; `sleeve_key` already owns it
+    try:
+        fp = canonical_fingerprint(fam, sym, params, timeframe_of(params))
+    except Exception:
+        return None
+    return None if fp is None else f"{fp}|{str(side).upper()}"
+
+
+def _clock_starts(path: Path | None = None) -> dict[str, tuple[str, str]]:
+    """{clock key: (forward_start, status)} from the engine's own state; {} when unreadable."""
+    try:
+        doc = json.loads((path or SHADOW_DIR / "shadow_state.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, tuple[str, str]] = {}
+    for k, v in (doc.items() if isinstance(doc, dict) else []):
+        if isinstance(v, dict) and v.get("forward_start"):
+            out[str(k)] = (str(v["forward_start"]), str(v.get("status") or ""))
+    return out
+
+
+def _one_clock_per_cell(rows: list[tuple], *,
+                        starts: dict[str, tuple[str, str]] | None = None) -> list[tuple]:
+    """Collapse certified rows that run the SAME CELL under different keys into ONE clock.
+
+    THE ALIAS CLOCKS (Auditor ruling 2026-11-04). `_one_clock_per_identity` merges rows the
+    engine's own key cannot separate, but the key carries every param and the selector stamp, so
+    `CHFNOK.carry.asia#input_symbol=CHFNOK` and `CHFNOK.carry.continuous#input_symbol=CHFNOK` --
+    and nine such pairs on the registry -- were two clocks on one trade: each accruing the other's
+    observations as independent evidence, each able to promote, each charged as a trial. Rows
+    whose `cell_equivalence.canonical_fingerprint` (family, symbol, chart, effective session and
+    only the params the family reads) and side agree are one cell.
+
+    THE SURVIVOR NEVER LOSES ITS START. The clock with the EARLIEST `forward_start` already on
+    the engine's state keeps running, untouched, so no forward day is reset or re-credited; a
+    promoted clock is preferred over an unpromoted one. When any twin's start cannot be read
+    (state unreadable or empty, or a twin with no clock yet) nothing merges: every twin stays
+    enrolled that pass, logged ONE-CELL UNMEASURED. The dropped key is no longer enrolled, so
+    `forward_reconcile` retires it RETIRED_ORPHAN with its evidence preserved, naming the
+    survivor from `CLOCK_ALIASES` (written here; this engine never edits the dropped row, so it
+    cannot race the reconciler's own write of it).
+    """
+    write_aliases = starts is None
+    starts = _clock_starts() if starts is None else starts
+    ALIAS_MERGED.clear()
+    groups: dict[str, list[tuple]] = {}
+    out: list[tuple] = []
+    for row in rows:
+        ak = _cell_alias_key(row)
+        if ak is None:
+            out.append(row)
+        else:
+            groups.setdefault(ak, []).append(row)
+
+    def _key(row: tuple) -> str:
+        return sleeve_key(row[0], row[1], dict(row[2] or {}), row[3], row[4])
+
+    def _rank(row: tuple) -> tuple:
+        start, status = starts.get(_key(row), ("", ""))
+        promoted = any(t in status.upper() for t in ("PROMOT", "LIVE"))
+        return (not promoted, not start, start or "~", _key(row))
+
+    for members in groups.values():
+        # POSITIVE EVIDENCE ONLY (Auditor HOLD on #701, 2026-11-11, L1.28a). Choosing a survivor
+        # retires the other clock, so it needs every twin's start READ from the engine's state.
+        # An unreadable or empty state, or any twin with no recorded start, would leave key order
+        # to choose -- and could retire the clock holding weeks of forward evidence. Then every
+        # twin stays enrolled for this pass and the merge waits for a readable state.
+        unread = [_key(m) for m in members if not starts.get(_key(m), ("", ""))[0]]
+        if len(members) > 1 and unread:
+            out.extend(members)
+            slog(f"ONE-CELL UNMEASURED: {len(members)} clocks run one cell but "
+                 f"{len(unread)} have no readable forward_start ({', '.join(sorted(unread))}); "
+                 "all stay enrolled this pass, nothing is merged on absence")
+            continue
+        members = sorted(members, key=_rank)
+        keep = members[0]
+        out.append(keep)
+        for drop in members[1:]:
+            ALIAS_MERGED[_key(drop)] = _key(keep)
+            slog(f"ONE-CELL: `{_key(drop)}` runs the same cell as `{_key(keep)}` (params the "
+                 f"family never reads, or a selector it never reads); enrolling the clock with "
+                 f"the earliest forward_start, `{_key(keep)}`, whose start is untouched")
+    if write_aliases:
+        try:
+            tmp = CLOCK_ALIASES.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                       "aliases": dict(sorted(ALIAS_MERGED.items()))},
+                                      indent=1), "utf-8")
+            os.replace(tmp, CLOCK_ALIASES)
+        except OSError as exc:            # a label never stops a pass
+            slog(f"clock alias map not written ({type(exc).__name__}: {exc})")
+    return sorted(out, key=lambda r: (r[0], str(r[1]), str(r[3]),
+                                      json.dumps(dict(r[2] or {}), sort_keys=True, default=str)))
 
 
 
@@ -1008,18 +1187,19 @@ def _persist_state(path: Path, state: dict, *, final: bool) -> int:
     rows this pass evaluated.
     """
     touched = getattr(state, "touched", None)
-    disk = _read_state(path) if touched is not None else None
-    if disk is None:
-        doc = dict(state)
-    else:
-        doc = dict(disk)
-        for key in touched:
-            if key in state:
-                doc[key] = state[key]
-        for key in _META_KEYS:
-            if key in state:
-                doc[key] = state[key]
-    _atomic_write_text(path, json.dumps(doc, indent=2, default=str))
+    with state_lock(path):
+        disk = _read_state(path) if touched is not None else None
+        if disk is None:
+            doc = dict(state)
+        else:
+            doc = dict(disk)
+            for key in touched:
+                if key in state:
+                    doc[key] = state[key]
+            for key in _META_KEYS:
+                if key in state:
+                    doc[key] = state[key]
+        _atomic_write_text(path, json.dumps(doc, indent=2, default=str))
     if not final:
         slog(f"shadow state checkpoint: {len(touched or ())} row(s) of this pass written")
     return len(doc)
@@ -1033,13 +1213,18 @@ def _row_key(row) -> str | None:
         return None
 
 
-def _stalest_symbols_first(enrolled: list, state: dict) -> list:
+def _stalest_symbols_first(enrolled: list, state: dict,
+                           ranks: dict[str, int] | None = None) -> list:
     """Reorder whole SYMBOL groups so the least-recently evaluated symbol comes first.
 
     The order inside a symbol is kept (it is what lets one bar fetch serve every variant), and
     ties keep the alphabetical order, so a pass that finishes does exactly the work it did
     before. Only a pass that is cut behaves differently: it has spent its time on the rows that
     waited longest instead of on the same prefix as last time.
+
+    `ranks` (clock key -> 0-based slot rank, best first) breaks a tie in staleness by the best
+    rank a symbol's clocks hold -- in practice the never-evaluated groups, which all tie at "".
+    Absent, every group ties at the same rank and the order is exactly the one above.
     """
     groups: dict[str, list] = {}
     for row in enrolled:
@@ -1053,12 +1238,192 @@ def _stalest_symbols_first(enrolled: list, state: dict) -> list:
                           if isinstance(st, dict) else "")
         return min(stamps) if stamps else ""
 
-    order = sorted(groups, key=lambda sym: (_age(groups[sym]), sym))
+    def _best(rows: list) -> int:
+        if not ranks:
+            return 0
+        return min((ranks.get(_row_key(row) or "", _UNRANKED) for row in rows),
+                   default=_UNRANKED)
+
+    now = datetime.now(UTC)
+
+    def _tier(rows: list) -> int:
+        """0: holds a never-evaluated clock (no evidence at all -- the stalest there is, and
+        pinned first by test_shadow_forward_checkpoints); 1: holds a STALE certified clock
+        (repaired by going ahead of every fresh clock); 2: everything else. Terminal rows are
+        decided, never stale. The never-evaluated tier drains (a reached row is stamped), so a
+        backlog of new clocks delays a stale one by at most that backlog, never for ever."""
+        tier = 2
+        for row in rows:
+            st = state.get(_row_key(row) or "")
+            st = st if isinstance(st, dict) else {}
+            if _is_terminal(st.get("status")):
+                continue
+            if not st.get("last_attempt_at"):
+                return 0
+            if _clock_is_stale(st, now):
+                tier = 1
+        return tier
+
+    order = sorted(groups, key=lambda sym: (_tier(groups[sym]), _age(groups[sym]),
+                                            _best(groups[sym]), sym))
     return [row for sym in order for row in groups[sym]]
 
 
+#: A certified clock not reached for this many hours is STALE (2026-11-25, invariant I1: every
+#: certified survivor on a FRESH forward clock). A stale clock is REPAIRED BY ORDER: its symbol
+#: goes ahead of every fresh clock in the next pass's rotation, behind only never-evaluated
+#: clocks (which hold no evidence at all). CLOCK_COVERAGE.json lists every stale clock.
+CLOCK_STALE_H = float(os.environ.get("QUANT_CLOCK_STALE_H", "24") or 24.0)
 
-def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
+
+def _clock_is_stale(st: dict, now: datetime | None = None) -> bool:
+    """True when this (non-terminal) clock waited longer than CLOCK_STALE_H since it was last
+    reached -- or, never reached, since it was enrolled. A row with neither stamp is not called
+    stale (there is no measured age; the never-evaluated tier already puts it early)."""
+    stamp = st.get("last_attempt_at") or st.get("enrolled_at")
+    if not stamp:
+        return False
+    age = _age_h(stamp, now or datetime.now(UTC))
+    return age is not None and age > CLOCK_STALE_H
+
+
+# ---------------------------------------------------------------------------------------------
+# THE ROTATION BUDGET (2026-11-25, invariant I1: every certified survivor on a fresh forward
+# clock). Measured on the box 2026-11-24: one legacy pass took 2,849 s for ~1,018 rows (1,876 s
+# on an earlier read) inside a 15-minute MT5-Shadow slot, and the 2026-11-13 change that gives
+# EVERY certificate a paper clock (replication now holds promotion, not the clock) takes the
+# non-exotic book to roughly six thousand clocks once the box adopts it. An unbounded pass of that
+# size outlives its slot, is killed before `promoter` runs, and the stage after it never happens.
+#
+# So the pass is BUDGETED, and the three properties that make a budget safe are stated here:
+#   * DETERMINISTIC ORDER: stalest symbol first (`_stalest_symbols_first`), never-evaluated first
+#     of all, ties broken by `research/forward_slot_ranker.py`'s published rank -- slot value =
+#     P(certify) x dE[log W] x diversification / days to maturity, the existing organ that prices
+#     independence and growth. An absent or unreadable ranking breaks no tie (UNMEASURED, said in
+#     the artifact), it never reorders on a guess.
+#   * A CURSOR: `last_attempt_at` on every row IS the cursor. A row the pass reached is stamped,
+#     a row it did not keep its old stamp and is therefore older than every reached row, so the
+#     next pass starts exactly where this one stopped and successive passes cover every clock.
+#   * NOTHING IS LOST BY WAITING: every pass replays a clock from SHADOW_START, so a clock visited
+#     every k-th pass carries the same record as one visited every pass, only refreshed later.
+# A forward clock deploys no capital: the budget moves no risk and changes no gate, trial count,
+# certificate or verdict rule. Its whole effect is published per clock in CLOCK_FRESHNESS.json.
+#
+# EXOTICS ARE A NAMED EXCLUSION (zuck 2026-11-24 18:06Z: no mining, judging or trading of exotic
+# FX). They get no new clock and existing exotic rows are left as they are, marked UNMEASURED with
+# the reason, never deleted -- the ban can be lifted without losing a record.
+# ---------------------------------------------------------------------------------------------
+#: Wall-clock seconds one production pass may spend on rows; <= 0 disables the budget.
+PASS_BUDGET_S = float(os.environ.get("QUANT_SHADOW_PASS_BUDGET_S", "600") or 0.0)
+_UNRANKED = 10 ** 9
+#: Both resolved from SHADOW_DIR AT CALL TIME (reports/shadow -> reports), so a test that points
+#: SHADOW_DIR at a tmp tree never reads the box's ranking or writes the box's freshness table.
+SLOT_RANKER_NAME = "FORWARD_SLOT_RANKER.json"
+CLOCK_FRESHNESS_NAME = "CLOCK_FRESHNESS.json"
+EXOTIC_EXCLUSION_WHY = ("exotic FX is banned from mining, judging and trading (zuck 2026-11-24 "
+                        "18:06Z); universe_policy.is_exotic_symbol, the desk's one exotic "
+                        "definition")
+
+
+def _is_exotic(symbol: str) -> bool:
+    try:
+        import universe_policy as _up
+    except ImportError:
+        try:
+            from research import universe_policy as _up  # type: ignore[no-redef]
+        except Exception:
+            return False                    # no policy module: nothing is excluded
+    try:
+        return bool(_up.is_exotic_symbol(str(symbol)))
+    except Exception:
+        return False
+
+
+def split_exotic(enrolled: list) -> tuple[list, list]:
+    """(rows the desk owes a clock, exotic rows set aside by name)."""
+    keep, exo = [], []
+    for row in enrolled:
+        (exo if _is_exotic(row[0]) else keep).append(row)
+    return keep, exo
+
+
+def slot_ranks(path: Path | None = None) -> tuple[dict[str, int], str]:
+    """(clock key -> 0-based rank, source) from the forward slot ranker's `running` table, which
+    it publishes already sorted best first. Absent or unreadable -> ({}, why)."""
+    p = path or (SHADOW_DIR.parent / SLOT_RANKER_NAME)
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"UNMEASURED: {p.name} unreadable ({type(exc).__name__})"
+    rows = doc.get("running") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {}, f"UNMEASURED: {p.name} carries no `running` table"
+    ranks: dict[str, int] = {}
+    for i, e in enumerate(rows):
+        if isinstance(e, dict) and e.get("clock") is not None:
+            ranks.setdefault(str(e["clock"]), i)
+    return ranks, f"{p.name} at {doc.get('at')} ({len(ranks)} ranked clocks)"
+
+
+def _age_h(stamp: object, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return round((now - t).total_seconds() / 3600.0, 3)
+
+
+def clock_freshness(enrolled: list, state: dict, *, reached: set[str], rows_reached: int,
+                    complete: bool, budget_s: float | None, elapsed_s: float,
+                    ranks: dict[str, int], rank_source: str, exotic: list,
+                    next_cursor: str | None, now: datetime | None = None) -> dict:
+    """The per-clock freshness table and its summary (the health board reads `summary`)."""
+    now = now or datetime.now(UTC)
+    clocks: dict[str, dict] = {}
+    ages: list[float] = []
+    never = 0
+    for row in enrolled:
+        key = _row_key(row)
+        if not key or key in clocks:
+            continue
+        st = state.get(key) if isinstance(state.get(key), dict) else {}
+        age = _age_h(st.get("last_attempt_at"), now)
+        if age is None:
+            never += 1
+        else:
+            ages.append(age)
+        clocks[key] = {"symbol": row[0], "family": row[3] if len(row) > 3 else
+                       "session_range_breakout", "status": st.get("status"), "n": st.get("n"),
+                       "last_attempt_at": st.get("last_attempt_at"), "age_h": age,
+                       "reached_this_pass": key in reached,
+                       "slot_rank": ranks.get(key)}
+    ages.sort()
+    n = len(clocks)
+    per_pass = max(len(reached), 1)
+    summary = {
+        "at": now.isoformat(timespec="seconds"),
+        "n_clocks": n, "reached_this_pass": len(reached), "rows_reached": rows_reached,
+        "pass_complete": complete, "never_evaluated": never,
+        "budget_s": budget_s, "elapsed_s": round(elapsed_s, 1),
+        "est_passes_per_full_rotation": -(-n // per_pass) if n else 0,
+        "oldest_age_h": ages[-1] if ages else None,
+        "median_age_h": ages[len(ages) // 2] if ages else None,
+        "next_cursor_symbol": next_cursor,
+        "priority_source": rank_source,
+        "excluded": {"exotic": {"n": len({_row_key(r) for r in exotic}),
+                                "why": EXOTIC_EXCLUSION_WHY}},
+        "rule": ("stalest symbol first, never-evaluated first of all, ties by forward_slot_ranker "
+                 "rank; `last_attempt_at` is the cursor, so successive budgeted passes cover "
+                 "every clock; a clock deploys no capital and no gate is touched"),
+    }
+    return {"summary": summary, "clocks": clocks}
+
+
+
+def main(rows: list | None = None, ledger: str = "shadow_state.json",
+         budget_s: float | None = None) -> None:
     """Evaluate a set of forward rows and write their ledger.
 
     PARAMETERISED SO THE PRE-CERTIFICATION LANE REUSES THIS ENGINE RATHER THAN COPYING IT. The
@@ -1072,6 +1437,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / ledger
+    if rows is None:
+        # A CERTIFICATION TRANSACTION THAT CRASHED IS COMPLETED BEFORE THE PASS READS THE BOOK
+        # (invariant I1, research/clock_coverage.py): its clocks were journalled first.
+        try:
+            import clock_coverage as _cc
+            _cc.recover(state_path)
+        except Exception as exc:
+            slog(f"clock_coverage.recover failed ({type(exc).__name__}: {exc}); pass continues")
     state = _TouchedState(_read_state(state_path) or {})
     today = datetime.now(UTC).date().isoformat()
 
@@ -1093,7 +1466,30 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # of a symbol together is what keeps one fetch serving all of them.
     enrolled.sort(key=lambda row: (row[0], timeframe_of(row[2]), row[1], row[3],
                                    repr(sorted(row[2].items()))))
-    enrolled = _stalest_symbols_first(enrolled, state)
+    # THE PRODUCTION PASS IS BUDGETED AND ROTATES (see PASS_BUDGET_S). A caller that hands its own
+    # rows (the pre-certification lane, tests) keeps the unbudgeted, unfiltered pass it always had
+    # unless it asks for a budget.
+    production = rows is None
+    exotic: list = []
+    if production:
+        enrolled, exotic = split_exotic(enrolled)
+        if budget_s is None:
+            budget_s = PASS_BUDGET_S
+        for _row in exotic:
+            _k = _row_key(_row)
+            if _k and isinstance(state.get(_k), dict) and \
+                    (state[_k].get("forward_evidence") or {}).get("why") != EXOTIC_EXCLUSION_WHY:
+                _st = state[_k]
+                _unmeasured(_st, EXOTIC_EXCLUSION_WHY)
+                state[_k] = _st
+        if exotic:
+            slog(f"EXCLUDED_EXOTIC {len(exotic)} certified clock(s): {EXOTIC_EXCLUSION_WHY}")
+    budget = float(budget_s) if budget_s and float(budget_s) > 0 else None
+    ranks, rank_source = slot_ranks() if production else ({}, "not a production pass")
+    enrolled = _stalest_symbols_first(enrolled, state, ranks)
+    pass_t0 = time.monotonic()
+    rows_reached = len(enrolled)
+    budget_cut = False
     pass_started = datetime.now(UTC).isoformat(timespec="seconds")
     last_save = time.monotonic()
     cached_symbol: str | None = None
@@ -1122,6 +1518,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         shared_ledgers = {n: {"members": m} for n, m in _fl.collisions(_all_keys).items()}
     seen: set[str] = set()
     for i_row, row in enumerate(enrolled):
+        if budget is not None and time.monotonic() - pass_t0 >= budget:
+            # THE BUDGET IS SPENT: stop cleanly so the state is written and the stages after
+            # this one (scalp, qquant, promoter) run inside the slot. Unreached rows keep their
+            # older `last_attempt_at`, so the next pass starts with them.
+            rows_reached, budget_cut = i_row, True
+            slog(f"ROTATION BUDGET {budget:.0f}s spent after {i_row} of {len(enrolled)} rows; "
+                 f"the next pass resumes at {row[0]}")
+            break
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
             state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
             state["engine_pass"] = {"started_at": pass_started, "rows_reached": i_row,
@@ -1766,6 +2170,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     "max_dd_r": float(max_dd),
                     "first_entry": str(trades[0].entry_time),
                     "last_entry": str(trades[-1].entry_time),
+                    # THE PROBE TIER'S INPUTS (research/probe_tier.py): the sum of squares gives
+                    # the row's own R variance for its SPRT, and the recent tail lets co-movement
+                    # be MEASURED between clocks rather than assumed from a shared symbol.
+                    "sum_r2": float(sum(r * r for r in rs)),
+                    "r_tail": [[str(t.entry_time)[:16], round(float(t.r_multiple), 4)]
+                               for t in trades[-R_TAIL_N:]],
                 })
             else:
                 # ZERO FORWARD OBSERVATIONS IS A MEASUREMENT, NOT A REASON TO KEEP THE OLD NUMBER.
@@ -1776,7 +2186,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 # honest zero and the historical arm is reported separately (L1.28a: unmeasured is
                 # never a verdict, and neither is inherited).
                 st.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
-                           "first_entry": None, "last_entry": None})
+                           "first_entry": None, "last_entry": None,
+                           "sum_r2": 0.0, "r_tail": []})
             # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
             # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
             # before its hypothesis was frozen arrived at the gate already 8/14 of the way through
@@ -1900,11 +2311,25 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
-    state["engine_pass"] = {"started_at": pass_started, "rows_reached": len(enrolled),
-                            "rows": len(enrolled), "complete": True,
+    state["engine_pass"] = {"started_at": pass_started, "rows_reached": rows_reached,
+                            "rows": len(enrolled), "complete": not budget_cut,
+                            "budget_s": budget, "budget_exhausted": budget_cut,
                             "finished_at": state["updated_at"],
                             "profile": prof.report()}
     _persist_state(state_path, state, final=True)
+    if production:
+        try:
+            doc = clock_freshness(
+                enrolled, state, reached=seen, rows_reached=rows_reached,
+                complete=not budget_cut, budget_s=budget,
+                elapsed_s=time.monotonic() - pass_t0, ranks=ranks, rank_source=rank_source,
+                exotic=exotic,
+                next_cursor=(enrolled[rows_reached][0] if budget_cut
+                             and rows_reached < len(enrolled) else None))
+            _atomic_write_text(SHADOW_DIR / CLOCK_FRESHNESS_NAME,
+                               json.dumps(doc, indent=1, default=str))
+        except Exception as exc:          # a report never fails the pass
+            slog(f"CLOCK_FRESHNESS.json not written ({type(exc).__name__}: {exc})")
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)

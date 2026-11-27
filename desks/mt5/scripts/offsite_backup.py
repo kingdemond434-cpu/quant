@@ -64,7 +64,16 @@ task.ps1), which can read `data/secrets/offsite_backup.json` whoever wrote it; `
 run from the same admin installer. If the task principal ever changes, it must keep read access
 to that file, or every run is NOT_ARMED.
 
-Writes `desks/mt5/reports/OFFSITE_BACKUP.json`, read by `research/ops_redundancy.py`.
+SELF-ARMING (2026-11-25, rule E40). Nothing above ever ran: the installer's -InstallRestic and
+-InitLocal were operator switches nobody pressed, so the box went eight weeks with no backup at
+all. A backup that waits for a person is not a backup. Every scheduled run now arms itself: no
+restic -> it installs the pinned release (SHA-256 below, refused on any mismatch); no config ->
+`init_local` on the first fixed volume that is not the system drive, else C:\\backup\\restic. Both
+are recorded (`self_armed`, `restic_installed`) and the verdict stays LOCAL_ONLY until the
+repository is pointed off-site. `--no-self-arm` restores the old recorded-state behaviour.
+
+Writes `desks/mt5/reports/OFFSITE_BACKUP.json`, read by `research/ops_redundancy.py` and by the
+guardian's backup watch (libs/ops/backup_watch.py), which pages when it goes stale.
 """
 from __future__ import annotations
 
@@ -77,15 +86,27 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+import urllib.request
+import zipfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+import offsite_git
 
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parent.parent
 CONFIG = ROOT / "data" / "secrets" / "offsite_backup.json"
 OUT = BASE / "reports" / "OFFSITE_BACKUP.json"
 RESTIC_CANDIDATES = (r"C:\opt\restic\restic.exe", r"C:\ProgramData\chocolatey\bin\restic.exe")
+#: The pinned release the box installs for itself. The digest is restic's own SHA256SUMS line for
+#: this asset; a download that does not hash to it is deleted and nothing is installed.
+RESTIC_VERSION = "0.18.1"
+RESTIC_ZIP = f"restic_{RESTIC_VERSION}_windows_amd64.zip"
+RESTIC_URL = f"https://github.com/restic/restic/releases/download/v{RESTIC_VERSION}/{RESTIC_ZIP}"
+RESTIC_SHA256 = "0c1a713440578cb400d2e76208feb24f1b339426b075a21f73b6b2132692515d"
+RESTIC_DEST = Path(r"C:\opt\restic")
+LOCAL_REPO_DIR = r"backup\restic"
 #: Box-only data, in priority order. A path that does not exist is listed as missing, never an
 #: error.
 SOURCES: tuple[str, ...] = (
@@ -98,10 +119,37 @@ SOURCES: tuple[str, ...] = (
     str(BASE / "reports"),
     str(ROOT / "data"),
     str(ROOT / "backups"),
+    str(ROOT / "evidence_backups"),
+    str(ROOT / "evidence"),
 )
 #: Repository schemes that live somewhere other than this box. Anything else (a drive path) is
 #: local: versioned, but gone with the box.
 REMOTE_SCHEMES = ("s3", "sftp", "rest", "b2", "azure", "gs", "swift", "rclone")
+#: TIERS (2026-11-25, measured on the box: ~206 GB in the sources, C: 83% used, one volume).
+#: REBUILDABLE never ships anywhere: the gauntlet cache (10.8 GB, 722k files, rebuilt by
+#: MT5-CacheWarm), the judge's merge snapshot, the terminal's broker-history `bases` (31.8 GB,
+#: re-downloaded by the terminal) and *.tmp half-writes. BULK (bronze ticks 41 GB, tape 32 GB,
+#: intelligence 35 GB) is irreplaceable but too big for a repository on the box's own, already
+#: 83%-full disk: it ships only to an off-site repository. Everything else -- ledgers, registry,
+#: certs, state, evidence, config -- is the CRITICAL tier and ships to every repository.
+REBUILDABLE_DIRS = ("gauntlet_cache", ".judge_merge_snapshot")
+REBUILDABLE_SUFFIX = (".tmp",)
+BULK: tuple[str, ...] = (r"C:\moat\bronze", str(BASE / "data" / "tape"),
+                         str(ROOT / "data" / "tape"), str(BASE / "data" / "intelligence"))
+#: The off-site leg (offsite_git.py): its own restic repository, password and deploy key.
+GIT_CONFIG = ROOT / "data" / "secrets" / "offsite_git.json"
+GIT_KEY = ROOT / "data" / "secrets" / "offsite_git_ed25519"
+GIT_KNOWN = ROOT / "data" / "secrets" / "offsite_git_known_hosts"
+GIT_PUB_OUT = BASE / "reports" / "BACKUP_DEPLOY_KEY.pub"
+GIT_WORK = r"backup\offsite-git"
+#: What the off-site tier takes first when the cap bites: evidence, then the money ledgers and
+#: state, then everything else critical.
+OFFSITE_PRIORITY: tuple[str, ...] = (str(ROOT / "data" / "evidence_backups"),
+                                     str(ROOT / "backups"), str(BASE / "data"),
+                                     str(ROOT / "data"), str(BASE / "reports"))
+GIT_RETENTION = ("--keep-daily", "14", "--keep-weekly", "8", "--keep-monthly", "6")
+#: A repository on the box's own disk is never written past this used share of that disk.
+LOCAL_DISK_MAX_PCT = 88.0
 #: Path components and names that never enter the file list.
 NEVER = ("secret",)   # a prefix: secrets, Secrets.bak, secret_old
 NEVER_NAMES = ("accounts.dat",)
@@ -232,7 +280,14 @@ def _secret_identities(dirs: set[str]) -> set[tuple[int, int]]:
     return ids
 
 
-def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None) -> list[str]:
+def _rebuildable_dir(parent: str, name: str) -> bool:
+    if name in REBUILDABLE_DIRS:
+        return True
+    return name.lower() == "bases" and "metaquotes" in parent.lower()
+
+
+def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None,
+                  skip: tuple[str, ...] = ()) -> list[str]:
     """Every file under the sources except secrets, the broker login, locks and logs; each file
     once, however many sources contain it.
 
@@ -242,9 +297,12 @@ def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None
     refused; and a file that is the same file (device, inode) as one under a secrets directory,
     i.e. a hard link, is refused."""
     found = {str(x) for x in (secret_dirs if secret_dirs is not None else SECRET_DIRS)}
+    skipn = tuple(os.path.normcase(os.path.normpath(x)) for x in skip)
     cand: set[str] = set()
     for src in sources:
         root = Path(src)
+        if os.path.normcase(os.path.normpath(src)) in skipn:
+            continue
         if _is_link(str(root)) or any(_secretish(x) for x in root.parts):
             continue
         walk = [(str(root.parent), [], [root.name])] if root.is_file() else os.walk(root)
@@ -254,14 +312,16 @@ def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None
                 full = os.path.join(d, x)
                 if _secretish(x):
                     found.add(full)
-                elif x.lower() != "logs" and not _is_link(full):
+                elif (x.lower() != "logs" and not _is_link(full)
+                      and not _rebuildable_dir(d, x)
+                      and os.path.normcase(os.path.normpath(full)) not in skipn):
                     keep.append(x)
             dirs[:] = keep
             if any(_secretish(part) for part in Path(d).parts):
                 continue
             for n in names:
                 full = os.path.join(d, n)
-                if _never_name(n) or _is_link(full):
+                if _never_name(n) or _is_link(full) or n.endswith(REBUILDABLE_SUFFIX):
                     continue
                 cand.add(full)
     banned = _secret_identities({x for x in found if os.path.isdir(x)})
@@ -293,6 +353,61 @@ def init_local(path: str, config: Path = CONFIG) -> str:
            "key_escrowed_off_box": False}
     config.write_text(json.dumps(doc, indent=1), "utf-8")
     return f"armed: local repository, key in {config.name} (copy it off the box to escrow it)"
+
+
+def install_restic(dest: Path = RESTIC_DEST, url: str = RESTIC_URL,
+                   want: str = RESTIC_SHA256, fetch: Any = None) -> tuple[str | None, str]:
+    """Download the pinned restic, verify its SHA-256, unpack restic.exe into `dest`.
+    Returns (path or None, what happened). Never raises."""
+    try:
+        dest.mkdir(parents=True, exist_ok=True)
+        zpath = dest / RESTIC_ZIP
+        if fetch is None:
+            with urllib.request.urlopen(url, timeout=300) as r:
+                zpath.write_bytes(r.read())
+        else:
+            zpath.write_bytes(fetch(url))
+        got = _sha256(zpath)
+        if got != want:
+            zpath.unlink(missing_ok=True)
+            return None, f"refused: archive sha256 {got[:16]} != pinned {want[:16]}"
+        with zipfile.ZipFile(zpath) as z:
+            exe = next((n for n in z.namelist() if n.lower().endswith(".exe")), None)
+            if exe is None:
+                return None, "refused: archive holds no .exe"
+            (dest / "restic.exe").write_bytes(z.read(exe))
+        zpath.unlink(missing_ok=True)
+        return str(dest / "restic.exe"), f"installed restic {RESTIC_VERSION} (sha256 verified)"
+    except Exception as exc:   # an install that cannot run is a recorded state, not a crash
+        return None, f"install failed: {type(exc).__name__}: {exc}"[:300]
+
+
+def _size(f: str) -> int:
+    try:
+        return os.path.getsize(f)
+    except OSError:
+        return 0
+
+
+def _disk_used_after(path: str, add_bytes: int = 0) -> float | None:
+    """Used % of the disk holding `path` if `add_bytes` more were written there."""
+    p = Path(path)
+    while not p.exists() and p.parent != p:
+        p = p.parent
+    try:
+        u = shutil.disk_usage(p)
+    except OSError:
+        return None
+    return round(100.0 * (u.used + add_bytes) / u.total, 1) if u.total else None
+
+
+def local_repo_path(drives: list[str] | None = None) -> str:
+    """The first fixed volume that is not the system drive, else the system drive."""
+    sysd = os.environ.get("SYSTEMDRIVE", "C:").rstrip("\\") + "\\"
+    if drives is None:
+        drives = [f"{c}:\\" for c in "DEFGHIJ" if os.path.isdir(f"{c}:\\")]
+    pick = next((d for d in drives if d.upper() != sysd.upper()), sysd)
+    return str(Path(pick) / LOCAL_REPO_DIR)
 
 
 def _snap_root(src: str) -> str:
@@ -350,7 +465,7 @@ def _restored_at(target: Path, snap_path: str) -> Path | None:
 
 def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
                   now: datetime | None = None,
-                  roots: list[str] | None = None) -> dict[str, Any]:
+                  roots: list[str] | None = None, tag: str = "quant-box") -> dict[str, Any]:
     """Restore a sample of the latest snapshot to a temp directory and compare it with the box.
 
     PASS needs at least one file restored and every restored file either byte-identical to its
@@ -358,7 +473,7 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
     write is a failure. Never touches the sources: the target is a fresh temporary directory."""
     now = now or datetime.now(tz=UTC)
     rep: dict[str, Any] = {"at": now.isoformat(timespec="seconds")}
-    ls = runner([exe, "ls", "--json", "latest", "--tag", "quant-box"], env)
+    ls = runner([exe, "ls", "--json", "latest", "--tag", tag], env)
     if ls.returncode != 0:
         rep.update(verdict="FAIL", why=f"restic ls latest exit {ls.returncode}")
         return rep
@@ -374,7 +489,7 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
         return rep
     with tempfile.TemporaryDirectory(prefix="restore_drill_") as tmp:
         inc = [a for n in pick for a in ("--include", str(n["path"]))]
-        r = runner([exe, "restore", "latest", "--tag", "quant-box", "--target", tmp, *inc], env)
+        r = runner([exe, "restore", "latest", "--tag", tag, "--target", tmp, *inc], env)
         rep["restore_exit"] = r.returncode
         files: list[dict[str, Any]] = []
         for n in pick:
@@ -412,9 +527,14 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
 
 def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         sources: tuple[str, ...] = SOURCES, runner: Any = _run,
-        restic: str | None = None, now: datetime | None = None) -> dict[str, Any]:
+        restic: str | None = None, now: datetime | None = None, self_arm: bool = False,
+        installer: Any = install_restic, disk_used: Any = None, git_offsite: bool = False,
+        git_run: Any = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     prev = _load(out)
+    armed_now = ""
+    if self_arm and not dry_run and not config.exists():
+        armed_now = init_local(local_repo_path(), config)
     cfg = _load(config)
     have = [s for s in sources if s and Path(s).exists()]
     doc: dict[str, Any] = {
@@ -426,7 +546,12 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         "restore_drill": prev.get("restore_drill"),
         "key_escrowed_off_box": bool(cfg.get("key_escrowed_off_box")),
     }
+    if armed_now:
+        doc["self_armed"] = {"at": doc["at"], "what": armed_now}
     exe = restic if restic is not None else restic_bin()
+    if self_arm and not dry_run and not exe:
+        exe, how = installer()
+        doc["restic_installed"] = {"at": doc["at"], "what": how}
     if not cfg.get("repository") or not cfg.get("password"):
         doc.update(status="NOT_ARMED", why=f"no repository/password in {config.name}; the box-"
                                             "only data has no off-site copy")
@@ -443,13 +568,28 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         env = {**os.environ, **{str(k): str(v) for k, v in (cfg.get("env") or {}).items()},
                "RESTIC_REPOSITORY": str(cfg["repository"]),
                "RESTIC_PASSWORD": str(cfg["password"])}
+        ex = [a for e in EXCLUDES for a in ("--exclude", e)]
+        remote = is_remote(cfg["repository"])
+        doc["tier"] = "full" if remote else "critical (bulk ships off-site only)"
+        listing = files_to_ship(have, skip=() if remote else BULK)
+        doc["files_listed"] = len(listing)
+        if not remote:
+            # The guard counts what this run could add (the listing's bytes, the worst case for a
+            # first snapshot), not only what the disk holds now (Audit S1, c3d121229).
+            add_b = sum(_size(f) for f in listing)
+            doc["listing_gb"] = round(add_b / 1e9, 2)
+            used = (disk_used or _disk_used_after)(str(cfg["repository"]), add_b)
+            if used is not None and used > LOCAL_DISK_MAX_PCT:
+                doc.update(status="FAIL", why=f"disk guard: writing this snapshot could take the "
+                                              f"local repository's disk to {used}% (> "
+                                              f"{LOCAL_DISK_MAX_PCT}%); nothing written")
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(json.dumps(doc, indent=1), "utf-8")
+                return doc
         probe = runner([exe, "cat", "config"], env)
         if probe.returncode != 0:
             init = runner([exe, "init"], env)
             doc["initialised"] = init.returncode == 0
-        ex = [a for e in EXCLUDES for a in ("--exclude", e)]
-        listing = files_to_ship(have)
-        doc["files_listed"] = len(listing)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt",
                                          delete=False) as fl:
             fl.write("\n".join(listing) + "\n")
@@ -481,6 +621,17 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
                 except Exception as exc:   # a drill that cannot run is a failed drill
                     doc["restore_drill"] = {"at": doc["at"], "verdict": "FAIL",
                                             "why": f"{type(exc).__name__}: {exc}"[:300]}
+        if ok and not remote and git_offsite:
+            try:
+                doc["offsite_git"] = offsite_git_leg(exe, listing, prev, now, runner, git_run,
+                                                     roots=have, disk_used=disk_used)
+            except Exception as exc:   # the off-site leg failing never fails the local snapshot
+                doc["offsite_git"] = {"ok": False, "why": f"{type(exc).__name__}: {exc}"[:300]}
+        og = doc.get("offsite_git") or prev.get("offsite_git") or {}
+        if isinstance(og, dict) and og.get("last_push_ok_at"):
+            last_push = _ts(og.get("last_push_ok_at"))
+            doc["offsite"] = bool(last_push and now - last_push <= timedelta(hours=36))
+            doc["offsite_scheme"] = "git (GitLab drop project, branch box-backup)"
         doc["status"] = "OK" if ok else "FAIL"
         if not ok:
             doc["why"] = (b.stderr or "").strip().splitlines()[-1][:300] if b.stderr else \
@@ -488,6 +639,91 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
+
+
+def offsite_git_leg(exe: str, listing: list[str], prev: dict[str, Any], now: datetime,
+                    runner: Any = _run, git_run: Any = None,
+                    roots: list[str] | None = None, disk_used: Any = None) -> dict[str, Any]:
+    """Back the off-site tier up into its own restic repository and push it to GitLab."""
+    grun = git_run or offsite_git._run
+    raw_old = prev.get("offsite_git")
+    old: dict[str, Any] = raw_old if isinstance(raw_old, dict) else {}
+    rep: dict[str, Any] = {k: old.get(k) for k in ("last_push_ok_at", "last_prune_at",
+                                                   "restore_drill")}
+    cfg = offsite_git.load_or_init(GIT_CONFIG)
+    if not cfg.get("password"):
+        rep.update(ok=False, why=f"{GIT_CONFIG.name} exists but holds no password")
+        return rep
+    ok_key, why = offsite_git.ensure_key(GIT_KEY, GIT_PUB_OUT, grun)
+    if not ok_key:
+        rep.update(ok=False, why=why)
+        return rep
+    work = Path(local_repo_path()).parent / "offsite-git"
+    ship, skipped = offsite_git.select(listing, OFFSITE_PRIORITY)
+    # The work dir holds the repository twice (restic files + git's copy): worst case 2x the tier
+    # (Audit S1, 48bf708e7).
+    used = (disk_used or _disk_used_after)(str(work), 2 * sum(_size(f) for f in ship))
+    if used is not None and used > LOCAL_DISK_MAX_PCT:
+        rep.update(ok=False, why=f"disk guard: the off-site work dir could take its disk to "
+                                 f"{used}% (> {LOCAL_DISK_MAX_PCT}%); nothing written")
+        return rep
+    rep.update(files=len(ship), bytes=sum(_size(f) for f in ship), skipped_n=len(skipped),
+               offsite_skipped_largest=[[f, b] for f, b in skipped[:20]],
+               branch=offsite_git.BRANCH, work=str(work))
+    env = {**os.environ, "RESTIC_REPOSITORY": str(work), "RESTIC_PASSWORD": str(cfg["password"])}
+    if runner([exe, "cat", "config"], env).returncode != 0:
+        work.mkdir(parents=True, exist_ok=True)
+        runner([exe, "init"], env)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as fl:
+        fl.write("\n".join(ship) + "\n")
+    try:
+        b = runner([exe, "backup", "--json", "--tag", "quant-box-offsite", "--pack-size",
+                    offsite_git.PACK_SIZE_MB, *GROUP_BY, "--files-from-verbatim", fl.name], env)
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(fl.name)
+    rep["backup"] = {"exit": b.returncode, **_summary(b.stdout)}
+    if b.returncode not in (0, 3):
+        rep.update(ok=False, why=f"restic backup exit {b.returncode}")
+        return rep
+    if _due(old, "last_prune_at", timedelta(days=7), now):
+        f = runner([exe, "forget", "--tag", "quant-box-offsite", *GROUP_BY, *GIT_RETENTION,
+                    "--prune"], env)
+        if f.returncode == 0:
+            rep["last_prune_at"] = now.isoformat(timespec="seconds")
+    pushed = offsite_git.push_repo(work, GIT_KEY, GIT_KNOWN, run=grun)
+    rep["push"] = pushed
+    if pushed.get("ok"):
+        rep["last_push_ok_at"] = now.isoformat(timespec="seconds")
+    drill_at = _ts((rep.get("restore_drill") or {}).get("at"))
+    if pushed.get("ok") and (drill_at is None or now - drill_at >= RESTORE_EVERY):
+        rep["restore_drill"] = _offsite_drill(exe, cfg, runner, grun, now, roots)
+    rep["ok"] = bool(pushed.get("ok"))
+    if not rep["ok"]:
+        rep["why"] = pushed.get("why")
+        rep["key_unregistered"] = bool(pushed.get("key_unregistered"))
+        rep["over_cap"] = bool(pushed.get("over_cap"))
+    return rep
+
+
+def _offsite_drill(exe: str, cfg: dict[str, Any], runner: Any, grun: Any, now: datetime,
+                   roots: list[str] | None) -> dict[str, Any]:
+    """Clone the pushed branch fresh from GitLab and restore a sample from THAT copy."""
+    with tempfile.TemporaryDirectory(prefix="offsite_drill_") as tmp:
+        clone = Path(tmp) / "repo"
+        g = offsite_git._git(Path(tmp), GIT_KEY, GIT_KNOWN, "clone", "-q", "--depth", "1", "-b",
+                             offsite_git.BRANCH, offsite_git.DROP_URL, str(clone))
+        r = grun(g, None, None)
+        if r.returncode != 0:
+            return {"at": now.isoformat(timespec="seconds"), "verdict": "FAIL",
+                    "why": f"clone from GitLab failed: {r.stderr[-200:]}"}
+        for d in ("locks", "index", "snapshots", "keys", "data"):
+            (clone / d).mkdir(exist_ok=True)
+        env = {**os.environ, "RESTIC_REPOSITORY": str(clone),
+               "RESTIC_PASSWORD": str(cfg["password"])}
+        rep = restore_drill(exe, env, runner, now, roots=roots, tag="quant-box-offsite")
+        rep["source"] = "fresh clone of the GitLab branch"
+        return rep
 
 
 def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]:
@@ -521,13 +757,15 @@ def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-self-arm", action="store_true",
+                    help="record NOT_ARMED / NO_RESTIC instead of arming and installing")
     ap.add_argument("--init-local", metavar="PATH",
                     help="arm a repository on this box's disk with a random key, then exit")
     a = ap.parse_args(argv)
     if a.init_local:
         print(init_local(a.init_local))
         return 0
-    doc = run(dry_run=a.dry_run)
+    doc = run(dry_run=a.dry_run, self_arm=not a.no_self_arm, git_offsite=not a.no_self_arm)
     print(json.dumps({k: doc.get(k) for k in ("status", "included", "missing",
                                               "last_success_at")}))
     return 0

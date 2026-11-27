@@ -685,6 +685,18 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "sees removes an in-memory door note, not evidence.",
     ),
     DestructivePath(
+        path_id="external_gauntlet.bounded_cache_prune",
+        module="desks/mt5/scripts/external_gauntlet.py",
+        function="_bounded_cache_prune",
+        removes="gauntlet_cache cell files older than the prune age (3 days by mtime) -- a "
+                "rebuildable cache of built cells, never a verdict, certificate or ledger row",
+        reference="each file's own mtime, read by os.stat at removal time",
+        status="positive",
+        guard_site="_bounded_cache_prune",
+        note="POSITIVE EVIDENCE ONLY: a file leaves on its own measured age; an unreadable stat "
+             "removes nothing. Same rule as the unbounded prune it replaced (judge P0 "
+             "2026-11-25), now time-budgeted with a resume cursor."),
+    DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
         module="desks/mt5/scripts/run_sharded_gauntlet.py",
         function="_drop_merge_snapshot",
@@ -858,6 +870,24 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         note="Already correct: enrolled_keys() returns None for UNKNOWN and never the empty set, "
              "`unknown_enrolment` suppresses the orphan branch, and `if not certs: return 0` "
              "refuses the unreconstructible branch outright.",
+    ),
+    DestructivePath(
+        path_id="shadow_forward.one_clock_per_cell",
+        module="desks/mt5/research/shadow_forward.py",
+        function="_one_clock_per_cell",
+        removes="a certified row from THIS pass's enrolment when another enrolled row runs the "
+                "same executable cell (the dropped clock is then retired RETIRED_ORPHAN by "
+                "forward_reconcile.orphan_clocks, evidence kept, alias_of naming the survivor)",
+        reference="cell_equivalence.canonical_fingerprint of both rows (IGNORED_INPUTS pinned "
+                  "against the real build_cell by tests/test_cell_identity.py) and the survivor's "
+                  "forward_start in reports/shadow/shadow_state.json",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (alias ruling 2026-11-04): a row leaves enrolment only when "
+             "a SURVIVOR proven to run the identical cell stays enrolled; a row whose fingerprint "
+             "cannot be computed (None) is never merged, and an unreadable state file only "
+             "changes which twin survives, never whether one does. Nothing is retired here and "
+             "no row is written. The clear() the scan sees empties the in-memory alias map this "
+             "same pass rebuilds, not evidence.",
     ),
     DestructivePath(
         path_id="clock_retirement.accept",
@@ -1204,6 +1234,23 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "stamp (OSError) is never moved and nothing is pruned (v1.5). A copy leaves only "
              "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
              "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
+    ),
+    DestructivePath(
+        path_id="judge_efficiency.prune_cache",
+        module="desks/mt5/research/judge_efficiency.py",
+        function="prune_cache",
+        removes="the judge's own gauntlet_cache/*.npz build-cache files older than "
+                "CACHE_PRUNE_AGE_S (3 days); never a verdict, certificate, ledger or docket row",
+        reference="each file's own mtime, read from the directory listing in the same pass "
+                  "(os.scandir DirEntry.stat)",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a file goes only on a READ mtime older than the age; an "
+             "unreadable directory deletes nothing and a file whose stat or unlink fails is "
+             "skipped, so an absence never removes. The cache is rebuildable by construction -- "
+             "a missing key is a cache miss the next sweep rebuilds. Returns what it removed "
+             "(count, bytes, the first names) so every prune is recorded. The sealed rule it "
+             "restates is external_gauntlet.main's `> 3 * 86400` prune (judge-efficiency H1). "
+             "Declared 2026-11-25 (Audit, train 2 wip 3d35ff03f fence).",
     ),
 )
 

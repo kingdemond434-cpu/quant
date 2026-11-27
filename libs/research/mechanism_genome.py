@@ -89,6 +89,14 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "catalyst": "session_open", "transmission": "flow", "entry": "stop_through_level",
         "exit": "session_close", "holding": "intraday", "capacity": "spread_bound",
         "decay_risk": "crowding"},
+    # The live gold session breakout with its exit replaced by a managed one (trail, partial,
+    # time, regime, reversal, liquidity); same participants and entry, a managed stop as exit.
+    "session_exit_overlay": {
+        "actor": "session_participants", "constraint": "session_open_inventory",
+        "observable": "prior_session_range", "trigger": "time_of_day",
+        "catalyst": "session_open", "transmission": "flow", "entry": "stop_through_level",
+        "exit": "stop", "holding": "intraday", "capacity": "spread_bound",
+        "decay_risk": "crowding"},
     "level_breakout": {
         "actor": "stop_holders", "constraint": "protective_stop_placement",
         "observable": "swing_level", "trigger": "price_level", "catalyst": "level_touch",
@@ -259,6 +267,21 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
         "transmission": "valuation", "entry": "limit_on_reversal", "exit": "target",
         "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
+    # A boosted tree classifier over causal price features: what it trades against is the
+    # behavioural pattern a past window labelled, exited on its own horizon (the time stop).
+    "gbm_classifier": {
+        "actor": "systematic_pattern_traders", "constraint": "model_horizon",
+        "observable": "learned_feature_state", "trigger": "price_pattern",
+        "catalyst": "pattern_recurrence", "transmission": "behavioural",
+        "entry": "market_on_signal", "exit": "time_stop", "holding": "intraday",
+        "capacity": "spread_bound", "decay_risk": "crowding"},
+    # The Engle-Granger tested pair: the same desks and spread as relative_value, triggered only
+    # while the residual is measured stationary and exited on a half-life time stop.
+    "coint_pairs": {
+        "actor": "relative_value_desks", "constraint": "balance_sheet",
+        "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
+        "transmission": "valuation", "entry": "limit_on_reversal", "exit": "time_stop",
+        "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
     "pca_residual": {
         "actor": "factor_investors", "constraint": "factor_mandate",
         "observable": "principal_component_residual", "trigger": "valuation_gap",
@@ -330,6 +353,44 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
         "exit": "stop", "holding": "multiday", "capacity": "depth_bound",
         "decay_risk": "composite"},
+    # THE FIVE GENERATED FAMILIES (2026-11-24): `rule_builder` (mt5desk/family_rule_builder.py)
+    # and the four in mt5desk/family_hypgen_models.py. Each is a SEARCH METHOD over closed H1
+    # price and tick volume, not an economic claim: the generator chooses the condition, so the
+    # actor, constraint and catalyst are `composite` exactly as `joint_genome` declares them,
+    # and what each family does claim is its observable. All five enter on the next open after a
+    # closed-bar signal and exit on an ATR stop, an rr x stop target or a time stop of 6-48 bars
+    # (`hf.emit` / the builder's own exit), so the holding is multiday with a time_stop exit.
+    # A fitted model's edge decays when the state it learned stops recurring: regime_shift.
+    "rule_builder": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "conjunction_of_entry_blocks_and_filters", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "analog_knn": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "nearest_past_feature_states", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "ranked_linear": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "rolling_rank_fitted_linear_score", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "neural_policy": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "evolved_network_on_causal_features", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "ge_strategy": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "grammar_evolved_block_rule", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
 }
 
 

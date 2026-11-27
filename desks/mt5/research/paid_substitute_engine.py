@@ -641,13 +641,15 @@ def _robots_ok(
     p = urllib.parse.urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     if base not in cache:
+        from libs.data import robots_body as rb
         status, body = fetch(base + "/robots.txt")
-        if status is None or status >= 500:
-            cache[base] = None  # unreachable robots: do not fetch (conservative)
+        # FAIL CLOSED: only 404/410 is "no rules"; 401/403/429/451 refuses the host outright;
+        # a 5xx, a transport failure or an HTML page in place of rules is unread (not fetched).
+        got = rb.robots_rules_or_refusal(status, None, body)
+        if isinstance(got, str):
+            cache[base] = rb.deny_all() if rb.is_hard_stop(got) else None
         else:
-            parser = urllib.robotparser.RobotFileParser()
-            parser.parse(body.splitlines() if status < 400 else [])
-            cache[base] = parser
+            cache[base] = got
     rp = cache[base]
     return bool(rp is not None and rp.can_fetch(USER_AGENT, url))
 

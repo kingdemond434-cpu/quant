@@ -396,8 +396,10 @@ def test_gap_decay_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Pa
         {"name": "USDJPY.asia#rr=1.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
     ]
     kept, notes = dc.load_sleeves_verbose(_sleeves_file(tmp_path, live))
-    assert kept == [], [r["name"] for r in kept]
-    assert len(notes) == len(live)
+    # AUDCHF's gap-decay row was lifted 2026-11-24 (principal: no blockers but exotics); the ZAR
+    # rows are exotic and stay refused.
+    assert [r["name"] for r in kept] == [GAP_DECAY[0]]
+    assert len(notes) == len(live) - 1
     # ... and none of them can be appended by the override either.
     got, _ = dc.minlot_override_rows(_sleeves_file(tmp_path, live), frozenset(FOUR))
     assert got == []
@@ -518,6 +520,27 @@ def _gold_row(name: str, h: object = 0.0) -> dict:
             "risk_frac": h}
 
 
+@pytest.fixture
+def _gold_repinned(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The principal lifted the gold-only order 2026-11-24 (decision_core.SUPERSEDED_CERT_ZEROS),
+    so the box file's two gold zeros no longer bind. These tests prove the cert-book-zero
+    MACHINERY, so they restore the file's zeros as binding."""
+    pinned = frozenset(ZEROED)
+    monkeypatch.setattr(dc, "SUPERSEDED_CERT_ZEROS", {
+        k: v - pinned for k, v in dc.SUPERSEDED_CERT_ZEROS.items()})
+    monkeypatch.setattr(dc, "PRINCIPAL_ZERO", {
+        k: (v | pinned if k in ("fusion", "e8") else v) for k, v in dc.PRINCIPAL_ZERO.items()})
+
+
+def test_the_box_cert_book_gold_zeros_are_lifted_in_code() -> None:
+    from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+    fusion = load_cert_book(CERT_BOOK_FILE, "fusion")
+    assert fusion is not None and all(fusion[k] == 0.0 for k in ZEROED)
+    assert not {n for n in GOLDS if dc.cert_book_zero(n)}
+    assert not {n for n in GOLDS if dc.cert_book_zero(n, "e8")}
+
+
+@pytest.mark.usefixtures("_gold_repinned")
 def test_the_committed_cert_book_pins_exactly_the_two_dropped_gold_windows() -> None:
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
     fusion = load_cert_book(CERT_BOOK_FILE, "fusion")
@@ -527,6 +550,7 @@ def test_the_committed_cert_book_pins_exactly_the_two_dropped_gold_windows() -> 
     assert not dc.cert_book_zero(None) and not dc.cert_book_zero("")
 
 
+@pytest.mark.usefixtures("_gold_repinned")
 def test_a_cert_book_zero_sends_nothing_on_either_path(tmp_path, monkeypatch) -> None:
     """THE REVERT PATH MUST NOT UN-ZERO GOLD (audit round 4 on c07dd71d). With
     ALLOCATOR_SOVEREIGN.json {"enabled": false}, gold_book_lot lifts an ALLOCATOR zero to the
@@ -978,9 +1002,11 @@ def test_the_bracket_loop_fences_each_leg_under_the_lock_and_waits_when_both_are
 def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
     src = (_DESK / "prop" / "e8_executor.py").read_text(encoding="utf-8")
     i = src.index("_xa.placement_lock(f\"e8_executor:")
-    block = src[i:i + 3400]
+    # The block is the locked send through its refusal row, bounded by the unarmed branch that
+    # follows it (r3: the gold lock's checks lengthened it past the old fixed 3400 characters).
+    block = src[i:src.index('row["status"] = "WOULD_SEND"', i)]
     assert '_xa.read_book("fusion")' in block and "opposite_block" in block
-    assert 'row["rail"] = "cross_account_opposite"' in block
+    assert 'if "rail" not in row: row["rail"] = "cross_account_opposite"' in block
     assert "missed_growth_risk_usd" in block
     assert '_xa.publish_tradelocker(venue, source="e8_executor")' in block
 

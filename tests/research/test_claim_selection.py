@@ -107,7 +107,7 @@ def test_the_lifetime_ledger_charges_each_family_once(tmp_path, monkeypatch) -> 
     assert cs.lifetime_charges() == {rows[0]["claim_family"]: 200}
     assert set(cs.lineage_index()) == {f"g{i}" for i in range(30)}
     monkeypatch.setattr(el, "_graph_counts", lambda: (10, {"carry": 10}))
-    monkeypatch.setattr(el, "_proposer_counts", lambda: (5, {"carry": 5}))
+    monkeypatch.setattr(el, "_proposer_counts", lambda *a, **k: (5, {"carry": 5}))
     monkeypatch.setattr(el, "_prereg_counts", lambda: 0)
     doc = el.lifetime(write=False)
     assert doc["lifetime_trials"] == 10 + 5 + 200
@@ -130,3 +130,16 @@ def test_a_producer_registers_its_whole_grid_including_judged_cells(tmp_path,
     cand = {"source": "miner:video_anchor_exit", "mechanism_note": VIDEO,
             "source_title": "htf_anchor_trend on EURUSD H4 -- video-derived anchor/exit"}
     assert cs.stamp(cand) and cand["claim_family"] == fid
+
+
+def test_a_native_language_search_statement_is_charged_too() -> None:
+    """The deep forest writes in zh/ja/ko/ru; its stated searches are trials like English ones."""
+    from libs.research.claim_selection import selection_trials as st
+    assert st("我们从200组参数中选出最优的一组") == 200
+    assert st("回测了1,500组组合\uff0c夏普2.1") == 1500
+    assert st("200通りの中から最も良い設定を選んだ") == 200
+    assert st("500가지 전략을 테스트했다") == 500
+    assert st("выбрал лучший из 300 вариантов") == 300
+    assert st("перебрал 1000 комбинаций") == 1000
+    # a year, a return or a holding period is not a search
+    assert st("2023年收益30%") == 0 and st("持仓5天") == 0 and st("数据从2010年开始") == 0

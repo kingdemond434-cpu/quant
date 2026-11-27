@@ -1,110 +1,34 @@
 {
- "generated_utc": "2026-11-18T13:41:10+00:00",
+ "generated_utc": "2026-11-23T09:33:16+00:00",
  "law": "BREADTH IS MANDATORY. Every empty alpha cluster must receive at least 3 cells per sweep. ATTEMPTED AND FAILED is a measurement and is fine; NEVER ATTEMPTED is a defect. n_eff ratchets UP only.",
  "why_the_existing_floors_miss_it": "the bandit floors EXPLORATION at 40% of compute, and exploration inside an OCCUPIED cluster is still exploration -- a sweep can satisfy the floor entirely on its four-hundredth session-liquidity variant while eleven clusters get nothing. And bandit.breadth_credit prices new_mechanism at 1.2491 against combine_survivors at 0.8295, a 1.5x spread that cannot outbid a 3x declared cost difference.",
- "declared_clusters": 15,
- "occupied": [
-  "crisis_drawdown",
-  "cross_sectional_fx",
-  "fixing_roll_calendar",
-  "macro_rates",
-  "mean_reversion",
-  "relative_value",
-  "session_liquidity",
-  "trend",
-  "volatility_transition"
- ],
- "empty": [
-  "cross_asset_lead_lag",
-  "event_surprise",
-  "execution_entry",
-  "news_reaction",
-  "options_implied",
-  "positioning_flow"
- ],
+ "declared_clusters": 0,
+ "occupied": [],
+ "empty": [],
  "cluster_cell_counts": {
-  "UNCLASSIFIED": 907623,
-  "fixing_roll_calendar": 15872,
-  "volatility_transition": 80262,
-  "relative_value": 253454,
-  "session_liquidity": 140205,
-  "macro_rates": 36100,
-  "trend": 35352,
-  "cross_asset_lead_lag": 54721,
-  "mean_reversion": 26372,
-  "crisis_drawdown": 18618,
-  "cross_sectional_fx": 20567,
-  "event_surprise": 3924,
-  "positioning_flow": 2045
+  "volatility_transition": 83509,
+  "UNCLASSIFIED": 978993,
+  "session_liquidity": 161724,
+  "fixing_roll_calendar": 17901,
+  "relative_value": 258653,
+  "macro_rates": 36667,
+  "trend": 38000,
+  "cross_asset_lead_lag": 55120,
+  "mean_reversion": 28201,
+  "crisis_drawdown": 20978,
+  "cross_sectional_fx": 20739,
+  "event_surprise": 4769,
+  "positioning_flow": 2040
  },
- "counts_basis": "1595115 docket cell(s) classified",
+ "counts_basis": "1707294 docket cell(s) classified",
  "min_cells_per_empty_cluster": 3,
- "census": {
-  "ATTEMPTED": 3,
-  "NEVER_ATTEMPTED": 3
- },
- "never_attempted": [
-  {
-   "cluster": "execution_entry",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  },
-  {
-   "cluster": "news_reaction",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  },
-  {
-   "cluster": "options_implied",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  }
- ],
+ "census": {},
+ "never_attempted": [],
  "ratchet": {
-  "n_eff": 3.065,
+  "n_eff": null,
   "floor": null,
-  "status": "FLOOR_SET",
-  "why": "first measurement becomes the floor"
+  "status": "UNMEASURED",
+  "why": "EFFECTIVE_BREADTH carries no effective_breadth reading"
  },
- "clusters": [
-  {
-   "cluster": "cross_asset_lead_lag",
-   "cells_in_docket": 54721,
-   "verdict": "ATTEMPTED",
-   "why": "54721 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
-  },
-  {
-   "cluster": "event_surprise",
-   "cells_in_docket": 3924,
-   "verdict": "ATTEMPTED",
-   "why": "3924 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
-  },
-  {
-   "cluster": "execution_entry",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  },
-  {
-   "cluster": "news_reaction",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  },
-  {
-   "cluster": "options_implied",
-   "cells_in_docket": 0,
-   "verdict": "NEVER_ATTEMPTED",
-   "why": "ZERO cells have ever targeted this cluster. The desk cannot say the market has nothing here when it has never looked."
-  },
-  {
-   "cluster": "positioning_flow",
-   "cells_in_docket": 2045,
-   "verdict": "ATTEMPTED",
-   "why": "2045 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
-  }
- ]
+ "clusters": []
 }

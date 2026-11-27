@@ -202,6 +202,9 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
         txt = fetch(f"https://{host}/robots.txt")
     except Exception:
         return True
+    from libs.data.robots_body import is_html_body
+    if is_html_body(txt):  # an HTML page in place of rules proves nothing: the wall stands
+        return True
     group_ua, disallowed = None, False
     for raw in txt.splitlines():
         line = raw.split("#", 1)[0].strip()
@@ -430,17 +433,45 @@ def mine_forexpeacearmy() -> list[dict]:
 
 
 # ---------------------------------------------------------------- S17 FF calendar VINTAGES
+FF_CALENDAR_FEEDS = (
+    ("thisweek", "https://nfs.faireconomy.media/ff_calendar_thisweek.json"),
+    # The sibling feed is already a registered ground (`data/event_consensus_sources.json`,
+    # `ff_calendar_nextweek`). Captured too, so a week the desk was not polling still leaves its
+    # scheduled events behind: the weekly feed is the ONLY free source and it never serves a past
+    # week, so every hour the writer is down is a week of event history that cannot be recovered.
+    ("nextweek", "https://nfs.faireconomy.media/ff_calendar_nextweek.json"),
+)
+
+
 def mine_ff_calendar_vintage() -> list[dict]:
-    data = fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", as_json=True)
+    """This week's and next week's scheduled events, one row each, stamped with the capture time.
+
+    THIS WEEK IS REQUIRED, NEXT WEEK IS BONUS: a failure of the first raises (the runner turns it
+    into a `fetch_error` row, as before); a failure of the second is dropped, so the sibling feed
+    can never cost the primary one.
+    """
     cap = datetime.now(tz=UTC).isoformat(timespec="seconds")
     out = []
-    for ev in data[:120]:
-        out.append(row("ff_calendar_vintage", "calendar_vintage",
-                       f"{ev.get('country', '')} {ev.get('title', '')}",
-                       "", symbols=[str(ev.get('country', ''))],
-                       event_date=ev.get("date"), impact=ev.get("impact"),
-                       forecast=ev.get("forecast"), previous=ev.get("previous"),
-                       captured_at=cap))
+    for i, (feed, url) in enumerate(FF_CALENDAR_FEEDS):
+        try:
+            data = fetch(url, as_json=True)
+        except Exception:
+            if i == 0:
+                raise
+            continue
+        if not isinstance(data, list):
+            if i == 0:
+                raise ValueError(f"{feed}: expected a JSON list, got {type(data).__name__}")
+            continue
+        for ev in data[:120]:
+            if not isinstance(ev, dict):
+                continue
+            out.append(row("ff_calendar_vintage", "calendar_vintage",
+                           f"{ev.get('country', '')} {ev.get('title', '')}",
+                           "", symbols=[str(ev.get('country', ''))],
+                           event_date=ev.get("date"), impact=ev.get("impact"),
+                           forecast=ev.get("forecast"), previous=ev.get("previous"),
+                           captured_at=cap, feed=feed))
     return out
 
 
@@ -686,6 +717,20 @@ def mine_research_feeds() -> list[dict]:
     return out
 
 
+def mine_global_journals() -> list[dict]:
+    """Non-English scholarship through OAI-PMH and official APIs: KCI, the SciELO country
+    nodes, RePEc, and OpenAlex by language. Sources live in research_feeds.json `harvesters`;
+    a source whose terms were read and bar this desk stays closed there."""
+    try:
+        from side_channels import journal_harvesters as jh
+    except ModuleNotFoundError:
+        import journal_harvesters as jh  # type: ignore[no-redef]
+    st = _state()
+    out = jh.harvest(st, jh.data_text, row, jh.robots_gate_for_pass())
+    _merge_state({k: st[k] for k in ("jh_seen", "jh_status", "jh_cursor") if k in st})
+    return out
+
+
 def mine_github_depth() -> list[dict]:
     """README, code changes, issues, starred forks and discussions of the trading repos
     github_topics found, inside GitHub's published rate limit."""
@@ -746,6 +791,7 @@ MINERS = {
     "bis_speeches": mine_bis_speeches, "broker_swaps": mine_broker_swaps,
     "github_topics": mine_github_topics, "propfirm_boards": mine_propfirm_boards,
     "research_feeds": mine_research_feeds, "github_depth": mine_github_depth,
+    "global_journals": mine_global_journals,
 }
 
 
@@ -783,8 +829,12 @@ def sweep_order(cursor: int) -> list[str]:
     return names[k:] + names[:k]
 
 
-def run_and_save(budget_s: float | None = None) -> dict:
+def run_and_save(budget_s: float | None = None, only: list[str] | None = None) -> dict:
     """One sweep. With `budget_s`, a ROTATING sweep inside that wall budget.
+
+    `only` names the miners to run (the paper clock, ops/run_research_feeds.cmd, passes
+    research_feeds,arxiv_qfin,bis_speeches). A named pass does not touch the rotation cursor,
+    so it never steals a slot from the full sweep; an unknown name is refused, not ignored.
 
     WHY ROTATION (measured 2026-11-10). On the box this module is run by the hourly cycle's
     scout_swarm as one beat among ~20 sharing a 600 s pass, under a hard subprocess timeout of
@@ -804,6 +854,11 @@ def run_and_save(budget_s: float | None = None) -> dict:
     seconds: dict = dict(st.get("miner_seconds", {}))
     cursor = int(st.get("sweep_cursor", 0))
     order = sweep_order(cursor)
+    if only:
+        unknown = [n for n in only if n not in MINERS]
+        if unknown:
+            raise SystemExit(f"seed_miners: unknown miner(s) {unknown}; known: {sorted(MINERS)}")
+        order = [n for n in order if n in only]
     ran: list[str] = []
     deferred: list[str] = []
     for i, name in enumerate(order):
@@ -811,8 +866,9 @@ def run_and_save(budget_s: float | None = None) -> dict:
         if budget_s is not None and time.monotonic() - t0 > LAUNCH_SHARE * budget_s:
             deferred = order[i:]
             break
-        cursor = (list(MINERS).index(name) + 1) % len(MINERS)
-        _merge_state({"sweep_cursor": cursor})
+        if not only:
+            cursor = (list(MINERS).index(name) + 1) % len(MINERS)
+            _merge_state({"sweep_cursor": cursor})
         ran.append(name)
         t_m = time.monotonic()
         try:
@@ -956,4 +1012,8 @@ if __name__ == "__main__":
     _ap = argparse.ArgumentParser(description="seed miner sweep")
     _ap.add_argument("--budget-s", type=float, default=None,
                      help="wall budget for a rotating sweep (the caller's slice)")
-    run_and_save(_ap.parse_args().budget_s)
+    _ap.add_argument("--only", default=None,
+                     help="comma-separated miner names to run alone (no cursor change)")
+    _a = _ap.parse_args()
+    run_and_save(_a.budget_s, [x.strip() for x in _a.only.split(",") if x.strip()]
+                 if _a.only else None)

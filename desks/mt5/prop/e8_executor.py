@@ -39,6 +39,7 @@ import contextlib
 import json
 import sys
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -70,6 +71,15 @@ ARMED_MARKER = DESK / "data" / "E8_ARMED"
 #: The comment written on every order this lane sends. Positions are matched back to a sleeve by
 #: it, so an order without it is not this lane's and is never closed or counted here.
 TAG = "E8"
+#: CERTIFIED XAUUSD SLEEVES TRADE HERE (2026-11-25, the approved order: every standby sleeve
+#: trades on FTMO and E8). Until now every XAUUSD sleeve was refused as OWNED_BY_GOLD_LANE, so
+#: 18 certified gold sleeves (session_range_breakout, cross_asset_residual, macro_conditional,
+#: range_reversion) had no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS
+#: stay E8-Gold's: a sleeve leg is placed only under the cross-account gold direction lock
+#: (mt5desk.gold_oco), never while this account rests any gold entry (a window bracket keeps its
+#: slot) or holds any XAU position in the locked reading (ONE POSITION PER INSTRUMENT), and a
+#: banned XAU sleeve never closes by instrument (E8-Gold's positions share it). False reverts.
+GOLD_SLEEVES = True
 
 #: Per-position basis for the break-even floor: initial stop distance, and the high-water mark.
 #: Keyed by venue position id. See `manage_breakeven` for why this lane needs a file where the
@@ -347,6 +357,7 @@ def _last_closed(frame: Any) -> Any:
 MT5_SLEEVES = DESK / "data" / "sleeves.json"
 
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+
 MT5_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 TWIN_TRAIL_DAYS = 45
 TWIN_FADE_N = 5
@@ -848,6 +859,123 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
     return rows
 
 
+
+def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
+                exclusions: Mapping[str, Any], integrity: Any, authority: Any, cert_id: str,
+                fingerprint: str, priced: Any = (), replicated: str = "REPLICATED",
+                edge_doubt: str | None = None,
+                ) -> tuple[str, str, list[str], float]:
+    """(refusal status or "", why, doubts, size multiplier) for one certified sleeve.
+
+    NO BLOCKERS BUT EXOTICS (principal 2026-11-24 18:34Z: "make sure all promoted strategies get
+    to EA and FTMO, and the rule never intervenes or anything, no blockers for anything. Only
+    exotics are blocked"). The book is no longer a whitelist: a sleeve it does not name is sized
+    by its book row (prop/e8_book.sleeve_risk). Only an exotic pair, an explicit zero the
+    principal wrote, and his named exclusions he has not lifted stand a sleeve aside. The
+    certifier alarm, a replication miss and the Tier S door SIZE it -- x DOUBT_MULT each, unless
+    the book already priced that doubt in (its `doubt_codes`) or the principal's own number funds
+    it -- and never refuse it."""
+    from prop.e8_book import (
+        DOUBT_MULT,
+        DOUBT_PLACEBO,
+        DOUBT_REAL_EDGE,
+        DOUBT_REPLICATION,
+        DOUBT_TIER_S,
+        SUPERSEDED_EXCLUSIONS,
+        is_exotic_pair,
+    )
+    if is_exotic_pair(sym):
+        return ("EXOTIC_BANNED", "exotic FX pair: exotics are banned (principal 2026-11-24 "
+                "18:04Z)", [], 0.0)
+    if book_key in cert and not cert[book_key] > 0:
+        return "PRINCIPAL_ZERO", "principal zero in the E8 certified book", [], 0.0
+    if book_key in exclusions and book_key not in SUPERSEDED_EXCLUSIONS:
+        return "PRINCIPAL_EXCLUDED", str(exclusions[book_key]), [], 0.0
+    doubts: list[tuple[str, str]] = []
+    if integrity.alarm.get("blocks"):
+        doubts.append((DOUBT_PLACEBO,
+                       f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})"))
+    verdict, why = integrity.replication(cert_id, fingerprint)
+    if verdict != replicated:
+        doubts.append((DOUBT_REPLICATION, f"replication {verdict}: {why}"))
+    try:
+        tier_reason = authority.block(cert_id)
+    except Exception as exc:
+        tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
+    if tier_reason:
+        doubts.append((DOUBT_TIER_S, f"Tier S door: {tier_reason}"))
+    if edge_doubt:
+        # The reopen judge lists it unverified (research/real_edge.py): sized, never refused.
+        doubts.append((DOUBT_REAL_EDGE, edge_doubt))
+    done = {str(c) for c in priced or ()}
+    fresh = [c for c, _ in doubts if c not in done]
+    mult = 1.0 if cert.get(book_key, 0) > 0 else DOUBT_MULT ** len(fresh)
+    return "", "", [t for _, t in doubts], mult
+
+
+def _gold_rail() -> str:
+    from mt5desk import gold_oco as _oco
+    return _oco.RAIL
+
+
+def _gold_sleeve_refusal(venue: Any, side: str, *, now: datetime, holder: str
+                         ) -> tuple[str | None, tuple[str, str] | None]:
+    """(why refused, (account key, trading date)) for a certified XAUUSD sleeve leg, called UNDER
+    the placement lock. The account's gold state is republished first (as E8-Gold and FTMO's
+    `_gold_lock_refusal` do), then refused when this account rests a gold ENTRY on the other side
+    (E8-Gold's window bracket, which would fill against the sleeve) and otherwise judged by the
+    cross-account gold direction lock. Fails closed on anything it cannot read; never raises."""
+    from mt5desk import gold_oco as _oco
+
+    from prop import e8_guard
+    try:
+        key = _oco.tradelocker_oco_key(venue)
+    except _oco.IdentityUnavailable as exc:
+        return f"gold OCO identity: {exc}; fail closed", None
+    except Exception as exc:
+        return f"gold OCO identity unreadable ({type(exc).__name__}); fail closed", None
+    date = e8_guard.server_day(now)
+    want = _oco.side_of(side)
+    seen: dict[str, Any] = {}
+
+    def rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        pos, ords = _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                               venue.instrument_id(_oco.SYMBOL))
+        seen["positions"], seen["entries"] = pos, ords
+        return pos, ords
+
+    sync = _oco.sync_lane("e8", key, rows, date=date, holder=holder)
+    if not sync.get("published") or "entries" not in seen:
+        return (f"gold OCO: this account's gold state was not republished under the lock "
+                f"({sync.get('why')}); fail closed"), (key, date)
+    if want is None:
+        return f"gold OCO: unreadable leg side {side!r}; fail closed", (key, date)
+    # FRESH, UNDER THE LOCK (audit MF2): an E8-Gold fill or another sleeve's send since the pass
+    # began is an open XAU position the pass-start snapshot does not show.
+    if seen.get("positions"):
+        ids = ", ".join(str(p.get("id")) for p in seen["positions"])
+        return (f"this E8 account already holds XAU ({ids}) in the locked reading: one position "
+                f"per instrument"), (key, date)
+    # ANY RESTING GOLD ENTRY KEEPS THE WINDOW'S SLOT (audit SF1): an opposite leg would fill
+    # against the sleeve and a same-side leg would stack beside it.
+    if seen["entries"]:
+        ids = ", ".join(str(o.get("id")) for o in seen["entries"])
+        return (f"this E8 account rests a gold entry ({ids}): E8-Gold's window bracket keeps the "
+                f"slot until it fills or is cancelled"), (key, date)
+    v = _oco.gate("e8", side, key=key, date=date)
+    return (None if v.allowed else v.why), (key, date)
+
+
+def _gold_republish(venue: Any, ctx: tuple[str, str], *, holder: str) -> dict[str, Any]:
+    from mt5desk import gold_oco as _oco
+    key, date = ctx
+    out = _oco.sync_lane(
+        "e8", key, lambda: _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                                      venue.instrument_id(_oco.SYMBOL)),
+        date=date, holder=holder)
+    return {k: out.get(k) for k in ("published", "why", "claims")}
+
+
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
     from mt5desk import order_door
@@ -948,8 +1076,15 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
     # book's RISK_FRAC. Absent, disabled or invalid -> None, and nothing changes.
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
-    cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
+
+    from prop.e8_book import principal_e8_book
+
+    cert = principal_e8_book(load_cert_book(CERT_BOOK_FILE, "e8"))
     doc["cert_book"] = cert or None
+    # THE REOPEN JUDGE, re-read at the door so a verdict that turned since the book was written is
+    # priced here too (research/real_edge.py). It sizes; it never refuses.
+    import real_edge as _real_edge
+    edges, doc["real_edge"] = _real_edge.load()
     committed_usd = 0.0
     try:
         resting_orders = venue.orders()
@@ -1025,7 +1160,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
-        if str(sym).upper() == "XAUUSD":
+        if str(sym).upper() == "XAUUSD" and not GOLD_SLEEVES:
             row["status"] = "OWNED_BY_GOLD_LANE"
             row["why"] = "E8-Gold is the single authoritative gold entry and management writer"
             doc["sleeves"].append(row)
@@ -1038,6 +1173,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["status"] = "BANNED_FAMILY"
             row["why"] = _ban_reason(fam)
             closed: list[int] = []
+            if str(sym).upper() == "XAUUSD":
+                # E8-GOLD'S POSITIONS SHARE THIS INSTRUMENT (audit MF1 on 4cf2c82fa): a close by
+                # instrument would flatten the gold windows' book, which is not this sleeve's.
+                # An alert row only; nothing is closed here.
+                row["why"] += ("; XAUUSD is shared with E8-Gold, so no position is closed by "
+                               "instrument here (alert only)")
+                row["alert"] = "banned XAU sleeve: review any position it may still hold"
+                row["closed_positions"] = closed
+                doc["sleeves"].append(row)
+                _record(row, now, armed)
+                continue
             for p in open_positions:
                 _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
                 if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
@@ -1078,32 +1224,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         cert_id = str(s.get("key") or "")
         book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
-        if not (cert.get(book_key, 0) > 0):
-            row.update(status="NOT_IN_PRINCIPAL_BOOK",
-                       why="no positive risk for this sleeve in the E8 certified book")
+        status, why, doubts, doubt_mult = entry_doors(
+            sym, book_key, cert, exclusions, integrity, promotion_authority, cert_id,
+            str(s.get("fingerprint") or ""), s.get("doubt_codes") or (), REPLICATED,
+            _real_edge.doubt(cert_id, edges))
+        if status:
+            row.update(status=status, why=why)
             doc["sleeves"].append(row)
             continue
-        if book_key in exclusions:
-            row.update(status="PRINCIPAL_EXCLUDED", why=str(exclusions[book_key]))
-            doc["sleeves"].append(row)
-            continue
-        if integrity.alarm.get("blocks"):
-            row.update(status="CERTIFIER_ALARM", why=str(integrity.alarm.get("why")))
-            doc["sleeves"].append(row)
-            continue
-        verdict, why = integrity.replication(cert_id, str(s.get("fingerprint") or ""))
-        if verdict != REPLICATED:
-            row.update(status="UNREPLICATED", why=f"{verdict}: {why}")
-            doc["sleeves"].append(row)
-            continue
-        try:
-            tier_reason = promotion_authority.block(cert_id)
-        except Exception as exc:
-            tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
-        if tier_reason:
-            row.update(status="TIER_S_BLOCKED", why=str(tier_reason))
-            doc["sleeves"].append(row)
-            continue
+        if doubts:
+            row["doubts"] = doubts
+            row["doubt_mult"] = doubt_mult
         func = get_family_func(fam)
         if func is None:
             row["status"] = "NO_FAMILY"
@@ -1252,7 +1383,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
-                        else risk_usd)
+                        else float(s["risk_frac"]) * e8_guard.START_BALANCE * doubt_mult
+                        if isinstance(s.get("risk_frac"), (int, float))
+                        else risk_usd * doubt_mult)
         # THE E8 CODE CEILING ON THE FINAL, POST-MULTIPLIER RISK (r7.3, coordinator ruling (a)):
         # the book's risk is sized, the twin-fade, leg-balance and macro multipliers scale it
         # (both ways), and only THEN is the entry held to decision_core.E8_CERT_CEILING (0.006)
@@ -1260,7 +1393,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # The cut is billed CAPPED `e8_cert_ceiling`; a venue minimum over the ceiling is refused
         # and billed RAIL_BLOCKED on the same rail, never lifted over the pin.
         row["book_risk_usd"] = round(row_risk_usd, 2)
-        row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
+        row["risk_source"] = ("cert_book" if _ckey in cert else "book row risk_frac"
+                              if isinstance(s.get("risk_frac"), (int, float)) else "book RISK_FRAC")
         if not row_risk_usd > 0:
             row["risk_usd"] = round(row_risk_usd, 2)
             row["status"] = "STANDS_ASIDE"
@@ -1290,6 +1424,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # each one through on its own merits into a floor none of them breaches alone.
         # `row_risk_usd` is the FINAL lot's measured risk here (r7.3), after every multiplier
         # and the ceiling -- the floor is never checked against a pre-multiplier figure.
+        from prop.e8_book import rollover_block
+        if (_roll := rollover_block(s, now)) is not None:
+            row["status"], row["rail"], row["why"] = "RAIL_BLOCKED", "rollover_entry_gate", _roll
+            row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
+            doc["sleeves"].append(row)
+            continue
         if outstanding_usd + committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
             row["why"] = (f"broker stops and new risks totalling "
@@ -1323,6 +1463,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                     _xwhy = _xa.opposite_block(_fbook, sym, side, account="fusion",
                                                why_absent=_fwhy) \
                         or _xa.ftmo_block(sym, side)
+                _gold_ctx: tuple[str, str] | None = None
+                if _xwhy is None and str(sym).upper() == "XAUUSD":
+                    _gwhy, _gold_ctx = _gold_sleeve_refusal(
+                        venue, side, now=now, holder=f"e8_executor:{row.get('sleeve') or sym}")
+                    if _gwhy is not None:
+                        _xwhy, row["rail"] = _gwhy, _gold_rail()
                 if _xwhy is None:
                     # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it
                     # a prop order carried no latency at all, so the shortfall model had nothing
@@ -1342,6 +1488,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["acked_at"] = datetime.now(tz=UTC).isoformat()
                         row["latency_send_to_ack_ms"] = round(
                             (time.perf_counter() - _t0) * 1000.0, 3)
+                        # ONE POSITION PER INSTRUMENT HOLDS WITHIN THE PASS (audit MF2): the
+                        # next sleeve on this instrument reads ALREADY_OPEN.
+                        open_keys.add((int(iid), side))
                         _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
                                               + (1.0 if side == "buy" else -1.0) * float(lot))
                     except Exception as exc:
@@ -1351,9 +1500,14 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         _xa.bounded(
                             lambda: _xa.publish_tradelocker(venue, source="e8_executor"),
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what="e8_executor publish")
+                    if _gold_ctx is not None:
+                        # A FILL HERE CLAIMS THE DAY'S GOLD DIRECTION for every lane, so the
+                        # account's gold state is republished under the same lock (never raises).
+                        row["gold_oco_republish"] = _gold_republish(
+                            venue, _gold_ctx, holder=f"e8_executor:{row.get('sleeve') or sym}")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
-                row["rail"] = "cross_account_opposite"
+                if "rail" not in row: row["rail"] = "cross_account_opposite"
                 row["why"] = _xwhy
                 row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
                 doc["sleeves"].append(row)
@@ -1391,6 +1545,7 @@ def size_certified_entry(venue: Any, sym: str, side: str, fam: str, g: Any, stop
     minimum would cross the ceiling, a RAIL_BLOCKED one on the same rail with lot 0.
     """
     from mt5desk.decision_core import E8_CERT_CEILING
+
     from prop import e8_guard
     cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
     vmin = float(venue.min_lot(sym))
@@ -1491,6 +1646,7 @@ def cert_ceiling(risk_usd: float, key: str) -> tuple[float, dict[str, Any] | Non
     funds above `decision_core.E8_CERT_CEILING` x START_BALANCE is sent at the ceiling, and the
     cut is billed `e8_cert_ceiling` (growth governance: every cap carries its ledger line)."""
     from mt5desk.decision_core import E8_CERT_CEILING
+
     from prop import e8_guard
     cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
     if not risk_usd > cap_usd:

@@ -45,7 +45,7 @@ REPORTS = BASE / "reports"
 UNI = BASE / "data" / "universe"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path.home() / "quant-platform"
+QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path(os.path.expanduser("~")) / "quant-platform"
 sys.path.insert(0, str(QP))
 
 from libs.validation.cpcv import CPCV  # noqa: E402

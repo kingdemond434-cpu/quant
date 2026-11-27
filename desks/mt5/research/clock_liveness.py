@@ -911,27 +911,30 @@ def retire_gone(clocks: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
         ln = LANE_BY_NAME.get(lane_name)
         if ln is None or not ln.path.exists():
             continue
-        doc = read_json(ln.path)
-        if not isinstance(doc, dict):
-            continue
-        target = doc.get(ln.nested) if ln.nested else doc
-        if not isinstance(target, dict):
-            continue
-        changed = 0
-        for k in keys:
-            row = target.get(k)
-            if not isinstance(row, dict) or is_terminal(row.get("status")):
-                continue
-            row["status"] = "RETIRED_INSTRUMENT_GONE"
-            row["status_why"] = ("the broker registry no longer lists this symbol, so no venue "
-                                 "bar can ever advance this clock (clock_liveness)")
-            row["status_at"] = stamp
-            row["retired_by"] = "research/clock_liveness.py"
-            changed += 1
-        if changed:
-            tmp = ln.path.with_suffix(".clockliveness.tmp")
-            tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-            os.replace(tmp, ln.path)
+        def _retire(doc: dict[str, Any], ln: Any = ln, keys: list[str] = keys) -> int:
+            target = doc.get(ln.nested) if ln.nested else doc
+            if not isinstance(target, dict):
+                return 0
+            n = 0
+            for k in keys:
+                row = target.get(k)
+                if not isinstance(row, dict) or is_terminal(row.get("status")):
+                    continue
+                row["status"] = "RETIRED_INSTRUMENT_GONE"
+                row["status_why"] = ("the broker registry no longer lists this symbol, so no "
+                                     "venue bar can ever advance this clock (clock_liveness)")
+                row["status_at"] = stamp
+                row["retired_by"] = "research/clock_liveness.py"
+                n += 1
+            return n
+
+        # READ FRESH UNDER THE LEDGER LOCK (2026-11-25, invariant I1): never a whole-file
+        # replace from a stale read, which dropped clocks other writers opened meanwhile.
+        try:
+            import ledger_lock
+        except ImportError:
+            from research import ledger_lock  # type: ignore[no-redef]
+        changed = int(ledger_lock.update(ln.path, _retire, indent=1) or 0)
         done.append({"lane": lane_name, "retired": changed, "keys": keys[:20]})
     return done
 

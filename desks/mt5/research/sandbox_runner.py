@@ -59,6 +59,7 @@ from libs.research import sandbox as SB  # noqa: E402
 from libs.research import sandbox_rotation as ROT  # noqa: E402
 from libs.research import trial_ledger as T  # noqa: E402
 from libs.research.external_federation import ExternalResearchPacket  # noqa: E402
+from research import family_spec as FS  # noqa: E402
 from research import sandboxes as CELLS  # noqa: E402
 
 UNMEASURED = "UNMEASURED"
@@ -92,6 +93,9 @@ def rotation_extra(free_mb: float | None) -> int:
 
 MAX_LICENCE_READS = 3
 MAX_DISCOVERIES_PER_PACKET = 40
+#: Named examples of NOT_EXECUTABLE rows kept per packet (the counts are complete; these are the
+#: evidence a reader checks the reason against).
+MAX_NOT_EXECUTABLE_EXAMPLES = 8
 #: THE FLOOR IS A MEASUREMENT, NOT A HABIT (raised 30 -> 90 on 2026-09-23). With the federation
 #: provisioned, SIX of the systems that finally became runnable -- aeon, pymc, pysr, ruptures,
 #: scikit_mine, stumpy -- wrote NO packet and reported "timed out after 30s", every one of them
@@ -495,10 +499,36 @@ def is_text_only(pkt: ExternalResearchPacket) -> bool:
     return bool(rows) and all(str(r.get("kind")) in ROUTE_KINDS for r in rows)
 
 
+#: research/conversion_lanes.py's translator reads this queue (one JSON row per set-aside rule);
+#: kept bounded so a flood of prose cannot grow it without limit.
+TRANSLATE_QUEUE = DESK / "data" / "conversion_lanes" / "translate_queue.jsonl"
+TRANSLATE_QUEUE_MAX_BYTES = 32 * 1024 * 1024
+
+
+def queue_for_translation(family: str, symbols: list[str], params: dict[str, Any], text: str,
+                          system_id: str, path: Path | None = None) -> bool:
+    """Hand a rule the family cannot execute as written to the free-model translator, which may
+    only set what the rule's own text states. Never raises; False when not queued."""
+    p = path or TRANSLATE_QUEUE
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        if p.exists() and p.stat().st_size > TRANSLATE_QUEUE_MAX_BYTES:
+            return False
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": now(), "family": family, "symbols": list(symbols)[:8],
+                                 "params": dict(params), "text": text[:2000],
+                                 "source_id": f"sandbox:{system_id}"}, default=str) + "\n")
+        return True
+    except OSError:
+        return False
+
+
 def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: Any,
-           apply: bool) -> dict[str, Any]:
+           apply: bool, queue_path: Path | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"candidates": 0, "created": 0, "existing": 0, "unregistered": 0,
-                           "discoveries": 0, "trials": []}
+                           "not_executable": 0, "not_executable_by_reason": {},
+                           "not_executable_examples": [], "discoveries": 0, "trials": [],
+                           "cells": []}
     prov = {"system": plan.system_id, "version": plan.version, "licence": plan.licence,
             "disposition": plan.disposition, "run_id": pkt.run_id, "commit": pkt.commit,
             "trials_charged": pkt.trials_charged, "authority": "researcher only; the gauntlet "
@@ -507,17 +537,58 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
     for row in pkt.candidates:
         family = str(row.get("family") or "")
         symbols = [str(s) for s in (row.get("symbols") or [])]
-        if family not in A.FAMILIES or not symbols:
-            out["unregistered"] += 1
-            continue
         ev_raw = row.get("evidence")
         ev: dict[str, Any] = dict(ev_raw) if isinstance(ev_raw, dict) else {}
         p_raw = ev.get("parameters")
-        params: dict[str, Any] = dict(p_raw) if isinstance(p_raw, dict) else {}
+        raw_params: dict[str, Any] = dict(p_raw) if isinstance(p_raw, dict) else {}
         text = str(row.get("text") or "")
         horizon = str(row.get("horizon") or "")
+        # THE STRUCTURED RULE, OR A NAMED REASON (box read 2026-11-25: 28 sandbox generators,
+        # ~29.4k rows judged, 0 survived, the sampled row's params EMPTY and its rule in prose).
+        # A row the family cannot execute AS THE SYSTEM PROPOSED IT is never enqueued: the judge
+        # would score the family's defaults, a cell nobody proposed, and charge a trial for it.
+        # It is COUNTED by reason instead (research/family_spec.py), never silently dropped.
+        if family not in A.FAMILIES:
+            spec = {"status": FS.UNREGISTERED_FAMILY,
+                    "reason": f"{family!r} is not a registered price-only family", "params": {}}
+        elif not symbols:
+            spec = {"status": FS.NO_SYMBOLS, "reason": "the row declares no instrument",
+                    "params": {}}
+        else:
+            spec = FS.to_executable(family, raw_params, prose=text)
+        if not FS.is_testable(spec["status"]):
+            n_rows = max(1, len(symbols))
+            # THE SEARCH STILL HAPPENED: the system tested this rule to emit it, so its trial is
+            # charged exactly as before (never deflated); only the judge slot is withheld.
+            for sym in symbols if family in A.FAMILIES else []:
+                out["trials"].append(T.Trial(
+                    f"{pkt.run_id}:{family}:{sym}", family,
+                    {"symbol": sym, "horizon": horizon, "mechanism": plan.system_id,
+                     "method": plan.system_id}, dict(raw_params),
+                    max(1, pkt.trials_charged // n_c)))
+            if apply and queue_path is not None and text.strip() and spec["status"] in (
+                    FS.PROSE_ONLY, FS.DEFAULTS_ONLY, FS.UNHONOURED_VARIANT):
+                queue_for_translation(family, symbols, raw_params, text, plan.system_id,
+                                      path=queue_path)
+            if spec["status"] in (FS.UNREGISTERED_FAMILY, FS.NO_SYMBOLS):
+                out["unregistered"] += 1
+            out["not_executable"] += n_rows
+            by = out["not_executable_by_reason"]
+            by[spec["status"]] = int(by.get(spec["status"]) or 0) + n_rows
+            if len(out["not_executable_examples"]) < MAX_NOT_EXECUTABLE_EXAMPLES:
+                out["not_executable_examples"].append(
+                    {"family": family, "symbols": symbols[:4], "status": spec["status"],
+                     "reason": str(spec.get("reason") or "")[:200],
+                     "declared": sorted(raw_params)[:12]})
+            continue
+        params: dict[str, Any] = dict(spec["params"])
+        if spec.get("unread"):
+            ev = {**ev, "parameters_unread": list(spec["unread"])}
+        if spec.get("mapped"):
+            ev = {**ev, "parameters_mapped": dict(spec["mapped"])}
         for sym in symbols:
             out["candidates"] += 1
+            out["cells"].append(ROT.cell_key(family, sym, horizon))
             trial = T.Trial(f"{pkt.run_id}:{family}:{sym}", family,
                             {"symbol": sym, "horizon": horizon, "mechanism": plan.system_id,
                              "method": plan.system_id}, dict(params),
@@ -607,6 +678,12 @@ def production_rows(plans: list[Plan], tried: list[dict[str, Any]],
         elif str(row.get("run_status")) == "UNMEASURED":
             why = str(row.get("why_unmeasured") or "empty packet")
             reason = f"RAN AND MEASURED NOTHING: {why}"[:300]
+        elif int(ing.get("not_executable") or 0):
+            by = ", ".join(f"{k} {v}" for k, v in
+                           sorted((ing.get("not_executable_by_reason") or {}).items()))
+            reason = (f"EMITTED {ing.get('not_executable')} CANDIDATE ROW(S), NONE EXECUTABLE AS "
+                      f"PROPOSED ({by}): its structured output does not map onto the family's "
+                      f"arguments -- a binding task, never a defaults-only judge slot")[:300]
         elif str(row.get("run_status")) == "TEXT_ONLY":
             reason = "RAN AND DONATED TEXT ONLY: it carries a REBUILT task on this same pass"
         elif any(int(counts.get(k) or 0) for k in NON_CANDIDATE_YIELDS):
@@ -736,7 +813,9 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     tried: list[dict[str, Any]] = []
     packets: list[dict[str, Any]] = []
     all_trials: list[Any] = []
-    totals = {"candidates": 0, "created": 0, "existing": 0, "unregistered": 0, "discoveries": 0}
+    totals = {"candidates": 0, "created": 0, "existing": 0, "unregistered": 0,
+              "not_executable": 0, "discoveries": 0}
+    not_exec_by_reason: dict[str, int] = {}
     text_only: list[str] = []
     skipped_budget: list[str] = []
     try:
@@ -755,10 +834,15 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
             else:
                 pkt, meta = run_in_process(plan, run_bundle, root=root, ctx=ctx)
             seconds = float(meta.get("seconds") or 0.0)
-            ing = ingest(pkt, plan, compute_s=seconds, conn=conn, apply=not dry_run)
+            ing = ingest(pkt, plan, compute_s=seconds, conn=conn, apply=not dry_run,
+                         queue_path=state_path.parent / "conversion_lanes"
+                         / TRANSLATE_QUEUE.name)
             all_trials.extend(ing.pop("trials"))
+            enqueued_cells = set(ing.pop("cells", []) or [])
             for k in totals:
                 totals[k] += int(ing.get(k) or 0)
+            for k, v in (ing.get("not_executable_by_reason") or {}).items():
+                not_exec_by_reason[k] = not_exec_by_reason.get(k, 0) + int(v or 0)
             unmeasured = A.is_unmeasured(pkt)
             status = ("UNMEASURED" if unmeasured else "TEXT_ONLY" if is_text_only(pkt)
                       else "PRODUCED")
@@ -784,13 +868,29 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                           "information_gain": float(s_row.get("information_gain") or 0.0) + gain,
                           "candidates": int(s_row.get("candidates") or 0) + len(pkt.candidates),
                           "last_run_id": pkt.run_id, "last_status": status, "last_at": now()})
+            # LIFETIME HANDOFF, per system (read by research/judge_reach.py): rows the packet
+            # emitted per instrument, rows that went to the registry, and every row withheld by
+            # its named reason -- so an emitted->received loss is always explained or flagged.
+            _ne = s_row.get("not_executable_by_reason")
+            _ne = dict(_ne) if isinstance(_ne, dict) else {}
+            for k, v in (ing.get("not_executable_by_reason") or {}).items():
+                _ne[k] = int(_ne.get(k) or 0) + int(v or 0)
+            s_row.update({
+                "rows_emitted": int(s_row.get("rows_emitted") or 0)
+                + int(ing.get("candidates") or 0) + int(ing.get("not_executable") or 0),
+                "rows_enqueued": int(s_row.get("rows_enqueued") or 0)
+                + int(ing.get("created") or 0) + int(ing.get("existing") or 0),
+                "not_executable_by_reason": _ne,
+                # an enqueue that raised is a LEAK, not a reason: counted so the guardian pages it
+                "enqueue_errors": int(s_row.get("enqueue_errors") or 0)
+                + len(ing.get("errors") or [])})
             s_row["roi"] = fed.roi({**s_row, "live_delta_elog": None})
             #: THE CELLS THIS SYSTEM REACHES, kept so breadth can be MEASURED rather than
             #: asserted: one (family|symbol|horizon) key per candidate that entered the queue,
             #: de-duplicated, capped. `sandbox_rotation.breadth` turns these rows into the
             #: effective rank of the federation and each system's marginal contribution to it.
-            _cells = {ROT.cell_key(c.get("family"), sym, c.get("horizon"))
-                      for c in pkt.candidates for sym in (c.get("symbols") or [])}
+            # Only rows that WENT to the queue: a NOT_EXECUTABLE row reached no cell.
+            _cells = enqueued_cells
             s_row["cells"] = sorted(set(s_row.get("cells") or []) | _cells)[:ROT.MAX_CELLS]
             record = {**plan.record(), "run_status": status, "seconds": seconds,
                       "counts": pkt.counts(), "ingested": ing, "budget_share_s": share,
@@ -847,6 +947,13 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
         "rotation": rotation,
         "systems_tried": tried, "packets": packets,
         "candidates": totals, "effective_trials": census,
+        # THE JUDGE SLOTS NOT SPENT, by reason: rows a system emitted that the family cannot
+        # execute as proposed (research/family_spec.py). Counted, never enqueued as defaults.
+        "not_executable": {"rows": totals["not_executable"], "by_reason": not_exec_by_reason,
+                           "rule": ("a row is enqueued only when its structured parameters "
+                                    "map onto the family's own arguments and differ from its "
+                                    "defaults; otherwise the judge would score the family's "
+                                    "defaults, a cell the system never proposed")},
         "text_only": text_only, "skipped_budget": skipped_budget,
         "unmeasured": unmeasured_list,
         "install_tasks": [r["task"] for r in tried if (r.get("task") or {}).get("kind")

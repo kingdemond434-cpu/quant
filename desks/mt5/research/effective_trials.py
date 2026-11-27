@@ -216,6 +216,45 @@ def sr0(n_trials: int, variance_of_sharpes: float | None) -> float:
 NOMINAL_CAMPAIGN_TRIALS = 597
 
 
+def canonical_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    """(rows with every PROVEN alias key removed, how many rows changed).
+
+    ONE CELL IS ONE TRIAL (Auditor ruling 2026-11-04 on alias certificates). A param the
+    family's build pops and never reads (`cell_equivalence.IGNORED_INPUTS`, each entry pinned
+    against the real `build_cell` by `tests/test_cell_identity.py`) is a spelling, so
+    `CHFNOK.carry` under input_symbol eBay, GBPJPY and none is ONE evaluation charged three
+    times. Only those keys are removed -- never a key merged by correlation or similarity --
+    so two rows become one content identity only when they are provably the same trade.
+    """
+    try:
+        from research.cell_equivalence import IGNORED_INPUTS
+    except ImportError:
+        from cell_equivalence import IGNORED_INPUTS  # type: ignore[no-redef]
+    out: list[dict[str, Any]] = []
+    changed = 0
+    for r in rows:
+        drop = IGNORED_INPUTS.get(str(r.get("family") or r.get("trial_family") or ""))
+        if not drop:
+            out.append(r)
+            continue
+        row, hit = dict(r), False
+        if isinstance(row.get("params"), dict) and drop & set(row["params"]):
+            row["params"] = {k: v for k, v in row["params"].items() if k not in drop}
+            hit = True
+        if isinstance(row.get("params_json"), str):
+            try:
+                pj = json.loads(row["params_json"])
+            except ValueError:
+                pj = None
+            if isinstance(pj, dict) and drop & set(pj):
+                row["params_json"] = json.dumps({k: v for k, v in pj.items() if k not in drop},
+                                                sort_keys=True, default=str)
+                hit = True
+        changed += hit
+        out.append(row)
+    return out, changed
+
+
 def measure(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Nominal versus effective independent tests, per family and in total."""
     from libs.research.trial_ledger import effective_independent_tests
@@ -366,11 +405,17 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     """
     t0 = time.time()
     rows, n_parked = census_rows(docket)
-    census = measure(rows)
+    # THE ALIAS CORRECTION IS MEASURED BESIDE THE RAW CENSUS, never in place of it: both are
+    # published, and the charge reads the canonical one (one cell, one trial).
+    raw_census = measure(rows)
+    canon, n_alias_rows = canonical_rows(rows)
+    census = measure(canon) if n_alias_rows else raw_census
     variance, variance_basis = measured_variance_of_sharpes(dsr_inputs_path)
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
     charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)
+    charged_raw, _basis_raw = (charge(raw_census, nominal=NOMINAL_CAMPAIGN_TRIALS)
+                               if n_alias_rows else (charged, basis))
     # `--apply` alone is no longer enough to move the wall. Passing `authorised` is a deliberate
     # act, and the hourly leg does not pass it: on a clock this organ measures and publishes,
     # and the bar a certificate was judged under stays the bar until someone decides otherwise.
@@ -406,6 +451,22 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
                            else round(before - after, 6)),
             "spec_trial_count_now": effective_now,
         },
+        "alias_correction": {
+            "rule": ("one executable cell is one trial: params a family's build discards "
+                     "(cell_equivalence.IGNORED_INPUTS, pinned against build_cell) are removed "
+                     "before the census; nothing is merged by correlation"),
+            "rows_respelled": n_alias_rows,
+            "nominal_before": raw_census.get("n_nominal"),
+            "nominal_after": census.get("n_nominal"),
+            "effective_before": raw_census.get("n_effective"),
+            "effective_after": census.get("n_effective"),
+            "charged_before": charged_raw, "charged_after": charged,
+            "sr0_before": _round_or_none(sr0(charged_raw, variance)),
+            "sr0_after": _round_or_none(sr0(charged, variance)),
+            # null sr0 means UNMEASURED, never missing: this names why (audit nit).
+            "sr0_basis": (variance_basis if variance is not None
+                          else f"{UNMEASURED}: {variance_basis}"),
+        },
         "applied": applied,
         "judge_input_proof": proof,
         "by_family": census.get("by_family") or [],
@@ -413,6 +474,10 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
         "budget_s": budget_s,
     }
     return doc
+
+
+def _round_or_none(x: float) -> float | None:
+    return None if math.isnan(x) else round(x, 6)
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None) -> Path:

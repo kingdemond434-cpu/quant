@@ -234,6 +234,19 @@ def test_a_day_the_integrity_checker_failed_is_refused_and_the_refusal_is_report
     assert (tf.SILVER / "EURUSD" / f"{DAYS[0]}.parquet").exists(), "clean days still build"
 
 
+@pytest.mark.parametrize("exclusion", ["SPARSE", "VENUE_HALT", "NO_SESSION"])
+def test_a_sparse_or_halted_day_is_refused_like_a_failed_one(
+        rig: ts.TapeStore, exclusion: str) -> None:
+    """UNMEASURED by exclusion is a non-pass, and the only consumer must treat it as one."""
+    tf.INTEGRITY.write_text(json.dumps({
+        "generated_utc": "2026-05-07T00:00:00+00:00", "verdict": "OK",
+        "days": [{"symbol": "EURUSD", "day": DAYS[1], "verdict": "UNMEASURED",
+                  "exclusion": exclusion, "reasons": ["excluded"]}]}))
+    rep = tf.run(rig, ["EURUSD"], days_back=0)
+    assert rep["days_refused_on_integrity"] == 1
+    assert not (tf.SILVER / "EURUSD" / f"{DAYS[1]}.parquet").exists()
+
+
 def test_a_missing_integrity_report_builds_but_says_it_had_no_verdict(rig: ts.TapeStore) -> None:
     """Refusing to build anything until the checker has run would leave a fresh box with no
     features at all. What the absence does instead is get STATED (L1.28a)."""

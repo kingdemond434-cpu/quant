@@ -294,6 +294,35 @@ def test_gate_without_any_release_holds_untested_code(world: dict[str, Path],
     assert "no production pointer" in d.reason
 
 
+@pytest.fixture(autouse=True)
+def _release_authority(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CI-pointer tests below pin the old rule explicitly; the default is now audit_clear."""
+    monkeypatch.setenv(rp.AUTHORITY_ENV, rp.AUTHORITY_RELEASE)
+
+
+def test_the_default_authority_is_the_audit_clear_and_ci_is_advisory(
+        world: dict[str, Path], box: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """zuck 2026-11-25 18:53Z: an Audit CLEAR at the exact sha deploys; no production pointer
+    needed. The gate names the tip; adopt_guard `pre` (CLEAR rows) decides next."""
+    monkeypatch.delenv(rp.AUTHORITY_ENV, raising=False)
+    assert rp.authority() == rp.AUTHORITY_AUDIT_CLEAR
+    dev = world["dev"]
+    tip = _commit(dev, {"libs/a.py": "A = 7\n"}, "never released by CI")
+    _g(dev, "push", "-q", "origin", f"HEAD:refs/heads/{LIVE}")
+    d = rp.gate(box)
+    assert (d.decision, d.target, d.tip) == ("ADOPT_CLEAR", tip, tip)
+    assert "adopt_guard" in d.reason
+    monkeypatch.setenv(rp.AUTHORITY_ENV, "release")     # one env var puts the CI rule back
+    assert rp.gate(box).decision in ("HOLD", "ADOPT_RELEASE")
+
+
+def test_the_launcher_guard_root_and_decision_follow_the_authority() -> None:
+    s = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text("utf-8")
+    assert 'refs/remotes/origin/$Branch' in s
+    assert '"release") { "refs/remotes/origin/production"' in s
+    assert "adopt_guard.py" in s and 'Invoke-AdoptGuard @("pre", "--target", $gateTarget)' in s
+
+
 def test_unverifiable_release_diff_never_adopts_the_tip() -> None:
     class BrokenDiff:
         def changed(self, before: str, after: str) -> list[str]:
@@ -453,7 +482,7 @@ def test_windows_launcher_never_converts_gate_failure_to_tip_authority() -> None
         assert f'Done 8 "{failure}"' in s
     assert '$adoptArgs += @("-Target", $gateTarget, "-NoFetch")' in s
     assert "falling back to adopting the branch tip" not in s
-    assert '"ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP"' in s
+    assert '"ADOPT_CLEAR", "ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP"' in s
     r = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-Release.ps1").read_text(encoding="utf-8")
     assert "[string] $Target" in r
 

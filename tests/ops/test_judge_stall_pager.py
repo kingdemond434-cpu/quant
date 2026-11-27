@@ -56,7 +56,8 @@ def _alive(pid: object, started: datetime | None) -> bool | None:
 
 def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 0.5,
            status: str = "SWEEPING", phase: str | None = "plan", phase_h: float = 1.0,
-           ended_h: float = 2.0, cells: int | None = 7, resident: dict | None = None) -> dict:
+           ended_h: float = 2.0, cells: int | None = 7, resident: dict | None = None,
+           first_verdicts: int | None = 150_000) -> dict:
     ledger = tmp / "gate_verdict_ledger.jsonl"
     ledger.write_text("".join(json.dumps({"cell": f"c{i}", "at": _iso(now - timedelta(
         hours=verdict_h + i))}) + "\n" for i in range(3, -1, -1)), "utf-8")
@@ -78,7 +79,13 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
                                     indent=2), "utf-8")
     elif sweep.exists():
         sweep.unlink()
-    return {"ledger": ledger, "resident": res, "throughput": tmp / "absent.json",
+    # a healthy judge's published rate: first verdicts above the floor, an hour old
+    tp = tmp / "absent.json"
+    if first_verdicts is not None:
+        tp = tmp / "rate_only_throughput.json"
+        tp.write_text(json.dumps({"rate": {"at": _iso(now - timedelta(hours=1)), "verdicts": {
+            "first_terminal_counts": {"24h": first_verdicts}}}}), "utf-8")
+    return {"ledger": ledger, "resident": res, "throughput": tp,
             "sweep_result": sweep, "env_file": tmp / "absent.env.json",
             "cpu_reader": _cpu(8.0)}
 
@@ -985,3 +992,30 @@ def test_cores_idle_reads_the_judge_with_the_throughput_organs_definition(jsp, m
     monkeypatch.setattr(iu, "spec_from_file_location", fake)
     out = jsp._measure_cpu()
     assert "busy_judge_cores" in out or out.get("cpu_source") == "UNMEASURED"
+
+
+# ---------------------------------------------------- first verdicts per day (2026-11-20)
+def _rate(tmp_path: Path, n: object, at: datetime) -> Path:
+    p = tmp_path / "JUDGING_THROUGHPUT.json"
+    p.write_text(json.dumps({"rate": {"at": at.isoformat(), "verdicts": {
+        "first_terminal_counts": {"24h": n}}}}))
+    return p
+
+
+@pytest.mark.parametrize("n,open_", [(1552, True), (99_999, True), (100_000, False),
+                                     (250_000, False)])
+def test_first_verdicts_under_the_floor_open_the_incident(jsp: ModuleType, tmp_path: Path,
+                                                          n: int, open_: bool) -> None:
+    r = jsp._first_verdicts(NOW, _rate(tmp_path, n, NOW - timedelta(hours=1)))
+    assert r["open"] is open_ and r["floor"] == 100_000
+
+
+@pytest.mark.parametrize("n,age_h", [(None, 1), ("5", 1), (True, 1), (500_000, 7)])
+def test_an_absent_or_stale_first_verdict_rate_is_unmeasured(jsp: ModuleType, tmp_path: Path,
+                                                             n: object, age_h: float) -> None:
+    r = jsp._first_verdicts(NOW, _rate(tmp_path, n, NOW - timedelta(hours=age_h)))
+    assert r["open"] is None
+
+
+def test_first_verdicts_low_is_a_tracked_incident(jsp: ModuleType) -> None:
+    assert "first_verdicts_low" in jsp.INCIDENTS

@@ -184,6 +184,10 @@ def test_never_fire_ground_still_counts_renamed_cells() -> None:
 @pytest.mark.parametrize("fam", F.PROBED)
 def test_probed_families_resolve_to_the_function_the_judge_calls(fam) -> None:
     fn = F._resolved(fam)
+    if fam in ("liquidity_regime", "orderflow_imbalance"):
+        from mt5desk import families_orthogonal as fo
+        assert fn is fo.ORTHOGONAL_FAMILIES[fam]
+        return
     assert fn is (family_cot_positioning if fam == "cot_positioning" else family_event_reaction)
 
 

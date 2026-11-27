@@ -1,0 +1,37 @@
+{
+ "organ": "executable:desks/mt5/research/clock_coverage.py",
+ "kind": "executable",
+ "code": [
+  "desks/mt5/research/clock_coverage.py"
+ ],
+ "clock": "invoked:desks/mt5/research/shadow_cycle.py",
+ "cadence_s": null,
+ "max_silence_s": null,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read UNMEASURED here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/shadow/shadow_health.json",
+ "artifact_declared": "desks/mt5/reports/shadow/shadow_health.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 974,
+ "artifact_bytes": 5076,
+ "artifact_sha256": "3e002d18baede9ebb828b6a381b06806ffc0612c286d42a38430d23e187f3c9f",
+ "summary": {
+  "status": "ENROLMENT_GAP"
+ },
+ "progress_metric": "UNMEASURED",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-25T03:10:55+00:00",
+ "only_missing": {
+  "at": "2026-11-25T03:10:55+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

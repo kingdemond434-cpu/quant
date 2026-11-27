@@ -649,16 +649,19 @@ def book_name(name: object) -> str:
 #: principal act. Each is a missed-growth line (rail "principal_zero_pin"; journal D-20261020-001).
 #:
 #: zuck 2026-10-20 21:52Z: "trade only gold asia for fusion and mt5" -- both books.
-GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset({"gold_london_am", "gold_afternoon"})
+#: LIFTED (principal 2026-11-24 18:31Z: "I removed the e8 gold only rule ages ago"; 18:34Z "all
+#: promoted strategies get to EA and FTMO ... no blockers for anything. Only exotics"). The
+#: 2026-10-20 gold-asia-only order is superseded; this set stays, empty, so nothing re-pins it.
+GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset()
 #: The scalp lane's stand-down (zuck 2026-09-29; the XAU scalp sleeves retired 2026-09-30). The
 #: allocator's pf.book still funded xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z
 #: (coordinator, read-only on the box); only its RETIRED status kept it off Fusion.
 SCALP_LANE_ZERO: frozenset[str] = frozenset({
     "xau_m5_anti_breakout_overlap", "xau_m15_anti_breakout", "xau_m5_anti_momentum_ny"})
 #: BOOKS_PATCH v5 (zuck, approved 2026-10-13): the three overnight_gap_decay rows send nothing.
+#: AUDCHF lifted 2026-11-24 (principal: no blockers but exotics); the two ZAR rows are exotic.
 GAP_DECAY_ZERO: frozenset[str] = frozenset({
-    "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
-    "AUDCHF_overnight_gap_decay_asia"})
+    "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia"})
 #: zuck 2026-10-25 (project chat): "Also usdnok n sum fusion slesves r soo shit it's probs due to
 #: the cost model things spreads thing", then "Remove them" (09:42:02Z) and "Usdnok is bad"
 #: (09:42:12Z). He named USDNOK; EURILS and EURZAR go with it, exact sleeve names only, as the
@@ -673,6 +676,21 @@ GAP_DECAY_ZERO: frozenset[str] = frozenset({
 FUSION_FX_OUT_ZERO: frozenset[str] = frozenset({
     "usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
     "eurzar_carry_asia_p_8339edce23032d21"})
+#: ZEROS IN data/CERT_BOOK_LIVE.json THE PRINCIPAL HAS SINCE LIFTED. That file is box state (an
+#: origin edit is reverted by the box's next push), so a lifted zero is honoured HERE, in code,
+#: by every reader: `cert_book_zero`, the E8 gold lane's windows and prop/e8_book. A stale copy of
+#: the file therefore can never re-pin them. 2026-11-19: NZDJPY, AUDCHF on E8. 2026-11-24
+#: (principal 18:31Z / 18:34Z, the gold-only order removed, "no blockers ... only exotics"): the
+#: gold-only order's gold_london_am and gold_afternoon on every venue, AUDCHF on Fusion, USDJPY's
+#: Reddit-lineage zero on E8.
+_LIFTED_GOLD = frozenset({"gold_london_am", "gold_afternoon"})
+SUPERSEDED_CERT_ZEROS: dict[str, frozenset[str]] = {
+    "e8": _LIFTED_GOLD | frozenset({"NZDJPY_clock_transition_asia",
+                                     "AUDCHF_overnight_gap_decay_asia",
+                                     "USDJPY_session_range_breakout_asia"}),
+    "fusion": _LIFTED_GOLD | frozenset({"AUDCHF_overnight_gap_decay_asia"}),
+    "ftmo": _LIFTED_GOLD,
+}
 PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
     "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO | FUSION_FX_OUT_ZERO,
     "e8": GOLD_ASIA_ONLY_ZERO,
@@ -707,11 +725,29 @@ def cert_book_zero(name: object, venue: str = "fusion") -> bool:
     if not cert:
         return False
     folded = {str(k).lower(): v for k, v in cert.items()}
+    lifted = {k.lower() for k in SUPERSEDED_CERT_ZEROS.get(venue, frozenset())}
     for key in (str(name), book_name(name)):
         v = cert.get(key, folded.get(key.lower()))
         if v is not None:
-            return v == 0.0
+            return v == 0.0 and key.lower() not in lifted
     return False
+
+
+def lifted_rule_breaches() -> list[str]:
+    """RULES THE PRINCIPAL REMOVED STAY REMOVED (zuck 2026-11-24 18:31Z: "I removed the e8 gold
+    only rule ages ago" -- it had come back through a stale box file). One line per breach: a
+    lifted name that a code pin or the live cert book still zeroes on its venue. [] when clean.
+    Pure over the module state and the live CERT_BOOK_LIVE.json; the guardian runs it each pass."""
+    out: list[str] = []
+    for venue, names in SUPERSEDED_CERT_ZEROS.items():
+        for name in sorted(names):
+            if principal_zero(name, venue):
+                out.append(f"{venue}: {name} is lifted but still in PRINCIPAL_ZERO")
+            if cert_book_zero(name, venue):
+                out.append(f"{venue}: {name} is lifted but the cert book still zeroes it")
+    if GOLD_ASIA_ONLY_ZERO:
+        out.append(f"GOLD_ASIA_ONLY_ZERO re-pinned: {sorted(GOLD_ASIA_ONLY_ZERO)}")
+    return out
 
 
 def cert_zero_row(s: dict[str, Any], venue: str = "fusion") -> bool:
@@ -2154,18 +2190,25 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     sleeve that silently disappears from a roster is indistinguishable from one nobody wrote."""
     if not path.exists():
         return [], []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        live = [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
-    except Exception:
-        return [], []
+    # ONE BAD ROW NEVER EMPTIES THE ROSTER (root R3, 2026-11-27): before this, a single
+    # non-object row made `s.get` raise and the whole LIVE roster read as []. Rows are now checked
+    # one by one; a malformed row is quarantined, named here and counted in
+    # reports/STATE_QUARANTINE.json, and every good LIVE row still trades.
+    from mt5desk import state_rows as _sr
+    rep = (path.parent.parent / "reports" if path.parent.name == "data" else path.parent)
+    got = _sr.sleeve_rows(path, report=rep / "STATE_QUARANTINE.json")
+    if got.status != _sr.OK:
+        return [], ([f"sleeves.json {got.status}: {got.why}"] if got.why else [])
+    live = [s for s in got.rows if s.get("status") == "LIVE"]
+    quarantine_notes = [f"sleeves.json row {q['index']} ({q.get('name')}) quarantined: {q['why']}"
+                        for q in got.quarantined]
     try:
         from mt5desk.live_policy import admit
     except ImportError:                                    # pragma: no cover - box path only
-        return live, []
+        return live, quarantine_notes
     keep, refused = admit(live)
-    notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
-             for r, why in refused]
+    notes = quarantine_notes + [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
+                                for r, why in refused]
     # FEED HEALTH IS AN INPUT, NEVER A FILTER (LAWS 5m observatory; GROWTH_GOVERNANCE Rule 1).
     # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
     # file; the reading rides on the row for entry timing to read and drops nothing.

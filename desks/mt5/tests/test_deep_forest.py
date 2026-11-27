@@ -514,7 +514,12 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
            if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")
            # a ground refused on its owner's terms is a decision with its missed-growth line,
            # never a route that failed to resolve (Governance wayback ruling 2026-11-14)
-           and not (v["status"] == "BLOCKED_ON_TERMS" and v.get("missed_growth"))}
+           and not (v["status"] == "BLOCKED_ON_TERMS" and v.get("missed_growth"))
+           # a render-route page that never rendered (no browser off-box) is a NAMED wall with
+           # its missed-growth line, never a silent "reached, no claims" (2026-11-17)
+           and not (v["status"] == "BLOCKED"
+                    and str(v.get("why") or "").startswith("JS_SHELL_UNRENDERED")
+                    and v.get("missed_growth"))}
     assert not bad, bad
     # The fixture world serves the same page everywhere, so most grounds see claims already
     # banked (REACHED_NO_CLAIMS); the first of each route converts and every route resolves.

@@ -1,0 +1,167 @@
+{
+ "format": "replication_civilization.RuleSpec v1 (family, text, defaults, selector_params, external_cell, native, peers_key)",
+ "written_at": "2026-10-20",
+ "by": "hourly pass 10, IDEA_QUEUE rank 22 (REPLICATION 02:39Z: spec book holds 6 families; these 5 hold 871 certificates); carry dropped 2026-11-14 because the live SPEC_BOOK already holds it",
+ "rule": "WRITTEN SPECIFICATIONS ONLY. A spec here is never a verdict: REPLICATED, MISMATCH and UNMEASURED are written only by research/replication_civilization.py after its own second implementation runs. Every spec's text ends with cell_contract, which is stored once.",
+ "never": "status is WRITTEN for every row; nothing in this file may say REPLICATED",
+ "source": "text and defaults carried verbatim from the 2026-10-14 replication-spec-book branch (7db43ab66); defaults re-checked against each implementation's signature at live 677c8e58be (unchanged since 2026-10-14)",
+ "cell_contract": "EXTERNAL CELL CONTRACT. The cell runs on the chart its params name (`timeframe`, H1 by absence). `session` (asia [0,8), london [8,16), ny [14,22) server hours; all/absent/unknown = every hour) keeps a signal only when its bar's hour is inside the window; the selector of a non-window family is never read. Then, for variant keys the family does not take natively, in this order: `regime` low_vol/high_vol keeps a signal whose bar's 20-bar stdev of close-to-close percent change is below/above its own trailing 100-bar median, month_end keeps day >= 26, quarter_end that in Mar/Jun/Sep/Dec; `side_mode` revert mirrors the trade (side, stop and target reflected through the signal bar's close), long/short keep that side only, follow is the signal as emitted; `entry_timing` delayed moves the signal one bar later with the same stop and target (a last-bar signal is dropped); `execution_style` market is the next-open fill. Any other value of these keys, and any `conditioner`, `residual`, `macro_axis`/`macro_state` or `publication_lag_d`/`transform` the family does not take, has no written meaning and the cell is UNMEASURED. A next-open fill on the wrong side of its own stop or target is not a trade. Financing: every 21:00 UTC rollover strictly after the fill bar's stamp and at or before the last held bar's stamp is one night (Wednesday's counts three), charged at the WORSE of the registry's swap_long/swap_short in the unit its swap_mode names (1/7/8 points x tick_size; 5 annual percent / 360 of the close before each rollover; 6 the same at the entry price; 4 account money x quote_per_account / contract; 2/3 quote money / contract, or base money x price); an unknown swap_mode charges nothing and says so.",
+ "families": [
+  {
+   "family": "formula",
+   "text": "Evaluate the expression tree (JSON prefix list [op, child, ...args], or its rendered call form op(child, arg)) on the bars. Terminals: close/open/high/low; ret = diff of log close; range = (high-low)/close; body = (close-open)/close; atr = trailing atr_n-bar mean true range (full window required); vol = 24-bar stdev of ret; spread and activity = the bar's broker spread and tick volume, forward-filled; flow = sign(body) x activity; an external terminal the bars do not carry is undefined. Windowed operators over the trailing w bars, full window required (w < 1 or longer than the history is undefined): delay, delta (x - x w ago), mean, std (ddof 1), min, max, sum, zscore, ts_rank (share of the previous w values <= the current one), decay (linear weights w..1, newest heaviest), bars_since_max/min (bars since the extreme of the last w, first occurrence), atr_norm (x / mean atr over w, partial window allowed), ts_backfill (forward fill up to w bars), scale (x / sum |x| over w). Binary: add, sub, mul, div (undefined where |denominator| <= 1e-12), max2/min2 (the defined one where one is undefined), trade_when(g, x) (x where g > 0, else the last such x). corr/cov/residual over w >= 3. Infinite is undefined. z = (v - mean_norm(v)) / std_norm(v) over the trailing norm bars, full window; the rule stands aside on fewer than max(2 x norm, 300) bars, on a tree naming a driver terminal, or when under 5% of z is defined. From bar norm to the second-to-last, at least hold_bars after the previous signal: |z| >= entry_z signals sign(z) (follow) or -sign(z) (fade); entry next open, stop stop_atr x ATR(atr_n) from the signal close, target rr x that, time exit after hold_bars. ",
+   "defaults": {
+    "expr": null,
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 8,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "selector_params": false,
+   "external_cell": true,
+   "native": [
+    "atr_n",
+    "drivers",
+    "entry_z",
+    "expr",
+    "hold_bars",
+    "norm",
+    "population",
+    "rr",
+    "side_mode",
+    "stop_atr"
+   ],
+   "peers_key": null,
+   "status": "WRITTEN",
+   "implementation": {
+    "path": "desks/mt5/mt5desk/family_formula.py",
+    "function": "family_formula",
+    "git_blob_at_write": "9edc383df66faea9ecd79ee4c801c6ed0b71cdc5"
+   },
+   "certificates_at_write": 102,
+   "builder": {
+    "status": "NOT_IN_THIS_FILE",
+    "where": "/mnt/project-files/patches/replication_spec_formula_40d26e7c4.bundle (branch claude/replication-spec-book, 2026-10-14)"
+   }
+  },
+  {
+   "family": "clock_transition",
+   "text": "Trade one named moment of the venue's plumbing at the broker stamp_hour the certificate carries (label one of london_fix, ny_option_cut, cme_fx_close, cash_equity_close, comex_settle, tokyo_open, london_open, ny_open, broker_rollover; mode into/out_of/fade; side +1/-1). The rule stands aside on fewer than 60 days of bars on the chart, or when fewer than 40 bars carry the stamp hour. EVERY bar whose hour is stamp_hour is a moment i (two per hour on M30, four on M15). into: the signal is bar i - lead_bars (skipped below bar 1), side as given, held lead_bars. out_of: the signal is bar i, side as given, held hold_bars. fade: move = close[i] - close[i - lead_bars] (skipped if zero or below bar 1); the signal is bar i, side -sign(move) x side, held hold_bars. Stop stop_atr x ATR(atr_n) from the signal bar's close, target rr x that beyond it; entry next open; time exit after the hold (at least one bar). ",
+   "defaults": {
+    "label": "",
+    "stamp_hour": -1,
+    "mode": "out_of",
+    "side": 1,
+    "lead_bars": 2,
+    "hold_bars": 4,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "selector_params": false,
+   "external_cell": true,
+   "native": [
+    "atr_n",
+    "hold_bars",
+    "label",
+    "lead_bars",
+    "mode",
+    "rr",
+    "side",
+    "stamp_hour",
+    "stop_atr"
+   ],
+   "peers_key": null,
+   "status": "WRITTEN",
+   "implementation": {
+    "path": "desks/mt5/mt5desk/family_clock_transition.py",
+    "function": "family_clock_transition",
+    "git_blob_at_write": "4701a3a4094694a7e9f7cf39bd44c332d8e98160"
+   },
+   "certificates_at_write": 110,
+   "builder": {
+    "status": "NOT_IN_THIS_FILE",
+    "where": "/mnt/project-files/patches/replication_spec_clock_transition_b18768390.bundle (branch claude/replication-spec-book, 2026-10-14)"
+   }
+  },
+  {
+   "family": "cross_asset_residual",
+   "text": "What is left of this instrument after its factor instruments (factor_symbols, each on the cell's own chart; a missing factor is a different model and the cell is UNMEASURED) are removed. On the bars every series carries: one-bar log returns; the residual at t = the target's return less an intercept plus the factors' returns weighted by least squares fitted on the beta_win (default lookback) returns STRICTLY before t; cum = the running sum of the residual; z = (cum - its lookback mean) / its lookback stdev (ddof 1). The rule stands aside with fewer than beta_win + 2 x lookback usable returns. From return beta_win + lookback to the second-to-last, |z| >= entry_z signals against the residual (revert) or with it (continue), on the target bar that return ends on, only in active_hours when named; entry next open, stop stop_atr x ATR(atr_n) from THAT bar's close, target rr x that, time exit after ttl_bars. ",
+   "defaults": {
+    "lookback": 240,
+    "beta_win": null,
+    "entry_z": 2.0,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5,
+    "ttl_bars": 72,
+    "side_mode": "revert",
+    "active_hours": null
+   },
+   "selector_params": false,
+   "external_cell": true,
+   "native": [
+    "active_hours",
+    "atr_n",
+    "beta_win",
+    "entry_z",
+    "lookback",
+    "rr",
+    "side_mode",
+    "stop_atr",
+    "ttl_bars"
+   ],
+   "peers_key": "factor_symbols",
+   "status": "WRITTEN",
+   "implementation": {
+    "path": "desks/mt5/mt5desk/families_orthogonal.py",
+    "function": "family_cross_asset_residual",
+    "git_blob_at_write": "441c34c5ca3fe4bf943fa1ecfe8f93e9a1af3e8c"
+   },
+   "certificates_at_write": 363,
+   "builder": {
+    "status": "NOT_IN_THIS_FILE",
+    "where": "/mnt/project-files/patches/replication_spec_cross_asset_residual_54331f1b5.bundle (branch claude/replication-spec-book, 2026-10-14)"
+   }
+  },
+  {
+   "family": "macro_conditional",
+   "text": "Take a side conditioned on a macro state KNOWN at the bar. The state is the certificate's macro_series, or else the first of DTWEXBGS, DGS10, DGS2, T10Y2Y, VIXCLS, SOFR, DFF, BAMLH0A0HYM2, DCOILWTICO holding 250 prints in the desk's FRED file. Each print's trailing percentile rank (average rank of ties among the prints so far / their count; undefined under 250) is stamped at the instant its publisher released it on the bar clock: DTWEXBGS (Fed H.10, weekly) the Wednesday 00:00 UTC after the following Monday's release + 3h; same-day-close series the next midnight + 3h; never earlier than observation midnight + 1 day + 3h; a series with no written calendar is UNMEASURED. A bar carries the latest rank released at or before its stamp. From bar atr_n to the second-to-last, where a rank is known: side_in_high when rank >= regime_high, else -side_in_high; entry next open, stop stop_atr x ATR(atr_n) from the signal close, target rr x that, time exit after ttl_bars. ",
+   "defaults": {
+    "regime_high": 0.5,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 2.0,
+    "ttl_bars": 96,
+    "side_in_high": 1,
+    "macro_series": null
+   },
+   "selector_params": false,
+   "external_cell": true,
+   "native": [
+    "atr_n",
+    "macro_series",
+    "regime_high",
+    "rr",
+    "side_in_high",
+    "stop_atr",
+    "ttl_bars"
+   ],
+   "peers_key": null,
+   "status": "WRITTEN",
+   "implementation": {
+    "path": "desks/mt5/mt5desk/families_orthogonal.py",
+    "function": "family_macro_conditional",
+    "git_blob_at_write": "441c34c5ca3fe4bf943fa1ecfe8f93e9a1af3e8c"
+   },
+   "certificates_at_write": 152,
+   "builder": {
+    "status": "NOT_IN_THIS_FILE",
+    "where": "/mnt/project-files/patches/replication_spec_macro_conditional_0fa8d9a94.bundle (branch claude/replication-spec-book, 2026-10-14)"
+   }
+  }
+ ]
+}

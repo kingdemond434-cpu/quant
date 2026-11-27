@@ -293,6 +293,23 @@ function Invoke-Git {
     return $out
 }
 
+# (Audit C4, r24.2) UNDER THE PINNED ADOPTER (QUANT_ADOPT_PINNED=1, set by Adopt-And-Seal -Pinned)
+# the guards and the seal check run from the guard checkout with the guard's python: nothing
+# under -RepoRoot is executed as SYSTEM. Otherwise the tree's own copies, as before.
+function Get-PinnedCode {
+    param([string] $Relative)
+    if ($env:QUANT_ADOPT_PINNED -eq "1") {
+        if (-not $env:QUANT_GUARD_ROOT -or -not $env:QUANT_PINNED_PYTHON) { throw "pinned adoption without QUANT_GUARD_ROOT/QUANT_PINNED_PYTHON" }
+        return @{ Py = $env:QUANT_PINNED_PYTHON; Args = @(); Path = (Join-Path $env:QUANT_GUARD_ROOT $Relative) }
+    }
+    $p = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $a = @()
+    if (-not (Test-Path -LiteralPath $p)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $p = "py"; $a = @("-3") }
+        else { $p = "python" }
+    }
+    return @{ Py = $p; Args = $a; Path = (Join-Path $RepoRoot $Relative) }
+}
+
 function Invoke-GuardedIndexCommit {
     # Windows porcelain commit refreshes the evidence lake and has crashed with
     # C0000005 after adoption. Commit the already staged tree, with the actual
@@ -302,14 +319,9 @@ function Invoke-GuardedIndexCommit {
     $branchRef = (Invoke-Git @("symbolic-ref", "-q", "HEAD")).Trim()
     if (-not $beforeHead -or -not $branchRef) { throw "Cannot commit a detached or unmeasured adoption" }
     $beforeTree = (Invoke-Git @("write-tree")).Trim()
-    $guardPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-    $guardArgs = @()
-    if (-not (Test-Path -LiteralPath $guardPython)) {
-        if (Get-Command py -ErrorAction SilentlyContinue) { $guardPython = "py"; $guardArgs = @("-3") }
-        else { $guardPython = "python" }
-    }
     foreach ($relativeGuard in @("scripts/moneypath_precommit_guard.py", "scripts/check_protected_records.py")) {
-        $guardPath = Join-Path $RepoRoot $relativeGuard
+        $pc = Get-PinnedCode $relativeGuard
+        $guardPython = $pc.Py; $guardArgs = $pc.Args; $guardPath = $pc.Path
         if (-not (Test-Path -LiteralPath $guardPath)) { throw "Adoption guard missing: $relativeGuard" }
         $previousPreference = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
@@ -749,13 +761,10 @@ if ($ancestorRc -ne 1) {
 # before a byte is written: the running release, its seal and the gateway stay exactly as they
 # are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
 # what happened instead of reporting a partial adoption.
-$sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
+$sealPc = Get-PinnedCode "scripts\check_target_seal.py"
+$sealCheck = $sealPc.Path
 if (Test-Path $sealCheck) {
-    $sealPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $sealPyArgs = @()
-    if (-not (Test-Path $sealPy)) {
-        if (Get-Command py -ErrorAction SilentlyContinue) { $sealPy = "py"; $sealPyArgs = @("-3") }
-        else { $sealPy = "python" }
-    }
+    $sealPy = $sealPc.Py; $sealPyArgs = $sealPc.Args
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {

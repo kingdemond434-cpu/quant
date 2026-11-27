@@ -524,7 +524,14 @@ def _extend_worlds(r: np.ndarray, cols: list[str], screen: list[dict[str, Any]],
     ev = [SleeveEvidence(name=c, daily_r=df[c].to_numpy(float),
                          family=c.split("_", 1)[-1].rsplit("_", 1)[0], symbol=c.split("_")[0])
           for c in pick]
-    w = sample_worlds(ev, WorldConfig(seed=seed, n_worlds=r.shape[0], n_rows=r.shape[1]))
+    # REGIME-CONDITIONED, LIKE THE TENSOR THEY JOIN (zuck 2026-11-19: regime sizing FULL on every
+    # account). The allocator's own worlds are drawn from the forward regime mix
+    # (pf_allocator.regime_state); newcomers drawn unconditionally would be sized on an
+    # all-weather average beside columns sized on today's weather. Same labeller, same forward
+    # mix, on the newcomers' own days; an unfittable regime falls back to unconditional and says so.
+    labels, probs, r_why = _regime_for(df)
+    w = sample_worlds(ev, WorldConfig(seed=seed, n_worlds=r.shape[0], n_rows=r.shape[1],
+                                      regime_labels=labels, regime_probs=probs))
     new = np.asarray(w.r, dtype=float)
     n_w, n_t = min(new.shape[0], r.shape[0]), min(new.shape[1], r.shape[1])
     r2 = np.concatenate([r[:n_w, :n_t, :], new[:n_w, :n_t, :]], axis=2)
@@ -535,7 +542,21 @@ def _extend_worlds(r: np.ndarray, cols: list[str], screen: list[dict[str, Any]],
             row["excluded"] = None
             row["priced_by"] = "replay (independent of the allocator's worlds)"
     return r2, cols + pick, (f"{len(wanted)} unpriced, {len(have)} replayed, {len(pick)} joined "
-                             f"({why})")
+                             f"({why}); {r_why}")
+
+
+def _regime_for(df: Any) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], str]:
+    """(per-day labels on df's index, forward regime mix, note) from the allocator's labeller;
+    empty tuples (unconditional worlds) when it cannot fit."""
+    try:
+        from pf_allocator import regime_state
+        labels, probs, _diag = regime_state(df)
+    except Exception as exc:
+        return (), (), f"newcomers unconditional: regime unfit ({type(exc).__name__})"
+    if not labels or not any(labels) or not probs:
+        return (), (), "newcomers unconditional: no regime labels on their days"
+    mix = ", ".join(f"{k} {v:.2f}" for k, v in probs)
+    return tuple(labels), tuple(probs), f"newcomers regime-conditioned (forward mix {mix})"
 
 
 def _book_eval(paths: np.ndarray, h: np.ndarray) -> dict[str, float]:

@@ -48,7 +48,7 @@ CANDIDATE_SECRETS = (
     REPO / "data" / "secrets" / "llm_panel.json",          # the one llm_seat reads
     DESK / "data" / "secrets" / "llm_panel.json",
     REPO / "desks" / "mt5" / "data" / "secrets" / "llm_panel.json",
-    Path.home() / "llm_panel.json",
+    Path(os.path.expanduser("~")) / "llm_panel.json",
 )
 
 

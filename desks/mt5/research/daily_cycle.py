@@ -89,7 +89,61 @@ def run_step(name: str, fn) -> dict:
         dlog(f"{name}: FAILED -- {out['error']}")
         dlog(traceback.format_exc().rstrip())
     out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
-    _woe_after(name, _woe, out, raised=_raised, wall_s=float(out["seconds"]))
+    _beat(name, started, out, _woe_after(name, _woe, out, raised=_raised,
+                                         wall_s=float(out["seconds"])))
+    return out
+
+
+def _beat(name: str, started: datetime, out: object, woe: dict | None = None) -> None:
+    """THE PRODUCER HEARTBEAT (libs/ops/producer_heartbeat.py, 2026-11-25): one run row per
+    step and per proposer -- start, end, status, rows_out -- so a producer the daily chain runs
+    is never UNMEASURED off the box. Never fails the step."""
+    try:
+        from libs.ops.producer_heartbeat import beat
+        beat(name, started=started, result=out, woe=woe or {})
+    except Exception as exc:
+        dlog(f"  heartbeat for {name} not recorded: {type(exc).__name__}: {exc}")
+
+
+#: A WALL BUDGET FOR THE STEPS THAT HAVE HUNG (box 2026-11-22..24). The chain runs in one process
+#: under a 10 h task limit, so one step that never returns takes every step behind it down with
+#: it: research_bandit ran 9 h on 11-23 (76 min the night before) and futures_curves 5 h 20 min on
+#: 11-22, the task limit killed the chain both nights, and 37 of 39 steps never ran. A budgeted
+#: step runs as its own `--step` child; past its budget the child is stopped, the step is recorded
+#: as FAILED with TIMEOUT, and the chain goes on. Unbudgeted steps run in process exactly as before.
+STEP_WALL_S: dict[str, float] = {"research_bandit": 2 * 3600.0, "futures_curves": 90 * 60.0,
+                                 "curve_strategies": 90 * 60.0,
+                                 # The two cache-only fill probes (2026-11-25). Their OWN process
+                                 # is also what lets them refuse the terminal: each exits if the
+                                 # real MetaTrader5 is already imported, which the chain's shadow
+                                 # step does in this process. Script budget 900 s, wall 1,200 s.
+                                 "entry_timing_probe": 1200.0, "asia_bracket_refill": 1200.0}
+
+#: The script budget each fill probe is given (its own `--budget-s`), inside its wall above.
+PROBE_BUDGET_S = 900.0
+
+
+def run_step_isolated(name: str, wall_s: float) -> dict:
+    """Run step `name` as `daily_cycle.py --step NAME` under a wall budget."""
+    import subprocess
+    started = datetime.now(UTC)
+    cmd = [sys.executable, str(Path(__file__).resolve()), "--step", name]
+    try:
+        proc = subprocess.run(cmd, cwd=str(BASE), timeout=wall_s, check=False,
+                              capture_output=True, text=True)
+        out = {"ok": proc.returncode == 0}
+        if not out["ok"]:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:] or [""]
+            out["error"] = f"child exited {proc.returncode}: {tail[0][:300]}"
+    except subprocess.TimeoutExpired:
+        out = {"ok": False, "error": f"TIMEOUT: still running after {wall_s:.0f}s; stopped so "
+                                     f"the rest of the chain runs"}
+    except OSError as exc:
+        out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+    out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
+    out["isolated"] = True
+    dlog(f"{name}: {'ok' if out['ok'] else 'FAILED -- ' + str(out.get('error'))} "
+         f"(own process, budget {wall_s:.0f}s)")
     return out
 
 
@@ -103,15 +157,17 @@ def _woe_before(name: str) -> dict:
 
 
 def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
-               wall_s: float | None = None) -> None:
+               wall_s: float | None = None) -> dict:
     """Did the step write what it declared, or say why not? Prints the defect; never raises."""
     try:
         from libs.ops.write_or_explain import DEFECTS, observe
         rec = observe(name, before, out, raised=raised, wall_s=wall_s)
         if str(rec.get("verdict")) in DEFECTS:
             dlog(f"  {rec['verdict']} {rec.get('detail', '')}")
+        return rec if isinstance(rec, dict) else {}
     except Exception as exc:
         dlog(f"  write-or-explain not recorded for {name}: {type(exc).__name__}: {exc}")
+        return {}
 
 
 def _scalp_gauntlet() -> None:
@@ -135,6 +191,42 @@ def _shadow() -> None:
 def _qquant_shadow() -> None:
     import qquant_shadow
     qquant_shadow.main()
+
+
+def _run_root_script(stem: str, args: list[str]) -> int:
+    """`scripts/<stem>.py`'s `main(args)`, loaded by path so the repository's `scripts/` dir is
+    never put ahead of the desk's own modules on `sys.path`."""
+    import importlib.util
+    path = BASE.parent.parent / "scripts" / f"{stem}.py"
+    spec = importlib.util.spec_from_file_location(f"_daily_{stem}", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"{path} is not loadable")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return int(mod.main(args))
+
+
+def _entry_timing_probe() -> None:
+    """THE JUDGE'S FILL MECHANICS, MEASURED ONCE A DAY (2026-11-25). scripts/entry_timing_probe.py
+    replays sampled forward clocks through the judge's engine, an independent bid/ask reference
+    fill and a close-fill counterfactual, from the parquet CACHE ONLY (it refuses MetaTrader5 and
+    h1_source.from_mt5 before any desk import), and writes reports/ENTRY_TIMING_PROBE.json. Read
+    only: no certificate, clock or ledger is touched. A standing daily series lets the effect of
+    engine FILL_RULES changes be tracked over time."""
+    rc = _run_root_script("entry_timing_probe", ["--budget-s", f"{PROBE_BUDGET_S:.0f}"])
+    if rc != 0:
+        raise RuntimeError(f"entry_timing_probe returned {rc}")
+
+
+def _asia_bracket_refill() -> None:
+    """THE GOLD ASIA BRACKET CLOCKS UNDER THE OLD AND FIXED ENGINE, ONCE A DAY (2026-11-25).
+    scripts/asia_bracket_refill.py re-runs every XAUUSD.asia clock's exact spec over its forward
+    window through the engine before fill-2026-11-25-a (read from git) and the engine in this
+    tree, from the parquet CACHE ONLY, and writes reports/ASIA_BRACKET_REFILL.json (n, exp_r, t
+    and gap days per clock). Read only."""
+    rc = _run_root_script("asia_bracket_refill", ["--budget-s", f"{PROBE_BUDGET_S:.0f}"])
+    if rc != 0:
+        raise RuntimeError(f"asia_bracket_refill returned {rc}")
 
 
 def _execution() -> None:
@@ -175,24 +267,49 @@ def _weekly_hunt_refresh() -> None:
     now = datetime.now(UTC).timestamp()
     if now - last <= 6 * 86400:
         return
+    # ONE BROKEN HUNT NEVER STOPS THE OTHERS (box 2026-11-22..24: run_hunt7 named a family that
+    # had left mt5desk.families, the import raised, and every hunt behind it went unrun for days).
+    # Each job imports and runs on its own; the step still fails -- and the weekly stamp still
+    # does not advance -- when any job failed, so the failure stays loud and is retried.
     # Explicit imports make every member visible to the canonical wiring census.
-    import fetch_universe
-    import free_shadows
-    import run_hunt7
-    import run_hunt8
-    import run_hunt9
-    import run_hunt10
-    import run_hunt12
-    jobs = (("fetch_universe", fetch_universe.main), ("run_hunt7", run_hunt7.main),
-            ("run_hunt8", run_hunt8.main), ("run_hunt9", run_hunt9.main),
-            ("free_shadows", free_shadows.main), ("run_hunt10", run_hunt10.main),
-            ("run_hunt12", run_hunt12.main))
-    for module, runner in jobs:
-        # These two CLIs parse sys.argv when called without an explicit argument list.
-        # The daily step's own --step flag must never become a hunt argument.
-        result = runner([]) if module in {"fetch_universe", "run_hunt12"} else runner()
+    def _job(module: str):
+        def run():
+            if module == "fetch_universe":
+                import fetch_universe
+                return fetch_universe.main([])
+            if module == "run_hunt7":
+                import run_hunt7
+                return run_hunt7.main()
+            if module == "run_hunt8":
+                import run_hunt8
+                return run_hunt8.main()
+            if module == "run_hunt9":
+                import run_hunt9
+                return run_hunt9.main()
+            if module == "free_shadows":
+                import free_shadows
+                return free_shadows.main()
+            if module == "run_hunt10":
+                import run_hunt10
+                return run_hunt10.main()
+            import run_hunt12
+            return run_hunt12.main([])
+        return run
+    failed: list[str] = []
+    for module in ("fetch_universe", "run_hunt7", "run_hunt8", "run_hunt9", "free_shadows",
+                   "run_hunt10", "run_hunt12"):
+        # fetch_universe and run_hunt12 parse sys.argv when called without an explicit argument
+        # list; the daily step's own --step flag must never become a hunt argument.
+        try:
+            result = _job(module)()
+        except Exception as exc:  # named below, and the step still fails
+            dlog(f"weekly hunt: {module} FAILED ({type(exc).__name__}: {exc}); the rest still run")
+            failed.append(f"{module} ({type(exc).__name__})")
+            continue
         if isinstance(result, int) and result != 0:
-            raise RuntimeError(f"{module} exited {result}; weekly stamp not advanced")
+            failed.append(f"{module} exited {result}")
+    if failed:
+        raise RuntimeError(f"weekly hunt: {', '.join(failed)}; weekly stamp not advanced")
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(json.dumps({"last_sweep": now}), encoding="utf-8")
     dlog("weekly hunt7-12 + states sweep completed")
@@ -257,7 +374,7 @@ def _markout() -> None:
     try:
         from research import markout_v2
         markout_v2.main([])
-    except Exception as exc:  # noqa: BLE001 -- a report leg, never fatal
+    except Exception as exc:  # a report leg, never fatal
         dlog(f"  markout_v2 skipped: {type(exc).__name__}")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
@@ -421,6 +538,11 @@ def _proposers() -> None:
                  # placebo, then the pre-declared exogenous_conditioner cells through the donor
                  # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
                  "nlp_social_cells",
+                 # DEALER GAMMA (2026-11-24): HKEX index-option and Deribit option books ->
+                 # dealer gamma, flip distance, put/call OI as PIT lake series; the pre-declared
+                 # exogenous_conditioner cells, gain-tested against a shuffled-date placebo.
+                 # The fetch half is on the organs battery. Writes DEALER_GAMMA_CELLS.json.
+                 "dealer_gamma_proxy",
                  # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
                  # intel. Daily, on their own budget, so no hourly organ's share shrinks.
                  "learned_miners",
@@ -441,6 +563,7 @@ def _proposers() -> None:
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
                  "book_forensics"):
+        _t0 = datetime.now(UTC)
         try:
             mod = __import__(name)
             kwargs = {}
@@ -448,6 +571,7 @@ def _proposers() -> None:
                 base = float(inspect.signature(mod.run).parameters["budget_s"].default or 1200.0)
                 kwargs["budget_s"] = float(min(3600.0, max(300.0, base * arm_weight(name))))
             rep = mod.run(**kwargs)
+            _beat(name, _t0, rep if isinstance(rep, dict) else {"status": "OK"})
             dlog(f"{name}: " + (f"{rep.get('tests_run', '?')} tests, "
                                  f"{rep.get('cells_proposed', rep.get('donated_rows', '?'))} "
                                  "proposed" + (f" (budget {kwargs['budget_s']:.0f}s)"
@@ -456,6 +580,7 @@ def _proposers() -> None:
         except ModuleNotFoundError:
             dlog(f"{name}: not present on this tree")
         except Exception as exc:
+            _beat(name, _t0, {"error": f"{type(exc).__name__}: {exc}"[:300]})
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
 
 
@@ -917,7 +1042,10 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("state_admission", _state_admission),
          ("reconcile", _reconcile), ("scalp_gauntlet", _scalp_gauntlet),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
-         ("execution", _execution), ("recertify", _recertify),
+         ("execution", _execution),
+         ("entry_timing_probe", _entry_timing_probe),
+         ("asia_bracket_refill", _asia_bracket_refill),
+         ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("loss_replace", _loss_replace),
@@ -1688,7 +1816,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
                     continue
             if not lock.held:
                 lock.unlocked_steps.append(name)
-        results[name] = run_step(name, fn)
+        results[name] = (run_step_isolated(name, STEP_WALL_S[name]) if name in STEP_WALL_S
+                         else run_step(name, fn))
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would

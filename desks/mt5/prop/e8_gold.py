@@ -2233,12 +2233,12 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
     _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
-    cert = cert_gold_windows(_cert_raw)
+    from mt5desk.decision_core import SUPERSEDED_CERT_ZEROS
+    cert = cert_gold_windows({k: v for k, v in (_cert_raw or {}).items()
+                              if not (k in SUPERSEDED_CERT_ZEROS["e8"] and not v > 0)})
     if cert:
         kelly = {**(kelly or {}), **cert}
-    # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
-    # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
-    # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
+    # (The enabled book is no longer a whitelist: see the 2026-11-24 note below.)
     # A VOID BOOK SIZES EVERY WINDOW AT 0 (audit r6 MUST-FIX 1, ruling): absent, torn, disabled
     # or one value out of range names no window -- Fix B's own rule -- so no KELLY_SURVIVAL solve
     # (its grid reaches 0.015) and no RISK_FRAC (not a certified number) may size E8 instead.
@@ -2251,12 +2251,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         "e8 block missing or a value out of range); stands aside at 0 -- no "
                         "Kelly or RISK_FRAC fallback on E8")
         kelly = {**(kelly or {}), **dict.fromkeys(void, 0.0)}
-    else:
-        for _w, _h, _r in GOLD_WINDOWS:
-            if _w not in cert:
-                absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
-                              f"gold_{_w}); stands aside")
-        kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
+    # A WINDOW THE BOOK DOES NOT NAME NOW TRADES (principal 2026-11-24 18:31Z / 18:34Z: the
+    # gold-only rule is gone, "no blockers for anything"): it is sized by the solve or RISK_FRAC
+    # like any unnamed E8 key. Only an explicit zero in the book, or a void book, stands aside.
     # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
     # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
     # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
@@ -2586,7 +2583,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             # positions stay. A veto, so billed once per window per day (missed_growth), and a
             # decision row of its own (R_ADOPT_HOLD), never filed as one_at_risk.
             from libs.ops import new_risk_hold as _nrh
-            blocker = adopt_hold = _nrh.reason()
+            # The canary hold frees only the window it names (pre-mortem #1, Audit 19:48Z).
+            blocker = adopt_hold = _nrh.reason(sleeve=name)
             if adopt_hold is not None:
                 blocker_code = e8_evidence.R_ADOPT_HOLD
         if blocker is not None:
@@ -2863,6 +2861,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         fenced[side] = xwhy
                         doc["skipped"].append({"window": name, "side": side, "why": xwhy})
                         log(f"[{name}] {side} fenced: {xwhy}")
+                        if fusion_book is None:
+                            # FENCE UNREADABLE, NOT OPPOSED (box 11-13, 11-17): the other
+                            # account's book could not be read (terminal on another account, or
+                            # the lock held), so the window earns the same one extra pass a venue
+                            # fault does (`window_grace`). Still fail closed THIS pass.
+                            _deferred = state.setdefault("deferred", [])
+                            if name not in _deferred:
+                                _deferred.append(name)
                         # One missed-growth line per window and leg per day (the rail is
                         # re-checked every five minutes; the bill is one forgone leg).
                         _seen = state.setdefault("xacct_logged", {})
@@ -2897,6 +2903,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                        "risk_usd": round(leg_risk.get(side, risk_usd), 2),
                        "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
                        "armed": bool(armed)}
+                # WHAT THE ADOPT CANARY CHECKS THIS SEND AGAINST (Audit 19:49Z): the equity the
+                # fraction applied to, the room to today's floor, and the contract size, so the
+                # guard can bound risk-at-stop without re-deriving the sizing.
+                with contextlib.suppress(Exception):
+                    row["equity"] = round(float(equity), 2)
+                    row["contract_size"] = float(contract)
+                    if guard_decision is not None:
+                        # the room BEFORE this window: `committed` already carries its risk
+                        row["room_to_floor"] = round(
+                            floor_room(guard_decision)
+                            - (float(committed or 0.0) - window_risk_usd), 2)
                 if side in shrunk_by:
                     row["shrunk"] = shrunk_by[side]
                 if not (lot > 0):
@@ -3753,6 +3770,10 @@ def main(argv: list[str] | None = None) -> int:
                                           waits=MT5_RETRY_WAITS_S[1:])
             if ok:
                 doc = run(venue, mt5, armed=armed)
+        # THE E8 FILLS LEDGER (box 11-24): read-only, after the pass, never on the order path.
+        with contextlib.suppress(Exception):
+            from prop import e8_fills
+            doc["fills_ledger"] = e8_fills.observe(venue)
     finally:
         mt5.shutdown()
         # Queued alert work (v5.6) is drained AFTER the pass, bounded, so a short-lived process

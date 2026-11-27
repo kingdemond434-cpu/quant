@@ -46,9 +46,11 @@ GLOBAL_FAMILIES = [
     ("monday_gap", families.family_monday_gap, dict(mode="momentum")),
     ("monday_gap_fade", families.family_monday_gap, dict(mode="fade")),
     ("london_close_momentum", families.family_london_close_momentum, dict()),
-    ("spread_state_avoidance", families.family7_spread_state_avoidance, dict()),
+    # spread_state_avoidance retired with hunt1 (research/_retired/run_hunt1.py; maxDD -49R to
+    # -96R): its function left mt5desk.families, and naming it here raised AttributeError at
+    # IMPORT, so from 11-22 the whole weekly hunt step failed before any family ran.
     ("dow_effect", families.family_dow_effect, dict()),  # negative control
-    ("comex_settlement", families.family4_comex_settlement_effect, dict()),
+    ("comex_settlement", families.family_comex_settlement, dict()),
 ]
 
 

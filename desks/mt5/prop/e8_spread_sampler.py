@@ -40,10 +40,15 @@ HOURS = 10
 
 v = TradeLockerVenue().connect()
 samples: dict[str, list[tuple[int, float]]] = collections.defaultdict(list)
+#: The last live mid per symbol, so a consumer can turn bps back into price (the allocator's
+#: E8 own-cost overlay, research/prop_challenge_allocator.e8_cost_overlay).
+mids: dict[str, float] = {}
 if OUT.exists():
     try:
-        for s, rows in (json.loads(OUT.read_text(encoding="utf-8")).get("raw") or {}).items():
+        _prev = json.loads(OUT.read_text(encoding="utf-8"))
+        for s, rows in (_prev.get("raw") or {}).items():
             samples[s] = [tuple(r) for r in rows]
+        mids.update({k: float(x) for k, x in (_prev.get("mid") or {}).items()})
     except Exception:
         pass
 
@@ -54,6 +59,7 @@ while time.time() < deadline:
         try:
             bid, ask = v.quote(s)
             samples[s].append((hour, round(1e4*(ask-bid)/bid, 3)))
+            mids[s] = round((bid + ask) / 2, 8)
         except Exception:
             pass
     by_hour: dict[str, dict[str, dict[str, float]]] = {}
@@ -63,7 +69,7 @@ while time.time() < deadline:
         "generated_utc": datetime.now(UTC).isoformat(),
         "unit": "basis points of price (spread/bid * 1e4)",
         "rule": "median per UTC hour; the asia window is what the certified book trades",
-        "raw": dict(samples), "by_hour": by_hour, "liveness": liveness}
+        "raw": dict(samples), "by_hour": by_hour, "liveness": liveness, "mid": dict(mids)}
     for s, rows in samples.items():
         per: dict[int, list[float]] = collections.defaultdict(list)
         for h, bp in rows:

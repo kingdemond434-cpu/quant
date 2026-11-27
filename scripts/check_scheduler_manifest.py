@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import re
 import subprocess
 import sys
@@ -461,7 +462,7 @@ def diff_live(root: Path, man: Manifest, live: str) -> tuple[list[str], list[str
 # from the manifest about itself, which is the only kind of evidence this fence must not accept.
 # ---------------------------------------------------------------------------------------------
 
-_UNIT_DIRS = (Path.home() / ".config/systemd/user", Path("/etc/systemd/system"))
+_UNIT_DIRS = (Path(os.path.expanduser("~")) / ".config/systemd/user", Path("/etc/systemd/system"))
 _SCRIPT_TOKEN = re.compile(r"[\w/.\-]+\.(?:py|sh)")
 _DISPATCH_STATE_REL = "data/manifest_dispatch_state.json"
 #: A dispatcher row counts as covering the manifest only if it fired inside this window. A row

@@ -21,6 +21,17 @@ from research import asia_collector as AC  # noqa: E402
 URL = "https://stats.example.org/data/series.csv"
 
 
+@pytest.fixture(autouse=True)
+def _one_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Each case is its own pass (the collector caches robots.txt per host for one pass), and
+    no case writes the desk's real robots ledger (the gate bills every refusal, PR #819)."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(AC, "_ROBOTS_CACHE", {})
+    monkeypatch.setattr(AC, "_ROBOTS_LABELS", {})
+    monkeypatch.setattr(RG, "LEDGER", tmp_path / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", tmp_path / "ROBOTS_SET_ASIDE.json")
+
+
 class _Resp(io.BytesIO):
     def __enter__(self) -> _Resp:
         return self
@@ -54,7 +65,8 @@ def test_a_disallow_or_an_unreadable_robots_is_never_fetched(
     calls = _robots(monkeypatch, answer)
     rec = AC.collect_one({"id": "x", "url": URL, "expect": "csv"})
     assert rec["status"] == AC.ROBOTS_STATUS and rec["robots_disallows"] is True
-    assert "UNMEASURED" in rec["missed_growth"]
+    assert all(m["verdict"] == "UNMEASURED" for m in rec["missed_growth"])
+    assert rec["billed"] is True
     assert calls == ["https://stats.example.org/robots.txt"]
 
 

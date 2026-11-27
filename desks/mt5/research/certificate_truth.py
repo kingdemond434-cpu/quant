@@ -65,6 +65,7 @@ is in `docs/desk_lessons.jsonl` (certificate_truth); the leg is `hourly_cycle:ce
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import sys
@@ -1081,7 +1082,8 @@ def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
                            "stores": [CANONICAL_CLOCK_STORE, "data/sleeves.json"]}
     declared = declared_identities(paths)
 
-    def do(store: str, path: Path, doc: dict[str, Any], rows: Any) -> None:
+    def do(store: str, path: Path, doc: dict[str, Any], rows: Any,
+           base: dict[str, Any] | None = None) -> None:
         changed = False
         for key, row in rows:
             if not isinstance(row, dict):
@@ -1105,7 +1107,16 @@ def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
             out["stamped"] += 1
         if changed:
             doc["identity_stamped_at"] = stamp
-            _atomic(path, doc, indent=2)
+            if base is not None:
+                # a FORWARD LEDGER: three-way merge under its lock (invariant I1), so a clock
+                # another writer opened since `base` was read is never dropped
+                try:
+                    import ledger_lock
+                except ImportError:
+                    from research import ledger_lock  # type: ignore[no-redef]
+                ledger_lock.merge_write(path, base, doc, indent=2)
+            else:
+                _atomic(path, doc, indent=2)
             out["wrote"].append(_rel(paths, path))
 
     doc = _read(paths.registry)
@@ -1121,7 +1132,8 @@ def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
         doc = _read(lane_path)
         if doc is not None:
             out["stores"].append(_rel(paths, lane_path))
-            do(lane_path.stem, lane_path, doc, _rows_of_state(doc))
+            base = copy.deepcopy(doc)
+            do(lane_path.stem, lane_path, doc, _rows_of_state(doc), base)
     return out
 
 

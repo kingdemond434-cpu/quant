@@ -854,7 +854,8 @@ def access_refusal(get: Getter, sid: str) -> str | None:
     """None when the source may be fetched, else why not -- terms first, then robots.txt for the
     source's own path (fail closed: only 404/410 means no rules)."""
     import urllib.parse
-    import urllib.robotparser
+
+    from libs.data.robots_body import robots_rules_or_refusal
     t = TERMS.get(sid) or {}
     if t.get("terms") == "refused":
         return f"TERMS_REFUSED: {t.get('quote', '')} ({t.get('url', '')})"
@@ -871,17 +872,16 @@ def access_refusal(get: Getter, sid: str) -> str | None:
                    leg="alpha_capture:robots")
         status = getattr(resp, "status", None)
         body = str(getattr(resp, "text", "") or "")
-        if status in (404, 410):
-            _ROBOTS[host] = None
-        elif not _ok(resp):
+        if status not in (404, 410) and not _ok(resp):
             _ROBOTS[host] = f"ROBOTS_REFUSED: robots.txt {_err(resp)}"
-        elif body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
-            _ROBOTS[host] = "ROBOTS_REFUSED: robots.txt answered HTML"
         else:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.parse(body.splitlines())
-            _ROBOTS[host] = None if rp.can_fetch(ROBOTS_AGENT, url) else \
-                f"ROBOTS_REFUSED: robots.txt disallows {parts.path}"
+            # The shared fail-closed reader: an HTML body is unread, never allow-all.
+            got = robots_rules_or_refusal(status if status in (404, 410) else 200, None, body)
+            if isinstance(got, str):
+                _ROBOTS[host] = f"ROBOTS_REFUSED: {got}"
+            else:
+                _ROBOTS[host] = None if got.can_fetch(ROBOTS_AGENT, url) else \
+                    f"ROBOTS_REFUSED: robots.txt disallows {parts.path}"
     return _ROBOTS[host]
 
 

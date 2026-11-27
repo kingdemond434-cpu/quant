@@ -73,6 +73,19 @@ if sys.platform == "win32":
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# BIND THE REPO'S `ops` BEFORE ANY TEST CAN SHADOW IT (Audit 2026-11-26). The root `ops/` is a
+# namespace package and `desks/mt5/ops/` is a regular one, and Python prefers a regular package
+# found ANYWHERE on sys.path over a namespace portion. Several test modules put `desks/mt5` on
+# sys.path at import time, so every later `from ops.box_git import ...` resolved to desks/mt5/ops
+# and raised ModuleNotFoundError: 8+ tests/ops/test_box_git_* modules silently never ran in a
+# whole-suite collection. Nothing imports bare `ops` meaning desks/mt5/ops (that one is always
+# `desks.mt5.ops`), so caching the root one here is safe.
+import importlib as _importlib  # noqa: E402
+
+if (_ROOT / "ops").is_dir():
+    _ops = _importlib.import_module("ops")
+    assert str(_ROOT / "ops") in [str(p) for p in getattr(_ops, "__path__", [])], _ops
+
 from libs.ops.protected_artifacts import (  # noqa: E402  (must follow the bootstrap)
     PROTECTED,
     Snapshot,

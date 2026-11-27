@@ -18,6 +18,7 @@ discovered reaches the gauntlet; the gauntlet decides, using its own sealed cons
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -63,6 +64,27 @@ def _replace_waiting_for_readers(src: str | Path, dst: Path,
             tries += 1
             time.sleep(min(wait, left))
             wait = min(wait * 2, DOCKET_REPLACE_MAX_WAIT_S)
+
+
+def _write_rows_atomic(path: Path, rows: Any) -> None:
+    """Stream `rows` as JSON to a staging file beside `path`, then rename it into place.
+
+    WHY (2026-11-25): MT5-MergeDocket pid 16808 sat 17.5 h "at study bank" holding the
+    merge_hypotheses lock with 16.3 GB committed and 0.2 GB resident. `write_text(json.dumps(...))`
+    built the whole bank as ONE string before a byte reached disk, and opened the live file with
+    truncate first, so a kill there leaves a truncated bank. `json.dump` to a handle streams in
+    chunks, the live file is only ever replaced whole, and the rename waits out a reader exactly
+    as the docket's does."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _sweep_dead_staging(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(rows, handle, indent=1, default=str)
+        _replace_waiting_for_readers(tmp, path)
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
 
 
 def _sweep_dead_staging(path: Path, now: float | None = None) -> int:
@@ -711,6 +733,103 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
     return judged, off_lane, by_lane, by_symbol
 
 
+def _unbuildable_path() -> Path:
+    from research.judge_build_preflight import SET_ASIDE_NAME
+    return HYP / SET_ASIDE_NAME
+
+
+def _reoffer_unbuildable() -> list[dict[str, Any]]:
+    """The rows the last merge set aside as unbuildable, stamps removed. Never raises."""
+    try:
+        from research.judge_build_preflight import read_set_aside
+        rows = read_set_aside(_unbuildable_path())
+    except Exception as exc:
+        print(f"   unbuildable set-aside unreadable ({type(exc).__name__}: {exc}); not re-offered")
+        return []
+    if rows:
+        print(f"   unbuildable set-aside: {len(rows)} row(s) re-offered to this merge")
+    return rows
+
+
+def _exotic_path() -> Path:
+    from research.judge_exotic_exclusion import SET_ASIDE_NAME
+    return HYP / SET_ASIDE_NAME
+
+
+def _reoffer_exotic() -> list[dict[str, Any]]:
+    """The rows the last merge set aside as EXOTIC_BANNED, stamps removed. Never raises."""
+    try:
+        from research.judge_exotic_exclusion import read_set_aside
+        return read_set_aside(_exotic_path())
+    except Exception as exc:
+        print(f"   exotic set-aside unreadable ({type(exc).__name__}: {exc}); not re-offered")
+        return []
+
+
+def _set_aside_exotic(rows: list[dict[str, Any]], stamp: str
+                      ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """`(docket rows, exotic rows, report)`: exotics get no judge slot (judge_exotic_exclusion).
+    Fails open: a fault keeps every row."""
+    try:
+        from research.judge_exotic_exclusion import split
+    except Exception as exc:
+        return rows, [], {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300], "count": 0}
+    keep, aside, report = split(rows, stamp)
+    report["path"] = str(_exotic_path())
+    if aside:
+        print(f"   exotic: {len(aside)} row(s) set aside as EXOTIC_BANNED, kept -> "
+              f"{_exotic_path().name} (no judge slot, no trial charge)")
+    return keep, aside, report
+
+
+def _bank_exotic(rows: list[dict[str, Any]], report: dict[str, Any]) -> bool:
+    """Write the exotic bank (also when empty) only when the split ran. Never raises."""
+    if report.get("status") != "APPLIED":
+        return False
+    try:
+        from research.judge_exotic_exclusion import write_set_aside
+        write_set_aside(_exotic_path(), rows)
+        return True
+    except Exception as exc:
+        print(f"   exotic set-aside unwritten ({type(exc).__name__}: {exc})")
+        return False
+
+
+def _set_aside_unbuildable(rows: list[dict[str, Any]], stamp: str
+                           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """`(docket rows, set-aside rows, report)`. Fails open: a fault keeps every row."""
+    try:
+        from research import judge_build_preflight as _jbp
+        if not _jbp.enabled():
+            return rows, [], {"status": f"DISABLED by {_jbp.SWITCH.name}", "set_aside": 0}
+        keep, aside, report = _jbp.split_unbuildable(rows, stamp)
+    except Exception as exc:
+        return rows, [], {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300], "set_aside": 0}
+    report["path"] = str(_unbuildable_path())
+    if aside:
+        print(f"   unbuildable: {len(aside)} row(s) the sealed judge cannot call (missing required "
+              f"arguments) set aside, kept -> {_unbuildable_path().name}: "
+              f"{ {f: v['rows'] for f, v in report['by_family'].items()} }")
+    return keep, aside, report
+
+
+def _bank_unbuildable(rows: list[dict[str, Any]], report: dict[str, Any]) -> bool:
+    """Write the set-aside bank (also when empty, so re-admitted rows leave it). Never raises.
+
+    A filter that did not run (DISABLED / FAILED) re-offered its bank into the docket just
+    written, so the bank is emptied then too; an unmeasured run keeps whatever is there."""
+    status = str(report.get("status") or "")
+    if not (status == "APPLIED" or status.startswith("DISABLED")):
+        return False
+    try:
+        from research.judge_build_preflight import write_set_aside
+        write_set_aside(_unbuildable_path(), rows)
+        return True
+    except Exception as exc:
+        print(f"   unbuildable set-aside unwritten ({type(exc).__name__}: {exc})")
+        return False
+
+
 def _ack(path: Path) -> None:
     """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the merge names every source docket it
     read by that docket's producer run id, so `compile_candidates -> merge_docket` is an observed
@@ -944,6 +1063,19 @@ def main() -> int:
     # deduped by executable identity. `first_seen` is preserved so no stale row can ever be
     # counted as a fresh discovery; freshness still governs provenance, never capacity.
     banked = _read(TARGET)
+    # THE UNBUILDABLE SET-ASIDE IS RE-OFFERED EVERY RUN (judge fix G, 2026-11-24). A row set aside
+    # for lacking an argument the sealed judge's call requires is banked beside the docket, not
+    # deleted; it re-enters here with the docket bank, passes every door again, and is set aside
+    # again just before ordering only if it still cannot bind. A family that gains a default, or
+    # the revert switch, returns it to the docket on the next merge.
+    _aside_offer = _reoffer_unbuildable()
+    if _aside_offer:
+        banked = (banked if isinstance(banked, list) else []) + _aside_offer
+    # THE EXOTIC SET-ASIDE IS RE-OFFERED THE SAME WAY (judge_exotic_exclusion): kept, re-split
+    # before ordering, never lost; a symbol the registry re-classifies returns on this merge.
+    _exotic_offer = _reoffer_exotic()
+    if _exotic_offer:
+        banked = (banked if isinstance(banked, list) else []) + _exotic_offer
     readmitted = 0
     # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
     # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
@@ -1067,7 +1199,7 @@ def main() -> int:
     print(f"   lane router: {lane_why}")
     if off_lane:
         EVENT_LANE.parent.mkdir(parents=True, exist_ok=True)
-        EVENT_LANE.write_text(json.dumps(off_lane, indent=1, default=str), "utf-8")
+        _write_rows_atomic(EVENT_LANE, off_lane)
         top = sorted(off_lane_syms.items(), key=lambda kv: -kv[1])[:8]
         print(f"   event lane: {len(off_lane)} row(s) across {len(off_lane_syms)} instrument(s) "
               f"routed OUT of the judging docket {off_lane_counts} (kept, never deleted) -> "
@@ -1085,7 +1217,7 @@ def main() -> int:
                 "for study")
             row["routed_to_study_at"] = stamp
         STUDY_BANK.parent.mkdir(parents=True, exist_ok=True)
-        STUDY_BANK.write_text(json.dumps(study, indent=1, default=str), "utf-8")
+        _write_rows_atomic(STUDY_BANK, study)
         print(f"   study bank: {len(study)} row(s) of banned families "
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
@@ -1107,6 +1239,8 @@ def main() -> int:
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
+        print(f"   families: start on {len(rows_out)} row(s) at "
+              f"{datetime.now(UTC).isoformat(timespec='seconds')}", flush=True)
         rows_out, families, families_pending = _hf.apply(
             rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
             identity_fn=_identity, now=now, hyp_dir=HYP,
@@ -1130,9 +1264,41 @@ def main() -> int:
     # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
+    # THE JUDGE'S OWN BINDING CHECK, AT THE DOOR (judge fix G, 2026-11-24). Every sweep's pre-warm
+    # failed `seasonal_window` and `mass_screen_*` rows with TypeError "missing ... required
+    # keyword-only arguments" -- deterministic, never stamped seen, so re-fronted every sweep.
+    # `research/judge_build_preflight` applies exactly that check (the family's required
+    # arguments against the call `build_cell` makes); a failing row is set aside with its reason
+    # into `unbuildable_set_aside.json`, never dropped. Runs after every row-minting step above so
+    # a re-aimed descendant is checked too, and before ordering. A fault costs the filter only.
+    rows_out, unbuildable, unbuildable_report = _set_aside_unbuildable(rows_out, stamp)
+    # EXOTICS GET NO JUDGE SLOT (zuck 2026-11-24 18:06Z): set aside by name before ordering, so
+    # the judge's budget reaches the non-exotic rows instead. Not a verdict, not a trial charge.
+    rows_out, exotic_rows, exotic_report = _set_aside_exotic(rows_out, stamp)
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
+    # SUCCESSOR PRODUCERS (research/producer_loop.extend_docket, principal 2026-11-25): a producer
+    # parked after its failed remedies, or a yield laggard, has a successor DESIGN on file; its
+    # rows are minted here by a deterministic transform of the parent's latest rows (or, for a
+    # fresh design, of rows the paper miners and the brain already produced), tagged with the
+    # successor's name and the lineage's one trial-ledger group. They are minted BEFORE
+    # order_docket so they pass the same intake (unrunnable bank, judge_prescreen.intake) as every
+    # row, then the weights below. Appends only; a fault costs the successor rows, never a row.
+    successors: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.producer_loop import extend_docket as _extend
+        rows_out, successors = _extend(rows_out, coverage=judged)
+        successors["status"] = "APPLIED"
+        if successors.get("minted"):
+            print(f"   successor producers: {successors['minted']} row(s) minted by "
+                  f"{len(successors.get('by_successor') or {})} successor(s), 0 removed")
+    except Exception as exc:
+        successors = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   successor producers unavailable ({type(exc).__name__}: {exc})")
     coverage: dict[str, Any] = {}
     try:
         # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
@@ -1141,12 +1307,34 @@ def main() -> int:
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
-        rows_out, coverage = order_docket(rows_out)
+        rows_out, coverage = order_docket(rows_out, exclusions=exotic_report)
     except Exception as exc:
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # THE PRODUCER LOOP'S TWO-SIDED WEIGHTS (research/producer_loop.py, 2026-11-25): inside each
+    # family's own slots, rows go by their producer's measured yield weight (independent,
+    # non-exotic, forward-kept edges per CPU-hour; par when unmeasured, the floor when parked). Same
+    # rows, same family interleave, so the sealed judge's family shares and exploration floor are
+    # untouched. Weight now OVERRIDES order_docket's within-family order except on ties (the sort
+    # is stable). It runs BEFORE the pre-judge screen, and reweight_rows itself sorts by
+    # (flagged, -weight), so a flagged row from a high-weight producer can never jump ahead of
+    # its family's clean rows. A fault costs the reorder, never a row.
+    producer_weights: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.producer_loop import reweight_rows as _reweight
+        rows_out, producer_weights = _reweight(rows_out)
+        producer_weights["status"] = "APPLIED"
+        if producer_weights.get("moved"):
+            print(f"   producer weights: {producer_weights['moved']} position(s) changed within "
+                  f"their family, 0 removed")
+    except Exception as exc:
+        producer_weights = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   producer weights unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
     # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
@@ -1168,6 +1356,26 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # BREADTH FENCE (research/breadth_fence.py, principal 2026-11-20): the family-balanced,
+    # keff-ordered prefix may still be one symbol or one asset class (98% of certificates were
+    # FX on 2026-11-19). Every producer's rows pass here, so this one call hooks them all. It
+    # re-orders inside the judge's window only; no row leaves, and a fault costs the order.
+    breadth_fence: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.breadth_fence import fence as _fence
+        rows_out, breadth_fence = _fence(rows_out)
+        if breadth_fence.get("status") == "APPLIED":
+            _b, _a = breadth_fence["before"], breadth_fence["after"]
+            print(f"   breadth fence: {breadth_fence['moved']} position(s) changed in the first "
+                  f"{breadth_fence['window']}; top class {_b.get('top_class')} "
+                  f"{_b.get('top_class_share')} -> {_a.get('top_class_share')}, effective "
+                  f"symbols {_b.get('effective_symbols')} -> {_a.get('effective_symbols')}")
+    except Exception as exc:
+        breadth_fence = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   breadth fence unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
     # Every docket row -- fresh, carried over or already judged -- whose own words say its result
     # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
@@ -1257,6 +1465,9 @@ def main() -> int:
         prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
+    # Only after the docket is durable: the set-aside rows are then held in exactly one place.
+    unbuildable_report["written"] = _bank_unbuildable(unbuildable, unbuildable_report)
+    exotic_report["written"] = _bank_exotic(exotic_rows, exotic_report)
     _lease(TARGET)
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
@@ -1324,11 +1535,16 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "producer_weights": producer_weights,
+        "unbuildable_set_aside": unbuildable_report,
+        "exotic_set_aside": exotic_report,
         "preregistration": prereg,
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "producer_successors": successors,
+        "breadth_fence": breadth_fence,
         "hypothesis_families": families,
         "coverage_steer": steer_block,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
@@ -1404,7 +1620,86 @@ def run_cli() -> int:
         if not acquired:
             print("merge_hypotheses: DEFERRED -- canonical writer or memory admission unavailable")
             return 75  # transient deferral must not read as a completed publication
-        return main()
+        stop = start_watchdog()
+        try:
+            return main()
+        finally:
+            stop()
+
+
+#: THE MERGE MAY NOT HOLD THE WRITER LANE FOREVER (2026-11-24). Measured on the box: the run
+#: started 11-23 18:14Z went silent after the study-bank stage at 19:37Z and held the lane 23h
+#: at ~2.5% of one core while every 30-minute trigger was refused (0x800710E0), so for a day no
+#: producer except breadth_sweep's side door reached the judge. Nothing on the box could say
+#: WHERE it was: stdout to a redirected log is block-buffered, and there was no stack.
+#: The watchdog fixes both: stdout becomes line-buffered, every MERGE_DOCKET_STACK_EVERY_S the
+#: stacks of every thread are appended to reports/MERGE_DOCKET_STACKS.log, and past
+#: MERGE_DOCKET_MAX_S it dumps once more and exits 124. The docket is only ever replaced by one
+#: atomic rename at the end, so an exit mid-run leaves yesterday's docket standing, never a torn
+#: one; the lane's lock is reclaimed by pid liveness, so the next trigger runs.
+MERGE_DOCKET_MAX_S = float(os.environ.get("MERGE_DOCKET_MAX_S", str(6 * 3600)))
+MERGE_DOCKET_STACK_EVERY_S = float(os.environ.get("MERGE_DOCKET_STACK_EVERY_S", "1800"))
+STACKS_LOG = BASE / "reports" / "MERGE_DOCKET_STACKS.log"
+
+
+def start_watchdog(max_s: float | None = None, every_s: float | None = None,
+                   log_path: Path | None = None,
+                   exit_fn: Any = None) -> Any:
+    """Arm the stack dumps and the hard ceiling; return a function that disarms both."""
+    import faulthandler
+    import sys
+    import threading
+
+    max_s = MERGE_DOCKET_MAX_S if max_s is None else max_s
+    every_s = MERGE_DOCKET_STACK_EVERY_S if every_s is None else every_s
+    log_path = STACKS_LOG if log_path is None else log_path
+    exit_fn = exit_fn or (lambda: os._exit(124))
+    try:
+        sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+    fh = None
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        fh = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 - held for the run
+        fh.write(f"=== merge_hypotheses pid {os.getpid()} armed "
+                 f"{datetime.now(UTC).isoformat(timespec='seconds')} max {max_s:.0f}s\n")
+        fh.flush()
+        if every_s > 0:
+            faulthandler.dump_traceback_later(every_s, repeat=True, file=fh)
+    except Exception:
+        fh = None
+
+    def ceiling() -> None:
+        msg = (f"merge_hypotheses: WATCHDOG -- {max_s:.0f}s ceiling reached; dumping stacks to "
+               f"{log_path} and exiting 124 (docket unchanged, lane released)")
+        print(msg, flush=True)
+        if fh is not None:
+            try:
+                fh.write(f"=== CEILING {datetime.now(UTC).isoformat(timespec='seconds')}\n")
+                faulthandler.dump_traceback(file=fh, all_threads=True)
+                fh.flush()
+            except Exception:
+                pass
+        exit_fn()
+
+    timer = threading.Timer(max_s, ceiling)
+    timer.daemon = True
+    timer.start()
+
+    def stop() -> None:
+        timer.cancel()
+        try:
+            faulthandler.cancel_dump_traceback_later()
+        except Exception:
+            pass
+        if fh is not None:
+            try:
+                fh.close()
+            except Exception:
+                pass
+
+    return stop
 
 
 if __name__ == "__main__":

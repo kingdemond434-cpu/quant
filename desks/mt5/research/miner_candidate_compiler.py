@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 import time
@@ -365,6 +366,21 @@ def _set_budget(budget_s: float | None) -> None:
                        "compile_by": t0 + COMPILE_SHARE * budget_s, "budget_s": budget_s})
 
 
+#: WHERE THE PASS SPENT ITS SECONDS, published in the artifact's `freshness` block. The leg was
+#: killed at 720 s on the box with `--budget-s 600` -- the intake and compile loops obey the
+#: budget, so the overrun was in a phase nothing timed (setup before the loop, or the graph /
+#: steer / write tail after it). The next artifact now says which. Monotonic seconds since start.
+_PHASES: dict[str, float] = {}
+_T0 = time.monotonic()
+#: How old `compiled_at` may be before the desk reads the compiler as DEAD. `check_desk_health`
+#: raises a PROBLEM past this; an artifact that old must never read as current.
+FRESH_MAX_AGE_S = 7200
+
+
+def _mark(phase: str) -> None:
+    _PHASES[phase] = round(time.monotonic() - _T0, 1)
+
+
 def _past(key: str) -> bool:
     by = _CLOCK.get(key)
     return by is not None and time.monotonic() >= by
@@ -625,6 +641,16 @@ def _central_bank_currency(text: str) -> str | None:
     return None
 
 
+#: A BARS-FILE STEM IS AN INSTRUMENT ON A CHART (2026-11-25 producer triage). The seasonality seat
+#: names its instrument the way the bars file does -- `3M_H1`, `EURUSD_H1` -- and this resolver
+#: matched only the bare symbol, so 1,078 of the seat's committed rows (month, direction and
+#: instrument all on the row: a complete `calendar_month` recipe) compiled as
+#: NEEDS_SYMBOL_EXTRACTION and were queued for an LLM to recover an instrument the row already
+#: named. The chart suffix is stripped before the registry lookup; the chart itself is an axis the
+#: compiler fans out over, never part of the symbol.
+_CHART_SUFFIX = re.compile(r"_(?:M1|M5|M15|M30|H1|H4|D1|W1|MN1)$", re.IGNORECASE)
+
+
 def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
     """Resolve exact symbols and currency-wide evidence against the live Fusion registry.
 
@@ -657,7 +683,7 @@ def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
     folded = {s.upper(): s for s in universe}
     out: set[str] = set()
     for value in raw:
-        token = str(value).replace("/", "").strip()
+        token = _CHART_SUFFIX.sub("", str(value).replace("/", "").strip())
         if token in universe:
             out.add(token)
             continue
@@ -721,7 +747,29 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
             probe[k] = row[k]
     if not cs.stamp(probe):
         return {}
-    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
+    # A LINEAGE claim family (a near-miss mutant's) leaves `breadth_unit` unset by design.
+    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")
+            if k in probe}
+
+
+#: (family:key) -> cells refused this pass for minting a param the family never reads.
+UNDECLARED_REFUSED: dict[str, int] = {}
+
+
+def _undeclared(candidate: dict) -> list[str]:
+    """Param keys the candidate's family neither names nor consumes ([] when it cannot say)."""
+    try:
+        from research.cell_equivalence import undeclared_keys
+    except ImportError:
+        try:
+            from cell_equivalence import undeclared_keys  # type: ignore[no-redef]
+        except ImportError:
+            return []
+    try:
+        return undeclared_keys(str(candidate.get("family") or ""),
+                               dict(candidate.get("params") or {})) or []
+    except Exception:  # an unreadable family is the gauntlet's to refuse, not the mint's
+        return []
 
 
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
@@ -780,6 +828,14 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and
         # it must reach certification and sizing marked as such, never as an anonymous cell.
         **{k: row[k] for k in ("campaign_id", "source_id", "validation_lane") if row.get(k)},
+        # AND THE CONVERSION LANE (research/conversion_lanes.py, 2026-11-25): the lane that made
+        # the row, what it was translated or mutated from, and -- for a near-miss mutant only --
+        # the parent cell's breadth unit (a lineage groups trials, so claim_selection leaves the
+        # unit to the row; a variant of a cell is that cell's breadth, never a new bet).
+        **{k: row[k] for k in ("lane", "translated_from", "mutation_of", "lineage_root",
+                               "translation_mode") if row.get(k)},
+        **({"breadth_unit": row["breadth_unit"]} if row.get("breadth_unit") and str(
+            row.get("claim_family") or "").startswith("lineage:") else {}),
     }
 
 
@@ -1366,7 +1422,9 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     if source_l == "broker_swaps" and symbols and (
             kind in {"contract_terms", "swap_terms"}
             or row.get("swap_long") is not None or row.get("swap_short") is not None):
-        return ([_candidate(s, "carry", {"input_symbol": s}, source, row,
+        # `{}`, never `{"input_symbol": s}`: carry reads the cell's own symbol, so the key was an
+        # alias spelling of the bare cell (cell_equivalence.IGNORED_INPUTS) and is refused below.
+        return ([_candidate(s, "carry", {}, source, row,
                             "broker-native swap differential is a directly measured carry premium")
                  for s in symbols], "STRUCTURED_CARRY")
 
@@ -1428,8 +1486,10 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     month = row.get("month")
     direction = str(row.get("direction") or "").lower()
     if source_l == "seasonality" and symbols and isinstance(month, int) and 1 <= month <= 12 \
-            and direction in {"up", "down", "long", "short"}:
-        side = 1 if direction in {"up", "long"} else -1
+            and direction in {"up", "down", "long", "short", "bullish", "bearish"}:
+        # `bullish` / `bearish` are the seasonality seat's OWN words for the same two directions
+        # (2026-11-25 triage: every committed row says one of them, so none matched `up`/`down`).
+        side = 1 if direction in {"up", "long", "bullish"} else -1
         return ([_candidate(s, "calendar_month", {"active_month": month, "side_bias": side},
                             source, row,
                             "calendar-linked allocation and hedging flows can create "
@@ -1623,6 +1683,7 @@ def _graph_snapshot(path: Path | None = None):
 
 def main() -> int:
     now = datetime.now(tz=UTC)
+    UNDECLARED_REFUSED.clear()
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
@@ -1653,7 +1714,9 @@ def main() -> int:
     # AND a crawler all name is a different object from one a single crawler named, and the
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
+    _mark("setup_s")
     rows = recent_rows(now)
+    _mark("intake_s")
     # THE BLINDING COUNTER IS PUBLISHED BEFORE ANY ROW IS COMPILED: organ_market reads the ledger
     # and withholds a seat whose output carried outcomes from the independent-discovery count.
     # (the ledger sits beside OUT's data/ tree: desks/mt5/data/tier_s/blinding_runtime.jsonl)
@@ -1714,6 +1777,7 @@ def main() -> int:
         if recovered_for_row:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
         row_reached_docket = False
+        alias_refused = 0
         for candidate in produced:
             lacking = [name for name, ok in (
                 ("symbol", bool(str(candidate.get("symbol") or "").strip())),
@@ -1732,6 +1796,24 @@ def main() -> int:
                     bank.record("SPEC_INVALID", "lacks " + ", ".join(lacking),
                                 source=source, symbol=candidate.get("symbol"),
                                 family=candidate.get("family"))
+                continue
+            # A PARAMETER THE FAMILY NEVER READS MINTS AN ALIAS (Auditor ruling 2026-11-04).
+            # `CHFNOK.carry` under input_symbol eBay, GBPJPY and none was one trade wearing three
+            # certificates, three clocks and three trial charges. A key the family neither names
+            # nor consumes (`cell_equivalence.undeclared_keys`) is refused here, by name, before
+            # it costs a cell id; the row is a named refusal when nothing else it produced lands.
+            undeclared = _undeclared(candidate)
+            if undeclared:
+                alias_refused += 1
+                stats["undeclared_param_cells"] = int(stats.get("undeclared_param_cells") or 0) + 1
+                for key in undeclared:
+                    tag = f"{candidate.get('family')}:{key}"
+                    UNDECLARED_REFUSED[tag] = UNDECLARED_REFUSED.get(tag, 0) + 1
+                if bank is not None:
+                    bank.record("SPEC_UNDECLARED_PARAMS",
+                                "params the family neither names nor consumes: "
+                                + ", ".join(undeclared), source=source,
+                                symbol=candidate.get("symbol"), family=candidate.get("family"))
                 continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
@@ -1755,6 +1837,11 @@ def main() -> int:
                 stats["candidates"] = int(stats["candidates"]) + 1
         if produced and row_reached_docket:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
+        elif produced and alias_refused == len(produced) and not refusal:
+            # Every cell the row produced was an alias spelling: a NAMED refusal, never a
+            # convertible row that silently emitted nothing.
+            stats["convertible_rows"] = int(stats["convertible_rows"]) - 1
+            stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
         if not produced and not terminal_refusal and not impossible:
@@ -1847,6 +1934,7 @@ def main() -> int:
                 "that their clocks ran.")
         except Exception as exc:      # a missing actuator must not take the compiler down
             print(f"  (repair not requested: {type(exc).__name__}: {exc})", flush=True)
+    _mark("compile_s")
     agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
     # DISAGREEMENT IS A SIGNAL TOO (Tier-1 item G20, 2026-09-09). Two engines naming the same
     # symbol under DIFFERENT families is not a tie to discard: it is the cell whose test settles
@@ -1947,6 +2035,7 @@ def main() -> int:
         graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
         print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
 
+    _mark("graph_s")
     # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
     # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
     # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
@@ -2021,6 +2110,7 @@ def main() -> int:
               f"(fail closed: {_rep['fail_closed']})")
     except Exception as exc:
         steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+    _mark("steer_s")
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
@@ -2035,8 +2125,22 @@ def main() -> int:
          for task in deepening.values()], "miner_deepening_queue")
     if refused_tasks:
         raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+    _mark("stamp_s")
     _atomic_json(OUT, {
         "compiled_at": now.isoformat(timespec="seconds"),
+        # SECOND KEY ON PURPOSE: `check_desk_health` reads only the head of this 40 MB file, and
+        # a stale compiler must never pass as current (it sat unwritten from 2026-10-03).
+        "freshness": {
+            "written_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "max_age_s": FRESH_MAX_AGE_S,
+            "budget_s": _CLOCK.get("budget_s"),
+            "elapsed_s": round(time.monotonic() - _T0, 1),
+            "phase_s": dict(_PHASES),
+            "partial": bool(_LAST_INTAKE.get("bound_hit")
+                            or _LAST_INTAKE.get("rows_deferred_uncompiled")),
+            "rows_deferred_uncompiled": int(_LAST_INTAKE.get("rows_deferred_uncompiled") or 0),
+            "rule": "RED when now - compiled_at > max_age_s; scripts/check_desk_health.py",
+        },
         "hypotheses": emitted,
         "net_ranking": net_note,
         "per_source": per_source,
@@ -2054,6 +2158,7 @@ def main() -> int:
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
+        "undeclared_params_refused": dict(sorted(UNDECLARED_REFUSED.items())),
         "deepening_tasks": len(deepening),
         "conversion_contract": {
             "convertible_rows": convertible_total,
@@ -2102,10 +2207,36 @@ def main() -> int:
     return 0
 
 
+def _record_own_peak() -> None:
+    """Put THIS process's high-water RSS in the `miner_candidate_compiler` admission ledger.
+
+    The lane is held by `hourly_cycle.catch_up_intake`, which then launches this file as a
+    SUBPROCESS -- so `exclusive_job`'s meter was recording the hourly cycle's footprint
+    (381-384MB, eight runs running) under this job's name, and the admission line read
+    "declared 14000MB (p75 of 8 runs: 384MB)" against a declaration that is CORRECT: this
+    organ charges BYTES_PER_ROW=32768 over FREE_MEMORY_SHARE=0.25 of free physical memory and
+    has already been OS-killed twice on a smaller estimate. Only the process that does the work
+    can measure the work, so it measures itself here; the launcher now records nothing.
+    """
+    try:
+        from research.job_lock import peak_rss_mb, record_peak
+
+        peak = peak_rss_mb()
+        if peak:
+            record_peak("miner_candidate_compiler", peak)
+            print(f"compiler: peak {peak}MB recorded for lane admission")
+    except Exception as exc:          # a ledger write never costs the run that was writing it
+        print(f"compiler: peak not recorded ({type(exc).__name__}: {exc})")
+
+
 if __name__ == "__main__":
     import argparse
     _ap = argparse.ArgumentParser()
     _ap.add_argument("--budget-s", type=float, default=None,
                      help="stop reading at 35%% and compiling at 85%% of this, then resume")
     _set_budget(_ap.parse_args().budget_s)
-    raise SystemExit(main())
+    try:
+        _rc = main()
+    finally:
+        _record_own_peak()
+    raise SystemExit(_rc)

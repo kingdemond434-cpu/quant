@@ -1,9 +1,9 @@
 """FREE_DATA: keyless public-data collectors (no API keys, no paid feeds).
 
 Sources (all lawful, public, first-party):
-  - FRED / ALFRED fredgraph.csv (rates, policy, macro, gold, oil, DXY, VIX)
-    vintage_date param => point-in-time history (no API key needed)
-  - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
+  - FRED / ALFRED: REFUSED ON TERMS (2026-11-13). `fred_series` keeps its name and contract
+    but never contacts FRED; it serves only a mapped primary-publisher mirror (BACKLOG 609).
+  - Yahoo Finance: REFUSED ON TERMS (refused_hosts); `_get` refuses it before the wire.
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
   - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
 
@@ -13,10 +13,9 @@ Network timeouts are short; results are cached to data/free_data_cache/.
 
 from __future__ import annotations
 
-import csv
-import io
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -30,7 +29,26 @@ CACHE.mkdir(parents=True, exist_ok=True)
 UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
 
 
+def _refusal(url: str) -> str | None:
+    """Why `url` may not be contacted (libs.data.refused_hosts), or None. FAILS CLOSED: if the
+    list cannot be imported, every URL is refused, because unclear terms are a refusal."""
+    try:
+        import sys as _sys
+        _root = str(Path(__file__).resolve().parents[3])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.data.refused_hosts import refusal
+    except Exception as exc:  # any import failure is a refusal
+        return f"refused-host list unimportable ({type(exc).__name__}); unclear terms fail closed"
+    return refusal(url)
+
+
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+    why = _refusal(url)
+    if why:
+        # BEFORE THE WIRE (BACKLOG 609). Raised as a URLError so every collector here that
+        # already treats a failed fetch as "no data" treats a terms refusal the same way.
+        raise urllib.error.URLError(f"{FRED_STATUS}: {why}")
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
@@ -68,44 +86,48 @@ FRED_FIELDS = {"DGS2", "DGS10", "T10Y2Y", "DFEDTARU", "DFF", "SOFR", "RRPONTSYD"
                "DEXJPUS", "DEXUSEU", "DEXCAUS", "DEXUSUK", "DEXCHUS"}
 
 
+#: FRED IS REFUSED FOR EVERY AUTOMATED FETCH (terms ruling 2026-11-13; BACKLOG 609). The status a
+#: refused series is recorded under is the repo's existing word for a terms refusal.
+FRED_STATUS = "BLOCKED_ON_TERMS"
+FRED_RULING = "FRED: refused for all automated fetches (terms ruling 2026-11-13)"
+FRED_MISSED_GROWTH = {
+    "mechanism": "fred_terms_refusal",
+    "lost": ("every series this collector used to read from fredgraph.csv / ALFRED: rates, "
+             "spreads, dollar, breakevens, VIX and the macro prints, and every ALFRED vintage"),
+    "stand_in": ("the DBnomics mirror of the PRIMARY publisher (BLS, Federal Reserve) where one "
+                 "is mapped; the primary-source liquidity axis (research/usd_liquidity_primary) "
+                 "for WRESBAL/WTREGEN/RRPONTSYD/SOFR; no stand-in for ALFRED vintages"),
+    "verdict": "a gap, not a zero",
+}
+#: series id -> the refusal record, for every series asked for this process. Read by callers and
+#: reports that want to say BLOCKED_ON_TERMS rather than "fetch failed".
+FRED_REFUSALS: dict[str, dict] = {}
+
+
 def fred_series(series_id: str, start: str = "2010-01-01",
                 vintage: str | None = None) -> dict[str, float] | None:
-    """Fetch a FRED series as {iso_date: value}. Keyless via fredgraph.csv.
-    vintage_date => ALFRED point-in-time view of that series."""
-    base = "https://alfred.stlouisfed.org/graph/fredgraph.csv" if vintage \
-        else "https://fred.stlouisfed.org/graph/fredgraph.csv"
-    q = {"id": series_id, "cosd": start}
-    if vintage:
-        q["vintage_date"] = vintage
-    url = base + "?" + urllib.parse.urlencode(q)
-    key = f"fred_{series_id}_{vintage or 'cur'}"
-    hit = _cache_get(key)
-    if hit:
-        return hit
-    try:
-        raw = _get(url).decode("utf-8", "replace")
-        rows = list(csv.reader(io.StringIO(raw)))
-        out: dict[str, float] = {}
-        for row in rows[1:]:
-            if len(row) < 2 or row[0].startswith("."):
-                continue
-            v = row[1].strip()
-            if v and v != ".":
-                try:
-                    out[row[0]] = float(v)
-                except ValueError:
-                    pass
-        if len(out) > 30:
-            _cache_put(key, out)
-            return out
-        return _fred_alternate(series_id, vintage, key)
-    except Exception:
-        # A BLOCKED PRIMARY MUST NOT STARVE THE FAMILY (2026-08-27: FRED timed out for days,
-        # macro_state went 5 days stale, and macro_conditional produced zero signals on 297
-        # straight sweep passes while the staleness read as quiet ground). The alternate route
-        # registry (scripts/data_alternates) serves the same series from the DBnomics mirror,
-        # with provenance recorded -- a switched source is a fact, never a silent substitution.
-        return _fred_alternate(series_id, vintage, key)
+    """A FRED series id as {iso_date: value} -- NEVER FROM FRED (BACKLOG 609).
+
+    The FRED/ALFRED fredgraph.csv fetch that lived here is REMOVED, not switched off: FRED's terms
+    refuse automated access (2026-11-13), so no request to stlouisfed.org is built for the wire.
+    The refusal is checked against `libs.data.refused_hosts` (and is also fixed here, so patching
+    that list empty, or failing to import it, still opens no socket), recorded in
+    `FRED_REFUSALS` with status BLOCKED_ON_TERMS and its missed-growth line, and then the series
+    is served ONLY from a mapped primary-publisher mirror (`scripts/data_alternates`). With no
+    mirror, or for any ALFRED vintage, the answer is None -- the same value every caller already
+    handles as a failed fetch, so nothing crashes and nothing reads a refusal as data."""
+    url = ("https://alfred.stlouisfed.org/graph/fredgraph.csv" if vintage
+           else "https://fred.stlouisfed.org/graph/fredgraph.csv")
+    why = _refusal(url) or FRED_RULING
+    FRED_REFUSALS[series_id] = {"series": series_id, "status": FRED_STATUS, "why": why,
+                                "vintage": vintage, "missed_growth": FRED_MISSED_GROWTH}
+    print(f"free_data: {series_id} {FRED_STATUS} ({why}); FRED not contacted", flush=True)
+    # DBnomics is a refused host only if `refused_hosts` says so (and its import failing refuses
+    # everything). Its terms were read 2026-11-18 (`data_alternates.DBNOMICS_TERMS`), and the
+    # route reads the API host's robots.txt before its first request.
+    if _refusal("https://api.db.nomics.world/v22/"):
+        return None
+    return _fred_alternate(series_id, vintage, f"fred_{series_id}_{vintage or 'cur'}_alt")
 
 
 def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):

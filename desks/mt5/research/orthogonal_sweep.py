@@ -56,6 +56,7 @@ MIN_TRADE_DAYS counts TRADING DAYS, which is chart-independent by construction.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from collections import OrderedDict
@@ -206,31 +207,136 @@ def _resample_rule(timeframe: str) -> str:
     return f"{timeframe_minutes(timeframe)}min"
 
 
-@lru_cache(maxsize=1)
-def _ticks(symbol: str):
-    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+#: Day-partitions one symbol's tape reader will take, newest first by DATE. This was a hardcoded
+#: 30, which is thirty daily observations of the spread and the flow, and the judge needs sixty
+#: before `liquidity_regime` / `orderflow_imbalance` can fire at all (measured on 013f0b3f76:
+#: 3,772 and 3,721 cells came back UNKNOWN never_fires). 400 is more than a year of sessions: it
+#: is a bound, not a target -- whatever the recorder has written is read, to this many days.
+#: Memory is NOT what this bounds: each day is folded to one-minute partials the moment it is read
+#: (see `_tape_minutes`), so 400 days of one symbol is ~576k small rows, never 400 days of ticks.
+TAPE_MAX_FILES = max(1, int(os.environ.get("QUANT_TAPE_MAX_FILES", "400") or 400))
+#: Distinct tape days below which a tape cannot support the judge's daily observation count. A
+#: short tape is still served (the sweep never refused one) but is NAMED, so a caller can surface
+#: `short_tape` instead of reading a silent empty verdict as "the spec never fires".
+TAPE_MIN_DAYS = 60
 
-    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
-    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
-    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
-    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
-    symbol's charts before moving on and a tick frame is far larger than a bar frame.
+#: A vintage store whose newest file is older than this is reported `stale_calendar`.
+CALENDAR_STALE_DAYS = 14
+
+TAPE_OK = "ok"
+TAPE_NO_DIR = "no_tape_dir"
+TAPE_NO_READABLE = "no_readable_tape_files"
+TAPE_SHORT = "short_tape"
+#: symbol -> the last status `_tape_minutes` measured. Cleared with the cache.
+_TAPE_STATUS: dict[str, dict] = {}
+
+
+def _tape_day_key(stem: str) -> str | None:
+    """`2026-10-29` and `20261029` are one day written by two writers. Normalise, or None."""
+    s = stem.replace("-", "")
+    if len(s) != 8 or not s.isdigit():
+        return None
+    try:
+        from datetime import date
+        return date(int(s[:4]), int(s[4:6]), int(s[6:])).isoformat()
+    except ValueError:
+        return None
+
+
+def _tape_files(d) -> list:
+    """One file per DAY, oldest -> newest by date, at most the newest TAPE_MAX_FILES days.
+
+    Days are ordered as DATES (a dashed and a compact name for one day are one day, and string
+    order puts every compact name after every dashed one). Where both writers hold a day the
+    dashed file wins: it is the one that carries `ts`.
     """
+    by_day: dict[str, list] = {}
+    for f in d.glob("*.parquet"):
+        k = _tape_day_key(f.stem)
+        if k is not None:
+            by_day.setdefault(k, []).append(f)
+    keys = sorted(by_day)[-TAPE_MAX_FILES:]
+    return [sorted(by_day[k], key=lambda p: ("-" not in p.stem, p.name))[0] for k in keys]
+
+
+def _read_tape_file(f):
+    """`ts` (UTC), `bid`, `ask` for one day file, or None. Falls back to `time_msc` for `ts`."""
     import pandas as pd
+    try:
+        t = pd.read_parquet(f, columns=["ts", "bid", "ask"])
+        t["ts"] = pd.to_datetime(t["ts"], utc=True)
+        return t
+    except Exception:
+        pass
+    try:
+        t = pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
+        t["ts"] = pd.to_datetime(pd.to_numeric(t["time_msc"], errors="coerce"), unit="ms",
+                                 utc=True)
+        return t[["ts", "bid", "ask"]]
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=1)
+def _tape_minutes(symbol: str):
+    """This symbol's tape folded to ONE-MINUTE partials, or None. ONE symbol resident.
+
+    Columns: `spread_sum`, `n` (ticks), `flow_sum` (net sign of mid changes). Any chart's mean
+    spread is `sum(spread_sum) / sum(n)` over its bins and its flow is `sum(flow_sum)`, which is
+    EXACTLY what resampling the raw ticks gives, so the daily file is read once, folded, and
+    dropped: peak memory is one day of ticks, however many days the window holds. The previous
+    reader concatenated every tick of 30 files (and would have concatenated 400).
+
+    The previous mid carries across the day boundary so the first tick of a day is not a free
+    zero in the flow. The status of the read is left in `_TAPE_STATUS[symbol]`.
+    """
+    import numpy as np
+    import pandas as pd
+    st = {"symbol": symbol, "days_found": 0, "days_read": 0, "reason": TAPE_NO_DIR}
+    _TAPE_STATUS[symbol] = st
     d = TAPE / symbol
     if not d.exists():
         return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
-        try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-        except Exception:
+    files = _tape_files(d)
+    st["days_found"] = len(files)
+    parts = []
+    prev_mid = None
+    for f in files:
+        t = _read_tape_file(f)
+        if t is None:
             continue
-    if not frames:
+        t = t.dropna(subset=["ts", "bid", "ask"]).sort_values("ts")
+        if t.empty:
+            continue
+        bid = t["bid"].to_numpy(dtype=float)
+        ask = t["ask"].to_numpy(dtype=float)
+        mid = (ask + bid) / 2.0
+        step = np.sign(np.diff(mid, prepend=mid[0] if prev_mid is None else prev_mid))
+        prev_mid = float(mid[-1])
+        g = pd.DataFrame({"spread_sum": ask - bid, "n": 1.0, "flow_sum": step},
+                         index=t["ts"].dt.floor("min"))
+        parts.append(g.groupby(level=0).sum())
+        st["days_read"] += 1
+    if not parts:
+        st["reason"] = TAPE_NO_READABLE
         return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    out = pd.concat(parts).groupby(level=0).sum().sort_index()
+    st["reason"] = TAPE_OK if st["days_read"] >= TAPE_MIN_DAYS else TAPE_SHORT
+    return out
+
+
+def tape_status(symbol: str) -> dict:
+    """What the tape reader found for `symbol`: `reason` is ok / no_tape_dir /
+    no_readable_tape_files / short_tape, with `days_found`, `days_read` and `min_days`.
+
+    A caller that gets (None, None) from `_tape_series` asks this WHY, instead of reporting a
+    silent empty input as a spec that never fires.
+    """
+    _tape_minutes(symbol)
+    st = dict(_TAPE_STATUS.get(symbol) or {"symbol": symbol, "days_found": 0, "days_read": 0,
+                                           "reason": TAPE_NO_DIR})
+    st["min_days"] = TAPE_MIN_DAYS
+    return st
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
@@ -242,17 +348,19 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     family's own z-score, dressed as a measurement of the M5 book. The whole thesis of
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
+
+    WHY (None, None) IS NOW ASKABLE: `tape_status(symbol)["reason"]` names the cause, and a tape
+    shorter than TAPE_MIN_DAYS is served but reported `short_tape`.
     """
-    t = _ticks(symbol)
-    if t is None:
+    m = _tape_minutes(symbol)
+    if m is None:
         return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
+    n = m["n"].resample(rule).sum()
+    spread = (m["spread_sum"].resample(rule).sum() / n.where(n > 0)).where(n > 0)
     # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
     # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
+    flow = m["flow_sum"].resample(rule).sum()
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 
@@ -513,6 +621,13 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "intraday_momentum": "the session and window grid is charged once by tier1_idea_proposer (U1)",
+    "overnight_day_tug": "the session and side grid is charged once by tier1_idea_proposer (U2)",
+    "implied_realised_gap": "the implied series and band grid is charged once by "
+                            "tier1_idea_proposer (U3)",
+    "weekend_crypto_gap": "the driver and side grid is charged once by tier1_idea_proposer (U4)",
+    "equity_gap_breadth": "the breadth grid is charged once by tier1_idea_proposer (U5)",
+    "holiday_drift": "the venue calendar and leg grid is charged once by tier1_idea_proposer (N1)",
     "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
                          "reads the world dataset hunter's per-symbol exposure and charges its own "
                          "band x direction x hold grid; a sweep that paired every symbol with "
@@ -588,6 +703,16 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The world-practice methods (mt5desk/family_global_methods.py): the class LambdaRank
+    # learner, the intraday realised-moment class book, the market-profile value-area rules and
+    # the Korean volatility breakout.
+    # research/global_methods enumerates (symbol x params) once, exotics excluded, and charges
+    # every cell through family_donation; sweeping them here would charge the same trials twice.
+    **dict.fromkeys(("cross_sectional_class_ltr", "cross_sectional_class_hf_moment",
+                     "value_area_rule", "volatility_breakout_kr"),
+                    "research/global_methods enumerates the symbol x params grid once (exotics "
+                    "excluded), and charges every cell through family_donation; sweeping it here "
+                    "would charge the same trials twice"),
     # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
     # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
     # entry filter's conditions are named by research/residual_search from the book's residual.
@@ -668,8 +793,130 @@ def _event_index():
                                              "time") if row.get(k)), None)
             if raw is not None:
                 values.append(raw)
+    # EVERY OTHER CALENDAR THE REPOSITORY ALREADY COLLECTS (2026-11-25). The vintage store above
+    # was the family's only source, and the store the box actually has runs weeks behind its
+    # writer (see `calendar_status`). The committed FOMC decision calendar, the Bank of Canada
+    # announcement dates and the Fed's own published calendar hold scheduled, market-moving
+    # instants of their own, free and already on disk; `calendar_status` lists what each gave.
+    for _name, _vals in _extra_calendar_values().items():
+        values.extend(_vals)
     idx = pd.to_datetime(values, utc=True, errors="coerce")
     return pd.DatetimeIndex(idx.dropna().unique()).sort_values() if len(idx) else None
+
+
+def _local_to_utc(day: str, clock: str, tz: str) -> str | None:
+    """`2026-09-17` + `09:45` in `tz` -> a UTC ISO instant, or None when it does not parse."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    try:
+        hh, mm = clock.split(":")[:2]
+        t = datetime.fromisoformat(day).replace(hour=int(hh), minute=int(mm),
+                                                tzinfo=ZoneInfo(tz))
+        return t.astimezone(ZoneInfo("UTC")).isoformat()
+    except (ValueError, TypeError, KeyError, OSError):
+        return None
+
+
+def _read_fomc_decisions(doc) -> list[str]:
+    """`data/event_calendar.json`: `events[].utc` (the generator writes UTC instants)."""
+    rows = (doc or {}).get("events") if isinstance(doc, dict) else None
+    return [str(e["utc"]) for e in rows or [] if isinstance(e, dict) and e.get("utc")]
+
+
+def _read_boc_dates(doc) -> list[str]:
+    """`calendars/boc_policy_rate.json`: `dates` {day: local HH:MM} in the file's own `tz`."""
+    if not isinstance(doc, dict) or not isinstance(doc.get("dates"), dict):
+        return []
+    tz = str(doc.get("tz") or "America/Toronto")
+    out = [_local_to_utc(str(d), str(c), tz) for d, c in doc["dates"].items()]
+    return [v for v in out if v]
+
+
+#: The Fed's own calendar rows that are SCHEDULED RELEASES, by `type`. Speeches and conferences
+#: are excluded on purpose: they are many, unsized and unlike a statement.
+_FED_RELEASE_TYPES = ("FOMC", "Testimony")
+
+
+def _read_fed_calendar(doc) -> list[str]:
+    """`observables/fomc_calendar.json`: rows {type, month 'YYYY-MM', days 'D', time '2:00 p.m.'}
+    in America/New_York. A row with no clock, a range of days or a time that will not parse is
+    skipped, never guessed."""
+    import re
+    rows = (doc or {}).get("raw") if isinstance(doc, dict) else None
+    out: list[str] = []
+    for r in rows or []:
+        if not isinstance(r, dict) or r.get("type") not in _FED_RELEASE_TYPES:
+            continue
+        m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*([ap])\.?m\.?\s*", str(r.get("time") or ""),
+                         flags=re.I)
+        day = str(r.get("days") or "").strip()
+        month = str(r.get("month") or "").strip()
+        if not m or not day.isdigit() or not re.fullmatch(r"\d{4}-\d{2}", month):
+            continue
+        hh = int(m.group(1)) % 12 + (12 if m.group(3).lower() == "p" else 0)
+        v = _local_to_utc(f"{month}-{int(day):02d}", f"{hh:02d}:{m.group(2)}", "America/New_York")
+        if v:
+            out.append(v)
+    return out
+
+
+def _calendar_sources():
+    """(name, path, reader): every committed calendar besides the vintage store."""
+    return (
+        ("fomc_decisions", BASE.parent.parent / "data" / "event_calendar.json",
+         _read_fomc_decisions),
+        ("boc_policy_rate", BASE / "data" / "calendars" / "boc_policy_rate.json",
+         _read_boc_dates),
+        ("fed_calendar", BASE / "data" / "observables" / "fomc_calendar.json",
+         _read_fed_calendar),
+    )
+
+
+def _extra_calendar_values() -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for name, path, reader in _calendar_sources():
+        doc = _read(path)
+        try:
+            out[name] = reader(doc) if doc is not None else []
+        except Exception:
+            out[name] = []
+    return out
+
+
+def calendar_status() -> dict:
+    """What the event reader holds and how old it is, NAMED -- never a silent short calendar.
+
+    `vintage_newest_event` / `vintage_newest_file` say where the writer's output stops; `reason`
+    is `stale_calendar` when the newest vintage FILE (the writer's own timestamp, not an event
+    date) is older than CALENDAR_STALE_DAYS. The measured case: the writer
+    (`side_channels/seed_miners.mine_ff_calendar_vintage`) kept capturing, but the store a tree
+    holds ends where the shipping branch's last landing ends.
+    """
+    import re
+    from datetime import UTC, datetime
+    root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
+    files = sorted(root.glob("*.json*")) if root.exists() else []
+    newest = None
+    for f in files:
+        m = re.search(r"(\d{8})", f.name)
+        if m:
+            try:
+                d = datetime.strptime(m.group(1), "%Y%m%d").replace(tzinfo=UTC)
+            except ValueError:
+                continue
+            newest = d if newest is None or d > newest else newest
+    age = None if newest is None else (datetime.now(tz=UTC) - newest).days
+    extra = {k: len(v) for k, v in _extra_calendar_values().items()}
+    idx = _event_index()
+    reason = ("no_calendar" if (idx is None or len(idx) == 0)
+              else "stale_calendar" if (age is None or age > CALENDAR_STALE_DAYS) else "ok")
+    return {"reason": reason, "vintage_files": len(files),
+            "vintage_newest_file": newest.date().isoformat() if newest else None,
+            "vintage_age_days": age, "stale_after_days": CALENDAR_STALE_DAYS,
+            "events_total": 0 if idx is None else int(len(idx)),
+            "events_first": None if idx is None or len(idx) == 0 else str(idx[0])[:10],
+            "events_last": None if idx is None or len(idx) == 0 else str(idx[-1])[:10],
+            "extra_calendars": extra}
 
 
 def timeframes_of(symbol: str, meta: dict) -> list[str]:
@@ -801,7 +1048,7 @@ def sweep(budget_s: float | None = None) -> dict:
     # eight M1 frames (sixty bars per H1 bar each) in a cache budgeted for ten hourly ones, which
     # is precisely the memory the ladder had to be designed around. Computed once, from the same
     # declaration the family loop enforces, so the two can never disagree.
-    _PEER_FAMS = ("relative_value", "correlation_regime")
+    _PEER_FAMS = ("relative_value", "correlation_regime", "coint_pairs")
     _FACTOR_FAMS = ("cross_asset_residual", "pca_residual")
     peer_charts = {t for t in _LADDER
                    if any(timeframe_refusal(f, t) is None for f in _PEER_FAMS)}
@@ -850,6 +1097,9 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"symbol": sym},
             "relative_value": {"peer": peer_df},
             "correlation_regime": {"peer": peer_df},
+            # The Engle-Granger pair reads its peer frame as `peer_bars` (the name the sealed
+            # gauntlet's peer branch does not claim, so it builds there from `peer_symbol`).
+            "coint_pairs": {"peer_bars": peer_df},
             "cross_asset_residual": {"factors": factor_dfs},
             # NEVER PASSED BEFORE. Absent from this map, `pca_residual` ran with factors=None,
             # hit its own `len(factors) < 4` refusal and returned [] on every symbol in the
@@ -875,6 +1125,7 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"input_symbol": sym},
             "relative_value": {"peer_symbol": peer_sym} if peer_sym else {},
             "correlation_regime": {"peer_symbol": peer_sym} if peer_sym else {},
+            "coint_pairs": {"peer_symbol": peer_sym} if peer_sym else {},
             "cross_asset_residual": {"factor_symbols": factor_names},
             "pca_residual": {"factor_symbols": factor_names},
             "liquidity_regime": {"input_source": "fusion_tick_tape"},

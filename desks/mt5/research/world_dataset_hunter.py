@@ -336,7 +336,13 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429."""
+    """Default transport: urllib, a named UA, one polite retry on 429. A host whose own terms
+    refuse automated contact (libs.data.refused_hosts: FRED, Yahoo, Cboe, ...) is refused here,
+    before the wire, and counted under its own bucket (BACKLOG 609)."""
+    from libs.data.refused_hosts import refusal
+    why = refusal(url)
+    if why:
+        raise FetchError("blocked_on_terms", why)
     for attempt in (0, 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "application/json, text/csv, */*"})
@@ -821,10 +827,9 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
-    for sid in _fred_ids():
-        out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
-                    "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
-                            + urllib.parse.urlencode({"id": sid})), "currencies": ["USD"]})
+    # FRED LEFT THE DIRECT LIST 2026-11-18 (BACKLOG 609): its terms refuse automated access
+    # (ruling 2026-11-13), so no fredgraph.csv spec is built. `_fred_ids` stays for the reports
+    # that name what the refusal costs. missed_growth: those ids are a gap, not a zero.
     return out
 
 
@@ -845,9 +850,24 @@ def _fred_ids() -> list[str]:
 #: `search` seeds the DBnomics frontier with datasets that answer the same need.
 LEGACY_PROBES: dict[str, dict[str, Any]] = {
     "bis_eer": {"direct": "WS_EER", "search": "effective exchange rate"},
+    # BLOCKED_ON_TERMS: kept as a record of the door, never knocked on. The DBnomics search
+    # still seeds the frontier (a different host); the SPDR url is never requested.
     "spdr_gld_holdings": {"url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/"
                                  "GLD_US_archive_EN.csv", "mode": "csv", "stems": ["XAU"],
-                          "freq": "daily", "search": "gold reserves"},
+                          "freq": "daily", "search": "gold reserves",
+                          "blocked_on_terms": (
+                              "spdrgoldshares.com terms: personal, non-commercial use only; no "
+                              "access other than the website's navigational structure "
+                              "(re-read 2026-11-17; same verdict as research/fetch_gld.py)"),
+                          "missed_growth": {
+                              "mechanism": "gld_terms_refusal",
+                              "what_is_lost": ("GLD daily physical holdings flow as a "
+                                               "conditioner for XAUUSD/XAGUSD"),
+                              "size": "UNMEASURED",
+                              "stand_in": ("DBnomics 'gold reserves' frontier seeds; CFTC COT "
+                                           "metals positioning"),
+                              "reopens_when": ("SPDR grants written permission for automated "
+                                               "retrieval")}},
     "sge_benchmark": {"url": "https://en.sge.com.cn/data_BenchmarkPrice", "mode": "csv",
                       "stems": ["XAU"], "search": "gold price"},
     "shfe_gold": {"url": "https://www.shfe.com.cn/data/dailydata/kx/kx{bday}.dat",
@@ -1258,6 +1278,12 @@ def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until:
             if _rank(drow.get("lifecycle", "")) >= 2:
                 rec["status"] = "QUALITY-PASSED"
             stats[f"legacy:{rec['status']}"] += 1
+            continue
+        if probe.get("blocked_on_terms"):
+            # Terms refuse automated retrieval: the direct door is never requested.
+            rec.update({"status": "BLOCKED_ON_TERMS", "reason": probe["blocked_on_terms"],
+                        "missed_growth": probe.get("missed_growth")})
+            stats["legacy:BLOCKED_ON_TERMS"] += 1
             continue
         if not probe.get("url"):
             rec["reason"] = "no keyless endpoint known; frontier seeded by search"

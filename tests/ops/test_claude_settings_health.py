@@ -18,6 +18,10 @@ sys.path.insert(0, str(ROOT / "ops"))
 
 import claude_settings_health as csh  # noqa: E402
 
+# The box runs Windows PowerShell 5.1 (powershell.exe), not pwsh 7: prefer it.
+# A skip on the box is not a test.
+PS = shutil.which("powershell") or shutil.which("pwsh")
+
 REPAIR = ROOT / "ops" / "bridge" / "Repair-ClaudeSettings.ps1"
 GOOD = (
     '{"permissions": {"defaultMode": "bypassPermissions", "allow": ["Bash(*)"]},'
@@ -149,7 +153,7 @@ def test_the_repair_is_a_persons_tool_only() -> None:
             assert "Repair-ClaudeSettings" not in txt, f
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="pwsh not installed")
+@pytest.mark.skipif(PS is None, reason="no PowerShell (pwsh or powershell.exe)")
 def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_session(
     tmp_path: Path,
 ) -> None:
@@ -159,7 +163,7 @@ def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_s
     f.write_text(GOOD[1:], encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
     refused = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
+        [PS, "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
         input="REPAIR\n",
         text=True,
         capture_output=True,
@@ -168,7 +172,7 @@ def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_s
     )
     assert refused.returncode == 3 and f.read_text(encoding="utf-8") == GOOD[1:]
     declined = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
+        [PS, "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
         input="no\n",
         text=True,
         capture_output=True,
@@ -177,7 +181,7 @@ def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_s
     )
     assert declined.returncode == 1 and f.read_text(encoding="utf-8") == GOOD[1:]
     done = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
+        [PS, "-NoProfile", "-File", str(REPAIR), "-Path", str(f)],
         input="REPAIR\n",
         text=True,
         capture_output=True,
@@ -191,7 +195,7 @@ def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_s
     other.parent.mkdir()
     other.write_text("{", encoding="utf-8")
     wrong = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", str(REPAIR), "-Path", str(other)],
+        [PS, "-NoProfile", "-File", str(REPAIR), "-Path", str(other)],
         input="REPAIR\n",
         text=True,
         capture_output=True,

@@ -195,6 +195,20 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             extra["peer"] = peer
             return extra, "ok"
 
+        if family == "coint_pairs":
+            # relative_value's convention (`peer_symbol` names the peer, a frame on this cell's
+            # chart is handed in) under the frame name the family reads, `peer_bars`: the sealed
+            # gauntlet has no branch for it and passes `peer_symbol` through, so the family can
+            # load the same bars itself; here identity keys are stripped, so the frame is given.
+            peer_symbol = call.get("peer_symbol")
+            if not peer_symbol:
+                return None, "no peer_symbol on the candidate"
+            peer = _runtime_bars(inputs, str(peer_symbol), tf, h1)
+            if peer is None:
+                return None, f"peer bars unavailable for {peer_symbol}"
+            extra["peer_bars"] = peer
+            return extra, "ok"
+
         if family == "ensemble":
             # Members are ordinary cells; the runner rebuilds each through the gauntlet's own
             # build_cell so a member's inputs are resolved by the same rule as everything else.
@@ -302,7 +316,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             spread, flow = inputs._tape_series(sym, h1.index, tf)
             series = spread if family == "liquidity_regime" else flow
             if series is None:
-                return None, "tape series unavailable"
+                # NAMED, never silent: the reader says which of no_tape_dir /
+                # no_readable_tape_files it found, so the caller can surface the cause.
+                try:
+                    st = inputs.tape_status(sym)
+                    return None, (f"tape series unavailable: {st['reason']} "
+                                  f"({st['days_read']}/{st['days_found']} days read)")
+                except Exception:
+                    return None, "tape series unavailable"
             extra["spread_series" if family == "liquidity_regime" else "flow"] = series
             return extra, "ok"
 

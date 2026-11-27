@@ -138,6 +138,14 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("alt_equity_handoff", "desks/mt5/reports/ALT_EQUITY_HANDOFF.json", 3600,
      "research/alt_equity_handoff.py"),
+    # The judge's parked cells' converter: a stale report means the handoff queue is a parking
+    # lot again (box read JG3, 2026-11-11).
+    ("conversion_handoff_converter", "desks/mt5/reports/CONVERSION_HANDOFF.json", 3600,
+     "research/conversion_handoff_converter.py"),
+    # The cell-conversion audit: a stale report means no organ is checking that every idea,
+    # seat and data source still reaches the gauntlet (principal 2026-11-11).
+    ("cell_conversion_audit", "desks/mt5/reports/CELL_CONVERSION_AUDIT.json", 3600,
+     "research/cell_conversion_audit.py"),
     # The silent-organ census reads two small JSON files; its own clock here means the fence
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
@@ -183,6 +191,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # `session_variant_remap` is an hourly discovery leg; its artifact also carries
+    # `universe_unreadable`, which `session_variant_issues` below turns into a BLIND issue.
+    ("session_variant_remap", "desks/mt5/reports/SESSION_VARIANT_REMAP.json", 3600,
+     "research/session_variant_remap.py"),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -453,9 +465,61 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+CELL_CONVERSION_AUDIT = "desks/mt5/reports/CELL_CONVERSION_AUDIT.json"
+
+
+def cell_conversion_issues(root: Path | None = None) -> list[Issue]:
+    """THE CELL-CONVERSION AUDIT'S GAPS, ON THE BOARD (2026-11-11). The audit writes every
+    NOT_WIRED / PARTIAL source and every STALLED funnel stage as an issue row in this module's
+    own `Issue` shape; the board collects them rather than re-deriving them, so the audit stays
+    the single authority on conversion. None is auto-repairable: the fix is the producer's."""
+    r = root or ROOT
+    try:
+        doc = json.loads((r / CELL_CONVERSION_AUDIT).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[Issue] = []
+    for row in (doc.get("issues") or []) if isinstance(doc, dict) else []:
+        if not isinstance(row, dict) or not row.get("key"):
+            continue
+        out.append(Issue(str(row["key"]), str(row.get("severity") or "DEGRADED"),
+                         str(row.get("what") or ""), str(row.get("detail") or "")[:400],
+                         repair=row.get("repair"), auto=False))
+    return out
+
+
+def session_variant_issues(root: Path | None = None) -> list[Issue]:
+    """THE READER `universe_unreadable` WAS PUBLISHED FOR (audit of #145, ported 2026-11-17).
+
+    `session_variant_remap` names why the broker registry (universe.json) cannot be read. With it
+    unreadable every asset-class key misses the firing cache and every session variant reads
+    UNMEASURED -- correct, but a field nothing reads is a warning nobody sees. A non-null reason
+    is a BLIND issue here: the desk believes it has session variants under measurement and has
+    none. Not auto-repairable: rerunning the leg re-reads the same broken file; the repair is the
+    registry's producer (the box's universe export), named in the detail.
+    An absent artifact is left to the CADENCE row (missing/stale), never read as clean.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / "desks/mt5/reports/SESSION_VARIANT_REMAP.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    reason = doc.get("universe_unreadable") if isinstance(doc, dict) else None
+    if not reason:
+        return []
+    return [Issue(
+        "universe:unreadable", "BLIND",
+        "the broker registry is unreadable; every session variant is UNMEASURED",
+        f"session_variant_remap ({doc.get('generated_at', 'time unknown')}): {reason}. Every "
+        "asset-class key misses the firing cache, so no session variant can be judged LIVE or "
+        "DEAD until desks/mt5/data/universe/universe.json reads with symbol rows again.",
+        repair=None, auto=False)]
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + cell_conversion_issues(root)
+            + session_variant_issues(root))
 
 
 def repair_budget_s() -> float | None:

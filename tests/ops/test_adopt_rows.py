@@ -191,6 +191,14 @@ class Box:
         )
 
 
+
+@pytest.fixture(autouse=True)
+def _no_guard_lists(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Toy paths: the guard checkout's real money closure must not decide these fixtures."""
+    from libs.ops import adopt_guard
+
+    monkeypatch.setattr(adopt_guard, "_GUARD_ROOT", tmp_path / "no-guard-checkout")
+
 @pytest.fixture
 def box(tmp_path: Path) -> Box:
     b = Box(tmp_path)

@@ -39,16 +39,10 @@ _VANTAGE = Path(os.environ.get("MT5_VANTAGE_BARS")
 _COT = DATA / "cot"
 _COT_LEGACY = DATA / "cot_gold.parquet"
 
-# MT5 symbol -> cot slug (base-currency future; JPY crosses use the yen)
-_SYMBOL_SLUG = {
-    "XAUUSD": "gold", "XAGUSD": "silver",
-    "USDJPY": "jpy", "EURJPY": "jpy", "GBPJPY": "jpy", "CADJPY": "jpy",
-    "AUDJPY": "jpy", "NZDJPY": "jpy", "CHFJPY": "jpy",
-    "EURUSD": "eur", "EURGBP": "eur", "EURCHF": "eur",
-    "GBPUSD": "gbp", "USDCAD": "cad", "AUDUSD": "aud", "NZDUSD": "nzd",
-    "USDCHF": "chf",
-    "DXY": "dxy", "SP500": "sp500", "NDX": "nasdaq100",
-}
+# MT5 symbol -> cot slug. ONE TABLE in `mt5desk.cot_contracts` (the fetcher, the zcache builder and
+# the input probe read the same rows): it was a 20-symbol dict here, and every other non-exotic
+# instrument with a CFTC contract probed `cot_mapping` and was never judged.
+from mt5desk.cot_contracts import SYMBOL_SLUG as _SYMBOL_SLUG  # noqa: E402
 
 
 def load_cot(symbol: str = "XAUUSD") -> pd.DataFrame:

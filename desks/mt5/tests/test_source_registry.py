@@ -87,6 +87,9 @@ def desk(tmp_path, monkeypatch):
 
     monkeypatch.setattr(sr, "GROUNDS", d / "deep_forest_sources.json")
     monkeypatch.setattr(sr, "PROVENANCE", d / "mined_sources.jsonl")
+    # The synthetic desk has no paper sources: the shipped research_feeds.json carries rows with
+    # their own languages (the non-English harvesters), which are not this fixture's to count.
+    monkeypatch.setattr(sr, "PAPER_FEEDS", d / "research_feeds.json")
     monkeypatch.setattr(sr, "GRAPH", d / "hypothesis_graph.jsonl")
     monkeypatch.setattr(sr, "DOCKET", d / "external_survivors.json")
     monkeypatch.setattr(sr, "GATES", d / "gate_verdict_ledger.jsonl")

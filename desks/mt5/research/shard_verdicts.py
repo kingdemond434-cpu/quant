@@ -1,7 +1,7 @@
 """WHAT THE JUDGE ALREADY KNOWS, BEFORE ITS MERGE ENDS (2026-10-20, IDEA_QUEUE 159).
 
 The sealed judge publishes each shard's rows the moment that shard's `rule` phase ends
-(`external_gauntlet._publish_shard`, patch `patches/judge_funnel_shards/B_shard_publication`), to
+(`external_gauntlet._ShardPublisher` / `_publish_shard`, landed 2026-11-25 as idea 45), to
 
     desks/mt5/data/hypotheses/shard_verdicts/<plan token>/shard_<k>.json   (and shard_plan.json)
 

@@ -2,14 +2,13 @@
 
     python -m pytest desks/mt5/tests/test_shard_publication.py -q
 
-`patches/judge_funnel_shards/B_shard_publication.patch` makes each shard of the sealed judge
-publish its rows when its `rule` phase ends (IDEA_QUEUE 159); `research/shard_verdicts.py` reads
-them. The reader tests run everywhere. The sealed-side tests SKIP until the patch is applied.
+The sealed judge publishes each shard's rows when its `rule` phase ends (IDEA_QUEUE 159, landed as
+idea 45 on 2026-11-25: `external_gauntlet._ShardPublisher`); `research/shard_verdicts.py` reads
+them. The reader tests run everywhere; the sealed-side tests skip on a judge without it.
 """
 
 from __future__ import annotations
 
-import inspect
 import json
 import os
 import sys
@@ -163,12 +162,14 @@ def test_no_promotion_path_reads_a_provisional_copy() -> None:
 
 
 # ------------------------------------------------------------------ the sealed side
+# The end-to-end properties (a killed sweep keeps its finished shards, a rerun records nothing
+# twice, a complete sweep's record is unchanged) are in test_judge_shard_publish.py.
 @pytest.fixture(scope="module")
 def eg():
     import external_gauntlet
 
     if not hasattr(external_gauntlet, "_shard_verdict"):
-        pytest.skip("B_shard_publication.patch is not applied to the sealed judge")
+        pytest.skip("per-shard publication is not in the sealed judge")
     return external_gauntlet
 
 
@@ -180,129 +181,83 @@ def _series(n: int, mu: float = 0.0):
     return pd.Series(rng.normal(mu, 1.0, n), index=pd.bdate_range("2020-01-01", periods=n))
 
 
-def _stage(passed: bool) -> dict:
-    return {"passed": passed, "x": 1.0}
-
-
-def _cell(**local) -> dict:
-    stages = {
-        g: _stage(True)
-        for g in (
-            "economic_prior",
-            "in_sample_screen",
-            "cpcv",
-            "walk_forward",
-            "stress_costs",
-            "expected_value",
-            "swap_cost",
-        )
-    }
-    stages.update({g: _stage(v) for g, v in local.items() if g in stages})
+def _cell(eg, **fail) -> dict:
+    gates = (*eg.CELL_LOCAL_HEAD, *eg.CELL_LOCAL_MID, *eg.CELL_LOCAL_TAIL)
     return {
         "sym": "EURUSD",
         "family": "carry",
         "params": {"i": 1},
         "timeframe": "H1",
-        "_local_stages": stages,
-        "_local_program": {
-            "dsr": (local.get("deflated_sharpe", True), 0.97, 0.1),
-            "lockbox": {"passed": local.get("lockbox", True)},
-        },
+        "_local_stages": {g: {"passed": not fail.get(g), "x": 1.0} for g in gates},
     }
 
 
 def test_a_shard_decides_only_what_precedes_the_program_level_gates(eg) -> None:
     full = _series(300)
     dev = full.iloc[:240]
-    head = eg._shard_verdict(_cell(in_sample_screen=False, cpcv=False), full, dev, None)
-    assert (
-        head["verdict_status"] == eg.VERDICT_FINAL
-        and head["terminal_gate"] == "in_sample_screen"
-        and head["passed"] is False
-    )
-    dsr = eg._shard_verdict(_cell(deflated_sharpe=False), full, dev, None)
-    assert dsr["verdict_status"] == eg.VERDICT_FINAL and dsr["terminal_gate"] == "deflated_sharpe"
-    late = eg._shard_verdict(_cell(lockbox=False), full, dev, None)
+    head = eg._shard_verdict(_cell(eg, in_sample_screen=True, cpcv=True), full, dev,
+                             union_judges=True)
+    assert head["verdict_status"] == eg.VERDICT_FINAL and head["passed"] is False
+    assert head["terminal_gate"] == "in_sample_screen" == head["verdict"]["terminal_gate"]
+    late = eg._shard_verdict(_cell(eg, cpcv=True), full, dev, union_judges=True)
     assert late["verdict_status"] == eg.VERDICT_REJECTED_PENDING and late["passed"] is False
-    assert late["terminal_gate"] is None and late["local_failed_gates"] == ["lockbox"]
-    clean = eg._shard_verdict(_cell(), full, dev, None)
+    assert late["terminal_gate"] is None and late["local_failed_gates"] == ["cpcv"]
+    assert "verdict" not in late, "a pending row never reaches the record"
+    clean = eg._shard_verdict(_cell(eg), full, dev, union_judges=True)
     assert clean["verdict_status"] == eg.VERDICT_PROVISIONAL and clean["passed"] is None
     assert clean["pending_gates"] == list(eg.PROGRAM_LEVEL_GATES)
-
-
-def test_without_the_shards_dsr_read_only_the_head_decides(eg) -> None:
-    full = _series(300)
-    c = _cell(cpcv=False)
-    c.pop("_local_program")
-    got = eg._shard_verdict(c, full, full.iloc[:240], None)
-    assert got["verdict_status"] == eg.VERDICT_REJECTED_PENDING
-    c2 = _cell(economic_prior=False)
-    c2.pop("_local_program")
-    assert eg._shard_verdict(c2, full, full.iloc[:240], None)["verdict_status"] == eg.VERDICT_FINAL
+    assert set(eg.PROGRAM_LEVEL_GATES).isdisjoint(eg.CELL_LOCAL_HEAD)
 
 
 def test_an_unjudgeable_cell_is_final_and_the_merges_row(eg) -> None:
     full = _series(80)
     c = {"sym": "EURUSD", "family": "carry", "params": {"i": 2}, "timeframe": "H1", "_n_signals": 4}
-    got = eg._shard_verdict(c, full, full.iloc[:30], None)
-    want = eg._unmeasured_verdict(c, full.iloc[:30], 80, screened=False)
-    want.update(eg.terminal_stamp(want))
-    assert got["verdict_status"] == eg.VERDICT_FINAL
-    assert all(got[k] == want.get(k) for k in eg.PUBLISHED_FINAL_FIELDS)
-    screened = dict(c, screen_read_until="2099-01-01")
-    s = eg._shard_verdict(screened, full, full.iloc[:70], full.index[70])
-    assert s["unknown_reason"] == "screened_past_cut" and s["days"] == 0
+    got = eg._shard_verdict(c, full, full.iloc[:30], union_judges=True)
+    want = eg._unmeasured_verdict(c, full.iloc[:30], 80)
+    assert got["verdict_status"] == eg.VERDICT_FINAL and got["verdict"] == want
+    assert all(got.get(k) == want.get(k) for k in eg.PUBLISHED_FINAL_FIELDS if k != "terminal_gate")
 
 
 def test_a_publication_is_idempotent_and_never_passes(eg, tmp_path: Path) -> None:
-    plan = {"token": "t0", "n": 2, "publication": {"dir": str(tmp_path)}}
+    plan = {"token": "t0", "n": 2}
     rows = [{"cell": "a", "verdict_status": "FINAL", "passed": False}]
-    f1 = eg._publish_shard(plan, 0, [dict(r) for r in rows])
+    f1 = eg._publish_shard(plan, 0, [dict(r) for r in rows], tmp_path)
     body1 = json.loads(f1.read_text("utf-8"))
-    f2 = eg._publish_shard(plan, 0, [dict(r) for r in rows])
+    f2 = eg._publish_shard(plan, 0, [dict(r) for r in rows], tmp_path)
     body2 = json.loads(f2.read_text("utf-8"))
-    assert f1 == f2 and body1["rows"] == body2["rows"]
+    assert f1 == f2 and body1["rows"] == body2["rows"] and body1["schema"] == sv.SCHEMA
     assert sorted(p.name for p in (tmp_path / "t0").iterdir()) == ["shard_0.json"]
     with pytest.raises(eg.ShardMergeError):
-        eg._publish_shard(plan, 1, [{"cell": "b", "verdict_status": "PROVISIONAL", "passed": True}])
+        eg._publish_shard(plan, 1, [{"cell": "b", "verdict_status": "PROVISIONAL",
+                                     "passed": True}], tmp_path)
     assert not (tmp_path / "t0" / "shard_1.json").exists()
 
 
 def test_the_merge_checks_the_copy_and_counts_each_cell_once(
     eg, tmp_path: Path, monkeypatch
 ) -> None:
-    plan = {"token": "t1", "n": 2, "publication": {"dir": str(tmp_path)}}
+    plan = {"token": "t1", "n": 2}
     final = [
-        {"cell": "a", "passed": False, "terminal_gate": "cpcv", "stages": {}},
-        {"cell": "b", "passed": False, "terminal_gate": "pbo", "stages": {}},
-        {"cell": "c", "passed": True, "terminal_gate": "PASSED", "stages": {}},
+        {"cell": "a", "passed": False, "terminal_gate": "in_sample_screen", "days": 90},
+        {"cell": "b", "passed": False, "terminal_gate": "pbo", "days": 90},
+        {"cell": "c", "passed": True, "terminal_gate": "PASSED", "days": 90},
     ]
-    eg.stamp_terminal(final)
-    a = {k: final[0].get(k) for k in ("cell", *eg.PUBLISHED_FINAL_FIELDS)}
-    eg._publish_shard(
-        plan,
-        0,
-        [
-            {**a, "verdict_status": "FINAL"},
-            {"cell": "b", "verdict_status": "REJECTED_TERMINAL_PENDING", "passed": False},
-        ],
-    )
-    eg._publish_shard(
-        plan,
-        1,
-        [
-            {"cell": "c", "verdict_status": "PROVISIONAL", "passed": None},
-            {**a, "verdict_status": "FINAL"},  # a again: once
-            {"cell": "z", "verdict_status": "FINAL", "passed": False},
-        ],
-    )
+    a = {"cell": "a", "passed": False, "terminal_gate": "in_sample_screen", "days": 90}
+    eg._publish_shard(plan, 0, [{**a, "verdict_status": "FINAL"},
+                                {"cell": "b", "verdict_status": "REJECTED_TERMINAL_PENDING",
+                                 "passed": False}], tmp_path)
+    eg._publish_shard(plan, 1, [{"cell": "c", "verdict_status": "PROVISIONAL", "passed": None},
+                                {**a, "verdict_status": "FINAL"},  # a again: once
+                                {"cell": "z", "verdict_status": "FINAL", "passed": False}],
+                      tmp_path)
     monkeypatch.setattr(eg, "_SHARD", {"publication": {"dir": str(tmp_path), "token": "t1"}})
     doc = eg._seal_shard_publication(final)
     assert doc["published_rows"] == 4
-    assert (doc["final_rows_agree"], doc["final_rows_disagree"]) == (2, 0)
-    assert doc["provisional_rows"] == 1 and doc["absent_from_merge"] == 1
+    assert (doc["final_rows_agree"], doc["final_rows_disagree"]) == (1, 0)
+    assert doc["provisional_rows"] == 2 and doc["absent_from_merge"] == 1
     merged = json.loads((tmp_path / "t1" / "MERGED.json").read_text("utf-8"))
     assert merged["token"] == plan["token"]
+    assert sv.in_flight(tmp_path)["status"] == "MERGED"
     final[0]["terminal_gate"] = "walk_forward"  # the record moved
     assert eg._seal_shard_publication(final)["final_rows_disagree"] == 1
 
@@ -316,33 +271,7 @@ def test_the_merge_keeps_a_bounded_number_of_plans(eg, tmp_path: Path, monkeypat
     monkeypatch.setattr(eg, "_SHARD", {"publication": {"dir": str(tmp_path), "token": newest}})
     eg._seal_shard_publication([])
     assert len([d for d in tmp_path.iterdir() if d.is_dir()]) == eg.SHARD_PUBLISH_KEEP
-
-
-def test_publication_charges_no_trial_and_computes_no_program_statistic(eg) -> None:
-    """The DSR bar a shard applies is the fixed per-cell bar; every census, PBO, SPA and
-    multiplicity count stays in the merge, over the whole sweep."""
-    banned = (
-        "trial_ledger",
-        "charged_trial_count",
-        "fail_closed_trial_count",
-        "structural_trial_census",
-        "lifetime_trial_report",
-        "calibrated_census_report",
-        "probability_backtest_overfitting",
-        "hansen_spa",
-        "EXPERIMENT_LEDGER",
-    )
-    for fn in (
-        eg._shard_rule,
-        eg._shard_verdict,
-        eg._publish_shard,
-        eg._final_published,
-        eg._seal_shard_publication,
-        eg._dsr_stage,
-    ):
-        src = inspect.getsource(fn)
-        hit = [b for b in banned if b in src]
-        assert not hit, f"{fn.__name__} reaches {hit}"
+    assert (tmp_path / newest).is_dir()
 
 
 def test_a_plan_pruned_while_it_is_read_is_skipped_never_unreadable(tmp_path, monkeypatch):

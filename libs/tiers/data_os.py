@@ -402,6 +402,24 @@ PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
                   "basis": "the venue's own ticks, stamped on receipt (`ts`); a resampled hour is "
                            "labelled at its open and read by families on closed bars",
                   "knowledge_column": "ts", "readers": ()},
+    # THE TAPE AS CONDITIONERS (2026-11-25): desks/mt5/research/tick_features.py publishes
+    # data/lake/series/tick_{features,news}_<SYM>.csv. Valid time IS knowledge time: each row is
+    # stamped `available_time` = the end of the hour (or release + 60 min) it summarises, built
+    # from ticks before that instant and ranked against strictly earlier rows. KNOWLEDGE-STAMPED,
+    # so it names no `readers`: a join on its own stamp is the knowledge-time join.
+    "tick_features": {"lag_s": 0, "valid": "end of the hour / post-release window summarised",
+                      "basis": "stamped at the instant the last tick it summarises could be "
+                               "seen; trailing windows over strictly earlier rows only "
+                               "(tick_features.KNOWLEDGE_RULE)",
+                      "knowledge_column": "available_time", "readers": ()},
+    # THE EXOTIC FIRING STATE (2026-11-25): desks/mt5/research/exotic_state_features.py
+    # publishes data/lake/series/exo_state__<SYM>.csv. Row D is the certified rule's net firing
+    # side on broker day D, computed from bars <= D's last close (look-ahead probed), written only
+    # for completed post-sample days and stamped available_time = the start of broker day D+1.
+    "exotic_state_features": {"lag_s": 0, "valid": "the broker day whose signals are summed",
+                              "basis": "stamped the start of the next broker day, after every "
+                                       "close it sums; post-sample days only (gated_at + 3h)",
+                              "knowledge_column": "available_time", "readers": ()},
     "microstructure_surface": {
         "lag_s": 0, "valid": "the surface report's build time",
         "basis": "assumed, conservative: a per-symbol spread/activity surface summarised from the "
@@ -594,9 +612,27 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "desks/mt5/research/asia_transmission.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names sge_benchmark as a not-yet-collected proxy; reads no values"},
+    "desks/mt5/mt5desk/cot_contracts.py": {
+        "route": "mention", "sources": ("cot_fx",),
+        "basis": "the one symbol -> CFTC contract table (market names, codes, slugs); pure "
+                 "data, standard library only, reads no COT values and joins nothing. Its "
+                 "readers (fetch_cot, the zcache builder, mt5desk.data) load COT through the "
+                 "loaders that apply COT_RELEASE_LAG_DAYS"},
     "desks/mt5/research/research_gap_map.py": {
         "route": "mention", "sources": ("cot_fx", "macro_state"),
         "basis": "maps families to data paths to test existence; reads no values"},
+    "desks/mt5/research/tick_features.py": {
+        "route": "live_read", "sources": ("tick_tape", "event_calendar"),
+        "basis": "reads tape days through moat_series._read_day on the ticks' own receipt "
+                 "stamps and calendar vintages through bar_clock_release._rows; every row it "
+                 "publishes carries available_time = the end of the window it summarises, its "
+                 "trailing distributions hold strictly earlier rows, and a release enters only "
+                 "after its longest window closed (KNOWLEDGE_RULE)"},
+    "desks/mt5/research/source_conversion.py": {
+        "route": "mention", "sources": ("cot_fx", "macro_state"),
+        "basis": "FIXED_PATHS maps each family's source to its data paths and tests only "
+                 "that they exist (source_inventory); it reads no COT or macro values and "
+                 "joins nothing to a bar"},
     "desks/mt5/research/south_america_interaction.py": {
         "route": "mention", "sources": ("cot",),
         "basis": "lists axes/cot.json as a leg's evidence path; existence only"},

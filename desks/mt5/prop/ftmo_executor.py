@@ -7,7 +7,8 @@ sized sleeve was published SIZED_NO_EXECUTOR and its J was missed growth. This i
 
 WHAT IT TRADES. The keys the allocator laid into the `ftmo` block of data/CERT_BOOK_LIVE.json with
 a positive fraction AND a certificate spec in reports/FTMO_ALLOCATOR.json `specs` -- both, or
-nothing. Gold is never traded here (the follower is gold's one FTMO owner). FAIL CLOSED, ALWAYS A
+nothing. The follower's gold copy (`_FOLLOWER_KEYS`) is never traded here; a CERTIFIED gold
+sleeve of the allocator's own book is (`GOLD_SLEEVES`, 2026-11-18). FAIL CLOSED, ALWAYS A
 ZERO: an allocator report that is absent, stale (`ALLOC_MAX_AGE_S`), not deployable, or a block
 that load_cert_book voids, trades nothing new; open positions are still managed.
 
@@ -70,7 +71,10 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import gold_oco as _oco  # noqa: E402
+from prop import e8_book as _eb  # noqa: E402
 from prop import ftmo_follower as _fw  # noqa: E402
+from prop.e8_book import ROLLOVER_BROKER_HOURS as _ROLLOVER_HOURS  # noqa: E402
 
 LANE = "ftmo"
 TAG = "FX"
@@ -84,8 +88,17 @@ INTENTS = DESK / "data" / "ftmo_exec_intents.jsonl"
 LOG = DESK / "logs" / "ftmo_executor.log"
 #: The allocator runs hourly; a report older than this is not today's book.
 ALLOC_MAX_AGE_S = 3 * 3600
-#: Gold has one FTMO owner, the follower.
+#: Gold symbols. Until 2026-11-18 gold had one FTMO owner, the follower, so FTMO could fill only on
+#: the days E8's gold_asia filled (7 of 12 market days in November) and only while the copy was
+#: armed; seventeen certified XAUUSD Asia sleeves had no FTMO route at all.
 SKIP_SYMBOLS = frozenset({"XAUUSD"})
+#: GOLD SLEEVES ARE THIS LANE'S (zuck 2026-11-18 02:04Z, every account fills every market day).
+#: A gold key the allocator funds that is NOT the follower's copy trades here under the same doors,
+#: the same FTMO rails on the whole book, the same cross-account opposite fence and the same
+#: one-position-per-symbol rule (`ALREADY_OPEN`, which reads every magic). The follower refuses any
+#: gold against its side from any source, so the two lanes can never hold gold both ways. False is
+#: the revert path: gold is the follower's alone again, nothing else changes.
+GOLD_SLEEVES = True
 #: Hourly bars fetched per sleeve: the E8 executor's lookback.
 LOOKBACK_BARS = 900
 MIN_BARS = 60
@@ -183,10 +196,11 @@ def book_sleeves(alloc: Any, cert: dict[str, float] | None, now: datetime
         frac = min(float(frac), float(got))
         if not (frac > 0) or not isinstance(spec, dict):
             continue
-        if str(spec.get("symbol") or "").upper() in SKIP_SYMBOLS:
+        if str(spec.get("symbol") or "").upper() in SKIP_SYMBOLS and \
+                (not GOLD_SLEEVES or key in _FOLLOWER_KEYS):
             continue
         out.append((key, frac, spec))
-    return out, f"{len(out)} funded non-gold sleeve(s) with a spec"
+    return out, f"{len(out)} funded sleeve(s) with a spec (the follower's gold copy excluded)"
 
 
 def comment_for(col: str, ttl_bars: object, tf: str) -> str:
@@ -418,6 +432,52 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
     doc["actions"].append(act)
 
 
+def _gold_against_today(p: Any, server_epoch: float) -> str | None:
+    """Why this lane's own gold position must be flattened at once: it was opened today against
+    the day's gold direction (gold_oco rule 7, `positions_to_flatten`, the follower's own rule).
+    None for a non-gold position, an unreadable direction state (the follower's reading too: the
+    lock's gate already refused new legs) or no server clock."""
+    if str(getattr(p, "symbol", "")).upper() != _oco.SYMBOL or not server_epoch:
+        return None
+    date = _oco.trading_date(float(server_epoch))
+    entry, ewhy = _oco.day_entry(date)
+    if ewhy is not None:
+        return None
+    t = getattr(p, "time", None)
+    row = {"id": int(p.ticket), "side": _oco.side_of(_side_of(int(getattr(p, "type", -1)))),
+           "opened_date": _oco.trading_date(float(t)) if isinstance(t, (int, float))
+           and not isinstance(t, bool) and t > 0 else None}
+    if _oco.positions_to_flatten(entry, [row], date=date):
+        return (f"it is against today's gold direction ({(entry or {}).get('direction')}, first "
+                f"fill on {(entry or {}).get('first_fill_lane')}): flattened at once")
+    return None
+
+
+def _gold_lock_refusal(mt5: Any, side: str, server_epoch: float, holder: str
+                       ) -> tuple[str | None, str | None, str | None]:
+    """(why refused, account key, trading date) for a gold leg, UNDER the placement lock: the
+    cross-account gold direction lock every gold lane runs (mt5desk/gold_oco.py). The account's
+    gold state is republished first (every magic, so the follower's gold and this lane's are one
+    book to the other lanes, and a fill here claims the day's direction), then `gate` decides --
+    in the default fallback mode no FTMO gold leg is placed before E8's first fill of the day, and
+    only in E8's direction; GOLD_OCO_MODE.json "ftmo": "oco" is the visible switch that lets FTMO
+    lead. Fails closed on anything it cannot read."""
+    if not server_epoch:
+        return "gold OCO: no server clock this pass; fail closed", None, None
+    try:
+        key = _oco.mt5_oco_key(mt5)
+    except _oco.IdentityUnavailable as exc:
+        return f"gold OCO identity: {exc}; fail closed", None, None
+    date = _oco.trading_date(float(server_epoch))
+    sync = _oco.sync_lane("ftmo", key, lambda: _oco.mt5_gold_rows(mt5), date=date,
+                          holder=holder)
+    if not sync.get("published"):
+        return (f"gold OCO: this account's gold state was not republished under the lock "
+                f"({sync.get('why')}); fail closed"), key, date
+    v = _oco.gate("ftmo", side, key=key, date=date)
+    return (None if v.allowed else v.why), key, date
+
+
 def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *, cet: str,
            armed: bool, now: datetime, server_epoch: float) -> None:
     """Time exits, the both-ways opposite rule and the shared stop management (`protect`) for
@@ -437,6 +497,11 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
                 continue
             if _xa.opposite_block(book, p.symbol, side, account=acct) is not None:
                 why = f"the {acct} account now holds the opposite side of {p.symbol}"
+        if why is None:
+            why = _gold_against_today(p, server_epoch)
+            if why is not None:
+                doc["alerts"].append(f"FTMO gold {side} #{p.ticket} against today's gold "
+                                     f"direction: flattened")
         due = exit_epoch(p)
         if due is None:
             # THE HOLD KEPT AT THE SEND (audit 2026-10-29): a broker that rewrote or cut the
@@ -469,6 +534,55 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
         _record({"status": "CLOSE", **act}, now, armed)
 
 
+def emergency(mt5: Any, st: dict[str, Any], doc: dict[str, Any], decl: dict[str, Any], *,
+              cet: str, cet_midnight: datetime, armed: bool, now: datetime,
+              server_epoch: float) -> None:
+    """THE EMERGENCY KILL RULES on the FTMO account (prop/emergency_rules.py; zuck 2026-11-24
+    23:15Z): near the daily or max-loss floor every desk position (this lane's and the gold
+    follower's) is closed and new risk stands down for FTMO's day; a duplicate or a stop-less
+    position is closed. Closes only. Every close is logged with its rule and reason."""
+    from prop import emergency_rules as _er
+    positions = mt5.positions_get()
+    if positions is None:
+        doc["emergency"] = {"skipped": "the terminal did not answer positions"}
+        return
+    acc = mt5.account_info()
+    try:
+        equity: float | None = float(acc.equity)
+        balance = float(acc.balance)
+    except (AttributeError, TypeError, ValueError):
+        equity, balance = None, 0.0
+    try:
+        start: float | None = (_fw.day_start_balance(mt5, balance, cet_midnight, now,
+                                                     server_epoch=server_epoch)
+                               if equity is not None else None)
+    except Exception:
+        start = None
+    res = _er.assess(list(positions), desk_magics=(MAGIC, _fw.MAGIC),
+                     now_epoch=float(server_epoch or 0.0), equity=equity, day_start=start,
+                     balance=balance if equity is not None else None,
+                     initial=float(decl.get("initial_balance") or 0.0),
+                     daily_frac=float(decl.get("daily_loss_frac") or _fw.DAILY_LOSS_FRAC),
+                     max_frac=float(decl.get("max_loss_frac") or _fw.MAX_LOSS_FRAC))
+    doc["emergency"] = res.as_dict()
+    if res.stand_down:
+        st["emergency_stand_down"] = cet
+    by_ticket = {int(p.ticket): p for p in positions}
+    for ticket, rule, why in res.closes:
+        p = by_ticket.get(ticket)
+        if p is None:
+            continue
+        act = _close(mt5, st, p, cet=cet, armed=armed, why=f"EMERGENCY {rule}: {why}")
+        act["emergency_rule"] = rule
+        doc["actions"].append(act)
+        doc["alerts"].append(f"FTMO EMERGENCY {rule}: closed {p.symbol} #{ticket} ({why})"[:300])
+        _record({"status": "EMERGENCY_CLOSE", **act}, now, armed)
+        _er.log_close(account="ftmo", ticket=ticket, symbol=str(p.symbol), rule=rule, why=why,
+                      ok=bool(act.get("ok")), armed=armed, now=now,
+                      volume=float(getattr(p, "volume", 0.0) or 0.0),
+                      magic=int(getattr(p, "magic", 0) or 0))
+
+
 def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[str, Any]:
     """One pass against the FTMO terminal under `mt5` (already attached)."""
     from mt5desk import order_door as _door
@@ -499,6 +613,11 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         manage(mt5, st, doc, own, cet=cet, armed=armed, now=now, server_epoch=server_epoch)
     except Exception as exc:                        # management never takes the pass down
         doc["manage_error"] = f"{type(exc).__name__}: {exc}"[:200]
+    try:
+        emergency(mt5, st, doc, decl, cet=cet, cet_midnight=cet_midnight, armed=armed, now=now,
+                  server_epoch=server_epoch)
+    except Exception as exc:                        # the rules never take the pass down
+        doc["emergency_error"] = f"{type(exc).__name__}: {exc}"[:200]
     # THE FTMO BOOK, FOR THE OTHER LANES' FENCE (zuck 2026-10-29: no account opposite another).
     # Published every pass, armed or not, from a reading taken under the lock; a failure is
     # recorded and the readers fail closed on its age while this lane is armed.
@@ -519,6 +638,13 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                         if isinstance(v, (int, float)) and v > 0 and k not in _FOLLOWER_KEYS)
         if funded:
             _veto(doc, now, armed, sleeves=funded)
+        _write_out(doc, st)
+        return doc
+    if st.get("emergency_stand_down") == cet:
+        doc.update(status="EMERGENCY_STAND_DOWN",
+                   why=f"the emergency rules flattened the account today ({cet}); no new risk "
+                       "until FTMO's day rolls")
+        _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         _write_out(doc, st)
         return doc
     if not server_epoch:
@@ -610,24 +736,40 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         if _e8._family_banned(fam):
             done("BANNED_FAMILY", _e8._ban_reason(fam))
             continue
-        if col in exclusions:
+        if _eb.is_exotic_pair(sym):
+            done("EXOTIC_BANNED", "exotic FX pair: exotics are banned (principal 2026-11-24 "
+                 "18:04Z)", rail="exotic_ban")
+            continue
+        if col in exclusions and col not in _eb.SUPERSEDED_EXCLUSIONS:
             done("PRINCIPAL_EXCLUDED", str(exclusions[col]))
             continue
+        # NO BLOCKERS BUT EXOTICS (principal 2026-11-24 18:34Z): the certifier alarm and a
+        # replication miss halve the sleeve's risk (x DOUBT_MULT each) instead of refusing it.
+        # The Tier S door is already priced into this column's ceiling by the allocator
+        # (research/prop_challenge_allocator, `evidence_mult`), so here it is journaled only.
+        doubts: list[str] = []
         if integrity.alarm.get("blocks"):
-            done("CERTIFIER_ALARM", str(integrity.alarm.get("why")), rail="certifier_alarm",
-                 missed=True)
-            continue
+            doubts.append(f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})")
         verdict, vwhy = integrity.replication(str(spec.get("key") or ""),
                                               str(spec.get("fingerprint") or ""))
         if verdict != REPLICATED:
-            done("UNREPLICATED", f"{verdict}: {vwhy}", rail="replication", missed=True)
-            continue
+            doubts.append(f"replication {verdict}: {vwhy}")
         try:
             tier = promotion_authority.block(str(spec.get("key") or ""))
         except Exception as exc:
             tier = f"Tier S door error ({type(exc).__name__}: {exc})"
         if tier:
-            done("TIER_S_BLOCKED", str(tier), rail="tier_s_door", missed=True)
+            row["tier_s_door"] = f"{tier} (priced by the allocator's evidence cap)"
+        if doubts:
+            frac = frac * _eb.DOUBT_MULT ** len(doubts)
+            row.update(doubts=doubts, risk_frac=frac)
+        # THE ROLLOVER ENTRY GATE (prop/e8_book.ROLLOVER_BROKER_HOURS): every sleeve this executor
+        # runs was admitted on fill evidence that excludes broker 00:00-01:59, so it never enters
+        # there. The MT5 tick epoch is broker wall time.
+        b_hour = datetime.fromtimestamp(float(server_epoch), tz=UTC).hour
+        if b_hour in _ROLLOVER_HOURS:
+            done("RAIL_BLOCKED", f"broker hour {b_hour:02d} is in the rollover slice its fill "
+                 "evidence excludes", rail="rollover_entry_gate", missed=True)
             continue
         func = get_family_func(fam)
         if func is None:
@@ -830,6 +972,12 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                     why = (f"cross-firm copy: the {acct} account holds the same {same} on {sym}; "
                            f"the cross-firm copy override is switched off")
                     break
+        gold_key, gold_date = None, None
+        if why is None and sym == _oco.SYMBOL:
+            why, gold_key, gold_date = _gold_lock_refusal(
+                mt5, side, server_epoch, holder=f"ftmo_executor:{col}")
+            if why is not None:
+                rail = _oco.RAIL
         if why is None:
             live_p, live_o = mt5.positions_get(), mt5.orders_get()
             if live_p is None or live_o is None:
@@ -904,6 +1052,12 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                 _xa.bounded(lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
                             what="ftmo_executor publish")
+            if gold_key is not None and gold_date is not None:
+                # the fill claims the day's direction before the lock is released (gold_oco
+                # rule 1); never raises
+                after = _oco.sync_lane("ftmo", gold_key, lambda: _oco.mt5_gold_rows(mt5),
+                                       date=gold_date, holder=f"ftmo_executor:{col}:sent")
+                row["gold_oco_republished"] = bool(after.get("published"))
         code = getattr(res, "retcode", None)
         m = _COMMENT_RE.match(comment)
         if code in OK_CODES and m is not None and int(m.group(1)) > 0 and server_epoch:

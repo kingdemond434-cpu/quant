@@ -41,6 +41,7 @@ PRIOR it already had and is COUNTED as unpriced (L1.28a) rather than dropped.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -56,6 +57,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from research import family_spec as FS  # noqa: E402
 
 SOURCE = "moat_factory"
 REPORT = BASE / "reports" / "MOAT_FACTORY.json"
@@ -85,6 +87,10 @@ INDEPENDENCE_FLOOR = 0.05
 #: The three novelty levels, stated once: an exact (family, symbol) match is not novel; the same
 #: family on another instrument is half-novel; a family the reference set has never held is novel.
 NOVEL_EXACT, NOVEL_FAMILY, NOVEL_NEW = 0.0, 0.5, 1.0
+#: The disposition a claimed row receives when its params carry no real setting of its family
+#: (`family_spec.translate`): it is neither donated nor returned to the queue to be re-claimed.
+NOT_EXECUTABLE_STATUS = "not_executable"
+MAX_NOT_EXECUTABLE_EXAMPLES = 8
 
 
 def _now() -> str:
@@ -317,11 +323,39 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
         out["status"] = f"INTAKE_UNAVAILABLE: {type(exc).__name__}: {exc}"
         return out
     cands: list[dict[str, Any]] = []
+    not_exec: Counter[str] = Counter()
+    examples: list[dict[str, Any]] = []
+    marks: list[tuple[str, str]] = []
     for r in claimed:
         params = _read_params(r.get("params_json"))
         fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
         if not fam or not sym:
             continue
+        # THE STRUCTURED RULE, OR A NAMED REASON (funnel, 2026-11-25: 0 of this door's 608
+        # docket rows were EXECUTABLE). The registry's queue holds every compiler's cells,
+        # including the defaults-only variants `discovery_compiler` minted before its SPEC
+        # gate: a family at its defaults with only a label (`representation`) or a variant the
+        # replay refuses. A family at its defaults under a variant the replay APPLIES (a session
+        # window, a vol regime) is EXECUTABLE_VARIANT and IS donated. A non-testable claim is NOT
+        # donated -- the judge would score the family's defaults, a cell nobody
+        # proposed. It is counted by verdict and marked `not_executable` with the reason, so it
+        # leaves the queue with a disposition instead of being re-claimed every hour. The
+        # registry's search_count is untouched: no trial is deflated.
+        params = FS.with_cell_axes(params, session=r.get("session"), chart=r.get("chart"))
+        spec = FS.translate(fam, params, prose=str(r.get("exact_rule") or ""))
+        if not FS.is_testable(spec["status"]) and spec["status"] != FS.SIGNATURE_UNREADABLE:
+            not_exec[str(spec["status"])] += 1
+            if len(examples) < MAX_NOT_EXECUTABLE_EXAMPLES:
+                examples.append({"id": r.get("id"), "family": fam, "symbol": sym,
+                                 "status": spec["status"],
+                                 "reason": str(spec.get("reason") or "")[:200],
+                                 "declared": sorted(params)[:12]})
+            marks.append((str(r.get("id") or ""),
+                          f"spec:{str(spec['status']).lower()} "
+                          f"({str(spec.get('reason') or '')[:160]})"))
+            continue
+        if FS.is_testable(spec["status"]):
+            params = dict(spec["call"])
         mark = provenance_mark(r)
         cand = pc.candidate(
             SOURCE, sym, fam, params, str(r.get("mechanism") or ""),
@@ -337,6 +371,14 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
         # to certification and sizing, never laundered into an unmarked cell by the donation.
         cand.update(mark)
         cands.append(cand)
+    if marks:
+        # ONE write lock per chunk, never per row (`registry.batch`): a judge-sized lease can
+        # hold thousands of these.
+        with R.batch(conn) if conn is not None else contextlib.nullcontext():
+            for cid, why in marks:
+                R.mark_candidate(cid, NOT_EXECUTABLE_STATUS, conn=conn, rejection_reason=why)
+    out["not_executable"] = {"rows": sum(not_exec.values()), "by_reason": dict(not_exec),
+                             "examples": examples}
     path = pc.donate(SOURCE, cands, len(claimed)) if cands else None
     out["status"] = "CLAIMED"
     out["claimed"] = len(claimed)

@@ -37,8 +37,20 @@ after every other ground (so it is still worked whenever the pass has budget lef
 from the daily floor, and it REOPENS -- back into the daily set -- on any of three named
 conditions: REOPEN_AFTER_D days since its last attempt (the re-probe), a sibling ground in the
 same region and language yielding after its last attempt, or any yield of its own. No ground is
-ever deleted from the registry by this module, and none is refused: licence and terms are routing
-labels (LAWS 5e).
+ever deleted from the registry by this module, and this module refuses nothing: a licence or
+terms NOTE is a routing label (LAWS 5e). The one exception is read, not decided, here: a ground
+whose own host is in `deep_forest_miner.TERMS_REFUSED` (the 2026-11-13 terms reads) is never
+requested on any route, so it is state REFUSED -- named, with its missed-growth line, and outside
+the never-attempted, overdue and idle counts, because no pass will ever attempt it until the host
+leaves that table.
+
+THE IDLE ALARM (2026-11-17). The JoinQuant / RiceQuant / BigQuant / Uqer / myquant grounds read
+NAMED_ONLY with zero attempts on the committed frontier, and nothing said so for two months: the
+deep-forest ledgers in git had not moved since 2026-09-12 while every fence above judged only
+DIRECTIONS (did never-attempted fall?), which a frozen file never contradicts. `idle_alarm` on
+FOREST_ATTEMPTS.json now names, every hour, each registered ground with no attempt for
+IDLE_ALARM_D days or more (or never attempted and named that long ago), and each miner ledger
+whose own `updated` stamp is that old. An ALARM turns the fence RED.
 
 UNMEASURED IS NEVER ZERO (L1.28a). An absent sources file, frontier or stats file is named; a
 count that cannot be derived reads UNMEASURED, never 0.
@@ -70,7 +82,14 @@ RETIRE_MIN_SPAN_D = 7.0
 REOPEN_AFTER_D = 30.0
 LOW_EV_RETIRED = "LOW_EV_RETIRED"
 #: State per ground, one of these.
-STATES: tuple[str, ...] = ("NEVER_ATTEMPTED", "ATTEMPTED", "YIELDED", LOW_EV_RETIRED)
+REFUSED = "REFUSED"
+STATES: tuple[str, ...] = ("NEVER_ATTEMPTED", "ATTEMPTED", "YIELDED", LOW_EV_RETIRED, REFUSED)
+#: THE IDLE ALARM: a ground (or a miner ledger) untouched this many days is named and turns the
+#: fence RED.
+IDLE_ALARM_D = 7.0
+IDLE_LIST_MAX = 200
+_REFUSED_MG = ("missed_growth: a ground whose publisher's terms forbid automated reading is not "
+               "read on any route; its mechanisms are a named gap, not a zero")
 REOPEN_CONDITION = (f"reopens into the daily set on ANY of: {REOPEN_AFTER_D:g} days since its "
                     "last attempt (the re-probe); a sibling ground with the same region and "
                     "language yields after its last attempt; any claim or dataset of its own")
@@ -185,6 +204,90 @@ def retired_names(grounds: list[dict[str, Any]], *, frontier: Path | None = None
     return out
 
 
+def _refusal_reader() -> tuple[Any, str]:
+    """`deep_forest_miner.ground_refusal`, or a reader that refuses nothing plus why."""
+    try:
+        try:
+            from research import deep_forest_miner as _dfm
+        except ImportError:
+            import deep_forest_miner as _dfm  # type: ignore[import-not-found,no-redef]
+        return _dfm.ground_refusal, ""
+    except Exception as exc:                 # the accounting must never fail on an import
+        return (lambda _g: None), f"refusal table unreadable: {type(exc).__name__}: {exc}"
+
+
+def idle_alarm(rows: dict[str, dict[str, Any]], vectors: dict[str, Any],
+               ledgers: dict[str, Any], now: datetime) -> dict[str, Any]:
+    """ALARM / UNMEASURED / CLEAR: every registered ground idle >= IDLE_ALARM_D days, and every
+    miner ledger whose own `updated` stamp is that old.
+
+    Idle means NO ATTEMPT in the window: a ground attempted and empty is not idle (the retirement
+    and overdue counts own that); a ground never attempted is idle from the day it was named
+    (the frontier's `first_seen`). A REFUSED ground is not idle -- it is named, with its own
+    missed-growth line -- and a LOW_EV_RETIRED ground not yet reopen-due is exempt by its own
+    recorded evidence; both are listed so the exemption is visible. A never-attempted ground
+    with no naming stamp has an UNMEASURED age, which keeps the verdict off CLEAR.
+    """
+    limit = timedelta(days=IDLE_ALARM_D)
+    idle: list[dict[str, Any]] = []
+    unknown: list[str] = []
+    exempt: dict[str, str] = {}
+    by_region: dict[str, int] = {}
+    for name, r in rows.items():
+        if r["state"] == REFUSED:
+            exempt[name] = str(r.get("refusal") or REFUSED)
+            continue
+        ret = r.get("retirement")
+        if isinstance(ret, dict) and not ret.get("reopen_due"):
+            exempt[name] = f"{LOW_EV_RETIRED}: {ret.get('rule')}"
+            continue
+        la = _ts(r.get("last_attempt"))
+        if la is not None:
+            since, basis = la, "last attempt"
+        else:
+            v = vectors.get(name) if isinstance(vectors.get(name), dict) else {}
+            since, basis = _ts(v.get("first_seen")), "named, never attempted"
+            if since is None:
+                unknown.append(name)
+                continue
+        if now - since >= limit:
+            days = round((now - since).total_seconds() / 86400.0, 1)
+            idle.append({"ground": name, "idle_d": days, "basis": basis,
+                         "since": since.isoformat(timespec="seconds"),
+                         "region": r.get("region"), "route": r.get("route"),
+                         "failure_reason": r.get("failure_reason") or ""})
+            reg = str(r.get("region") or "?")
+            by_region[reg] = by_region.get(reg, 0) + 1
+    stale: list[dict[str, Any]] = []
+    stale_unknown: list[str] = []
+    for label, doc in ledgers.items():
+        if doc is None:
+            continue                         # absence is already named in `unmeasured`
+        upd = _ts(doc.get("updated")) if isinstance(doc, dict) else None
+        if upd is None:
+            stale_unknown.append(label)
+        elif now - upd >= limit:
+            stale.append({"ledger": label, "updated": upd.isoformat(timespec="seconds"),
+                          "idle_d": round((now - upd).total_seconds() / 86400.0, 1)})
+    idle.sort(key=lambda x: -float(x["idle_d"]))
+    status = ("ALARM" if idle or stale else
+              (UNMEASURED if unknown or stale_unknown else "CLEAR"))
+    return {"status": status, "threshold_d": IDLE_ALARM_D,
+            "idle_grounds": len(idle), "idle_by_region": by_region,
+            "grounds": idle[:IDLE_LIST_MAX], "listed": min(len(idle), IDLE_LIST_MAX),
+            "stale_ledgers": stale, "ledgers_without_stamp": stale_unknown,
+            "age_unmeasured": sorted(unknown)[:IDLE_LIST_MAX],
+            "n_age_unmeasured": len(unknown), "exempt": exempt,
+            "missed_growth": ("missed_growth: every idle ground is a registered source of "
+                              "mechanisms the desk is not reading; an idle ledger means the "
+                              "forest's output stopped reaching the compiler. A gap, not a "
+                              "zero."),
+            "rule": (f"a registered ground with no attempt for >= {IDLE_ALARM_D:g} days (or "
+                     "never attempted and named that long ago), or a miner ledger whose "
+                     "`updated` is that old; REFUSED and not-reopen-due LOW_EV_RETIRED grounds "
+                     "are exempt by name")}
+
+
 def _vectors(doc: Any) -> dict[str, Any]:
     vec = doc.get("vectors") if isinstance(doc, dict) else None
     return vec if isinstance(vec, dict) else {}
@@ -226,6 +329,9 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
                      "yielded", "retired"), UNMEASURED)},
                 "unmeasured": gaps}
     fr, st = _vectors(fr_doc), _vectors(st_doc)
+    refusal_of, refusal_gap = _refusal_reader()
+    if refusal_gap:
+        gaps.append({"what": "deep_forest_miner.TERMS_REFUSED", "why": refusal_gap})
     sib = _sibling_yields(grounds, st, fr)
     rows: dict[str, dict[str, Any]] = {}
     counts = dict.fromkeys(STATES, 0)
@@ -245,7 +351,10 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
             v.get("last_attempt") if str(v.get("outcome") or "") == "YIELDED" else "")
         region, lang = str(g.get("region") or ""), str(g.get("language") or "")
         ret = retirement(s, v, sib.get((region, lang)), now)
-        if attempts == 0:
+        refusal = refusal_of(g)
+        if refusal:
+            state = REFUSED
+        elif attempts == 0:
             state = "NEVER_ATTEMPTED"
         elif ret is not None:
             state = LOW_EV_RETIRED
@@ -256,13 +365,15 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
         counts[state] += 1
         recent = la is not None and now - la <= day
         attempted_24h += int(recent)
-        exempt = ret is not None and not ret["reopen_due"]
+        exempt = (ret is not None and not ret["reopen_due"]) or bool(refusal)
         is_overdue = not exempt and not recent
         overdue += int(is_overdue)
         reopen_due += int(bool(ret and ret["reopen_due"]))
         failure = ((s or {}).get("failure_reason") if (s or {}).get("failure_reason")
                    is not None else ((s or {}).get("last_error") or v.get("blocker") or ""))
-        if not failure and attempts == 0:
+        if refusal:
+            failure = refusal
+        elif not failure and attempts == 0:
             failure = "never attempted: no pass has reached this ground yet"
         b = by_region.setdefault(region or "?", dict.fromkeys((*STATES, "overdue_24h"), 0))
         b[state] += 1
@@ -280,6 +391,7 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
                              if s is not None else UNMEASURED),
             "overdue_24h": is_overdue,
             **({"retirement": ret} if ret is not None else {}),
+            **({"refusal": refusal, "missed_growth": _REFUSED_MG} if refusal else {}),
         }
     registered = set(rows)
     orphans = sorted(set(fr) - registered)
@@ -293,12 +405,17 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
         "yielded": counts["YIELDED"],
         "retired": counts[LOW_EV_RETIRED],
         "retired_reopen_due": reopen_due,
+        "refused": counts[REFUSED],
         "by_state": counts,
         "frontier_vectors_not_registered": len(orphans),
         "registered_not_in_frontier": len(registered - set(fr)),
     }
+    alarm = idle_alarm(rows, fr, {"frontier": fr_doc, "vector_stats": st_doc}, now)
+    summary["idle_7d"] = alarm["idle_grounds"]
+    summary["idle_alarm"] = alarm["status"]
     return {"generated_utc": now.isoformat(timespec="seconds"), "status": "MEASURED",
             "summary": summary, "by_region": by_region, "grounds": rows,
+            "idle_alarm": alarm,
             "orphan_frontier_vectors": orphans[:50], "unmeasured": gaps,
             "policy": {"daily_h": DAILY_H, "retire_min_attempts": RETIRE_MIN_ATTEMPTS,
                        "retire_min_span_d": RETIRE_MIN_SPAN_D, "reopen_after_d": REOPEN_AFTER_D,
@@ -399,6 +516,16 @@ def judge(doc: dict[str, Any], hist: list[dict[str, Any]], now: datetime,
             reasons.append(f"DAILY FLOOR NOT CLOSING: {a['summary']['overdue_24h']} ground(s) "
                            f"overdue at {a.get('at')} -> {overdue} now (target 0: every live "
                            "ground attempted at least once a day)")
+    alarm = doc.get("idle_alarm") if isinstance(doc.get("idle_alarm"), dict) else {}
+    if alarm.get("status") == "ALARM":
+        top = ", ".join(f"{x['ground']} ({x['idle_d']}d)" for x in (alarm.get("grounds") or [])[:5])
+        led = ", ".join(f"{x['ledger']} ({x['idle_d']}d)" for x in alarm.get("stale_ledgers") or [])
+        reasons.append(f"SOURCES IDLE >= {IDLE_ALARM_D:g}d: {alarm.get('idle_grounds')} "
+                       f"ground(s) with no attempt" + (f" [{top}]" if top else "")
+                       + (f"; stale miner ledger(s): {led}" if led else ""))
+    elif alarm.get("status") == UNMEASURED:
+        notes.append(f"idle alarm UNMEASURED: {alarm.get('n_age_unmeasured')} ground(s) with no "
+                     "naming stamp, or a ledger with no `updated`")
     # GREEN ONLY ON EVIDENCE: nothing left to attempt, or both counts measured as falling. A
     # direction that cannot be judged yet is UNMEASURED, which is a verdict and not a pass.
     status = "RED" if reasons else ("UNMEASURED" if notes else "GREEN")

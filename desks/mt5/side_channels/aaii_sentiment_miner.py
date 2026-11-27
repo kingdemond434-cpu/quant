@@ -17,8 +17,10 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "aaii"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+# Honest agent (2026-11-19): aaii.com's robots allows /sentimentsurvey (Crawl-delay 10) and its
+# terms are silent on automated access; section 6 bans copying, so rows carry readings only.
+HEADERS = {"User-Agent": "quant-desk-research/1.0 (aaii sentiment reader; research; "
+                         "honours robots.txt)"}
 AAII_URL = "https://www.aaii.com/sentimentsurvey"
 
 
@@ -26,9 +28,16 @@ def mine_aaii() -> list[dict]:
     """Fetch AAII sentiment survey data."""
     discoveries = []
     try:
-        resp = requests.get(AAII_URL, headers=HEADERS, timeout=15)
-        resp.raise_for_status()
-        text = resp.text
+        # Through the lawful-feed gate (Auditor MF1, 2026-11-19): terms on record, robots read at
+        # fetch time and failing closed, Crawl-delay 10 honoured, 401/403/429/451 a hard stop.
+        try:
+            from side_channels.lawful_substitutes import Feed
+        except ModuleNotFoundError:
+            from lawful_substitutes import Feed
+        feed = Feed()
+        text = feed.text(AAII_URL)
+        if text is None:
+            raise RuntimeError(f"not fetched: {feed.refused or feed.errors}")
 
         # Extract sentiment percentages
         bullish = re.search(r'bullish.*?(\d+\.?\d*)%', text, re.IGNORECASE)

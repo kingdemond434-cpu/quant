@@ -107,6 +107,21 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
+    # Every producer's funnel, the stage it dies at, its remedy and two-sided compute weight
+    # (research/producer_loop.py): the machine measuring and steering its own producers -- meta.
+    "producer_loop": "meta",
+    # Every producer's emitted > received > judged, and whether its judged rows carried its own
+    # rule (research/judge_reach.py): the machine auditing its own handoffs -- meta.
+    "judge_reach": "meta",
+    # research/conversion_lanes.py: free models turn held prose and near-misses into exact,
+    # judge-testable cells -- the conversion half of prediction, beside `deepen`.
+    "conversion_lanes": "prediction",
+    # Every conversion from raw info to live profit per producer, class and family, its depth,
+    # weakest stage and ratcheting floors (research/funnel.py): measurement -- meta.
+    "funnel": "meta",
+    # Every producer's docket share, class/exotic split, saturation and frontier, plus the
+    # advisory steer (rules-compliance row 13): the machine measuring its own breadth -- meta.
+    "breadth_controller": "meta",
     # The video-derived anchor/exit grid mints claims about returns: prediction, like
     # `empty_cluster_forcer`, which it runs beside.
     "htf_anchor": "prediction",
@@ -265,6 +280,7 @@ LEG_LAYER: dict[str, str] = {
     # THE TIER-S CLUSTER JUDGE (P8-J1): dependence and concentration of the forward clocks at
     # the bar, an input to whatever counts independent bets in the book -- portfolio.
     "cluster_judge": "portfolio",
+    "pnl_explain": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
@@ -337,6 +353,18 @@ LEG_LAYER: dict[str, str] = {
     # THE EXPRESSION FACTORY (2026-09-22): every cell it screens is a claim about returns from
     # a formula on the desk's own bars -- prediction, beside math_lab whose department it shares.
     "expression_factory": "prediction",
+    # THE PUBLISHED FORMULA LIBRARIES: GTJA-191 / Alpha158 cells, each a claim about returns from
+    # a published formula on the desk's own bars -- prediction, like the factory.
+    "formula_library": "prediction",
+    # The genetic rule builder (entries x filters x exits per symbol and chart) proposes
+    # rules: prediction, like alpha_evolution. The generator census measures which
+    # generator methods ran this day, not any strategy: meta.
+    "strategy_builder": "prediction", "generator_coverage": "meta",
+    # THE WORLD-PRACTICE METHODS (2026-11-25): each mints claims about returns (a class rank
+    # learned by LambdaRank, an intraday-moment rank, a value-area rule, a volatility
+    # breakout) -- prediction.
+    "global_xs_ltr": "prediction", "global_hf_moment": "prediction",
+    "global_value_area": "prediction", "global_vol_breakout": "prediction",
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
@@ -350,6 +378,9 @@ LEG_LAYER: dict[str, str] = {
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
     "moat_series": "information", "scout_roster": "information",
+    # the tape as point-in-time conditioners for the generators (spread regime, liquidity by
+    # hour, post-news response): what the market IS this hour, before anything predicts it
+    "tick_features": "information",
     "descendants": "prediction", "forward_slot_ranker": "portfolio",
     # META, both of them, and deliberately: neither buys the desk a prediction. One sizes the
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
@@ -380,6 +411,12 @@ LEG_LAYER: dict[str, str] = {
     # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
     # itself, the same layer as `judging_burndown` and `forward_enrolment`.
     "conversion_funnel": "meta",
+    # THE HANDOFF CONVERTER turns the judge's parked cells into new testable cells (a same-class
+    # transplant) or a named refusal / defect report: conversion work, beside the maximiser.
+    "conversion_handoff_converter": "prediction",
+    # THE CELL-CONVERSION AUDIT measures every source against the gauntlet's doors AND converts
+    # the mechanical gaps into new testable cells: conversion work, beside the maximiser.
+    "cell_conversion_audit": "prediction",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
@@ -415,6 +452,11 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # The same leg's COMPUTE path, costed separately so the ledger shows how often the cheap
+    # `--reuse-fresh` check has to fall back to recomputing. Added 2026-11-12, when the reuse
+    # check had been correctly reporting the table STALE -- and touching nothing -- for 52h,
+    # leaving four duties UNMEASURED off a two-day-old artifact.
+    "judge_coverage_compute": "information",
     # What the judge's pre-build screen WOULD remove from the docket, and the measured cost of
     # that (true survivors a sibling rule would have taken, by a time-ordered ledger replay). It
     # buys INFORMATION about the docket before any signal is built.
@@ -487,8 +529,10 @@ LEG_LAYER: dict[str, str] = {
     "forest_europe": "information", "forest_north_america": "information",
     "forest_latam": "information", "forest_mena": "information",
     "forest_africa": "information",
+    "forest_japan": "information", "forest_global_macro": "information",
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
+    "forest_onion": "information",
     "external_federation": "information", "federation_ops": "information",
     # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
     # donates hypotheses and representations: what the desk can know, so information.
@@ -626,6 +670,11 @@ LEG_LAYER: dict[str, str] = {
     # A pack's series IS information; re-minting a known mechanism on another chart is a claim
     # about returns, so it is prediction; recording what a live order actually paid is execution.
     "pack_cells": "information", "timeframe_fanout": "prediction",
+    # An exotic certificate's exact spec re-minted on tradable instruments sharing its driver is
+    # a claim about returns on those instruments: prediction, like the chart fanout.
+    "exotic_transplant": "prediction",
+    # An exotic rule's firing state published as a conditioning series is information.
+    "exotic_state_features": "information",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
@@ -636,11 +685,15 @@ LEG_LAYER: dict[str, str] = {
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
+    "fill_proven": "execution",
+    "allocator_scorecard": "meta",
+    "zero_live_page": "meta",
     # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
     "trade_pathology": "execution",
     "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
+    "source_conversion": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
@@ -648,6 +701,9 @@ LEG_LAYER: dict[str, str] = {
     # The identity chain grades the joins between the desk's own records and the placebo audit
     # grades its own gates against planted defects: the machine measuring the machine.
     "identity_chain": "meta", "placebo_audit": "meta",
+    # The judge calibration loop grades the sealed judge against matured forward clocks and
+    # proposes its priors and bars: the machine measuring the machine.
+    "judge_calibration": "meta",
     # The null lab grades each family's own gates on data with no edge in it, and the
     # research-live identity join grades whether the live book trades what research certified:
     # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
@@ -683,12 +739,16 @@ LEG_LAYER: dict[str, str] = {
     # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
     # ledger of which keys are set measures the desk itself: meta
     "keyed_sources": "information", "credential_coverage": "meta",
+    "data_discovery": "information",
+    "first_print_capture": "information",
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    "dataset_translator": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
+    "tier1_idea_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",
@@ -698,6 +758,19 @@ LEG_LAYER: dict[str, str] = {
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
     "six_event_trace": "meta",
+    # THE IN-PROCESS REPORT STEPS (2026-11-14, hourly_cycle.REPORT_STEPS), each placed by what it
+    # produces. The prop book's worst case against its own floors -- E8 all-fire headroom, the
+    # E8/FTMO/Fusion joint worst case, the tail stress and the joint-breach replay -- measures what
+    # the SIZES do to survival, beside `kelly_survival`: sizing. Withdraw-now versus hold on the
+    # counterparty haircut is wealth-level allocation: portfolio. The bars' quoted spread z and the
+    # bar illiquidity census are the fill side: execution. The PIT rates axis is information; the
+    # task digest and the written specs' validity are the machine checking itself: meta. The
+    # pre-registered USDJPY re-costing study is a claim about returns: prediction.
+    "e8_headroom": "sizing", "combined_prop_risk": "sizing", "prop_tail_stress": "sizing",
+    "prop_joint_breach": "sizing", "counterparty_register": "portfolio",
+    "bar_spread_z": "execution", "bar_illiquidity": "execution",
+    "rates_index_state": "information", "task_failure_digest": "meta",
+    "replication_spec_entries": "meta", "usdjpy_asia_breakout_study": "prediction",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

@@ -1,0 +1,1 @@
+{"id": "process_health_fresh", "path": "desks/mt5/reports/process_health.json", "max_age_h": 2, "min_bytes": 1000, "json_key": "processes", "why": "E18 + 6h pass 11-25 23:05Z (pass asked json_key generated_utc; the report's stamp is 'at', so the check keys on 'processes'); math lab stalled unnoticed 11-25"}

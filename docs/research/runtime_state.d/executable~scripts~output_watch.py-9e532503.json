@@ -1,0 +1,36 @@
+{
+ "organ": "executable:scripts/output_watch.py",
+ "kind": "executable",
+ "code": [
+  "scripts/output_watch.py",
+  "libs/ops/output_watch.py"
+ ],
+ "clock": "box_task:MT5-Guardian",
+ "cadence_s": 900,
+ "max_silence_s": 3600,
+ "state": "NEVER",
+ "why": "appended for a new MT5-Guardian leg (output watch over producers/labs/factories, 2026-11-25); appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: not yet run on the attesting host",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/OUTPUT_WATCH.json",
+ "artifact_declared": "desks/mt5/reports/OUTPUT_WATCH.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "legs_flagged_n",
+ "consumer": "guardian pages (OUTPUT WATCH:) + 6h pass",
+ "measured_on": "vm",
+ "measured_at": "2026-11-25T21:45:09+00:00",
+ "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+ "only_missing": {
+  "at": "2026-11-25T21:45:09+00:00",
+  "host": "vm",
+  "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

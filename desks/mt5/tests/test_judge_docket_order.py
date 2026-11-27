@@ -42,7 +42,7 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
              "family_banned(sp.get(\"family\"))",
              O.SEALED_SORT_KEY_SOURCE,
              "_ng.screen(_cands)",
-             "allocate_by_yield(eligible_specs)",
+             "allocate_by_yield(eligible_specs",
              "_prewarm_cache(eligible_specs, meta"]
     at = [main_src.find(m) for m in marks]
     assert all(a >= 0 for a in at), dict(zip(marks, at, strict=True))

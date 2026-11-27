@@ -164,3 +164,17 @@ def test_the_manifest_matches_the_box_s_two_hour_ingest_clock() -> None:
     line = next(ln for ln in manifest.read_text(encoding="utf-8").splitlines()
                 if 'name="MT5-AxisIngest"' in ln)
     assert 'trigger="every 2 hours at :40"' in line
+
+
+def test_an_axis_declaring_never_fewer_series_refuses_a_partial_pass(tmp_path: Path) -> None:
+    target = tmp_path / "usd_liquidity.json"
+    full = {"axis": "usd_liquidity", "n_series": 4, "never_fewer_series": True}
+    half = {"axis": "usd_liquidity", "n_series": 2, "never_fewer_series": True}
+    target.write_text(json.dumps(full), encoding="utf-8")
+    out = A._write_axis(target, half, 2)
+    assert out["written"] is False and out["write_state"] == "FEWER_REFUSED_OVERWRITE"
+    assert json.loads(target.read_text(encoding="utf-8"))["n_series"] == 4
+    # An axis that does not declare it keeps the old rule: only an empty pass is refused.
+    plain = tmp_path / "macro_state.json"
+    plain.write_text(json.dumps(POPULATED), encoding="utf-8")
+    assert A._write_axis(plain, {**POPULATED, "n_series": 3}, 3)["written"] is True

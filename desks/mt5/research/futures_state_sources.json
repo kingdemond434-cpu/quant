@@ -52,13 +52,18 @@
   {
    "id": "fred_rates",
    "adapter": "fred",
-   "terms": "OPEN",
+   "terms": "REFUSED",
    "key_env": [
     "FRED_API_KEY",
     "FRED_KEY"
    ],
    "url": "https://api.stlouisfed.org/fred/series/observations",
-   "note": "US Treasury H.15 nominal and real yields and breakevens (public domain). The rates curve the futures side trades on, and a PIT rates factor while UST10Y bars on the box end 2025-12-31"
+   "note": "US Treasury H.15 nominal and real yields and breakevens (public domain). The rates curve the futures side trades on, and a PIT rates factor while UST10Y bars on the box end 2025-12-31",
+   "terms_evidence": {
+    "ruled_at": "2026-11-13",
+    "recorded_in": "FRED terms ruling (BACKLOG 609); libs/data/refused_hosts",
+    "reading": "FRED's terms refuse automated access on every route (API and graph CSV), so no request to stlouisfed.org is built; the H.15 / OECD / IMF originals are read from their own publishers where a route exists."
+   }
   },
   {
    "id": "deribit_public",
@@ -76,9 +81,14 @@
   {
    "id": "fred_vixcls",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
+   "terms": "REFUSED",
    "url": "https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS",
-   "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed"
+   "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed",
+   "terms_evidence": {
+    "ruled_at": "2026-11-13",
+    "recorded_in": "FRED terms ruling (BACKLOG 609); libs/data/refused_hosts",
+    "reading": "FRED's terms refuse automated access on every route (API and graph CSV), so no request to stlouisfed.org is built; the H.15 / OECD / IMF originals are read from their own publishers where a route exists."
+   }
   },
   {
    "id": "binance_futures_public",
@@ -147,14 +157,24 @@
   {
    "id": "oecd_rates_on_fred",
    "adapter": "fred",
-   "terms": "OPEN",
-   "note": "OECD MEI 3M interbank rates via FRED (OECD data CC BY 4.0, attribute OECD)"
+   "terms": "REFUSED",
+   "note": "OECD MEI 3M interbank rates via FRED (OECD data CC BY 4.0, attribute OECD)",
+   "terms_evidence": {
+    "ruled_at": "2026-11-13",
+    "recorded_in": "FRED terms ruling (BACKLOG 609); libs/data/refused_hosts",
+    "reading": "FRED's terms refuse automated access on every route (API and graph CSV), so no request to stlouisfed.org is built; the H.15 / OECD / IMF originals are read from their own publishers where a route exists."
+   }
   },
   {
    "id": "imf_reserves_on_fred",
    "adapter": "fred",
-   "terms": "OPEN",
-   "note": "IMF IFS total reserves ex gold via FRED (IMF data free reuse with attribution)"
+   "terms": "REFUSED",
+   "note": "IMF IFS total reserves ex gold via FRED (IMF data free reuse with attribution)",
+   "terms_evidence": {
+    "ruled_at": "2026-11-13",
+    "recorded_in": "FRED terms ruling (BACKLOG 609); libs/data/refused_hosts",
+    "reading": "FRED's terms refuse automated access on every route (API and graph CSV), so no request to stlouisfed.org is built; the H.15 / OECD / IMF originals are read from their own publishers where a route exists."
+   }
   },
   {
    "id": "mof_japan_intervention",

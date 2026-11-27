@@ -55,6 +55,16 @@ SHADOW = ROOT / "desks" / "mt5" / "reports" / "shadow" / "shadow_state.json"
 CURRENT_SCHEMA = "venue-2026-08-26"
 
 
+def _ledger_lock():
+    """The one lock on the forward ledgers (desks/mt5/research/ledger_lock.py, invariant I1)."""
+    import sys as _sys
+    _r = str((ROOT / "desks" / "mt5") / "research")
+    if _r not in _sys.path:
+        _sys.path.insert(0, _r)
+    import ledger_lock
+    return ledger_lock
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true",
@@ -141,9 +151,11 @@ def _archive_and_clear(rows: dict, keys: list[str], *, reason: str, restart: boo
         seen[row.get("key")] = seen.get(row.get("key"), 0) + 1
 
     state = {}
+    merge_base = None
     if restart:
         try:
             state = json.loads(SHADOW.read_text("utf-8"))
+            merge_base = json.loads(json.dumps(state))    # three-way merge base (invariant I1)
         except (OSError, ValueError):
             state = {}
 
@@ -161,7 +173,8 @@ def _archive_and_clear(rows: dict, keys: list[str], *, reason: str, restart: boo
     archive["updated_at"] = now
     ARCHIVE.write_text(json.dumps(archive, indent=1, default=str), "utf-8")
     if restart and state:
-        SHADOW.write_text(json.dumps(state, indent=1, default=str), "utf-8")
+        # under the ledger lock, applying only this script's changes (invariant I1)
+        _ledger_lock().merge_write(SHADOW, merge_base, state, indent=1)
     return len(keys)
 
 

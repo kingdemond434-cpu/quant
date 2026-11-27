@@ -176,6 +176,28 @@ def _e8_gold_slip_writes_to_tmp(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _probe_tier_writes_to_tmp(tmp_path_factory, monkeypatch):
+    """THE PROBE TIER'S STATE, ARTIFACT AND LEDGER NEVER LAND IN THE CHECKOUT FROM A TEST. The
+    promoter runs `probe_tier.run` on every pass, so any test that drives `promoter.main` would
+    otherwise write data/PROBE_TIER_STATE.json. The bare `probe_tier` name (the box's research
+    path) is aliased to the same module so one patch covers both spellings. A test that sets its
+    own paths afterwards still wins."""
+    import sys
+    try:
+        import research.probe_tier as _pt
+    except Exception:
+        yield
+        return
+    sys.modules.setdefault("probe_tier", _pt)
+    d = tmp_path_factory.mktemp("probe_tier")
+    for mod in {id(m): m for m in (_pt, sys.modules.get("probe_tier")) if m is not None}.values():
+        monkeypatch.setattr(mod, "STATE", d / "PROBE_TIER_STATE.json")
+        monkeypatch.setattr(mod, "OUT", d / "PROBE_TIER.json")
+        monkeypatch.setattr(mod, "LEDGER", d / "probe_ledger.jsonl")
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _experiment_ledger_in_tmp(tmp_path_factory, monkeypatch):
     """THE LIFETIME TRIAL LEDGER NEVER LANDS IN THE CHECKOUT FROM A TEST (2026-11-11).
     `experiment_ledger.family_trials` falls back to `lifetime(write=True)` when OUT is absent,

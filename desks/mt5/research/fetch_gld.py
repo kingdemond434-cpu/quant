@@ -1,46 +1,42 @@
-"""SPDR GLD physical holdings fetcher (free XLSX) + GraniteShares BAR fallback.
+"""SPDR GLD physical holdings: BLOCKED_ON_TERMS (no network path).
 
-GLD: daily ounces + NAV, trade-date accounting. The physical bar list is
-settlement-date based (different timestamps) - keep separate if mined later.
+spdrgoldshares.com's terms allow "personal, non-commercial use" only and forbid
+access "other than using the Website's navigational structure" (re-read
+2026-11-17), so the desk never downloads GLD_US_holdings.xlsx. The same verdict
+sits in alt_proxies.MACRO_FLOW_TERMS (us_spdr_gld_holdings). This module keeps
+its name so data_scout's pointer and the component registry resolve, and it
+says why it fetches nothing.
 """
 
+from __future__ import annotations
+
 import json
-from datetime import datetime, timezone
-from pathlib import Path
-
-import pandas as pd
-import requests
-
-OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
-OUT.mkdir(parents=True, exist_ok=True)
 
 GLD_XLSX = "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx"
 
+BLOCKED_ON_TERMS = (
+    "spdrgoldshares.com terms: personal, non-commercial use only; no access other "
+    "than the website's navigational structure"
+)
 
-def main() -> None:
-    r = requests.get(GLD_XLSX, timeout=60)
-    r.raise_for_status()
-    xl = pd.ExcelFile(io := r.content)
-    # sheet 1: holdings history (Date | Shares | Holdings in oz | Value | NAV)
-    df = xl.parse(xl.sheet_names[0])
-    date_col = [c for c in df.columns if "date" in str(c).lower()][0]
-    oz_col = [c for c in df.columns if "oz" in str(c).lower() or "holdings" in str(c).lower()][0]
-    df = df[[date_col, oz_col]].rename(columns={date_col: "date", oz_col: "ounces"})
-    df["date"] = pd.to_datetime(df["date"], utc=True)
-    df = df.dropna().sort_values("date").set_index("date")
-    df.to_parquet(OUT / "gld_holdings.parquet")
-    state = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "source": GLD_XLSX,
-        "rows": len(df),
-        "first": str(df.index.min()),
-        "last": str(df.index.max()),
-        "latest_ounces": float(df["ounces"].iloc[-1]),
-        "note": "trade-date accounting; bar list (settlement-date) is a separate mine target",
-    }
-    (OUT / "gld_fetch_state.json").write_text(json.dumps(state, indent=2), encoding="utf-8")
-    print(json.dumps(state, indent=2))
+MISSED_GROWTH = {
+    "mechanism": "gld_terms_refusal",
+    "what_is_lost": "GLD daily physical holdings flow as a conditioner for XAUUSD/XAGUSD",
+    "size": "UNMEASURED",
+    "stand_in": "none; CFTC COT metals positioning remains the flow read",
+    "reopens_when": "SPDR grants written permission for automated retrieval",
+}
+
+
+def status() -> dict[str, object]:
+    return {"source": GLD_XLSX, "status": "BLOCKED_ON_TERMS",
+            "why": BLOCKED_ON_TERMS, "missed_growth": MISSED_GROWTH}
+
+
+def main() -> int:
+    print(json.dumps(status(), indent=2))
+    return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

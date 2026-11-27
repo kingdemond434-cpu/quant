@@ -332,6 +332,23 @@ def _log(msg: str) -> None:
 _FORWARD_JOIN: dict[str, Any] = {}
 
 
+
+def _sleeve_rows() -> list[dict[str, Any]]:
+    """sleeves.json through the shared loader (root R3, 2026-11-27): a malformed row is
+    quarantined and counted (reports/STATE_QUARANTINE.json), never fatal to the solve. An absent
+    or unreadable file raises OSError / ValueError, which every caller already treats as "no
+    roster", exactly as the raw read did."""
+    from mt5desk import state_rows as _sr
+    got = _sr.sleeve_rows(BASE / "data" / "sleeves.json",
+                          report=BASE / "reports" / "STATE_QUARANTINE.json")
+    if got.status == _sr.ABSENT:
+        raise OSError(got.why)
+    if got.status != _sr.OK:
+        raise ValueError(got.why)
+    for q in got.quarantined:
+        _log(f"sleeves.json row {q['index']} ({q.get('name')}) quarantined: {q['why']}")
+    return got.rows
+
 def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """The daily-R matrix for every priced sleeve, plus forward days per sleeve.
 
@@ -417,7 +434,7 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     zero: dict[str, str] = {}
     unmeasured: dict[str, str] = {}
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
     except (OSError, ValueError, AttributeError):
         return {}, zero, unmeasured
     try:
@@ -426,6 +443,7 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
         law = {}
     clocks = {str(r.get("certificate")): r for v in (law.values() if isinstance(law, dict) else [])
               if isinstance(v, list) for r in v if isinstance(r, dict) and r.get("certificate")}
+    by_key = {str(r["key"]): cert for cert, r in clocks.items() if r.get("key")}
     try:
         from research.frontier_identity import cell_id
     except ImportError:                                   # pragma: no cover - box path only
@@ -435,7 +453,23 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     for r in rows:
         if not isinstance(r, dict) or str(r.get("status") or "").upper() != "STANDBY":
             continue
-        cell, name = str((r.get("certificate") or {}).get("cell") or ""), str(r.get("name") or "")
+        name = str(r.get("name") or "")
+        cert = r.get("certificate")
+        # ONE ROW MUST NEVER KILL THE PASS (box 2026-11-24: 440 consecutive "ALLOCATOR FAILED:
+        # 'str' object has no attribute 'get'" since 11-21, the whole book frozen on a 3-day-old
+        # reading). The promoter writes the certificate as a {"cell": ...} dict on survivor rows
+        # but as the bare clock key (`SYM.family.selector@TF#k=v`) on clock-promoted rows. A bare
+        # key is mapped back to its cell through the clock table; anything else is UNMEASURED.
+        if isinstance(cert, dict):
+            cell = str(cert.get("cell") or "")
+        elif isinstance(cert, str) and cert:
+            cell = cert if cert.startswith("external.") else by_key.get(cert, "")
+            if not cell and name:
+                unmeasured[name] = (f"certificate is the bare clock key {cert!r} and no forward "
+                                    f"clock maps it to a cell")
+                continue
+        else:
+            cell = ""
         if not cell or not name:
             continue
         if cell in owner:
@@ -447,6 +481,16 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
         if str(clock.get("status") or "").upper() == "KILL":
             zero[name] = (f"its forward clock reached KILL ({clock.get('key')}): the forward "
                           f"evidence refuses this certificate, so the allocator records zero")
+            continue
+        # THE EXOTIC BAN ON THE ALLOCATOR'S COLUMNS (Audit gate (a), 2026-11-26): an exotic is a
+        # recorded zero, an unclassified symbol UNMEASURED (fail closed, never a zero).
+        try:
+            from research.universe_policy import live_class_refusal
+        except ImportError:                               # pragma: no cover - box path
+            from universe_policy import live_class_refusal  # type: ignore[no-redef]
+        _cls = live_class_refusal(sym)
+        if _cls:
+            (zero if "exotic" in _cls else unmeasured)[name] = _cls
             continue
         if str(clock.get("status") or "").upper().startswith("BLOCKED"):
             unmeasured[name] = f"its forward clock is {clock.get('status')}: no bars to replay on"
@@ -2464,6 +2508,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         TILT_LO,
         consumed_inputs,
         factor_tier_factors,
+        fill_proven_factors,
         marginal_breadth_factors,
         match_mechanism,
         posterior_prior_factors,
@@ -2478,6 +2523,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
     post_terms, post_why = posterior_prior_factors(posterior_doc)
     breadth_terms, breadth_why = marginal_breadth_factors(posterior_doc)
     tier_terms, tier_why = factor_tier_factors(exposure_doc)
+    fill_terms, fill_why = fill_proven_factors([e.name for e in ev], now=now)
     mechanisms = list(roi_terms)
     by_sleeve: dict[str, dict[str, Any]] = {}
     n_tilted = n_shifted = 0
@@ -2496,13 +2542,14 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         # toward the sleeves that survive their own costs and cannot change the total.
         nf = float(row.get("net_of_cost_factor", 1.0))
         sf = float(ts_terms.get(e.name, 1.0))
-        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf)))
+        ff = float(fill_terms.get(e.name, 1.0))
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf * ff)))
         if sf < TILT_LO:
             # The exchange scaled this sleeve BELOW the shared floor, down to NOTHING for a
             # ZERO / EXIT / DEFER: its own factor is applied under the floor, not raised to it
             # (audit 2026-09-30: 0 < sf < 0.5 was lifted to 0.5). The Tier S tilt is heat-neutral,
             # so the heat it frees is the heat law's to refill.
-            tilt = float(max(0.0, min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf))
+            tilt = float(max(0.0, min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * ff))
                                   * sf))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
@@ -2526,6 +2573,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
                              "factor_tier_factor": round(tf, 6),
                              "net_of_cost_factor": round(nf, 6),
                              "tier_s_factor": round(sf, 6),
+                             "fill_proven_factor": round(ff, 6),
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
@@ -2537,6 +2585,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "status": "APPLIED" if by_sleeve else "NEUTRAL",
         "evidence": ev_why, "roi": roi_why,
         "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
+        "fill_proven": fill_why, "n_fill_proven_tilted": len(fill_terms),
         "tier_s": ts_why, "n_tier_s_tilted": sum(
             1 for e in ev if abs(float(ts_terms.get(e.name, 1.0)) - 1.0) >= 1e-9),
         # THE EXCHANGE'S ZEROS, NAMED: a zero mean alone did not keep a sleeve out of the book
@@ -2560,7 +2609,8 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
         "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
                  "clip(lineage_factor x roi_factor x forward_posterior x marginal_breadth x "
-                 "factor_tier x net_of_cost x tier_s); every one of the seven is heat-neutral "
+                 "factor_tier x net_of_cost x tier_s x fill_proven); every one of the eight is "
+                 "heat-neutral "
                  "(mean 1.0 across the book) so they reallocate and never lever; the shift only "
                  "where the replay charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside "
                  "the E[log W] solve"),
@@ -3400,7 +3450,7 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     priced = {e.name for e in ev}
     rostered: set[str] = set()
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
         # STANDBY rows too (2026-10-13): a priced STANDBY certificate the solve gives nothing
         # gets the same recorded zero, so the promoter reads a refusal, not "never priced".
         rostered = {str(r.get("name")) for r in rows
@@ -3493,7 +3543,7 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
     except Exception as exc:                                   # pragma: no cover - import guard
         return frozenset(), {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     try:
-        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rows = _sleeve_rows()
     except (OSError, ValueError, AttributeError):
         rows = []
     by_name: dict[str, list[dict[str, Any]]] = {}

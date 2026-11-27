@@ -49,8 +49,15 @@ vetoes or gates; a high slot value is a reason to ENROL MORE, and `capacity.free
 the desk fills its lanes rather than sits on them. A clock whose trade rate cannot be measured is
 UNMEASURED, never REPLACEABLE -- a slot taken away on a missing number is taken away for free.
 
-NOT WIRED TO A CLOCK YET (III.16, stated rather than hidden): ships with its test and no scheduler
-leg. `python forward_slot_ranker.py` writes the artifact; `--dry-run` prints only. numpy only.
+SCHEDULE: hourly leg `forward_slot_ranker` (`hourly_cycle.py`, heavy plan, forward department).
+`python forward_slot_ranker.py` writes the artifact; `--dry-run` prints only. numpy only.
+
+REALNESS (2026-11-25, DSR charge probe sections 4-5): the WAITING P term is shrunk by each
+certificate's own `cert_realness.p_real` instead of one desk-wide decay scalar, a RUNNING clock's
+NIG prior mean is its certificate's in-sample EV x p_real, and the top `REPLICATION_PRIORITY_K`
+waiting certificates are published as `replication_priority`, which `replication_civilization`
+reads as its priority list. The artifact also carries `false_certificate_share`,
+`dsr_only_kills` and the `calibration` falsifier. Ranking and information only: no gate moves.
 """
 
 from __future__ import annotations
@@ -80,6 +87,10 @@ try:                                                  # the desk's own posterior
     _pa = importlib.import_module("research.posterior_alpha")
 except ImportError:                                   # script entry point on the box
     _pa = importlib.import_module("posterior_alpha")
+try:                                                  # the certificate realness score
+    _cr = importlib.import_module("research.cert_realness")
+except ImportError:
+    _cr = importlib.import_module("cert_realness")
 
 SHADOW_DIR = BASE / "reports" / "shadow"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
@@ -107,6 +118,11 @@ FALLBACK_THRESHOLDS = {"VERDICT_MIN_TRADES": 50.0, "VERDICT_MIN_DAYS": 14.0,
 #: Matured clocks needed before "fraction that matured positive" is a measurement and not an
 #: anecdote; below it the decay is the prior and the basis says UNMEASURED.
 DECAY_MIN_N, PRIOR_DECAY = 10, 0.5
+#: The certified population is read from the judge's authority file; older than this by its own
+#: stamp it is published STALE with its age, never read silently (2026-11-25).
+SURVIVORS_MAX_AGE_H = 24.0
+#: How many waiting certificates, best slot value first, the ranker hands replication.
+REPLICATION_PRIORITY_K = 64
 #: REPLACEABLE needs BOTH: dominated on value AND a posterior this weak. Never either alone.
 REPLACE_P_MAX = 0.30
 #: The declared correlation proxy where no shared daily-R history exists.
@@ -207,6 +223,10 @@ class Row:
     forward_t: float = 0.0
     max_dd: float | None = None
     r_by_day: dict[str, float] = field(default_factory=dict)
+    in_sample_sharpe: float | None = None
+    days: float | None = None
+    timeframe: str = "H1"
+    realness: dict[str, Any] = field(default_factory=dict)
 
 
 def _identity(key: str, row: dict, specs: dict[str, dict]) -> tuple[str, str, str]:
@@ -308,7 +328,9 @@ def waiting_rows(states: dict[str, dict[str, dict]], survivors: dict[str, dict],
         sigma = sigma or DEFAULT_SIGMA_R
         out.append(Row("waiting", str(key), "unenrolled", symbol, family, selector,
                        status="CERTIFIED", mean_r=ev, sigma_r=sigma, sharpe=ev / sigma,
-                       sharpe_basis=basis))
+                       sharpe_basis=basis, in_sample_sharpe=in_sample,
+                       days=_f(cell.get("days")),
+                       timeframe=_cr.timeframe_of(selector, spec.get("params"))))
     if unpriced:
         notes.append(f"{unpriced} certified cell(s) carry no ev/Sharpe pair and cannot be priced: "
                      f"counted, never guessed")
@@ -324,15 +346,22 @@ def required_trades(row: Row, th: dict[str, Any]) -> float:
     return max(row.n, float(th["SEQ_MIN_TRADES"]))
 
 
-def p_certify_running(row: Row, th: dict[str, Any]) -> tuple[float, str]:
-    """P(the mature clock clears the promoter's bar) -- NIG posterior, normal remaining trades."""
+def p_certify_running(row: Row, th: dict[str, Any], prior_mean: float = 0.0,
+                      prior_basis: str = "") -> tuple[float, str]:
+    """P(the mature clock clears the promoter's bar) -- NIG posterior, normal remaining trades.
+
+    `prior_mean` is the NIG prior's mean: the certificate's in-sample EV SHRUNK by its realness
+    score (`cert_realness.p_real`), so a young clock starts where its measured basis says it
+    should. 0 (the posterior's own default) when the clock joins no scored certificate. The
+    posterior on forward R is unchanged: as n grows the forward evidence dominates the prior."""
     if row.max_dd is not None and row.max_dd <= th["PROMOTE_MIN_DD"]:
         return 0.0, "max_dd already past the promoter's bar, and a drawdown does not un-draw"
     values = np.asarray(list(row.r_by_day.values()), dtype=float)
     mean = row.mean_r if row.mean_r is not None else (float(values.mean()) if values.size else 0.0)
     sumsq = (float(((values - values.mean()) ** 2).sum()) if values.size >= 2
              else max(row.n - 1.0, 0.0) * DEFAULT_SIGMA_R ** 2)   # dispersion IMPUTED, and said
-    summary = _pa.summarise(_pa.nig_update(row.n, mean, sumsq, sigma0=DEFAULT_SIGMA_R))
+    summary = _pa.summarise(_pa.nig_update(row.n, mean, sumsq, sigma0=DEFAULT_SIGMA_R,
+                                           mu0=float(prior_mean)))
     mu_n = _f(summary["mu_mean"], 0.0) or 0.0
     mu_sd = _f(summary["mu_sd"], DEFAULT_SIGMA_R) or DEFAULT_SIGMA_R
     sigma = _f(summary["sigma_mean"], DEFAULT_SIGMA_R) or DEFAULT_SIGMA_R
@@ -344,18 +373,30 @@ def p_certify_running(row: Row, th: dict[str, Any]) -> tuple[float, str]:
     var = (rem / total) ** 2 * mu_sd ** 2 + sigma ** 2 * rem / total ** 2
     if var <= 0:
         return (1.0 if mature > th["PROMOTE_MIN_EXP"] else 0.0), "no remaining uncertainty"
+    prior = (f"; prior mean {prior_mean:.4g} [{prior_basis}]" if prior_basis
+             else "; prior mean 0 (no scored certificate joins this clock)")
     return (round(_phi((mature - th["PROMOTE_MIN_EXP"]) / math.sqrt(var)), 6),
-            f"NIG posterior pushed to n={total:.0f}, normal remainder")
+            f"NIG posterior pushed to n={total:.0f}, normal remainder{prior}")
 
 
-def p_certify_waiting(row: Row, th: dict[str, Any], decay: float) -> tuple[float, str]:
-    """In-sample EV against the same bar, shrunk by the desk's measured forward-decay base rate."""
+def p_certify_waiting(row: Row, th: dict[str, Any], decay: float,
+                      realness: dict[str, Any] | None = None) -> tuple[float, str]:
+    """In-sample EV against the same bar, shrunk by the certificate's REALNESS SCORE
+    (`cert_realness`: measured-basis PSR x (1 - pi0[family x timeframe])). A cell the score cannot
+    price (no in-sample Sharpe or day count) is shrunk by the desk-wide decay instead, and the
+    basis says so."""
     if row.mean_r is None:
         return 0.0, UNMEASURED
     sd = (row.sigma_r or DEFAULT_SIGMA_R) / math.sqrt(max(float(th["VERDICT_MIN_TRADES"]), 1.0))
     raw = (_phi((row.mean_r - th["PROMOTE_MIN_EXP"]) / sd) if sd > 0
            else float(row.mean_r > th["PROMOTE_MIN_EXP"]))
-    return round(raw * decay, 6), f"in-sample ev vs the bar x measured decay {decay:.3f}"
+    p_real = (realness or {}).get("p_real")
+    if isinstance(p_real, float):
+        # Six significant figures, not six decimals: a deeply deflated score must stay ordered.
+        return float(f"{raw * p_real:.6g}"), f"in-sample ev vs the bar x p_real {p_real:.4g}"
+    why = (realness or {}).get("why") or "no realness score"
+    return round(raw * decay, 6), (f"in-sample ev vs the bar x measured decay {decay:.3f} "
+                                   f"(realness UNMEASURED: {why})")
 
 
 def rate_and_days(row: Row, th: dict[str, Any],
@@ -680,6 +721,116 @@ def net_of_cost(*groups: list[dict[str, Any]]) -> dict[str, Any]:
                          "candidate, stops no clock and shrinks no heat")}
 
 
+def _as_of(doc: dict[str, Any]) -> datetime | None:
+    for name in ("generated_at", "swept_at", "published_at", "at"):
+        with contextlib.suppress(TypeError, ValueError):
+            at = datetime.fromisoformat(str(doc.get(name) or "").strip())
+            return at if at.tzinfo else at.replace(tzinfo=UTC)
+    return None
+
+
+def certified_population(now: datetime) -> tuple[dict[str, dict], dict[str, Any]]:
+    """The certified cells, from the judge's authority file, with its freshness PUBLISHED.
+
+    `reports/UNIVERSAL_SURVIVORS.json` is the one file the sealed judge writes certificates to
+    (certificate_truth: ONE writer, ONE authority file). On the box it is current; the committed
+    repository copy was measured 2026-11-25 at 58 rows swept 2026-09-16 against 13,452 the box's
+    replication pass counted. So the file's OWN stamp is read and a copy older than
+    `SURVIVORS_MAX_AGE_H` is flagged STALE with its age -- read, never silently. Replication's
+    population count is published beside it as the second opinion."""
+    raw = _read_json(SURVIVORS)
+    doc = raw if isinstance(raw, dict) else {}
+    survivors = {str(k): v for k, v in (doc.get("survivors") or {}).items()
+                 if isinstance(v, dict)} if isinstance(doc.get("survivors"), dict) else {}
+    as_of = _as_of(doc)
+    age_h = (now - as_of).total_seconds() / 3600.0 if as_of else None
+    replication = _read_json(Path(OUT).parent / "REPLICATION.json")
+    rep_n = ((replication.get("population") or {}).get("certificates")
+             if isinstance(replication, dict) else None)
+    if not doc:
+        status = UNMEASURED
+    elif age_h is None or age_h > SURVIVORS_MAX_AGE_H:
+        status = "STALE"
+    else:
+        status = "FRESH"
+    block: dict[str, Any] = {
+        "source": str(SURVIVORS), "n": len(survivors), "status": status,
+        "as_of": as_of.isoformat() if as_of else UNMEASURED,
+        "age_h": round(age_h, 2) if age_h is not None else UNMEASURED,
+        "max_age_h": SURVIVORS_MAX_AGE_H,
+        "replication_population": rep_n if isinstance(rep_n, int) else UNMEASURED}
+    if status == "STALE":
+        block["why"] = (f"the certified population is {block['age_h']} h old by its own stamp "
+                        f"(limit {SURVIVORS_MAX_AGE_H} h): ranked as read, and flagged")
+    if isinstance(rep_n, int) and rep_n > len(survivors):
+        block["population_gap"] = rep_n - len(survivors)
+    return survivors, block
+
+
+def _stem(symbol: str, family: str, selector: str) -> str:
+    return f"{symbol}.{family}.{selector}"
+
+
+def realness_pass(states: dict[str, dict[str, dict]], survivors: dict[str, dict],
+                  write: bool) -> dict[str, Any]:
+    """Score every certificate once (`cert_realness`), and index the scores by clock stem."""
+    paths = _cr.paths_for(Path(OUT).parent)
+    xs = _cr.cross_section(paths, write_cache=write)
+    table = _cr.pi0_table(states)
+    ctx = _cr.Context(xs, table, _cr.campaign_floor(paths["gate_spec"]),
+                      _cr.lifetime_trials(paths["experiment_ledger"]))
+    by_cert: dict[str, dict[str, Any]] = {}
+    by_stem: dict[str, list[str]] = {}
+    for key, cell in survivors.items():
+        spec = cell.get("shadow_spec") or {}
+        symbol = str(spec.get("symbol") or cell.get("sym") or "")
+        family, selector = str(spec.get("family") or ""), str(spec.get("selector") or "")
+        sc = _cr.score((((cell.get("gates") or {}).get("in_sample_screen") or {}).get("sharpe")),
+                       cell.get("days"), family, _cr.timeframe_of(selector, spec.get("params")),
+                       ctx)
+        sc["ev"] = _f(((cell.get("gates") or {}).get("expected_value") or {}).get("ev"))
+        by_cert[key] = sc
+        by_stem.setdefault(_stem(symbol, family, selector), []).append(key)
+    return {"ctx": ctx, "xs": xs, "pi0": table, "by_cert": by_cert, "by_stem": by_stem,
+            "paths": paths}
+
+
+def clock_score(key: str, rp: dict[str, Any]) -> dict[str, Any] | None:
+    """The realness of the certificate a clock runs: the clock's stem (symbol.family.selector)
+    against the certificates'. Several certificates on one stem (different parameters) are
+    averaged and the count is said; none is None."""
+    stem = str(key).split("#", 1)[0]
+    keys = [k for k in rp["by_stem"].get(stem, [])
+            if rp["by_cert"][k].get("status") == _cr.MEASURED]
+    if not keys:
+        return None
+    scores = [rp["by_cert"][k] for k in keys]
+    evs = [s["ev"] for s in scores if isinstance(s.get("ev"), float)]
+    return {"p_real": sum(float(s["p_real"]) for s in scores) / len(scores),
+            "rank": sum(_cr.rank_key(s) for s in scores) / len(scores),
+            "ev": (sum(evs) / len(evs)) if evs else None, "n_certificates": len(keys),
+            "basis": (scores[0]["basis"] if len(scores) == 1 else
+                      f"mean over {len(scores)} certificates on stem {stem}")}
+
+
+def calibration_block(rp: dict[str, Any], states: dict[str, dict[str, dict]]) -> dict[str, Any]:
+    """Section 5's falsifier: matured distinct clocks joined to a score, binned by decile."""
+    rows: list[tuple[float, int]] = []
+    rank: list[float] = []
+    unjoined = 0
+    for c in _cr.matured_distinct(states):
+        sc = clock_score(c["key"], rp)
+        if sc is None:
+            unjoined += 1
+            continue
+        rows.append((float(sc["p_real"]), int(c["keep"])))
+        rank.append(float(sc["rank"]))
+    out = _cr.calibration(rows, rank=rank)
+    out["n_matured_distinct_unjoined"] = unjoined
+    out["join"] = "clock stem symbol.family.selector against each certificate's shadow_spec"
+    return out
+
+
 def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     """Rank every slot the desk holds and every one it could hold, and price the difference."""
     stamp = now or datetime.now(UTC)
@@ -688,12 +839,11 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     states = lane_states()
     if not states:
         notes.append(f"no lane state file readable under {SHADOW_DIR}: nothing holds a slot")
-    raw_surv = _read_json(SURVIVORS)
-    survivors = {str(k): v for k, v in
-                 ((raw_surv.get("survivors") or {}) if isinstance(raw_surv, dict) else {}).items()
-                 if isinstance(v, dict)}
+    survivors, population = certified_population(stamp)
     if not survivors:
         notes.append(f"no certified cells readable: {SURVIVORS}")
+    if population["status"] == "STALE":
+        notes.append(f"STALE certified population: {population['why']}")
 
     alloc = _read_json(ALLOCATION) or {}
     f_eff = _f((alloc.get("kelly") or {}).get("kelly_fraction"))
@@ -712,6 +862,12 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     running = running_rows(states, specs, stamp)
     waiting = waiting_rows(states, survivors, notes)
     decay = measure_decay(states)
+    rp = realness_pass(states, survivors, write)
+    for w in waiting:
+        w.realness = dict(rp["by_cert"].get(w.key) or {})
+    joins: dict[str, dict[str, Any] | None] = {r.key: clock_score(r.key, rp) for r in running}
+    if rp["xs"].get("status") != _cr.MEASURED:
+        notes.append(f"realness V_null UNMEASURED: {rp['xs'].get('why')}")
     vectors = _exposure_vectors()
     if not vectors:
         notes.append(f"factor exposures absent: {EXPOSURE} -- correlation falls to the "
@@ -725,14 +881,39 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     def _rank(rows: list[Row], label: str) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for row in rows:
-            p = (p_certify_running(row, th) if row.kind == "running"
-                 else p_certify_waiting(row, th, float(decay["decay"])))
+            join = joins.get(row.key) if row.kind == "running" else None
+            if row.kind == "running":
+                prior = (float(join["p_real"]) * float(join["ev"])
+                         if join and isinstance(join.get("ev"), float) else 0.0)
+                p = p_certify_running(row, th, prior, (
+                    f"in-sample ev x p_real {float(join['p_real']):.4g}" if join and
+                    isinstance(join.get("ev"), float) else ""))
+            else:
+                p = p_certify_waiting(row, th, float(decay["decay"]), row.realness)
             rate, rate_basis, days, owed = rate_and_days(row, th, median_rate)
             name = "_".join(part for part in (row.symbol, row.family, row.selector) if part)
-            out.append({label: row.key, **_publish(
+            entry = {label: row.key, **_publish(
                 row, p, (rate, rate_basis), days, owed, delta_elogw(row.sharpe, rate, f_eff),
-                diversification(row, running, vectors), _f(marginals.get(name)))})
-        out.sort(key=lambda e: (-_value(e), -float(e["p_certify"]), str(e[label])))
+                diversification(row, running, vectors), _f(marginals.get(name)))}
+            sc = row.realness if row.kind == "waiting" else (join or {})
+            entry.update(
+                p_real=sc.get("p_real") if isinstance(sc.get("p_real"), float) else UNMEASURED,
+                p_real_basis=sc.get("basis") or sc.get("why") or UNMEASURED,
+                realness_rank=(round(_cr.rank_key(sc), 4) if row.kind == "waiting"
+                               and math.isfinite(_cr.rank_key(sc)) else
+                               (round(float(sc["rank"]), 4) if row.kind == "running" and sc
+                                and math.isfinite(float(sc["rank"])) else UNMEASURED)))
+            if row.kind == "waiting":
+                entry.update(in_sample_sharpe=(row.in_sample_sharpe if row.in_sample_sharpe
+                                               is not None else UNMEASURED),
+                             days=int(row.days) if row.days is not None else UNMEASURED,
+                             timeframe=row.timeframe)
+            out.append(entry)
+
+        def _rk(e: dict[str, Any]) -> float:
+            v = e.get("realness_rank")
+            return float(v) if isinstance(v, float) else -math.inf
+        out.sort(key=lambda e: (-_value(e), -float(e["p_certify"]), -_rk(e), str(e[label])))
         return out
 
     ranked_running, ranked_waiting = _rank(running, "clock"), _rank(waiting, "cell")
@@ -769,6 +950,7 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
                          why=("dominated on value but P(certify) still above the bar" if dominated
                               else "slot value at or above every waiting candidate"))
 
+    priority = [e["cell"] for e in ranked_waiting[:REPLICATION_PRIORITY_K]]
     roi = roi_weights()
     weights = {str(k): float(v) for k, v in roi["by_family"].items()}
     net = net_of_cost(ranked_running, ranked_waiting)
@@ -786,12 +968,38 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
         "median_trade_rate_per_day": round(median_rate, 4),
         "running": ranked_running, "waiting": ranked_waiting, "replaceable": replaceable,
         "missed_growth_lines": lines, "unmeasured": notes,
+        "certified_population": population,
+        "realness": {
+            "formula": ("p_real = PSR(SR, T; sr0 = sqrt(V*) E[max of N*]) x (1 - pi0[family x "
+                        "timeframe]); N* = max(campaign floor, family lifetime effective); V* = "
+                        "max(1/(T-1), family robust V net of noise)"),
+            "campaign_floor": rp["ctx"].floor[0], "campaign_floor_basis": rp["ctx"].floor[1],
+            "lifetime_trials": {k: v for k, v in rp["ctx"].lifetime.items() if k != "by_family"},
+            "cross_section": {k: rp["xs"].get(k) for k in ("status", "source", "measured_at",
+                                                           "cache", "why", "estimator",
+                                                           "pooled", "by_family")},
+            "n_scored": sum(1 for s in rp["by_cert"].values()
+                            if s.get("status") == _cr.MEASURED),
+            "n_unscored": sum(1 for s in rp["by_cert"].values()
+                              if s.get("status") != _cr.MEASURED),
+            "boundary": ("ranking and information only: no gate, threshold, trial count, V, "
+                         "gate_spec.yaml or certificate is read for writing or written")},
+        "false_certificate_share": _cr.false_certificate_share(rp["pi0"]),
+        "dsr_only_kills": _cr.dsr_only_kills(rp["ctx"]),
+        "calibration": calibration_block(rp, states),
+        "replication_priority": {
+            "at": stamp.isoformat(), "k": len(priority), "certificates": priority,
+            "rule": ("waiting certificates in slot-value order, handed to replication_"
+                     "civilization as its priority list; replication filters out any it has "
+                     "already judged under the current spec, rule and metric")},
         "formula": ("slot_value = P(certify forward) x dE[log W] x diversification / "
                     "max(days_to_maturity, 1); dE[log W] = f_eff (2 - f_eff) 0.5 "
                     "(sharpe_per_trade sqrt(trades_per_day))^2"),
         "inputs": {str(p): ("present" if Path(p).exists() else "absent")
                    for p in (SURVIVORS, GATE_LEDGER, ALLOCATION, EXPOSURE, CAPACITY_FILE,
-                             Path(SHADOW_DIR) / LANE_FILES["shadow"])},
+                             Path(SHADOW_DIR) / LANE_FILES["shadow"],
+                             rp["paths"]["gauntlet_report"], rp["paths"]["trial_ledger"],
+                             rp["paths"]["experiment_ledger"], rp["paths"]["gate_spec"])},
     }
     if write:
         _write_atomic(OUT, payload)

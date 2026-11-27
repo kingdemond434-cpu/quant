@@ -256,5 +256,5 @@ def test_the_runner_names_the_boundary_it_keeps(reg, monkeypatch):
 def test_cli_lists_the_federation_and_refuses_an_unknown_forest(capsys):
     assert fr.main(["--list"]) == 0
     doc = json.loads(capsys.readouterr().out)
-    assert doc["n_forests"] == 17
+    assert doc["n_forests"] == 18
     assert fr.main(["--forest", "atlantis", "--once"]) == 2

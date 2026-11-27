@@ -162,6 +162,14 @@ REARM_COOLDOWN_MIN = 30
 #: progressively more while a one-off recovers fast -- and it works at 04:00 on a Sunday.
 REARM_COOLDOWN_CAP_MIN = 12 * 60
 
+#: A DEPOSIT RE-ARMS AT ONCE (principal 2026-11-24 18:05Z: "make it so it immedeately ttrades when
+#: i depo"). The backoff exists to stop a flap across the floor; a FLAT, HALTED account cannot
+#: trade its way back up, so a fresh reading far above the floor is new money, not a flap. Only an
+#: EQUITY_FLOOR halt (alone or with STALE_GATEWAY) qualifies, the reading must be MEASURED (fresh by
+#: both clocks), the book flat, and equity at least this multiple of the re-arm line.
+DEPOSIT_REARM_MULTIPLE = 2.0
+DEPOSIT_REARM_CODES = frozenset({"EQUITY_FLOOR", "STALE_GATEWAY"})
+
 
 def log(msg: str) -> None:
     line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
@@ -524,7 +532,21 @@ def halted_by_us() -> dict | None:
     return {"body": body} if "Fusion ruin rail" in body else None
 
 
-def try_rearm(stamp: dict, dry_run: bool) -> bool:
+def deposit_detected(codes: list[str], reading: dict | None) -> str | None:
+    """Why this reading is a deposit that lifts an EQUITY_FLOOR halt at once, or None."""
+    if not reading or "EQUITY_FLOOR" not in codes or not set(codes) <= DEPOSIT_REARM_CODES:
+        return None
+    line = EQUITY_FLOOR_EUR * EQUITY_REARM_HYSTERESIS * DEPOSIT_REARM_MULTIPLE
+    equity = float(reading.get("equity") or 0.0)
+    if reading.get("measured") is True and int(reading.get("open_positions") or 0) == 0 \
+            and equity >= line:
+        return (f"DEPOSIT: measured equity {equity:.2f} on a flat book is >= {line:.2f} "
+                f"({DEPOSIT_REARM_MULTIPLE:g}x the re-arm line); a halted flat account cannot earn "
+                f"that, so it is new money and the backoff does not apply")
+    return None
+
+
+def try_rearm(stamp: dict, dry_run: bool, reading: dict | None = None) -> bool:
     """Clear OUR halt once every breach that caused it has objectively cleared.
 
     Returns True if trading was resumed. FULLY AUTOMATIC -- no path here requires a person.
@@ -552,6 +574,22 @@ def try_rearm(stamp: dict, dry_run: bool) -> bool:
         return False
 
     now = datetime.now(tz=UTC)
+    deposit = deposit_detected(codes, reading)
+    if reading is not None and "EQUITY_FLOOR" in codes and not deposit:
+        equity = float(reading.get("equity") or 0.0)
+        line = EQUITY_FLOOR_EUR * EQUITY_REARM_HYSTERESIS
+        if reading.get("measured") is not True or equity < line:
+            # WITHDRAWN TO ZERO (principal 2026-11-24 18:04Z): no trading at zero, and a held
+            # halt is QUIET -- the verdict sits on the stamp; the log line is written only when the
+            # verdict changes, so a week at zero is one line, not two thousand.
+            verdict = (f"HELD awaiting deposit: equity {equity:.2f} "
+                       f"{'measured' if reading.get('measured') is True else 'UNMEASURED'}, "
+                       f"re-arm line {line:.2f}")
+            if not str(stamp.get("rearm_verdict_prev") or "").startswith("HELD awaiting"):
+                log(verdict)
+            stamp["rearm_verdict"] = verdict
+            stamp["cleared_at"] = None
+            return False
     # BACKOFF, not escalation: prune to the rolling 24h, then double the wait per prior re-arm.
     hist = {c: [t for t in stamp.get("rearm_history", {}).get(c, [])
                 if datetime.fromisoformat(t) > now - timedelta(days=1)]
@@ -560,20 +598,23 @@ def try_rearm(stamp: dict, dry_run: bool) -> bool:
     wait_min = min(REARM_COOLDOWN_MIN * (2 ** repeats), REARM_COOLDOWN_CAP_MIN)
 
     cleared_at = stamp.get("cleared_at")
-    if not cleared_at:
+    if deposit:
+        log(deposit)
+    elif not cleared_at:
         stamp["cleared_at"] = now.isoformat(timespec="seconds")
         log(f"breach cleared; backoff {wait_min:.0f}min before re-arm "
             f"(repeat #{repeats + 1} in 24h)")
         stamp["rearm_verdict"] = (f"cleared; backoff {wait_min:.0f}min before re-arm "
                                   f"(repeat #{repeats + 1} in 24h)")
         return False
-    waited = (now - datetime.fromisoformat(cleared_at)).total_seconds() / 60
-    if waited < wait_min:
+    waited = (now - datetime.fromisoformat(cleared_at)).total_seconds() / 60 \
+        if cleared_at else 0.0
+    if not deposit and waited < wait_min:
         log(f"backoff {waited:.0f}/{wait_min:.0f}min (repeat #{repeats + 1})")
         stamp["rearm_verdict"] = f"backoff {waited:.0f}/{wait_min:.0f}min (repeat #{repeats + 1})"
         return False
 
-    why = "; ".join(AUTO_REARM[c] for c in codes)
+    why = deposit or "; ".join(AUTO_REARM[c] for c in codes)
     if dry_run:
         log(f"DRY-RUN would AUTO RE-ARM ({codes}): {why}")
         stamp["rearm_verdict"] = f"WOULD RE-ARM ({codes}): {why}"
@@ -681,7 +722,7 @@ def main(dry_run: bool = True) -> int:
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
     stamp["peak_equity"] = peak
-    stamp.pop("rearm_verdict", None)
+    stamp["rearm_verdict_prev"] = stamp.pop("rearm_verdict", None)
 
     # ARMING NEVER FLATTENS (r6). The first LIVE pass after DRY-RUN refuses to arm while the
     # current broker day's DAILY_LOSS halt is set (latched today or observed now) and says why;
@@ -720,7 +761,9 @@ def main(dry_run: bool = True) -> int:
             action = "WAIT_FOR_CONFIRMATION"
     else:
         stamp["consecutive"] = 0
-        rearmed = try_rearm(stamp, dry_run=dry_run)
+        rearmed = try_rearm(stamp, dry_run=dry_run,
+                            reading={"equity": account["equity"], "measured": measured,
+                                     "open_positions": len(positions)})
         verdict = str(stamp.get("rearm_verdict") or "")
         if rearmed or verdict.startswith("WOULD RE-ARM"):
             action = "RE-ARM"

@@ -135,6 +135,7 @@ SOURCE_ARM: dict[str, str] = {
     "deep_forest_eu": "external_screen", "deep_forest_nordics": "external_screen",
     "deep_forest_east_eu": "external_screen", "deep_forest_ru": "external_screen",
     "deep_forest_latam": "external_screen", "deep_forest_institutional": "external_screen",
+    "deep_forest_central_asia": "external_screen",
     "tail_alpha": "new_mechanism", "anomaly_factory": "new_mechanism",
     "action_counterfactuals": "exit_improvement",
     "drift_monitor": "conditional_state_edge",

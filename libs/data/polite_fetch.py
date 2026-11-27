@@ -124,7 +124,70 @@ class HostGate:
             sleep(w)
 
 
-GATE = HostGate(per_host=HOST_INTERVAL_S)
+class SharedHostGate(HostGate):
+    """The same spacing ACROSS PROCESSES (Audit H1 of deep-forest-box-parity r2, 2026-11-25): the
+    box runs several miner processes at once, and a per-process gate lets N of them hit one shared
+    host (the search engine behind 177 grounds) at N times the designed rate. Each host's next
+    wall-clock slot lives in `<folder>/<host>.slot`, booked under a cross-process file lock. A lock
+    that cannot be taken in time falls back to this process's own spacing (never to none)."""
+
+    def __init__(self, folder: Any, default_s: float = DEFAULT_HOST_INTERVAL_S,
+                 per_host: Mapping[str, float] | None = None, lock_timeout_s: float = 30.0) -> None:
+        super().__init__(default_s, per_host)
+        from pathlib import Path
+        self.folder = Path(folder)
+        self.lock_timeout_s = float(lock_timeout_s)
+
+    def _slot_file(self, host: str) -> Any:
+        safe = re.sub(r"[^A-Za-z0-9._-]", "_", host)[:120] or "_"
+        return self.folder / f"{safe}.slot"
+
+    def _book(self, host: str, earliest: float | None, step: float) -> float | None:
+        from libs.research import artifact_chain as _ac
+        f = self._slot_file(host)
+        with _ac._locked(f, timeout_s=self.lock_timeout_s) as held:
+            if not held:
+                return None
+            now = time.time()
+            try:
+                nxt = float(f.read_text("utf-8").strip() or 0.0)
+            except (OSError, ValueError):
+                nxt = 0.0
+            slot = max(now, nxt, earliest or 0.0)
+            f.write_text(f"{slot + step:.3f}", "utf-8")
+            return max(0.0, slot - now)
+
+    def reserve(self, host: str) -> float:
+        local = super().reserve(host)
+        try:
+            shared = self._book(host, None, self.interval(host))
+        except OSError:
+            shared = None
+        return local if shared is None else max(local, shared)
+
+    def penalise(self, host: str, seconds: float) -> None:
+        super().penalise(host, seconds)
+        with _suppress_oserror():
+            self._book(host, time.time() + seconds, 0.0)
+
+
+def _suppress_oserror() -> Any:
+    from contextlib import suppress
+    return suppress(OSError)
+
+
+def _gate_from_env() -> HostGate:
+    import os
+    folder = os.environ.get(SHARED_GATE_ENV)
+    if folder:
+        return SharedHostGate(folder, per_host=HOST_INTERVAL_S)
+    return HostGate(per_host=HOST_INTERVAL_S)
+
+
+#: Set by a launcher that runs several fetching processes at once (deep_forest_regions.py): one
+#: folder of per-host slots they all book through.
+SHARED_GATE_ENV = "QUANT_HOST_GATE_DIR"
+GATE = _gate_from_env()
 
 
 # --------------------------------------------------------------------------- stats

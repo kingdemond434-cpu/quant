@@ -162,7 +162,8 @@ def desk(tmp_path, monkeypatch):
     return Desk()
 
 
-_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
+_GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0,
+         "spread_basis": "fill_hour"}
 
 
 def test_the_authority_set_is_recorded_as_drift_never_a_block(desk, monkeypatch):
@@ -209,11 +210,11 @@ def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk
         "AUDNZD.dav_range_filter_adx.afternoon": {
             "symbol": "AUDNZD", "selector": "afternoon", "family": "dav_range_filter_adx",
             "params": {"adx": 20}, "side": "SHORT"},
-        "EURZAR.overnight_gap_decay.asia": {
-            "symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
+        "EURCHF.overnight_gap_decay.asia": {
+            "symbol": "EURCHF", "selector": "asia", "family": "overnight_gap_decay",
             "params": {}, "side": "LONG"},
-        "EURZAR.a_family_no_code_answers_to.asia": {
-            "symbol": "EURZAR", "selector": "asia", "family": "a_family_no_code_answers_to",
+        "EURCHF.a_family_no_code_answers_to.asia": {
+            "symbol": "EURCHF", "selector": "asia", "family": "a_family_no_code_answers_to",
             "params": {}, "side": "LONG"},
     }
     monkeypatch.setattr(promoter, "clock_identities", lambda: ids)
@@ -227,13 +228,13 @@ def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk
     assert s["side"] == "SHORT" and s["selector"] == "afternoon" and s["params"] == {"adx": 20}
 
     # THE ORTHOGONAL CLOCK NOW REACHES CAPITAL, by the same path and carrying the same identity.
-    o = rows["EURZAR.overnight_gap_decay.asia"]
+    o = rows["EURCHF.overnight_gap_decay.asia"]
     assert o["exec"] == "family_market" and o["family"] == "overnight_gap_decay"
     assert o["selector"] == "asia" and o["side"] == "LONG"
 
     # AND THE BOUNDARY STILL EXISTS. A certificate for a family with no constructor is an orphan.
-    assert "EURZAR.a_family_no_code_answers_to.asia" not in rows
-    gap = desk.read_shadow()["EURZAR.a_family_no_code_answers_to.asia"]
+    assert "EURCHF.a_family_no_code_answers_to.asia" not in rows
+    gap = desk.read_shadow()["EURCHF.a_family_no_code_answers_to.asia"]
     assert gap["status"] == "PROMOTION CANDIDATE"          # still a candidate, never blocked
     assert "no constructor" in gap["executor_gap"]
 

@@ -61,6 +61,8 @@ snapshots, 2026-10-14..10-21), and the evidence is beside each constant below:
                      spaced so the window holds one reading, that reading and the one before it
                      must both be UNMEASURED: two in a row page whatever the spacing. UNMEASURED
                      is a verdict here, and a verdict that persists pages.
+  sweep_heartbeat_stale  the sweep child's own GAUNTLET_HEARTBEAT.json reads RUNNING and its
+                     beat is older than SWEEP_HEARTBEAT_STALE_H (E10, judge P0 2026-11-25).
   host_unreadable    libs.ops.host_identity raised. The pager fails TOWARD paging: it treats the
                      host as the box, writes its artifact and pages this incident with the rest.
 
@@ -109,6 +111,13 @@ THROUGHPUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 RESIDENT = BASE / "reports" / "JUDGE_RESIDENT.json"
 SWEEP_RESULT = BASE / "reports" / "universal_gates_external.json"
 OUT = BASE / "reports" / "JUDGE_STALL.json"
+#: The sweep child's own heartbeat (run_sharded_gauntlet.SweepWatchdog, every 30 s while it holds
+#: the lane). Read beside JUDGE_RESIDENT.json unless a path is given.
+SWEEP_HEARTBEAT_NAME = "GAUNTLET_HEARTBEAT.json"
+#: E10: a RUNNING sweep heartbeat older than this pages (`sweep_heartbeat_stale`). The 11-25 sweep
+#: pid 18528 beat last at 12:56:39Z and nothing paged for 6 h; the resident's own heartbeat
+#: (`resident_dead`) kept beating throughout, because it is a different process.
+SWEEP_HEARTBEAT_STALE_H = 1.0
 PAGE_STATE_REL = "desks/mt5/logs/judge_stall_page.json"
 UNMEASURED = "UNMEASURED"
 
@@ -118,7 +127,10 @@ UNMEASURED = "UNMEASURED"
 #: (10-12, the 33 h hang) and 67.33 h (10-18, the resident died) gaps are incidents. The largest
 #: healthy gap is 31.33 h (10-14 17:59Z -> 10-16 01:18Z: sweeps ended 22:59Z and 08:35Z without
 #: changing a verdict). With n this small the p99 IS the maximum, so N sits above it with margin.
-NO_VERDICT_H = 36.0
+#: E10 (judge P0, 2026-11-25): A SWEEP MUST END WITHIN 6 H, so six hours without a new verdict
+#: row is the incident -- the 36 h measured above was the healthy gap of 12-17 h sweeps that E10
+#: now forbids, and on 11-24/25 it let the judge publish nothing for ~33 h before anything paged.
+NO_VERDICT_H = 6.0
 #: Minutes before the resident's heartbeat is stale. MEASURED: it is re-stamped every 30 s
 #: (run_sharded_gauntlet.RESIDENT_HEARTBEAT_S). Its age at publication over 491 healthy
 #: snapshots was median 0.3, p90 0.5, p99 1.5 and max 2.2 min; the one incident read 134.7 min
@@ -183,7 +195,10 @@ UNMEASURED_PAGE_MIN = 30.0
 UNMEASURED_SHARE = 0.5
 #: Readings a window must hold before it can page.
 UNMEASURED_MIN_READS = 2
-UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0}
+UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0,
+                                           # the rate is republished hourly; its own staleness
+                                           # bound (FIRST_VERDICTS_STALE_H) already waits 6 h
+                                           "first_verdicts_low": 120.0}
 #: Bytes of the sweep result read from each end: its top-level counts sit near the head and its
 #: `swept_at` near the tail, so the ~88 MB body is never parsed.
 RESULT_HEAD_BYTES = 1024 * 1024
@@ -194,7 +209,8 @@ INFLIGHT_RETRY_MIN = 30.0
 #: The desk's reminder convention (state_publication.REPAGE_H, run_alerts._DEDUPE_S).
 REPAGE_H = 6.0
 INCIDENTS = ("no_verdict", "resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
-             "zero_judged_sweep", "cores_idle", "inputs_unmeasured", "host_unreadable")
+             "zero_judged_sweep", "cores_idle", "inputs_unmeasured", "host_unreadable",
+             "first_verdicts_low", "sweep_heartbeat_stale")
 #: Bytes read from the ledger's end. Rows are a few hundred bytes; the newest stamp is in here.
 TAIL_BYTES = 256 * 1024
 #: Statuses in which the resident has stopped ON PURPOSE and its heartbeat is expected to stop.
@@ -639,11 +655,68 @@ def _cores_verdict(prev: object, row: dict[str, Any] | None,
     return inc, state
 
 
+#: FIRST VERDICTS PER DAY BELOW THE PRINCIPAL'S FLOOR (2026-11-20: "make sure it clears like 100k
+#: plus 150k plus cells a day"; the coordinator's order: a permanent check, alerted to Claude,
+#: never to zuck). Read from JUDGING_THROUGHPUT.json's `rate.verdicts.first_terminal_counts.24h`
+#: -- cells given their FIRST terminal verdict in the last 24h, never repeated changed verdicts.
+#: Measured 2026-11-18: 1,552 (24h) and 75,236 (7d). A rate older than FIRST_VERDICTS_STALE_H
+#: or absent is UNMEASURED, never a pass.
+FIRST_VERDICTS_FLOOR_PER_DAY = 100_000
+FIRST_VERDICTS_STALE_H = 6.0
+
+
+def _first_verdicts(at: datetime, throughput: Path) -> dict[str, Any]:
+    doc = _read_json(throughput)
+    rate = doc.get("rate") if isinstance(doc, dict) else None
+    v = rate.get("verdicts") if isinstance(rate, dict) else None
+    counts = v.get("first_terminal_counts") if isinstance(v, dict) else None
+    n = counts.get("24h") if isinstance(counts, dict) else None
+    stamp = _stamp(rate.get("at")) if isinstance(rate, dict) else None
+    if not isinstance(n, (int, float)) or isinstance(n, bool) or stamp is None:
+        return {"open": None, "floor": FIRST_VERDICTS_FLOOR_PER_DAY,
+                "why": f"{UNMEASURED}: {throughput.name} names no 24h first-verdict count"}
+    age_h = (at - stamp).total_seconds() / 3600.0
+    if age_h > FIRST_VERDICTS_STALE_H or age_h < -FUTURE_SKEW_S / 3600.0:
+        return {"open": None, "floor": FIRST_VERDICTS_FLOOR_PER_DAY, "age_h": round(age_h, 2),
+                "why": f"{UNMEASURED}: the rate in {throughput.name} is {age_h:.1f}h old "
+                       f"(limit {FIRST_VERDICTS_STALE_H:g}h)"}
+    return {"open": n < FIRST_VERDICTS_FLOOR_PER_DAY, "first_verdicts_24h": int(n),
+            "floor": FIRST_VERDICTS_FLOOR_PER_DAY, "age_h": round(age_h, 2),
+            "why": (f"{int(n):,} cells got their first verdict in the last 24h "
+                    f"(floor {FIRST_VERDICTS_FLOOR_PER_DAY:,})")}
+
+
+def _sweep_heartbeat(path: Path, at: datetime) -> dict[str, Any]:
+    """`sweep_heartbeat_stale`: the sweep child's RUNNING heartbeat older than the E10 hour.
+
+    Absent is CLEAR (no sweep has held the lane since the file was last cleared, and the
+    resident-side incidents cover a sweep that never wrote one); torn is UNMEASURED; a heartbeat
+    in any status but RUNNING is a sweep that ended, so CLEAR."""
+    if not path.exists():
+        return {"open": False, "why": f"{path.name} absent: no sweep heartbeat to be stale"}
+    doc = _read_json(path)
+    if not isinstance(doc, dict):
+        return {"open": None, "why": f"{UNMEASURED}: {path.name} torn or not an object"}
+    status = str(doc.get("status") or "")
+    if status != "RUNNING":
+        return {"open": False, "why": f"sweep heartbeat status {status or '?'}: not running"}
+    beat = _stamp(doc.get("beat_utc"))
+    if beat is None:
+        return {"open": None, "why": f"{UNMEASURED}: RUNNING sweep heartbeat has no beat_utc"}
+    h = max(0.0, (at - beat).total_seconds() / 3600.0)
+    return {"open": h > SWEEP_HEARTBEAT_STALE_H, "pid": doc.get("pid"), "hours": round(h, 2),
+            "phase": doc.get("phase"),
+            "why": (f"sweep pid {doc.get('pid')} heartbeat {h:.1f}h old in phase "
+                    f"{doc.get('phase')} (last {doc.get('beat_utc')}); limit "
+                    f"{SWEEP_HEARTBEAT_STALE_H:g}h")}
+
+
 def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
             throughput: Path = THROUGHPUT, resident: Path = RESIDENT,
             sweep_result: Path = SWEEP_RESULT, env_file: Path = ENV_FILE,
             pid_alive: PidAlive = _pid_alive,
-            cpu_reader: CpuReader | None = None) -> dict[str, Any]:
+            cpu_reader: CpuReader | None = None,
+            sweep_heartbeat: Path | None = None) -> dict[str, Any]:
     """Each incident: True (open), False (clear) or None (UNMEASURED), with its reading.
 
     cores_idle carries the READING here (`low`); whether it has lasted CORES_IDLE_H is decided
@@ -655,6 +728,7 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
     unknown_limit = UNKNOWN_PHASE_LIMIT_H
     out: dict[str, Any] = {"at": at.isoformat(timespec="seconds"), "incidents": {},
                            "thresholds": {"no_verdict_h": NO_VERDICT_H,
+                                          "sweep_heartbeat_stale_h": SWEEP_HEARTBEAT_STALE_H,
                                           "heartbeat_stale_min": HEARTBEAT_STALE_MIN,
                                           "phase_limit_h": limits,
                                           "prewarm_budget_s": budget,
@@ -680,6 +754,11 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         inc["no_verdict"] = {"open": h > NO_VERDICT_H, "hours": round(h, 2),
                              "why": (f"no new verdict for {h:.1f}h (last {lv['at']}, "
                                      f"{lv['source']}); limit {NO_VERDICT_H:g}h")}
+
+    inc["first_verdicts_low"] = _first_verdicts(at, throughput)
+    inc["sweep_heartbeat_stale"] = _sweep_heartbeat(
+        sweep_heartbeat if sweep_heartbeat is not None
+        else resident.parent / SWEEP_HEARTBEAT_NAME, at)
 
     doc = _read_json(resident)
     if not isinstance(doc, dict) or not doc:

@@ -334,6 +334,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     if doc.get("status") != "OK":
         print(f"capacity frontier: {doc.get('status')} -- {doc.get('why')}")
+        if a.apply:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            print(f"-> {OUT}  (UNMEASURED written, L1.28a: absence is an answer)")
         return 0
     d = doc["depth"]
     print(f"capacity frontier: OK   {doc['n_curves']} curve(s)")

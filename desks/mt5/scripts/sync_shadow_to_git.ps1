@@ -695,6 +695,16 @@ $relPaths = @(
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
     # counted stayed on the box, so no reader on this branch could say WHICH eleven.
     "desks/mt5/reports/process_health.json",
+    # BOX ALERTS REACH CLAUDE (2026-11-25, principal 11-20 "all box alerts go to Claude"): every
+    # page read back off the ntfy topic (ops/alert_feed.py, MT5-Guardian), the feed's own status,
+    # and what the guardian did about the process board. Bodies are cut to 400 chars; the login
+    # fence below still refuses any file carrying an account-shaped value.
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
+    "desks/mt5/reports/PASS_FINDINGS.json",
+    "desks/mt5/reports/DESK_SELF_HEAL.json",
     # IS THE BOX BACKED UP, AND WAS A RESTORE EVER REHEARSED (v5f). ops/backup_state.py, on
     # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
     # the key backup's present/size/match. Scheme only: no path, repository, password or hash.
@@ -789,7 +799,14 @@ $relPaths = @(
     # WHETHER THE TICK TAPE IS STILL MOVING (2026-10-14). MT5-TickRecorder sat dead for two days
     # and origin's tape_state.json (never on this list) read 2026-09-04 whatever the box held.
     # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
-    "desks/mt5/reports/TAPE_FRESHNESS.json"
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
+    # CERTIFICATE LINEAGE OF EVERY LIVE WINDOW (2026-10-20, scripts/check_cert_lineage.py).
+    "desks/mt5/reports/CERT_LINEAGE.json",
+    # THE TWO CACHE-ONLY FILL PROBES (2026-11-25), daily_cycle steps entry_timing_probe and
+    # asia_bracket_refill: read-only measurements from the bar cache, published so the engine
+    # fix's effect can be read off the box day by day.
+    "desks/mt5/reports/ENTRY_TIMING_PROBE.json",
+    "desks/mt5/reports/ASIA_BRACKET_REFILL.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
@@ -846,9 +863,53 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the end-to-end funnel (research/funnel.py, leg funnel): raw info -> live profit per
+    # producer, class and family, the weakest stage and the floors; and the floors themselves
+    "desks/mt5/reports/FUNNEL.json",
+    "desks/mt5/data/funnel_floors.json",
+    # the producer heartbeat (libs/ops/producer_heartbeat.py): every leg, contracted box task and
+    # intelligence seat with ONE named status and its evidence -- the off-box proof of production
+    "desks/mt5/reports/PRODUCER_HEARTBEAT.json",
+    # MT5-LocalConvert's output (2026-11-25 triage: the box rewrites it hourly and the published
+    # copy was frozen at 2026-09-12, so the census could only read it PUBLISH_STALE)
+    "desks/mt5/data/hypotheses/local_candidates.json",
+    # the free-model conversion lanes (research/conversion_lanes.py, leg conversion_lanes): the
+    # pass report, the generators' judge-feedback block and the job registry with its weights
+    "desks/mt5/reports/CONVERSION_LANES.json",
+    "desks/mt5/reports/JUDGE_FEEDBACK.json",
+    "desks/mt5/data/free_model_jobs.json",
+    # the shared free chain (libs/ops/free_chain.py, written by leg conversion_lanes): every LLM
+    # key on the box LIT / DARK / CAPPED, its calls and successes per job over 24h -- no key value
+    "desks/mt5/reports/FREE_MODEL_ROUTES.json",
+    # the judge calibration loop (LOOP_COVERAGE L2): the judge against matured forward clocks,
+    # and the priors and gate moves it proposes to the sealed judge (before/after values)
+    "desks/mt5/reports/JUDGE_CALIBRATION.json",
+    "desks/mt5/data/JUDGE_CALIBRATION_PROPOSALS.json",
+    # where the judge's time goes and the verdict floor ladder (research/judge_efficiency.py),
+    # read by the off-box rule checks (judge P0, 2026-11-25)
+    "desks/mt5/reports/JUDGE_EFFICIENCY.json",
+    # The formula family's two producers: the published libraries' per-pass donation, and the
+    # expression factory's phase file (how far its last pass got; its full report stays local).
+    "desks/mt5/reports/FORMULA_LIBRARY.json",
+    "desks/mt5/reports/EXPRESSION_FACTORY_STATUS.json",
     # the math lab's per-tradition yield per compute-hour and its hypothesis -> tradition
     # routing log (2026-11-13): the evidence the lab's compute shares are earned on
     "desks/mt5/reports/MATH_LAB.json",
+    # the in-process report steps (2026-11-14, hourly_cycle.REPORT_STEPS): the prop book's
+    # headroom/stress/joint breach, the counterparty haircut, the fill-side spread z and
+    # illiquidity, the PIT rates axis, the task digest, the written specs and the USDJPY study.
+    # Fractions, R and verdicts only: no amount of money, no path, no credential
+    "desks/mt5/reports/E8_HEADROOM.json",
+    "desks/mt5/reports/COMBINED_PROP_RISK.json",
+    "desks/mt5/reports/PROP_TAIL_STRESS.json",
+    "desks/mt5/reports/PROP_JOINT_BREACH.json",
+    "desks/mt5/reports/counterparty_register.json",
+    "desks/mt5/reports/bar_spread_z.json",
+    "desks/mt5/reports/BAR_ILLIQUIDITY.json",
+    "desks/mt5/reports/RATES_INDEX_STATE.json",
+    "desks/mt5/reports/TASK_FAILURE_DIGEST.json",
+    "desks/mt5/reports/REPLICATION_SPEC_ENTRIES.json",
+    "desks/mt5/reports/USDJPY_ASIA_BREAKOUT_STUDY.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
     # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read
@@ -909,7 +970,12 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # ITS SIBLING, WRITTEN BY THE SAME macro_desk LOOP (2026-10-21). The branch copy of
+    # macro_state.json stopped at 2026-09-12 (an ad-hoc box commit) because nothing listed it
+    # here, while the box rewrote it hourly. Small JSON; `updated` inside it is what readers
+    # and the DATA-MACRO fence judge, never this file's mtime.
+    "desks/mt5/data/macro_state.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

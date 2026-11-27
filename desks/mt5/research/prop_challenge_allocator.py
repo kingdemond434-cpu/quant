@@ -109,6 +109,18 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "FTMO_ALLOCATOR.json"
+#: E8 JOINS THE ONE SOLVE (one-pipe step 1, zuck 2026-11-19 + 11-24 "one unified allocator"):
+#: the same universe, worlds (regime-conditioned), objective and margin, under E8 Pro's rules and
+#: E8's own account state; prop/e8_book sizes from this file when it is fresh and deployable.
+E8_OUT = BASE / "reports" / "E8_ALLOCATOR.json"
+E8_GUARD = BASE / "reports" / "E8_GUARD.json"
+E8_BOOK_REPORT = BASE / "reports" / "E8_BOOK.json"
+#: E8's own spread sample (prop/e8_spread_sampler.py): per symbol, per UTC hour, in bps of price.
+E8_SPREADS = BASE / "reports" / "E8_SPREADS.json"
+#: A cell prices E8's cost only on this many live samples; below it the FTMO cost stands.
+E8_COST_MIN_N = 10
+E8_SPREADS_MAX_AGE_S = 7 * 24 * 3600
+OUT_BY_VENUE = {"ftmo": OUT, "e8": E8_OUT}
 ACCOUNT_STATE = BASE / "reports" / "FTMO_ACCOUNT_STATE.json"
 FTMO_REGISTRY = BASE / "data" / "ftmo_registry.json"
 FTMO_QUOTES = BASE / "data" / "cost_truth_quotes.json"
@@ -148,8 +160,11 @@ STATE_MAX_AGE_S = 3 * 3600
 #: Keys the gold follower trades (prop/ftmo_follower.py). Non-gold keys are the sleeve
 #: executor's (`executor_runs`); a non-copy gold window has no FTMO executor.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
-#: Symbols the sleeve executor never trades: gold has one FTMO owner, the follower.
-EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
+#: Symbols the sleeve executor does not trade. Empty since 2026-11-18: a certified gold sleeve
+#: with a spec is the sleeve executor's (prop/ftmo_executor.GOLD_SLEEVES); only the follower's copy
+#: keys (`FTMO_EXECUTABLE`) stay the follower's. The revert is {"XAUUSD"} here AND
+#: GOLD_SLEEVES = False there; a test pins the two together.
+EXECUTOR_SKIP_SYMBOLS: frozenset[str] = frozenset()
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
@@ -260,6 +275,54 @@ def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = Non
     else:
         st.why = f"state {age:.0f}s old"
     return st
+
+
+def read_e8_state(path: Path = E8_GUARD, *, now: datetime | None = None) -> AccountState:
+    """E8's account from prop/e8_guard's report ({generated_utc, account, decision}), as fractions
+    of E8's START_BALANCE. EQUITY OR NOTHING, the e8_gold rule: a missing, non-positive or
+    balance-derived equity is no equity and is never deployable. E8 Pro is one phase; PASSED
+    reads as funded, BREACHED is never deployable, and a report older than STATE_MAX_AGE_S is
+    STALE."""
+    now = now or datetime.now(tz=UTC)
+    doc = _read_json(path)
+    dec = doc.get("decision") if isinstance(doc, dict) else None
+    if not isinstance(dec, dict):
+        return AccountState(why="no E8 guard report: solved from a fresh account; not deployable")
+    try:
+        from prop.e8_guard import START_BALANCE
+        initial = float(START_BALANCE)
+        eq, start = float(dec["equity"]), float(dec["day_start"])
+        at = datetime.fromisoformat(str(doc["generated_utc"]).replace("Z", "+00:00"))
+    except (ImportError, KeyError, TypeError, ValueError) as exc:
+        return AccountState(why=f"E8 guard unreadable ({type(exc).__name__}); not deployable")
+    if not (math.isfinite(eq) and eq > 0 and math.isfinite(start) and start > 0) \
+            or dec.get("equity_from_balance"):
+        return AccountState(why="E8 equity unmeasured or balance-derived: equity or nothing; "
+                                "not deployable")
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    verdict = str(dec.get("verdict") or "").upper()
+    st = AccountState(phase="funded" if verdict == "PASSED" else "phase1",
+                      balance=eq / initial, equity=eq / initial, day_start=start / initial,
+                      status="MEASURED",
+                      detail={"verdict": verdict, "generated_utc": str(doc["generated_utc"])})
+    if verdict == "BREACHED":
+        st.status, st.why = "BREACHED", "E8 guard reports a breach; not deployable"
+        return st
+    age = (now - at).total_seconds()
+    if age > STATE_MAX_AGE_S:
+        st.status = "STALE"
+        st.why = f"E8 guard is {age / 3600:.1f}h old; solved from it, not deployable"
+    else:
+        st.why = f"E8 guard {age:.0f}s old"
+    return st
+
+
+def e8_venue_blocked(path: Path = E8_BOOK_REPORT) -> set[str]:
+    """Symbols the E8 book found unlisted on E8's venue (E8_BOOK.json blocked_by_venue)."""
+    doc = _read_json(path)
+    return ({str(x).upper() for x in doc.get("blocked_by_venue") or []}
+            if isinstance(doc, dict) else set())
 
 
 # ===================================================================== the barrier simulation
@@ -480,6 +543,91 @@ def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
             "bias_r_per_trade": round(bias, 4)}
 
 
+def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] | None = None,
+                    *, now: datetime | None = None) -> tuple[dict[str, float], dict[str, str]]:
+    """({column: delta R per trade}, {column: cost source}) that move E8's solve off FTMO's cost
+    onto E8's OWN measured spread, where E8 has measured it.
+
+    TWO-SIDED: delta = E8 bias - FTMO bias, so a column that is cheaper at E8 than at FTMO gains
+    mean and a dearer one loses it. A cell prices only when it is LIVE (`usable_as_cost`, not a
+    frozen weekend quote), holds n >= E8_COST_MIN_N samples at the column's fill hour, the
+    sampler published that symbol's mid (to turn bps into price) and the file is under a week old;
+    otherwise the FTMO cost stands and the source says why. Only the RATIO method is re-priced
+    (E8's columns are non-gold; the stop-measured method is gold's), with the same BASE_COST_R and
+    MAX_RATIO the FTMO bias used, so the two are like for like.
+
+    HOUR BASIS (Audit MF1 on 1fcb05470): a column's `hour` is the BROKER hour (NY+7, the basis of
+    fill_hour and the FTMO/Fusion surfaces); the E8 sampler keys `by_hour` on the UTC hour. The
+    lookup converts, utc = (broker - E8 server offset) % 24 with the offset derived for `now`
+    (prop/e8_guard.server_offset_hours: +3 summer, +2 winter), and stamps both hours."""
+    from libs.portfolio.execution_cost import BASE_COST_R, MAX_RATIO
+    when = now or datetime.now(tz=UTC)
+    try:
+        from prop.e8_guard import server_offset_hours
+        offset: int | None = int(server_offset_hours(when))
+    except Exception:
+        offset = None
+    if doc is None:
+        doc = _read_json(E8_SPREADS) or {}
+    deltas: dict[str, float] = {}
+    source: dict[str, str] = {}
+    age_ok, age_why = False, "E8_SPREADS.json absent or unreadable"
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_utc"]))
+        if gen.tzinfo is not None:
+            age = (when - gen).total_seconds()
+            age_ok = -300 <= age <= E8_SPREADS_MAX_AGE_S
+            age_why = f"E8_SPREADS.json {age / 3600:.0f}h old"
+        else:
+            age_why = "E8_SPREADS.json stamp is naive"
+    except (KeyError, TypeError, ValueError):
+        pass
+    by_hour = doc.get("by_hour") or {}
+    live = doc.get("liveness") or {}
+    mids = doc.get("mid") or {}
+    for col in cols:
+        cost = costs.get(col) or {}
+        sym = _symbol_of(col)
+        if cost.get("status") != "PRICED":
+            source[col] = "UNPRICED"
+            continue
+        if not age_ok:
+            source[col] = f"FTMO_PROXY ({age_why})"
+            continue
+        if not str(cost.get("method") or "").startswith("RATIO"):
+            source[col] = f"FTMO_PROXY (method {cost.get('method')})"
+            continue
+        if offset is None or not isinstance(cost.get("hour"), int):
+            source[col] = "FTMO_PROXY (broker-to-UTC hour conversion unavailable)"
+            continue
+        broker_h = int(cost["hour"])
+        utc_h = (broker_h - offset) % 24
+        hb = f"broker h{broker_h:02d} = UTC h{utc_h:02d}"
+        cell = (by_hour.get(sym) or {}).get(str(utc_h)) or {}
+        n = int(cell.get("n") or 0)
+        mid = mids.get(sym)
+        if not (live.get(sym) or {}).get("usable_as_cost"):
+            source[col] = f"FTMO_PROXY (E8 {sym} quote not live)"
+            continue
+        if n < E8_COST_MIN_N or not isinstance(cell.get("median"), (int, float)):
+            source[col] = f"FTMO_PROXY (E8 {sym} {hb} n={n} < {E8_COST_MIN_N})"
+            continue
+        if not isinstance(mid, (int, float)) or not mid > 0:
+            source[col] = f"FTMO_PROXY (E8 {sym} mid unpublished)"
+            continue
+        charged = float(cost.get("charged_spread_px") or 0.0)
+        if not charged > 0:
+            source[col] = "FTMO_PROXY (charged spread unknown)"
+            continue
+        e8_px = float(cell["median"]) * float(mid) / 1e4
+        e8_bias = BASE_COST_R * max(min(e8_px / charged, MAX_RATIO) - 1.0, 0.0)
+        deltas[col] = round(e8_bias - float(cost.get("bias_r_per_trade") or 0.0), 6)
+        ftmo_bias = float(cost.get("bias_r_per_trade") or 0.0)
+        source[col] = (f"E8_MEASURED ({hb}, n={n}, {cell['median']} bps, "
+                       f"bias {e8_bias:+.4f}R vs FTMO {ftmo_bias:+.4f}R)")
+    return deltas, source
+
+
 def ftmo_commissions() -> dict[str, float]:
     """{symbol: commission per lot per side} MEASURED off the FTMO account's own deals (the venue
     reader's registry, else the FTMO-terminal snapshot). A symbol never traded there is absent."""
@@ -597,6 +745,23 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
+def _max_risk() -> float:
+    from mt5desk.sizing import MAX_RISK_FRAC
+    return float(MAX_RISK_FRAC)
+
+
+def _forward_failing() -> frozenset[str]:
+    """prop/e8_book.FORWARD_FAILING_FAMILIES: one set for both prop accounts."""
+    from prop.e8_book import FORWARD_FAILING_FAMILIES
+    return FORWARD_FAILING_FAMILIES
+
+
+def _family_of(col: str) -> str:
+    """`SYMBOL_family_selector` -> family (the world column naming the roster uses)."""
+    parts = col.split("_")
+    return "_".join(parts[1:-1]) if len(parts) >= 3 else ""
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -660,19 +825,29 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    from prop.e8_book import load_fill_losers, load_fill_proven
+    proven = load_fill_proven()
+    losers = load_fill_losers()
     door_blocked: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
             cert_of.setdefault(str(row["column"]), str(row["certificate"]))
+    from prop import e8_book as _eb
+    # THE REOPEN JUDGE PRICES, IT NEVER REFUSES (research/real_edge.py; Audit MF2 on #1211).
+    import real_edge
+    edges, edges_status = real_edge.load()
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
+        doubts: list[str] = []
         if col in columns:
             continue
         cert_key = tier_s.get(col) or cert_of.get(col)
         if not cert_key:
             reason = "no certificate in the store's screen for this column"
+        elif _eb.is_exotic_pair(sym):
+            reason = "exotic FX pair: exotics are banned (principal 2026-11-24 18:04Z)"
         elif sym not in listing:
             reason = f"NOT_LISTED on the FTMO terminal ({listing_src})"
         elif sym in quarantine:
@@ -680,13 +855,16 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
         else:
+            # NO BLOCKERS BUT EXOTICS (zuck 2026-11-24 18:34Z): fill evidence, a forward-failing
+            # family and the Tier S door SIZE the column (prop/e8_book.evidence_mult); none of
+            # them refuses it. The door's verdict is still published per column.
             door = door_block(cert_key)
             if door:
-                # THE EXECUTOR'S OWN DOOR, APPLIED BEFORE THE SOLVE (Auditor SF1, #769): a column
-                # the sleeve executor would refuse as TIER_S_BLOCKED must not take solve heat that
-                # never trades -- the deployed book would be quietly short (Rule 2).
-                reason = f"TIER_S_BLOCKED at the executor's door: {door}"
+                doubts.append(f"Tier S door: {door}")
                 door_blocked.append(col)
+            edge_doubt = real_edge.doubt(cert_key, edges)
+            if edge_doubt:
+                doubts.append(edge_doubt)
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
@@ -694,6 +872,17 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
         if columns[col].get("admitted"):
             columns[col]["tier_s"] = col in tier_s
+            # SIZE BY EVIDENCE: the column's ceiling is MAX_RISK_FRAC x n/(n+N0) of its
+            # fill-proven depth, x the Tier S multiplier; the solve sizes inside it.
+            mult = _eb.TIER_S_MULT if col in tier_s else 1.0
+            ev_mult, ev_notes = _eb.evidence_mult(proven.get(col), _family_of(col), doubts,
+                                                  losers.get(col))
+            caps[col] = min(1.0, ev_mult * mult) * _max_risk()
+            if col in proven:
+                columns[col]["fill_proven"] = proven[col]
+            if ev_notes:
+                columns[col]["evidence_notes"] = ev_notes
+            columns[col]["evidence_cap"] = round(caps[col], 6)
             spec, swhy = sleeve_spec(cert_key)
             if spec is not None:
                 specs[col] = spec
@@ -708,7 +897,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps, "door_blocked": door_blocked,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
-                "listing": listing, "tier_s": tier_s}
+                "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
     r = np.stack(slices, axis=2)
     # Live evidence moves each column's mean exactly as the Fusion book solve does.
     post: dict[str, Any] = {}
@@ -722,10 +911,31 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
             "caps": caps, "specs": specs, "door_blocked": door_blocked,
             "costs": costs, "posterior": post, "listing_source": listing_src,
-            "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
+            "unpriced": unpriced, "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
 
 
 # ===================================================================== the solve
+
+PF_ALLOCATION = BASE / "reports" / "pf_allocation.json"
+
+
+def regime_block(unpriced: Any = None, path: Path | None = None) -> dict[str, Any]:
+    """What regime the worlds this solve sized on were drawn for (zuck 2026-11-19: regime sizing
+    FULL, reported every pass). The priced columns come from the Fusion allocator's world
+    population, drawn from its forward regime mix; the newcomers' note says whether they were
+    conditioned too. Reporting only: the conditioning lives in the worlds themselves."""
+    pf = _read_json(path or PF_ALLOCATION) or {}
+    reg = pf.get("regime") if isinstance(pf, dict) else None
+    if not isinstance(reg, dict):
+        return {"status": "UNMEASURED", "why": "pf_allocation.json has no regime block",
+                "newcomers": unpriced}
+    return {"status": "CONDITIONED" if reg.get("conditioned") else "UNCONDITIONED",
+            "forward_mix": reg.get("probabilities"),
+            "source": "pf_allocator worlds (data/pf_allocator_cache/worlds.npz)",
+            "allocator_at": pf.get("generated_at") or pf.get("at"),
+            "newcomers": unpriced}
+
+
 
 @dataclass
 class World:
@@ -874,7 +1084,8 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     from libs.portfolio.posterior_growth import EPS_STOP as EPS_DEATH
     rules = RULES[venue]
     now = datetime.now(tz=UTC)
-    st = state or read_account_state(rules=rules, now=now)
+    st = state or (read_e8_state(now=now) if venue == "e8"
+                   else read_account_state(rules=rules, now=now))
     doc: dict[str, Any] = {
         "generated_at": now.isoformat(timespec="seconds"), "venue": venue, "rules": rules.name,
         "rules_source": rules.source,
@@ -902,7 +1113,6 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
     all_cols, r = uni["cols"], uni["r"]
-    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
     # THE DEPLOYED BOOK IS SOLVED OVER WHAT CAN BE SENT, AND NOTHING ELSE (audit #489 MF1). A joint
     # solve over every admitted column lets the optimiser move risk from a column that trades to a
     # correlated one with no executor, so the traded size would fall by side effect, never by
@@ -910,7 +1120,31 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     # of the joint worlds IS the executable solve's input: adding a column with no executor can
     # never move the deployed book. The joint solve is published beside it (`joint_book`) as the
     # missed-growth view of the executors that do not exist yet.
-    exec_idx = [k for k, c in enumerate(all_cols) if c in executable_columns(all_cols, uni)]
+    runnable = executable_columns(all_cols, uni)
+    if venue == "e8":
+        # E8's sleeve executor trades every certified non-gold spec E8 lists; gold is e8_gold's
+        # own fixed-risk lane (the stress cap charges it), never a column of this solve.
+        blocked = e8_venue_blocked()
+        specs = uni.get("specs") or {}
+        runnable = {c for c in runnable if c not in FTMO_EXECUTABLE
+                    and str((specs.get(c) or {}).get("symbol") or _symbol_of(c)).upper()
+                    not in blocked}
+        # E8 IS SIZED ON ITS OWN COSTS WHERE IT HAS MEASURED THEM (e8_cost_overlay): each column's
+        # trades move by E8's bias minus FTMO's, two-sided; every column's source is stamped.
+        deltas, cost_source = e8_cost_overlay([c for c in all_cols if c in runnable],
+                                              uni.get("costs") or {}, now=now)
+        for k, c in enumerate(all_cols):
+            if c in deltas and deltas[c]:
+                r[:, :, k] = r[:, :, k] - deltas[c] * (r[:, :, k] != 0)
+        doc["cost_source"] = cost_source
+        doc["e8_cost_delta_r"] = deltas
+        n_own = sum(1 for v in cost_source.values() if v.startswith("E8_MEASURED"))
+        doc["venue_note"] = (f"E8 columns: certified non-gold specs E8 lists; {n_own} of "
+                             f"{len(cost_source)} priced on E8's own measured spread, the rest on "
+                             "the universe's FTMO-measured hour costs (cost_source says why)")
+    # The worlds are drawn AFTER E8's own-cost move, so the solve and its validation both see it.
+    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
+    exec_idx = [k for k, c in enumerate(all_cols) if c in runnable]
     if not exec_idx:
         doc["status"] = "NO_EXECUTABLE_SLEEVE"
         doc["validation_score"] = 0.0
@@ -919,6 +1153,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
     cols = [all_cols[k] for k in exec_idx]
+    doc["solved_columns"] = list(cols)
     solve_w = World(full_w.est[:, :, exec_idx], full_w.halved[:, :, exec_idx])
     valid_w = World(full_valid.est[:, :, exec_idx], full_valid.halved[:, :, exec_idx])
     rng = np.random.default_rng(seed)
@@ -979,8 +1214,27 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     # initial balance. The written fraction carries the same dollars at today's equity.
     specs = uni.get("specs") or {}
     doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()}
+    # THE WORST HISTORICAL DAY UNDER 60% OF THE FIRM'S DAILY LIMIT (prop/stress.py, the same check
+    # E8's book runs). The solve bounds P(fail) over simulated paths; this bounds the single worst
+    # joint day the history holds, gaps included. Over the cap, the whole book scales down
+    # uniformly (the solve's mix is kept) and the cut is billed as missed growth.
+    from prop import stress
+    ex = doc["executable"]
+    sw = stress.worst_day(list(ex), list(ex.values()), (list(all_cols), r))
+    cap_s = (None if stress.STRESS_CAP_FRAC is None
+             else stress.STRESS_CAP_FRAC * rules.daily_loss)
+    doc["stress"] = {"worst_day": round(sw["loss"], 6), "status": sw["status"],
+                     "x_limit": round(sw["loss"] / rules.daily_loss, 4),
+                     "cap_frac": stress.STRESS_CAP_FRAC, "kill_frac": stress.KILL_FRAC}
+    if cap_s is not None and sw["loss"] > cap_s > 0:
+        k = cap_s / sw["loss"]
+        doc["stress"]["scaled_by"] = round(k, 4)
+        doc["stress"]["missed_growth_risk_frac"] = {
+            c: round(v * (1 - k), 6) for c, v in ex.items()}
+        doc["executable"] = {c: math.floor(v * k * 1e5) / 1e5 for c, v in ex.items()}
     doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
     doc["sized_no_executor"] = {}
+    doc["regime"] = regime_block(uni.get("unpriced"))
     # Missed growth (Rule 1): the joint solve over every admitted column, from the same account
     # and the same continuation, against the deployed book -- what the missing executors cost.
     if len(cols) < len(all_cols) and now_block["status"] == "OK":
@@ -1135,11 +1389,28 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--venue", choices=sorted(RULES), default="ftmo")
+    ap.add_argument("--venue", choices=[*sorted(RULES), "all"], default="all",
+                    help="one venue, or every venue in turn (the hourly task runs all)")
     ap.add_argument("--paths", type=int, default=N_PATHS)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
+    venues = sorted(RULES, key=lambda v: v != "ftmo") if a.venue == "all" else [a.venue]
+    rc = 0
+    for venue in venues:
+        out = a.out if (a.out is not None and len(venues) == 1) else OUT_BY_VENUE[venue]
+        try:
+            rc |= _run_venue(venue, a.paths, a.seed, out)
+        except Exception as exc:   # one venue's failure never costs the other its solve
+            print(f"prop_challenge_allocator[{venue}]: FAILED {type(exc).__name__}: {exc}",
+                  file=sys.stderr)
+            rc = 1
+    return rc
+
+
+def _run_venue(venue: str, paths: int, seed: int, out: Path) -> int:
+    from types import SimpleNamespace
+    a = SimpleNamespace(venue=venue, paths=paths, seed=seed, out=out)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
     mark_defect(doc, _read_json(a.out))
     if doc.get("red"):

@@ -121,12 +121,66 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-HourlyCore (pr blockers)": (
         "desks/mt5/reports/PR_BLOCKERS.json", 180,
         "one named blocker for every open PR into LIVE, so no PR waits unexplained"),
+    "MT5-HourlyCore (funnel)": (
+        "desks/mt5/reports/FUNNEL.json", 180,
+        "every conversion from raw info to live profit per producer, class and family, with "
+        "depth, the weakest stage, the desk's attack order and ratcheting floors"),
+    "MT5-HourlyCore (free model routes)": (
+        "desks/mt5/reports/FREE_MODEL_ROUTES.json", 180,
+        "every LLM key on the box LIT / DARK / CAPPED in the one shared free chain, with its calls "
+        "and successes per job over 24h (written by leg conversion_lanes)"),
+    "MT5-HourlyCore (judge reach)": (
+        "desks/mt5/reports/JUDGE_REACH.json", 180,
+        "every producer's emitted > received > judged with named losses, and whether its "
+        "judged rows carried an executable rule; LEAKING / PROSE_ONLY / DEFAULTS_ONLY paged"),
+    "MT5-HourlyCore (effective breadth)": (
+        "desks/mt5/reports/EFFECTIVE_BREADTH.json", 180,
+        "independent bets in the book (research/alpha_breadth.py); judged by its own "
+        "generated_utc, so a republished stale file still reads stale"),
+    "MT5-HourlyCore (producer loop)": (
+        "desks/mt5/reports/PRODUCER_LOOP.json", 180,
+        "every producer's funnel, the stage it dies at, its remedy and two-sided compute "
+        "weight; refreshed every pass, its diagnosis daily"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
         "detect missed hourly refreshes before its six-hour evidence expiry"),
+    "MT5-HourlyCore (judge calibration)": (
+        "desks/mt5/reports/JUDGE_CALIBRATION.json", 180,
+        "the judge against matured forward clocks: forward-over-backtest, leaks and false kills "
+        "per family and gate; re-stamped every pass, rebuilt weekly or on a clock maturity"),
+    # THE RESEARCH LABS (2026-11-25). The math lab produced nothing on the box from 11-24 19:49Z:
+    # math_lab, physics_lab and expression_factory were killed at their caps with 0 artifacts
+    # moved and NO contract said so -- every reader saw the last good report. Each is contracted
+    # on its COMPLETION stamp (INTERNAL_STAMPS: `completed_at`, written only by a pass that
+    # finished), not on mtime, because the labs now checkpoint partial reports as they go: a pass
+    # killed every time after its panels would keep the file fresh and the contract must still
+    # read STALE. 180 min = the department's ~1 h reserved-slot cadence plus slack.
+    "MT5-Dept-Mathlab (math lab)": (
+        "desks/mt5/reports/MATH_LAB.json", 180,
+        "the mathematics civilization's pass: traditions run, objects admitted, donated cells"),
+    "MT5-Dept-Mathlab (physics lab)": (
+        "desks/mt5/reports/PHYSICS_LAB.json", 180,
+        "the physics institution's pass: cards, nulls, review, donation"),
+    "MT5-Dept-Mathlab (expression factory)": (
+        "desks/mt5/reports/EXPRESSION_FACTORY.json", 180,
+        "the expression factory's pass: transfer, mutation, invention, cells queued to the judge"),
+    "MT5-Dept-Mathlab (coevolution)": (
+        "desks/mt5/reports/COEVOLUTION.json", 360,
+        "factor x model co-evolution: pairings bred, survivors enqueued, the closure"),
+    "MT5-Dept-Macro (world lab)": (
+        "desks/mt5/reports/WORLD_LAB.json", 360,
+        "the causal world lab: scenarios, interventions, donated hypotheses"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
+    # THE FTMO LANE (2026-11-13). Its three box tasks ran every pass and read UNCONTRACTED in
+    # process_health: the FTMO executor could stop placing and the account would keep reading
+    # "within its limits", the same silent failure the E8 note above describes. Each writes its
+    # report on every pass, sent or refused, so a stale report means the organ stopped.
+    "MT5-FTMO-Executor":  ("desks/mt5/reports/FTMO_EXEC.json", 15,
+                           "five-minute FTMO sleeve placement off the allocator book, or why not"),
+    "MT5-FTMO-VenueReader": ("desks/mt5/reports/FTMO_ACCOUNT_STATE.json", 15,
+                             "the FTMO account's phase, equity room and days traded"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
     # `E8_GUARD.json`, and both halves were wrong: there is no `E8-Guard` task in the scheduler,
     # and that artifact has never existed. The guard is a PROPERTY of E8-Executor -- its verdict
@@ -199,6 +253,46 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "which slice of the 245-symbol moat the miner last profiled"),
     "MT5-MoatSilver":     ("desks/mt5/logs/MT5-MoatSilver.log", 180,
                            "bronze -> silver day-file conversion for the moat tape"),
+    # 6h pass red team 2026-11-25: hourly at :38, credited nothing anywhere. Aged on its OWN
+    # report's `last_decided_utc`, which moves only on a run that decided a queue row.
+    "MT5-ConvertSwarm":   ("desks/mt5/reports/CONVERT_SWARM.json", 360,
+                           "deepening-queue rows the free-model swarm actually decided"),
+    # THE 2026-11-25 PRODUCER TRIAGE: fifteen research tasks were NO_CONTRACT, so the census could
+    # only read them UNMEASURED -- the eleven forest residents and the mathlab resident report
+    # 0x800710E0 ("still running", IgnoreNew) on every pass, which proves the process and never
+    # the work. A resident's PROGRESS WATERMARK (department_resident.heartbeat, done_inc=1)
+    # advances only when a pass COMPLETES, so its `at` is the proof of produced work; it is
+    # judged by that internal stamp (INTERNAL_STAMPS below), never by mtime.
+    "MT5-Forest-Africa": ("desks/mt5/data/watermarks/resident__dept_africa.json", 720,
+                          "the africa forest resident's completed-pass watermark"),
+    "MT5-Forest-Asean": ("desks/mt5/data/watermarks/resident__dept_asean.json", 720,
+                         "the asean forest resident's completed-pass watermark"),
+    "MT5-Forest-China": ("desks/mt5/data/watermarks/resident__dept_china.json", 720,
+                         "the china forest resident's completed-pass watermark"),
+    "MT5-Forest-Europe": ("desks/mt5/data/watermarks/resident__dept_europe.json", 720,
+                          "the europe forest resident's completed-pass watermark"),
+    "MT5-Forest-Korea": ("desks/mt5/data/watermarks/resident__dept_korea.json", 720,
+                         "the korea forest resident's completed-pass watermark"),
+    "MT5-Forest-Latam": ("desks/mt5/data/watermarks/resident__dept_latam.json", 720,
+                         "the latam forest resident's completed-pass watermark"),
+    "MT5-Forest-Mena": ("desks/mt5/data/watermarks/resident__dept_mena.json", 720,
+                        "the mena forest resident's completed-pass watermark"),
+    "MT5-Forest-NorthAmerica": ("desks/mt5/data/watermarks/resident__dept_north_america.json", 720,
+                                "the north_america forest resident's completed-pass watermark"),
+    "MT5-Forest-Oceania": ("desks/mt5/data/watermarks/resident__dept_oceania.json", 720,
+                           "the oceania forest resident's completed-pass watermark"),
+    "MT5-Forest-RussiaCis": ("desks/mt5/data/watermarks/resident__dept_russia_cis.json", 720,
+                             "the russia_cis forest resident's completed-pass watermark"),
+    "MT5-Forest-SouthAsia": ("desks/mt5/data/watermarks/resident__dept_south_asia.json", 720,
+                             "the south_asia forest resident's completed-pass watermark"),
+    "MT5-Dept-Mathlab":   ("desks/mt5/data/watermarks/resident__dept_mathlab.json", 720,
+                           "the mathlab resident's completed-pass watermark"),
+    "MT5-DeepSeek":       ("desks/mt5/reports/DEEPSEEK_RESEARCH.json", 180,
+                           "the hourly DeepSeek research cycle's report"),
+    "Quant-SideChannelMiners": ("desks/mt5/data/intelligence/latest_discoveries.json", 300,
+                                "every side channel's discoveries from the two-hourly runner"),
+    "MT5-ResearchSupervisor": ("desks/mt5/logs/supervisor.log", 60,
+                               "the research watchdog's log, appended on every five-minute pass"),
     "MT5-QQuantGatesCertify": ("desks/mt5/reports/QQUANT_GATES.json", 180,
                                "the qquant lane's gate verdicts"),
     "MT5-QQuantShadow":   ("desks/mt5/reports/shadow/qquant_shadow_state.json", 180,
@@ -416,6 +510,31 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/MERGE_PIPELINE.json", 45,
         "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
         "heartbeat; owned by Quant-WorkflowGate, not a task of its own"),
+    # TICK FEATURES (2026-11-25): the `tick_features` leg of the data department, run by the
+    # department resident under MT5-Hourly. It writes its report on every pass, built or budget
+    # stopped, so a stale report means the leg stopped being scheduled. Six hours = a rotation
+    # that skips the data department for a few passes is not yet a defect; a day is.
+    "MT5-Hourly (tick features)": (
+        "desks/mt5/reports/TICK_FEATURES.json", 360,
+        "per non-exotic symbol: spread regime, liquidity by hour and post-news response as "
+        "point-in-time lake series the generators condition on; UNMEASURED where no tape"),
+    # EXOTIC STATE FEATURES (2026-11-25, idea 47): a core leg of MT5-Hourly. It writes its
+    # report on every pass, budget-stopped or not, so a day without one means it stopped running.
+    "MT5-Hourly (exotic state features)": (
+        "desks/mt5/reports/EXOTIC_STATE_FEATURES.json", 1440,
+        "per exotic certificate: its post-sample firing state as a look-ahead-probed lake series, "
+        "and the declared conditioned-cell set on non-exotic bloc targets with its trial charge"),
+    # THE TWO CACHE-ONLY FILL PROBES (2026-11-25): steps `entry_timing_probe` and
+    # `asia_bracket_refill` of daily_cycle.py, run once a UTC day by MT5-Hourly's `daily` leg.
+    # 1,500 min = a day plus an hour's slack: one late chain is not a defect, a missed day is.
+    "MT5-Hourly (entry timing probe)": (
+        "desks/mt5/reports/ENTRY_TIMING_PROBE.json", 1500,
+        "the judge's fill against a bid/ask reference and a close-fill counterfactual, per "
+        "sampled forward clock, from the bar cache only"),
+    "MT5-Hourly (asia bracket refill)": (
+        "desks/mt5/reports/ASIA_BRACKET_REFILL.json", 1500,
+        "each XAUUSD.asia clock's forward n, exp_r and t under the pre-fix and fixed engine, "
+        "with its gap days, from the bar cache only"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
@@ -429,6 +548,24 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+    "desks/mt5/reports/CONVERT_SWARM.json": "last_decided_utc",
+    "desks/mt5/reports/EFFECTIVE_BREADTH.json": "generated_utc",
+    # a lab's partial checkpoint moves the file; only a FINISHED pass stamps `completed_at`
+    "desks/mt5/reports/MATH_LAB.json": "completed_at",
+    "desks/mt5/reports/PHYSICS_LAB.json": "completed_at",
+    "desks/mt5/reports/EXPRESSION_FACTORY.json": "completed_at",
+    "desks/mt5/data/watermarks/resident__dept_africa.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_asean.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_china.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_europe.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_korea.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_latam.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mena.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_north_america.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_oceania.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_russia_cis.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_south_asia.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mathlab.json": "at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.

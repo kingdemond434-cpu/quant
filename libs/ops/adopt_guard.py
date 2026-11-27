@@ -72,6 +72,7 @@ again.
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import hashlib
 import json
 import os
@@ -168,6 +169,12 @@ DEFAULT_POLICY: dict[str, Any] = {
         "fusion": ["MT5-Gateway"],
         "ftmo": ["MT5-FTMO-Follower"],
     },
+    #: THE ADOPT CANARY (libs/ops/adopt_canary): after new code lands, only these windows may open
+    #: until one of them has sent a clean order on it. The file can add windows and lengthen the
+    #: deadline and the post-lift watch, never shorten them.
+    "canary_allow": ["asia"],
+    "canary_deadline_h": 24,
+    "canary_watch_h": 24,
 }
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -299,6 +306,55 @@ def box_published(root: Path, base: str, target: str) -> dict[str, str]:
     return blobs
 
 
+#: MONEY CODE ONLY (zuck 2026-11-27 11:40Z "only Audit CLEAR on money path"; Audit 21:49Z ruling
+#: (b) on lock 3). A code path needs an auditor's row only when the money closure or the protected
+#: list names it. Non-money code ships on smoke, health and rollback alone, which still cover every
+#: path. The lists are read from THREE places and unioned -- the sealed release, the target and the
+#: guard checkout running this file -- so a target can add a path to either list but can never take
+#: one off. If no copy of the closure is readable anywhere, every code path is governed.
+MONEY_CLOSURE_REL = "ops/money_closure.txt"
+PROTECTED_REL = "ops/release/protected_paths.txt"
+_GUARD_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _list_rows(text: str | None) -> list[str]:
+    if not text:
+        return []
+    out = []
+    for ln in text.splitlines():
+        ln = ln.split("#", 1)[0].strip()
+        if ln:
+            out.append(ln.split()[0])
+    return out
+
+
+def _list_texts(root: Path, rel: str, commits: Iterable[str]) -> list[str | None]:
+    texts: list[str | None] = []
+    for c in commits:
+        b = _show(root, c, rel)
+        texts.append(b.decode("utf-8", "replace") if b is not None else None)
+    try:
+        texts.append((_GUARD_ROOT / rel).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        texts.append(None)
+    return texts
+
+
+def money_governed(root: Path, *commits: str) -> Callable[[str], bool]:
+    """Which code paths need a CLEAR: in any copy of the money closure, or matching any copy of
+    the protected list (fnmatch, "*" crosses "/"). Every path when no closure copy is readable."""
+    closures = _list_texts(root, MONEY_CLOSURE_REL, commits)
+    if not any(t is not None for t in closures):
+        return lambda rel: True
+    closure = {r for t in closures for r in _list_rows(t)}
+    pats = sorted({r for t in _list_texts(root, PROTECTED_REL, commits) for r in _list_rows(t)})
+
+    def governed(rel: str) -> bool:
+        return rel in closure or any(fnmatch.fnmatchcase(rel, pat) for pat in pats)
+
+    return governed
+
+
 def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> list[str]:
     """Every path this adoption would change on the box that needs an auditor's word.
 
@@ -315,7 +371,8 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     box_changed = set(_changed(root, mb, head)) if HEX40.match(mb) else set()
     origin_changed = set(_changed(root, mb, target)) if HEX40.match(mb) else set()
     t_tree, h_tree = _tree(root, target), _tree(root, head)
-    code = {p for p in _changed(root, sealed, target) if is_code(p)}
+    money = money_governed(root, sealed, target)
+    code = {p for p in _changed(root, sealed, target) if is_code(p) and money(p)}
     published = box_published(root, mb, target) if HEX40.match(mb) else {}
     state = {
         p
@@ -632,10 +689,28 @@ GATE_BY = "audit-gate"
 LIVE_REF = "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3"
 
 
+#: (boot r24.1, Audit C4) THE PINNED ADOPTER. MT5-AdoptRelease runs as SYSTEM; set by its task,
+#: QUANT_ADOPT_PINNED=1 makes this guard execute nothing from the tree it adopts (--root): its
+#: helpers come from its OWN checkout (guard\adopt, owner-installed), and the steps that would
+#: import or run the tree's code (smoke, prestart, the pre-commit guards) are left to the health
+#: check of the restarted, non-admin gateway, which is the real test and rolls back on failure.
+PINNED_ENV = "QUANT_ADOPT_PINNED"
+OWN_ROOT = Path(__file__).resolve().parents[2]
+
+
+def pinned() -> bool:
+    return os.environ.get(PINNED_ENV, "").strip() == "1"
+
+
+def code_root(root: Path) -> Path:
+    """Where this guard's own helper code is read from: its checkout when pinned."""
+    return OWN_ROOT if pinned() else root
+
+
 def _adopt_rows(root: Path) -> Any:
     import importlib.util
 
-    f = root / "ops" / "release" / "adopt_rows.py"
+    f = code_root(root) / "ops" / "release" / "adopt_rows.py"
     spec = importlib.util.spec_from_file_location("_guard_adopt_rows", f)
     if spec is None or spec.loader is None:
         raise ImportError(str(f))
@@ -885,6 +960,11 @@ def _default_runner(*a: Any, **k: Any) -> subprocess.CompletedProcess[str]:
 def smoke(root: Path, *, runner: Runner | None = None) -> tuple[int, dict[str, Any]]:
     """Import every live entry file the way its task runs it (cwd desks/mt5, never as __main__),
     then run prestart_check.py if the box has one. Each in its own interpreter."""
+    if pinned():
+        return GO, {"decision": "SMOKE_PINNED_SKIPPED",
+                    "reason": "pinned adopter runs no tree code as SYSTEM; the health check of "
+                              "the restarted non-admin gateway decides",
+                    "ran": []}
     pol = load_policy(root)
     run = runner or _default_runner
     desk = root / "desks" / "mt5"
@@ -940,8 +1020,9 @@ def gateway_alive(root: Path, *, now: datetime | None = None) -> bool:
 
 
 def _identity(root: Path) -> dict[str, Any]:
-    desk = root / "desks" / "mt5"
-    for p in (str(root), str(desk)):
+    code = code_root(root)  # pinned: the guard checkout's mt5desk, never the tree's (C4)
+    desk = code / "desks" / "mt5"
+    for p in (str(code), str(desk)):
         if p not in sys.path:
             sys.path.insert(0, p)
     from mt5desk import release_identity as ri
@@ -1182,7 +1263,7 @@ def rollback(root: Path, to: str, *, bad: str, why: str) -> tuple[int, dict[str,
     if stage:
         _git(root, "add", "-A", "--", *stage)
     for guard in ("scripts/moneypath_precommit_guard.py", "scripts/check_protected_records.py"):
-        g = root / guard
+        g = code_root(root) / guard
         if g.exists():
             gp = subprocess.run(
                 [*_python(), str(g)],
@@ -1339,6 +1420,55 @@ CODE_ROOTS = (
     "scripts",
     "pyproject.toml",
 )
+
+
+#: BOX-LOCAL DRIFT IS EVIDENCE (zuck: evidence is never deleted). Tracked code a box session
+#: edited in place, and untracked code nobody committed, are copied here before Adopt-Release
+#: writes a byte, and listed in the journal, so an adoption never silently destroys them.
+DRIFT_DIR_REL = "evidence_backups/adopt_drift"
+DRIFT_JOURNAL_REL = "desks/mt5/data/ADOPT_DRIFT_JOURNAL.jsonl"
+
+
+def drift_evidence(root: Path, run: str) -> tuple[int, dict[str, Any]]:
+    """Copy every drifted code file (tracked and changed on disk, or untracked) to
+    evidence_backups/adopt_drift/<run>/ and journal it. GO when all are copied (or none drifted);
+    HOLD when any copy fails: an adoption that would destroy evidence it could not keep waits."""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", run) or run.startswith("."):
+        raise GuardError(f"run id {run!r} is not a plain name")
+    out = _git(root, "diff", "--name-only", "--no-ext-diff", "HEAD", "--", *CODE_ROOTS)
+    tracked = {ln.strip() for ln in out.splitlines() if ln.strip()}
+    paths = sorted(p for p in tracked | set(untracked_code(root)) if is_code(p))
+    if not paths:
+        return GO, {"decision": "NO_DRIFT"}
+    dest = root / DRIFT_DIR_REL / run
+    copied: dict[str, str] = {}
+    failed: list[str] = []
+    for rel in paths:
+        src = root / rel
+        if not src.exists():
+            copied[rel] = "deleted-on-disk"
+            continue
+        try:
+            data = src.read_bytes()
+            t = dest / rel
+            t.parent.mkdir(parents=True, exist_ok=True)
+            t.write_bytes(data)
+            copied[rel] = hashlib.sha256(data).hexdigest()
+        except OSError as exc:
+            failed.append(f"{rel}: {type(exc).__name__}: {exc}")
+    row = {"at": datetime.now(UTC).isoformat(), "run": run, "dir": f"{DRIFT_DIR_REL}/{run}",
+           "head": _rev(root, "HEAD"), "files": copied, "failed": failed}
+    try:
+        j = root / DRIFT_JOURNAL_REL
+        j.parent.mkdir(parents=True, exist_ok=True)
+        with j.open("a", encoding="utf-8") as h:
+            h.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError as exc:
+        failed.append(f"journal: {type(exc).__name__}: {exc}")
+    if failed:
+        return HOLD, {"decision": "HOLD_DRIFT_UNSAVED", "reason": "; ".join(failed[:5]),
+                      "drift": len(paths)}
+    return GO, {"decision": "DRIFT_SAVED", "drift": len(paths), "dir": row["dir"]}
 
 
 def code_dirty(root: Path) -> list[str]:

@@ -1,0 +1,1 @@
+{"id": "producer_yield_fresh", "path": "desks/mt5/reports/PRODUCER_YIELD.json", "max_age_h": 6, "min_bytes": 500, "json_key": "generated_utc", "why": "6h pass 11-25 23:05Z: lab census must be under 6h old (E36)"}

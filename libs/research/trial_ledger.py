@@ -373,6 +373,8 @@ def effective_count_of_records(records: Iterable[Mapping[str, Any] | Any]) -> fl
 # negotiable. The charge is floored at the number of distinct MECHANISMS -- you cannot have run
 # fewer independent tests than you had distinct economic claims -- and any census that cannot
 # measure fails closed to the nominal count, never to the smaller one.
+#: The claim_family prefix a producer lineage is grouped under (research/producer_loop).
+LINEAGE_PREFIX = "lineage:"
 GRID_AXES: tuple[str, ...] = ("family", "symbol", "horizon")
 #: Descriptor axes that carry the grid cell, in order of preference per axis.
 _GRID_SOURCES: dict[str, tuple[str, ...]] = {
@@ -390,7 +392,10 @@ def grid_key(trial: Trial) -> str:
     # exit_operated cell on the same chart into one grid cell -- measured on the bank 2026-09-30,
     # that merge alone took 211 effective tests off the video's mechanism, more than its 200-trial
     # selection charge put back. So a claim-family row keeps its strategy family on the grid axis.
-    parts = [(trial.family if trial.selection_trials and trial.family else trial.group) or "?"]
+    # The same holds for a producer LINEAGE (research/producer_loop.stamp_lineage): its parent's
+    # and successors' cells are one mechanism, never one grid cell across strategy families.
+    keep = trial.selection_trials or trial.group.startswith(LINEAGE_PREFIX)
+    parts = [(trial.family if keep and trial.family else trial.group) or "?"]
     for axis in ("symbol", "horizon"):
         val = ""
         for src in _GRID_SOURCES[axis]:

@@ -1,0 +1,2642 @@
+{
+ "schema": "translation-ontology/1",
+ "theme_rule": "a sector marked theme (sentiment, positioning, labour, inflation, volatility, rates, financials) names US instruments; it adds them only when no country placed the dataset or the country is the US, so a Czech supervisory page is not read as a Dow signal",
+ "doc": "THE TRANSLATION RULE (principal, permanent, 2026-11-18): every dataset the desk holds becomes a signal on something the desk trades -- FX, indices, commodity CFDs, metals. Company-level data rolls up to country / sector / commodity aggregates. Read by desks/mt5/research/dataset_translator.py. EVERY SYMBOL BELOW IS IN THE BROKER REGISTRY (desks/mt5/data/universe/universe.json); a symbol the economics names but the registry lacks is DROPPED and COUNTED in `dropped_not_in_registry`, never invented. The translator re-checks against the live registry on every pass.",
+ "registry": "desks/mt5/data/universe/universe.json",
+ "countries": {
+  "US": {
+   "name": "United States",
+   "currency": "USD",
+   "aliases": [
+    "united states",
+    "u.s.",
+    "usa",
+    "america",
+    "federal",
+    "congress",
+    "fomc"
+   ],
+   "tlds": [
+    ".gov",
+    ".us"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "USDCHF",
+    "AUDUSD",
+    "USDCAD",
+    "NZDUSD",
+    "USDX"
+   ],
+   "index": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "proxy": [
+    "UST10Y",
+    "UST05Y"
+   ]
+  },
+  "GB": {
+   "name": "United Kingdom",
+   "currency": "GBP",
+   "aliases": [
+    "united kingdom",
+    "britain",
+    "british",
+    "england",
+    "uk"
+   ],
+   "tlds": [
+    ".uk"
+   ],
+   "langs": [],
+   "fx": [
+    "GBPUSD",
+    "EURGBP",
+    "GBPJPY",
+    "GBPCHF",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPDKK"
+   ],
+   "index": [
+    "UK100"
+   ],
+   "proxy": [
+    "UKGILT"
+   ]
+  },
+  "EA": {
+   "name": "Euro area",
+   "currency": "EUR",
+   "aliases": [
+    "euro area",
+    "eurozone",
+    "euro zone",
+    "european"
+   ],
+   "tlds": [
+    ".eu"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50",
+    "GER40",
+    "FRA40"
+   ],
+   "proxy": []
+  },
+  "DE": {
+   "name": "Germany",
+   "currency": "EUR",
+   "aliases": [
+    "germany",
+    "german",
+    "deutsch"
+   ],
+   "tlds": [
+    ".de"
+   ],
+   "langs": [
+    "de"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "GER40",
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "FR": {
+   "name": "France",
+   "currency": "EUR",
+   "aliases": [
+    "france",
+    "french",
+    "bourse"
+   ],
+   "tlds": [
+    ".fr"
+   ],
+   "langs": [
+    "fr"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "FRA40",
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "ES": {
+   "name": "Spain",
+   "currency": "EUR",
+   "aliases": [
+    "spain",
+    "españa",
+    "espana"
+   ],
+   "tlds": [
+    ".es"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "E35",
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "NL": {
+   "name": "Netherlands",
+   "currency": "EUR",
+   "aliases": [
+    "netherlands",
+    "dutch",
+    "nederland"
+   ],
+   "tlds": [
+    ".nl"
+   ],
+   "langs": [
+    "nl"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "NETH25",
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "IT": {
+   "name": "Italy",
+   "currency": "EUR",
+   "aliases": [
+    "italy",
+    "italia",
+    "btp"
+   ],
+   "tlds": [
+    ".it"
+   ],
+   "langs": [
+    "it"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "FI": {
+   "name": "Finland",
+   "currency": "EUR",
+   "aliases": [
+    "finland",
+    "suomi"
+   ],
+   "tlds": [
+    ".fi"
+   ],
+   "langs": [
+    "fi"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "AT": {
+   "name": "Austria",
+   "currency": "EUR",
+   "aliases": [
+    "austria"
+   ],
+   "tlds": [
+    ".at"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "BE": {
+   "name": "Belgium",
+   "currency": "EUR",
+   "aliases": [
+    "belgium"
+   ],
+   "tlds": [
+    ".be"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "IE": {
+   "name": "Ireland",
+   "currency": "EUR",
+   "aliases": [
+    "ireland"
+   ],
+   "tlds": [
+    ".ie"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "PT": {
+   "name": "Portugal",
+   "currency": "EUR",
+   "aliases": [
+    "portugal"
+   ],
+   "tlds": [
+    ".pt"
+   ],
+   "langs": [],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "GR": {
+   "name": "Greece",
+   "currency": "EUR",
+   "aliases": [
+    "greece"
+   ],
+   "tlds": [
+    ".gr"
+   ],
+   "langs": [
+    "el"
+   ],
+   "fx": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP",
+    "EURCHF",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURCZK"
+   ],
+   "index": [
+    "EUSTX50"
+   ],
+   "proxy": []
+  },
+  "JP": {
+   "name": "Japan",
+   "currency": "JPY",
+   "aliases": [
+    "japan",
+    "japanese",
+    "nikkei",
+    "topix",
+    "日本"
+   ],
+   "tlds": [
+    ".jp"
+   ],
+   "langs": [
+    "ja"
+   ],
+   "fx": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "CHFJPY",
+    "AUDJPY",
+    "CADJPY",
+    "NZDJPY",
+    "HKDJPY"
+   ],
+   "index": [
+    "JPN225"
+   ],
+   "proxy": []
+  },
+  "CN": {
+   "name": "China",
+   "currency": "CNH",
+   "aliases": [
+    "china",
+    "chinese",
+    "中国",
+    "a-share",
+    "a股",
+    "shanghai",
+    "shenzhen"
+   ],
+   "tlds": [
+    ".cn"
+   ],
+   "langs": [
+    "zh",
+    "zh-hans"
+   ],
+   "fx": [
+    "USDCNH"
+   ],
+   "index": [
+    "CHINAH",
+    "HK50"
+   ],
+   "proxy": [
+    "XCUUSD",
+    "AUDUSD"
+   ]
+  },
+  "HK": {
+   "name": "Hong Kong",
+   "currency": "HKD",
+   "aliases": [
+    "hong kong",
+    "香港"
+   ],
+   "tlds": [
+    ".hk"
+   ],
+   "langs": [
+    "zh-hant"
+   ],
+   "fx": [
+    "USDHKD",
+    "EURHKD",
+    "HKDJPY"
+   ],
+   "index": [
+    "HK50",
+    "CHINAH"
+   ],
+   "proxy": [
+    "USDCNH"
+   ]
+  },
+  "TW": {
+   "name": "Taiwan",
+   "currency": "TWD",
+   "aliases": [
+    "taiwan",
+    "台灣",
+    "台湾"
+   ],
+   "tlds": [
+    ".tw"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [
+    "NAS100"
+   ],
+   "proxy": [
+    "USDKRW",
+    "USDCNH"
+   ]
+  },
+  "KR": {
+   "name": "South Korea",
+   "currency": "KRW",
+   "aliases": [
+    "korea",
+    "korean",
+    "kospi",
+    "한국"
+   ],
+   "tlds": [
+    ".kr"
+   ],
+   "langs": [
+    "ko"
+   ],
+   "fx": [
+    "USDKRW"
+   ],
+   "index": [],
+   "proxy": [
+    "NAS100",
+    "USDJPY"
+   ]
+  },
+  "AU": {
+   "name": "Australia",
+   "currency": "AUD",
+   "aliases": [
+    "australia",
+    "australian",
+    "asx"
+   ],
+   "tlds": [
+    ".au"
+   ],
+   "langs": [],
+   "fx": [
+    "AUDUSD",
+    "EURAUD",
+    "AUDJPY",
+    "GBPAUD",
+    "AUDCHF",
+    "AUDCAD",
+    "AUDNZD",
+    "AUDHUF"
+   ],
+   "index": [
+    "AUS200"
+   ],
+   "proxy": [
+    "XAUAUD"
+   ]
+  },
+  "NZ": {
+   "name": "New Zealand",
+   "currency": "NZD",
+   "aliases": [
+    "new zealand"
+   ],
+   "tlds": [
+    ".nz"
+   ],
+   "langs": [],
+   "fx": [
+    "NZDUSD",
+    "EURNZD",
+    "NZDJPY",
+    "GBPNZD",
+    "NZDCHF",
+    "AUDNZD",
+    "NZDCAD",
+    "NZDHUF"
+   ],
+   "index": [],
+   "proxy": []
+  },
+  "CA": {
+   "name": "Canada",
+   "currency": "CAD",
+   "aliases": [
+    "canada",
+    "canadian",
+    "tsx"
+   ],
+   "tlds": [
+    ".ca"
+   ],
+   "langs": [],
+   "fx": [
+    "USDCAD",
+    "EURCAD",
+    "CADJPY",
+    "GBPCAD",
+    "CADCHF",
+    "AUDCAD",
+    "NZDCAD"
+   ],
+   "index": [
+    "CA60"
+   ],
+   "proxy": [
+    "XTIUSD"
+   ]
+  },
+  "CH": {
+   "name": "Switzerland",
+   "currency": "CHF",
+   "aliases": [
+    "switzerland",
+    "swiss",
+    "schweiz"
+   ],
+   "tlds": [
+    ".ch"
+   ],
+   "langs": [],
+   "fx": [
+    "USDCHF",
+    "EURCHF",
+    "CHFJPY",
+    "GBPCHF",
+    "AUDCHF",
+    "CADCHF",
+    "NZDCHF",
+    "CHFDKK"
+   ],
+   "index": [],
+   "proxy": [
+    "XAUUSD"
+   ]
+  },
+  "SE": {
+   "name": "Sweden",
+   "currency": "SEK",
+   "aliases": [
+    "sweden",
+    "swedish",
+    "sverige"
+   ],
+   "tlds": [
+    ".se"
+   ],
+   "langs": [
+    "sv"
+   ],
+   "fx": [
+    "USDSEK",
+    "EURSEK",
+    "SEKJPY",
+    "GBPSEK",
+    "CHFSEK",
+    "NOKSEK"
+   ],
+   "index": [],
+   "proxy": [
+    "EUSTX50"
+   ]
+  },
+  "NO": {
+   "name": "Norway",
+   "currency": "NOK",
+   "aliases": [
+    "norway",
+    "norwegian",
+    "norge"
+   ],
+   "tlds": [
+    ".no"
+   ],
+   "langs": [
+    "no",
+    "nb"
+   ],
+   "fx": [
+    "USDNOK",
+    "EURNOK",
+    "NOKJPY",
+    "GBPNOK",
+    "CHFNOK",
+    "NOKSEK"
+   ],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "XNGUSD"
+   ]
+  },
+  "DK": {
+   "name": "Denmark",
+   "currency": "DKK",
+   "aliases": [
+    "denmark",
+    "danish",
+    "danmark"
+   ],
+   "tlds": [
+    ".dk"
+   ],
+   "langs": [
+    "da"
+   ],
+   "fx": [
+    "USDDKK",
+    "EURDKK",
+    "GBPDKK",
+    "CHFDKK"
+   ],
+   "index": [],
+   "proxy": [
+    "EUSTX50"
+   ]
+  },
+  "PL": {
+   "name": "Poland",
+   "currency": "PLN",
+   "aliases": [
+    "poland",
+    "polish",
+    "polska"
+   ],
+   "tlds": [
+    ".pl"
+   ],
+   "langs": [
+    "pl"
+   ],
+   "fx": [
+    "USDPLN",
+    "EURPLN",
+    "GBPPLN",
+    "CHFPLN"
+   ],
+   "index": [],
+   "proxy": [
+    "EUSTX50"
+   ]
+  },
+  "CZ": {
+   "name": "Czechia",
+   "currency": "CZK",
+   "aliases": [
+    "czech",
+    "česk"
+   ],
+   "tlds": [
+    ".cz"
+   ],
+   "langs": [
+    "cs"
+   ],
+   "fx": [
+    "USDCZK",
+    "EURCZK"
+   ],
+   "index": [],
+   "proxy": [
+    "EUSTX50"
+   ]
+  },
+  "HU": {
+   "name": "Hungary",
+   "currency": "HUF",
+   "aliases": [
+    "hungary",
+    "magyar"
+   ],
+   "tlds": [
+    ".hu"
+   ],
+   "langs": [
+    "hu"
+   ],
+   "fx": [
+    "USDHUF",
+    "EURHUF",
+    "GBPHUF",
+    "CHFHUF",
+    "AUDHUF",
+    "NZDHUF"
+   ],
+   "index": [],
+   "proxy": [
+    "EUSTX50"
+   ]
+  },
+  "TR": {
+   "name": "Turkey",
+   "currency": "TRY",
+   "aliases": [
+    "turkey",
+    "türkiye",
+    "turkiye",
+    "turkish"
+   ],
+   "tlds": [
+    ".tr"
+   ],
+   "langs": [
+    "tr"
+   ],
+   "fx": [
+    "USDTRY",
+    "EURTRY",
+    "GBPTRY"
+   ],
+   "index": [],
+   "proxy": []
+  },
+  "ZA": {
+   "name": "South Africa",
+   "currency": "ZAR",
+   "aliases": [
+    "south africa",
+    "rand",
+    "jse"
+   ],
+   "tlds": [
+    ".za"
+   ],
+   "langs": [
+    "af",
+    "zu"
+   ],
+   "fx": [
+    "USDZAR",
+    "EURZAR",
+    "ZARJPY",
+    "GBPZAR"
+   ],
+   "index": [],
+   "proxy": [
+    "XAUUSD",
+    "XPTUSD",
+    "XPDUSD"
+   ]
+  },
+  "MX": {
+   "name": "Mexico",
+   "currency": "MXN",
+   "aliases": [
+    "mexico",
+    "méxico",
+    "mexican"
+   ],
+   "tlds": [
+    ".mx"
+   ],
+   "langs": [],
+   "fx": [
+    "USDMXN",
+    "EURMXN",
+    "MXNJPY",
+    "GBPMXN"
+   ],
+   "index": [],
+   "proxy": [
+    "XTIUSD",
+    "US500"
+   ]
+  },
+  "BR": {
+   "name": "Brazil",
+   "currency": "BRL",
+   "aliases": [
+    "brazil",
+    "brasil",
+    "bovespa",
+    "ibovespa"
+   ],
+   "tlds": [
+    ".br"
+   ],
+   "langs": [
+    "pt",
+    "pt-br"
+   ],
+   "fx": [
+    "USDBRL"
+   ],
+   "index": [],
+   "proxy": [
+    "SOYBEAN",
+    "SUGAR",
+    "COFARA",
+    "AUDUSD"
+   ]
+  },
+  "IN": {
+   "name": "India",
+   "currency": "INR",
+   "aliases": [
+    "india",
+    "indian",
+    "nifty",
+    "sensex",
+    "rupee"
+   ],
+   "tlds": [
+    ".in"
+   ],
+   "langs": [
+    "hi"
+   ],
+   "fx": [
+    "USDINR"
+   ],
+   "index": [],
+   "proxy": [
+    "XAUUSD",
+    "XBRUSD"
+   ]
+  },
+  "ID": {
+   "name": "Indonesia",
+   "currency": "IDR",
+   "aliases": [
+    "indonesia"
+   ],
+   "tlds": [
+    ".id"
+   ],
+   "langs": [
+    "id"
+   ],
+   "fx": [
+    "USDIDR"
+   ],
+   "index": [],
+   "proxy": [
+    "AUDUSD",
+    "SOYBEAN"
+   ]
+  },
+  "TH": {
+   "name": "Thailand",
+   "currency": "THB",
+   "aliases": [
+    "thailand",
+    "thai"
+   ],
+   "tlds": [
+    ".th"
+   ],
+   "langs": [
+    "th"
+   ],
+   "fx": [
+    "USDTHB"
+   ],
+   "index": [],
+   "proxy": [
+    "USDJPY"
+   ]
+  },
+  "SG": {
+   "name": "Singapore",
+   "currency": "SGD",
+   "aliases": [
+    "singapore"
+   ],
+   "tlds": [
+    ".sg"
+   ],
+   "langs": [],
+   "fx": [
+    "USDSGD",
+    "EURSGD",
+    "SGDJPY",
+    "GBPSGD",
+    "CHFSGD",
+    "AUDSGD",
+    "NZDSGD"
+   ],
+   "index": [],
+   "proxy": [
+    "USDCNH"
+   ]
+  },
+  "IL": {
+   "name": "Israel",
+   "currency": "ILS",
+   "aliases": [
+    "israel"
+   ],
+   "tlds": [
+    ".il"
+   ],
+   "langs": [
+    "he"
+   ],
+   "fx": [
+    "USDILS",
+    "EURILS"
+   ],
+   "index": [],
+   "proxy": [
+    "NAS100"
+   ]
+  },
+  "RU": {
+   "name": "Russia",
+   "currency": "RUB",
+   "aliases": [
+    "russia",
+    "россия",
+    "рубл",
+    "moex",
+    "мосбиржа"
+   ],
+   "tlds": [
+    ".ru"
+   ],
+   "langs": [
+    "ru"
+   ],
+   "fx": [
+    "USDRUB",
+    "EURRUB"
+   ],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "XNGUSD",
+    "XPDUSD"
+   ]
+  },
+  "EG": {
+   "name": "Egypt",
+   "currency": "EGP",
+   "aliases": [
+    "egypt",
+    "egyptian",
+    "مصر"
+   ],
+   "tlds": [
+    ".eg"
+   ],
+   "langs": [
+    "ar"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "XNGUSD",
+    "USDTRY",
+    "USDZAR"
+   ]
+  },
+  "PK": {
+   "name": "Pakistan",
+   "currency": "PKR",
+   "aliases": [
+    "pakistan",
+    "rupay"
+   ],
+   "tlds": [
+    ".pk"
+   ],
+   "langs": [
+    "ur"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "COTTON",
+    "XBRUSD",
+    "USDINR"
+   ]
+  },
+  "BD": {
+   "name": "Bangladesh",
+   "currency": "BDT",
+   "aliases": [
+    "bangladesh"
+   ],
+   "tlds": [
+    ".bd"
+   ],
+   "langs": [
+    "bn"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "COTTON",
+    "USDINR"
+   ]
+  },
+  "KE": {
+   "name": "Kenya",
+   "currency": "KES",
+   "aliases": [
+    "kenya"
+   ],
+   "tlds": [
+    ".ke"
+   ],
+   "langs": [
+    "sw"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "COFARA",
+    "USDZAR"
+   ]
+  },
+  "UA": {
+   "name": "Ukraine",
+   "currency": "UAH",
+   "aliases": [
+    "ukraine",
+    "україн",
+    "гривн"
+   ],
+   "tlds": [
+    ".ua"
+   ],
+   "langs": [
+    "uk"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "WHEAT",
+    "CORN",
+    "USDPLN",
+    "EURPLN"
+   ]
+  },
+  "PE": {
+   "name": "Peru",
+   "currency": "PEN",
+   "aliases": [
+    "peru",
+    "perú"
+   ],
+   "tlds": [
+    ".pe"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XCUUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "XZNUSD"
+   ]
+  },
+  "CL": {
+   "name": "Chile",
+   "currency": "CLP",
+   "aliases": [
+    "chile"
+   ],
+   "tlds": [
+    ".cl"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XCUUSD",
+    "AUDUSD"
+   ]
+  },
+  "CO": {
+   "name": "Colombia",
+   "currency": "COP",
+   "aliases": [
+    "colombia"
+   ],
+   "tlds": [
+    ".co"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "COFARA",
+    "USDMXN"
+   ]
+  },
+  "AR": {
+   "name": "Argentina",
+   "currency": "ARS",
+   "aliases": [
+    "argentina"
+   ],
+   "tlds": [
+    ".ar"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "SOYBEAN",
+    "CORN",
+    "WHEAT",
+    "USDBRL"
+   ]
+  },
+  "VN": {
+   "name": "Vietnam",
+   "currency": "VND",
+   "aliases": [
+    "vietnam",
+    "việt"
+   ],
+   "tlds": [
+    ".vn"
+   ],
+   "langs": [
+    "vi"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "COFROB",
+    "USDCNH"
+   ]
+  },
+  "MY": {
+   "name": "Malaysia",
+   "currency": "MYR",
+   "aliases": [
+    "malaysia"
+   ],
+   "tlds": [
+    ".my"
+   ],
+   "langs": [
+    "ms"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "SOYBEAN",
+    "XNGUSD",
+    "USDSGD"
+   ]
+  },
+  "PH": {
+   "name": "Philippines",
+   "currency": "PHP",
+   "aliases": [
+    "philippines"
+   ],
+   "tlds": [
+    ".ph"
+   ],
+   "langs": [
+    "tl"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "USDSGD",
+    "USDIDR"
+   ]
+  },
+  "NG": {
+   "name": "Nigeria",
+   "currency": "NGN",
+   "aliases": [
+    "nigeria"
+   ],
+   "tlds": [
+    ".ng"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD"
+   ]
+  },
+  "SA": {
+   "name": "Saudi Arabia",
+   "currency": "SAR",
+   "aliases": [
+    "saudi"
+   ],
+   "tlds": [
+    ".sa"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "XTIUSD"
+   ]
+  },
+  "AE": {
+   "name": "United Arab Emirates",
+   "currency": "AED",
+   "aliases": [
+    "emirates",
+    "dubai",
+    "abu dhabi"
+   ],
+   "tlds": [
+    ".ae"
+   ],
+   "langs": [],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD"
+   ]
+  },
+  "KZ": {
+   "name": "Kazakhstan",
+   "currency": "KZT",
+   "aliases": [
+    "kazakhstan"
+   ],
+   "tlds": [
+    ".kz"
+   ],
+   "langs": [
+    "kk"
+   ],
+   "fx": [],
+   "index": [],
+   "proxy": [
+    "XBRUSD",
+    "USDRUB"
+   ]
+  }
+ },
+ "central_banks": {
+  "fed": {
+   "country": "US",
+   "currency": "USD",
+   "hosts": [
+    "federalreserve.gov",
+    "newyorkfed.org"
+   ],
+   "aliases": [
+    "federal reserve",
+    "fomc",
+    "the fed"
+   ]
+  },
+  "ecb": {
+   "country": "EA",
+   "currency": "EUR",
+   "hosts": [
+    "ecb.europa.eu"
+   ],
+   "aliases": [
+    "european central bank",
+    "ecb"
+   ]
+  },
+  "boe": {
+   "country": "GB",
+   "currency": "GBP",
+   "hosts": [
+    "bankofengland.co.uk"
+   ],
+   "aliases": [
+    "bank of england"
+   ]
+  },
+  "boj": {
+   "country": "JP",
+   "currency": "JPY",
+   "hosts": [
+    "boj.or.jp"
+   ],
+   "aliases": [
+    "bank of japan",
+    "日本銀行",
+    "日銀"
+   ]
+  },
+  "snb": {
+   "country": "CH",
+   "currency": "CHF",
+   "hosts": [
+    "snb.ch"
+   ],
+   "aliases": [
+    "swiss national bank"
+   ]
+  },
+  "rba": {
+   "country": "AU",
+   "currency": "AUD",
+   "hosts": [
+    "rba.gov.au"
+   ],
+   "aliases": [
+    "reserve bank of australia"
+   ]
+  },
+  "rbnz": {
+   "country": "NZ",
+   "currency": "NZD",
+   "hosts": [
+    "rbnz.govt.nz"
+   ],
+   "aliases": [
+    "reserve bank of new zealand"
+   ]
+  },
+  "boc": {
+   "country": "CA",
+   "currency": "CAD",
+   "hosts": [
+    "bankofcanada.ca"
+   ],
+   "aliases": [
+    "bank of canada"
+   ]
+  },
+  "norges_bank": {
+   "country": "NO",
+   "currency": "NOK",
+   "hosts": [
+    "norges-bank.no"
+   ],
+   "aliases": [
+    "norges bank"
+   ]
+  },
+  "riksbank": {
+   "country": "SE",
+   "currency": "SEK",
+   "hosts": [
+    "riksbank.se"
+   ],
+   "aliases": [
+    "riksbank",
+    "sveriges riksbank"
+   ]
+  },
+  "nationalbanken": {
+   "country": "DK",
+   "currency": "DKK",
+   "hosts": [
+    "nationalbanken.dk"
+   ],
+   "aliases": [
+    "danmarks nationalbank"
+   ]
+  },
+  "nbp": {
+   "country": "PL",
+   "currency": "PLN",
+   "hosts": [
+    "nbp.pl"
+   ],
+   "aliases": [
+    "narodowy bank polski",
+    "national bank of poland"
+   ]
+  },
+  "cnb": {
+   "country": "CZ",
+   "currency": "CZK",
+   "hosts": [
+    "cnb.cz"
+   ],
+   "aliases": [
+    "czech national bank"
+   ]
+  },
+  "mnb": {
+   "country": "HU",
+   "currency": "HUF",
+   "hosts": [
+    "mnb.hu"
+   ],
+   "aliases": [
+    "magyar nemzeti bank"
+   ]
+  },
+  "tcmb": {
+   "country": "TR",
+   "currency": "TRY",
+   "hosts": [
+    "tcmb.gov.tr"
+   ],
+   "aliases": [
+    "central bank of the republic of turkey",
+    "tcmb"
+   ]
+  },
+  "sarb": {
+   "country": "ZA",
+   "currency": "ZAR",
+   "hosts": [
+    "resbank.co.za"
+   ],
+   "aliases": [
+    "south african reserve bank"
+   ]
+  },
+  "banxico": {
+   "country": "MX",
+   "currency": "MXN",
+   "hosts": [
+    "banxico.org.mx"
+   ],
+   "aliases": [
+    "banco de méxico",
+    "banco de mexico",
+    "banxico"
+   ]
+  },
+  "bcb": {
+   "country": "BR",
+   "currency": "BRL",
+   "hosts": [
+    "bcb.gov.br"
+   ],
+   "aliases": [
+    "banco central do brasil"
+   ]
+  },
+  "rbi": {
+   "country": "IN",
+   "currency": "INR",
+   "hosts": [
+    "rbi.org.in"
+   ],
+   "aliases": [
+    "reserve bank of india"
+   ]
+  },
+  "bok": {
+   "country": "KR",
+   "currency": "KRW",
+   "hosts": [
+    "bok.or.kr"
+   ],
+   "aliases": [
+    "bank of korea",
+    "한국은행"
+   ]
+  },
+  "pboc": {
+   "country": "CN",
+   "currency": "CNH",
+   "hosts": [
+    "pbc.gov.cn"
+   ],
+   "aliases": [
+    "people's bank of china",
+    "pboc",
+    "中国人民银行"
+   ]
+  },
+  "hkma": {
+   "country": "HK",
+   "currency": "HKD",
+   "hosts": [
+    "hkma.gov.hk"
+   ],
+   "aliases": [
+    "hong kong monetary authority",
+    "hkma"
+   ]
+  },
+  "mas": {
+   "country": "SG",
+   "currency": "SGD",
+   "hosts": [
+    "mas.gov.sg"
+   ],
+   "aliases": [
+    "monetary authority of singapore"
+   ]
+  },
+  "boi": {
+   "country": "IL",
+   "currency": "ILS",
+   "hosts": [
+    "boi.org.il"
+   ],
+   "aliases": [
+    "bank of israel"
+   ]
+  },
+  "cbr": {
+   "country": "RU",
+   "currency": "RUB",
+   "hosts": [
+    "cbr.ru"
+   ],
+   "aliases": [
+    "банк россии",
+    "bank of russia"
+   ]
+  },
+  "bi": {
+   "country": "ID",
+   "currency": "IDR",
+   "hosts": [
+    "bi.go.id"
+   ],
+   "aliases": [
+    "bank indonesia"
+   ]
+  },
+  "bot": {
+   "country": "TH",
+   "currency": "THB",
+   "hosts": [
+    "bot.or.th"
+   ],
+   "aliases": [
+    "bank of thailand"
+   ]
+  },
+  "cbe": {
+   "country": "EG",
+   "currency": "EGP",
+   "hosts": [
+    "cbe.org.eg"
+   ],
+   "aliases": [
+    "central bank of egypt"
+   ]
+  },
+  "sbp": {
+   "country": "PK",
+   "currency": "PKR",
+   "hosts": [
+    "sbp.org.pk"
+   ],
+   "aliases": [
+    "state bank of pakistan"
+   ]
+  },
+  "bb": {
+   "country": "BD",
+   "currency": "BDT",
+   "hosts": [
+    "bb.org.bd"
+   ],
+   "aliases": [
+    "bangladesh bank"
+   ]
+  },
+  "cbk": {
+   "country": "KE",
+   "currency": "KES",
+   "hosts": [
+    "centralbank.go.ke"
+   ],
+   "aliases": [
+    "central bank of kenya"
+   ]
+  },
+  "nbu": {
+   "country": "UA",
+   "currency": "UAH",
+   "hosts": [
+    "bank.gov.ua"
+   ],
+   "aliases": [
+    "national bank of ukraine",
+    "національний банк"
+   ]
+  },
+  "bcrp": {
+   "country": "PE",
+   "currency": "PEN",
+   "hosts": [
+    "bcrp.gob.pe"
+   ],
+   "aliases": [
+    "banco central de reserva del perú",
+    "bcrp"
+   ]
+  },
+  "bcch": {
+   "country": "CL",
+   "currency": "CLP",
+   "hosts": [
+    "bcentral.cl"
+   ],
+   "aliases": [
+    "banco central de chile"
+   ]
+  },
+  "banrep": {
+   "country": "CO",
+   "currency": "COP",
+   "hosts": [
+    "banrep.gov.co"
+   ],
+   "aliases": [
+    "banco de la república"
+   ]
+  },
+  "bcra": {
+   "country": "AR",
+   "currency": "ARS",
+   "hosts": [
+    "bcra.gob.ar"
+   ],
+   "aliases": [
+    "banco central de la república argentina"
+   ]
+  },
+  "sbv": {
+   "country": "VN",
+   "currency": "VND",
+   "hosts": [
+    "sbv.gov.vn"
+   ],
+   "aliases": [
+    "state bank of vietnam"
+   ]
+  },
+  "bnm": {
+   "country": "MY",
+   "currency": "MYR",
+   "hosts": [
+    "bnm.gov.my"
+   ],
+   "aliases": [
+    "bank negara"
+   ]
+  },
+  "bsp": {
+   "country": "PH",
+   "currency": "PHP",
+   "hosts": [
+    "bsp.gov.ph"
+   ],
+   "aliases": [
+    "bangko sentral"
+   ]
+  },
+  "cbn": {
+   "country": "NG",
+   "currency": "NGN",
+   "hosts": [
+    "cbn.gov.ng"
+   ],
+   "aliases": [
+    "central bank of nigeria"
+   ]
+  },
+  "bis": {
+   "country": null,
+   "currency": null,
+   "hosts": [
+    "bis.org"
+   ],
+   "aliases": [
+    "bank for international settlements",
+    "central bankers' speeches"
+   ],
+   "fx": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDX"
+   ]
+  }
+ },
+ "commodities": {
+  "crude_oil": {
+   "aliases": [
+    "crude",
+    "oil",
+    "petroleum",
+    "brent",
+    "wti",
+    "opec",
+    "原油",
+    "石油",
+    "нефт",
+    "pétrole",
+    "petróleo",
+    "jodi",
+    "燃料油",
+    "fuel oil",
+    "gasoline",
+    "distillate"
+   ],
+   "cfd": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "producer_fx": [
+    "USDCAD",
+    "USDNOK",
+    "USDMXN",
+    "USDRUB"
+   ],
+   "index": [
+    "CA60"
+   ]
+  },
+  "natural_gas": {
+   "aliases": [
+    "natural gas",
+    "natgas",
+    "lng",
+    "天然气",
+    "газ",
+    "power load",
+    "electricity"
+   ],
+   "cfd": [
+    "XNGUSD"
+   ],
+   "producer_fx": [
+    "USDNOK",
+    "EURNOK"
+   ],
+   "index": [
+    "GER40"
+   ]
+  },
+  "gold": {
+   "aliases": [
+    "gold",
+    "lbma",
+    "黄金",
+    "золот",
+    "金価格",
+    "bullion",
+    "lingot"
+   ],
+   "cfd": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "producer_fx": [
+    "AUDUSD",
+    "USDZAR"
+   ],
+   "index": []
+  },
+  "silver": {
+   "aliases": [
+    "silver",
+    "白银",
+    "серебр"
+   ],
+   "cfd": [
+    "XAGUSD",
+    "XAGEUR"
+   ],
+   "producer_fx": [
+    "USDMXN"
+   ],
+   "index": []
+  },
+  "platinum": {
+   "aliases": [
+    "platinum",
+    "铂",
+    "pgm"
+   ],
+   "cfd": [
+    "XPTUSD"
+   ],
+   "producer_fx": [
+    "USDZAR"
+   ],
+   "index": []
+  },
+  "palladium": {
+   "aliases": [
+    "palladium",
+    "钯"
+   ],
+   "cfd": [
+    "XPDUSD"
+   ],
+   "producer_fx": [
+    "USDZAR",
+    "USDRUB"
+   ],
+   "index": []
+  },
+  "copper": {
+   "aliases": [
+    "copper",
+    "铜",
+    "медь",
+    "cobre"
+   ],
+   "cfd": [
+    "XCUUSD"
+   ],
+   "producer_fx": [
+    "AUDUSD"
+   ],
+   "index": [
+    "AUS200"
+   ]
+  },
+  "aluminium": {
+   "aliases": [
+    "aluminium",
+    "aluminum",
+    "铝",
+    "alumina",
+    "氧化铝"
+   ],
+   "cfd": [
+    "XALUSD"
+   ],
+   "producer_fx": [
+    "AUDUSD"
+   ],
+   "index": []
+  },
+  "nickel": {
+   "aliases": [
+    "nickel",
+    "镍"
+   ],
+   "cfd": [
+    "XNIUSD"
+   ],
+   "producer_fx": [
+    "USDIDR",
+    "AUDUSD"
+   ],
+   "index": []
+  },
+  "zinc": {
+   "aliases": [
+    "zinc",
+    "锌"
+   ],
+   "cfd": [
+    "XZNUSD"
+   ],
+   "producer_fx": [
+    "AUDUSD"
+   ],
+   "index": []
+  },
+  "lead": {
+   "aliases": [
+    "铅",
+    "lead-zinc"
+   ],
+   "cfd": [
+    "XPBUSD"
+   ],
+   "producer_fx": [
+    "AUDUSD"
+   ],
+   "index": []
+  },
+  "iron_ore": {
+   "aliases": [
+    "iron ore",
+    "铁矿",
+    "steel",
+    "rebar",
+    "螺纹",
+    "热卷",
+    "hot-rolled",
+    "hot rolled",
+    "coke",
+    "焦炭",
+    "焦煤",
+    "coking coal"
+   ],
+   "cfd": [
+    "XCUUSD"
+   ],
+   "producer_fx": [
+    "AUDUSD",
+    "USDBRL",
+    "AUDJPY"
+   ],
+   "index": [
+    "AUS200",
+    "CHINAH"
+   ]
+  },
+  "coal": {
+   "aliases": [
+    "coal",
+    "thermal coal",
+    "动力煤"
+   ],
+   "cfd": [],
+   "producer_fx": [
+    "AUDUSD",
+    "USDIDR",
+    "USDZAR"
+   ],
+   "index": [
+    "AUS200"
+   ]
+  },
+  "lithium": {
+   "aliases": [
+    "lithium",
+    "碳酸锂",
+    "polysilicon",
+    "多晶硅",
+    "industrial silicon",
+    "工业硅"
+   ],
+   "cfd": [],
+   "producer_fx": [
+    "AUDUSD"
+   ],
+   "index": [
+    "AUS200",
+    "CHINAH"
+   ]
+  },
+  "soybeans": {
+   "aliases": [
+    "soy",
+    "大豆",
+    "豆粕",
+    "豆油",
+    "soymeal",
+    "palm oil",
+    "棕榈油",
+    "rapeseed",
+    "菜粕",
+    "菜油"
+   ],
+   "cfd": [
+    "SOYBEAN"
+   ],
+   "producer_fx": [
+    "USDBRL"
+   ],
+   "index": []
+  },
+  "corn": {
+   "aliases": [
+    "corn",
+    "maize",
+    "玉米",
+    "кукуруз",
+    "milho"
+   ],
+   "cfd": [
+    "CORN"
+   ],
+   "producer_fx": [
+    "USDBRL"
+   ],
+   "index": []
+  },
+  "wheat": {
+   "aliases": [
+    "wheat",
+    "小麦",
+    "пшениц",
+    "grain"
+   ],
+   "cfd": [
+    "WHEAT",
+    "CORN"
+   ],
+   "producer_fx": [
+    "AUDUSD",
+    "USDRUB",
+    "USDCAD"
+   ],
+   "index": []
+  },
+  "sugar": {
+   "aliases": [
+    "sugar",
+    "白糖",
+    "açúcar",
+    "сахар"
+   ],
+   "cfd": [
+    "SUGAR",
+    "SUGARRAW"
+   ],
+   "producer_fx": [
+    "USDBRL"
+   ],
+   "index": []
+  },
+  "coffee": {
+   "aliases": [
+    "coffee",
+    "café",
+    "咖啡"
+   ],
+   "cfd": [
+    "COFARA",
+    "COFROB"
+   ],
+   "producer_fx": [
+    "USDBRL"
+   ],
+   "index": []
+  },
+  "cocoa": {
+   "aliases": [
+    "cocoa",
+    "cacao",
+    "icco"
+   ],
+   "cfd": [
+    "UKCOCOA",
+    "USCOCOA"
+   ],
+   "producer_fx": [],
+   "index": []
+  },
+  "cotton": {
+   "aliases": [
+    "cotton",
+    "棉花",
+    "棉纱"
+   ],
+   "cfd": [
+    "COTTON"
+   ],
+   "producer_fx": [
+    "USDINR"
+   ],
+   "index": []
+  },
+  "orange_juice": {
+   "aliases": [
+    "orange juice",
+    "fcoj"
+   ],
+   "cfd": [
+    "OJ"
+   ],
+   "producer_fx": [
+    "USDBRL"
+   ],
+   "index": []
+  },
+  "dairy": {
+   "aliases": [
+    "dairy",
+    "milk",
+    "gdt"
+   ],
+   "cfd": [],
+   "producer_fx": [
+    "NZDUSD",
+    "AUDNZD"
+   ],
+   "index": []
+  },
+  "livestock_feed": {
+   "aliases": [
+    "live hog",
+    "生猪",
+    "eggs",
+    "鸡蛋",
+    "hogs",
+    "cattle",
+    "livestock"
+   ],
+   "cfd": [
+    "CORN",
+    "SOYBEAN"
+   ],
+   "producer_fx": [],
+   "index": []
+  },
+  "petrochemicals": {
+   "aliases": [
+    "pta",
+    "methanol",
+    "甲醇",
+    "pvc",
+    "lldpe",
+    "polypropylene",
+    "聚丙烯",
+    "乙二醇",
+    "ethylene glycol",
+    "glass",
+    "玻璃",
+    "soda ash",
+    "纯碱",
+    "bitumen",
+    "沥青",
+    "rubber",
+    "橡胶"
+   ],
+   "cfd": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "producer_fx": [],
+   "index": [
+    "CHINAH"
+   ]
+  },
+  "softs_crops": {
+   "aliases": [
+    "crop progress",
+    "crop condition",
+    "harvest",
+    "conab",
+    "fao",
+    "food price",
+    "agricultur",
+    "safra",
+    "ers.usda",
+    "nass"
+   ],
+   "cfd": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR"
+   ],
+   "producer_fx": [
+    "USDBRL",
+    "AUDUSD"
+   ],
+   "index": []
+  },
+  "weather": {
+   "aliases": [
+    "weather",
+    "era5",
+    "rainfall",
+    "temperature",
+    "drought",
+    "el niño",
+    "enso"
+   ],
+   "cfd": [
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "COFARA"
+   ],
+   "producer_fx": [],
+   "index": []
+  },
+  "crypto": {
+   "aliases": [
+    "crypto",
+    "bitcoin",
+    "ethereum",
+    "coinpaprika",
+    "btc"
+   ],
+   "cfd": [
+    "BTCUSD",
+    "ETHUSD",
+    "SOLUSD",
+    "LTCUSD"
+   ],
+   "producer_fx": [],
+   "index": [
+    "NAS100"
+   ]
+  }
+ },
+ "sectors": {
+  "technology": {
+   "aliases": [
+    "technology",
+    "tech",
+    "software",
+    "semiconductor",
+    "chip",
+    "半导体",
+    "patent",
+    "apps",
+    "app store",
+    "internet",
+    "it services"
+   ],
+   "index": [
+    "NAS100",
+    "US500",
+    "JPN225"
+   ]
+  },
+  "consumer": {
+   "aliases": [
+    "consumer",
+    "retail",
+    "app rank",
+    "gaming",
+    "game",
+    "e-commerce",
+    "restaurant",
+    "tourism",
+    "travel",
+    "box office",
+    "spending"
+   ],
+   "index": [
+    "US500",
+    "NAS100",
+    "HK50"
+   ]
+  },
+  "financials": {
+   "aliases": [
+    "banking",
+    "financial",
+    "insurance",
+    "credit",
+    "lending",
+    "brokerage",
+    "financial soundness",
+    "supervisory",
+    "financial inclusion"
+   ],
+   "index": [
+    "US30",
+    "EUSTX50",
+    "UK100"
+   ],
+   "theme": true
+  },
+  "energy_sector": {
+   "aliases": [
+    "energy",
+    "refiner",
+    "power",
+    "utilities"
+   ],
+   "index": [
+    "UK100",
+    "CA60"
+   ]
+  },
+  "materials": {
+   "aliases": [
+    "mines",
+    "materials",
+    "base metals",
+    "smelter"
+   ],
+   "index": [
+    "AUS200",
+    "UK100"
+   ]
+  },
+  "industrials": {
+   "aliases": [
+    "industrial",
+    "manufacturing",
+    "pmi",
+    "freight",
+    "shipping",
+    "port",
+    "logistics",
+    "aerospace"
+   ],
+   "index": [
+    "GER40",
+    "US30",
+    "JPN225"
+   ]
+  },
+  "autos": {
+   "aliases": [
+    "auto",
+    "vehicle",
+    "car sales",
+    "electric vehicle"
+   ],
+   "index": [
+    "GER40",
+    "JPN225"
+   ]
+  },
+  "small_caps": {
+   "aliases": [
+    "small cap",
+    "small-cap",
+    "russell"
+   ],
+   "index": [
+    "US2000"
+   ]
+  },
+  "rates": {
+   "aliases": [
+    "treasury",
+    "government bond",
+    "auction",
+    "yield curve",
+    "gilt",
+    "bund",
+    "国债",
+    "debt management",
+    "public debt"
+   ],
+   "index": [
+    "UST10Y",
+    "UST05Y",
+    "UKGILT"
+   ],
+   "theme": true
+  },
+  "labour": {
+   "aliases": [
+    "jobs",
+    "job postings",
+    "labour",
+    "labor",
+    "employment",
+    "payroll",
+    "wages",
+    "earnings"
+   ],
+   "index": [
+    "US500",
+    "USDX"
+   ],
+   "theme": true
+  },
+  "inflation": {
+   "aliases": [
+    "cpi",
+    "inflation",
+    "prices",
+    "ppi",
+    "cpif"
+   ],
+   "index": [
+    "USDX",
+    "UST05Y"
+   ],
+   "theme": true
+  },
+  "volatility": {
+   "aliases": [
+    "volatility",
+    "options",
+    "vix",
+    "implied vol"
+   ],
+   "index": [
+    "US500",
+    "NAS100"
+   ],
+   "theme": true
+  },
+  "positioning": {
+   "aliases": [
+    "positioning",
+    "member ranking",
+    "investor-type",
+    "foreign investor",
+    "flows",
+    "cot",
+    "open interest"
+   ],
+   "index": [
+    "US500"
+   ],
+   "theme": true
+  },
+  "retail_sentiment": {
+   "aliases": [
+    "forum",
+    "board",
+    "social",
+    "sentiment",
+    "trader",
+    "трейд",
+    "雪球",
+    "股吧",
+    "微博",
+    "trading",
+    "community"
+   ],
+   "index": [
+    "US500",
+    "NAS100"
+   ],
+   "theme": true
+  }
+ },
+ "regions": {
+  "africa": [
+   "USDZAR",
+   "XAUUSD",
+   "XBRUSD"
+  ],
+  "latam": [
+   "USDBRL",
+   "USDMXN",
+   "XCUUSD"
+  ],
+  "sea": [
+   "USDSGD",
+   "USDIDR",
+   "USDTHB"
+  ],
+  "south_asia": [
+   "USDINR",
+   "XAUUSD"
+  ],
+  "east_eu": [
+   "EURPLN",
+   "EURHUF",
+   "EURCZK"
+  ],
+  "nordics": [
+   "EURSEK",
+   "EURNOK",
+   "USDSEK"
+  ],
+  "mena": [
+   "XBRUSD",
+   "USDTRY",
+   "USDILS"
+  ],
+  "eu": [
+   "EURUSD",
+   "EUSTX50"
+  ],
+  "west": [
+   "US500",
+   "EURUSD"
+  ],
+  "jp": [
+   "USDJPY",
+   "JPN225"
+  ],
+  "cn": [
+   "USDCNH",
+   "CHINAH"
+  ],
+  "tw_hk": [
+   "HK50",
+   "USDCNH"
+  ],
+  "ru": [
+   "USDRUB",
+   "XBRUSD"
+  ],
+  "in": [
+   "USDINR"
+  ],
+  "institutional": []
+ },
+ "dropped_not_in_registry": {
+  "USDAED": [
+   "country:AE:fx"
+  ],
+  "USDARS": [
+   "country:AR:fx"
+  ],
+  "USDBDT": [
+   "country:BD:fx"
+  ],
+  "USDCLP": [
+   "commodity:copper:producer_fx",
+   "commodity:lithium:producer_fx",
+   "country:CL:fx"
+  ],
+  "USDCOP": [
+   "commodity:coffee:producer_fx",
+   "country:CO:fx"
+  ],
+  "USDEGP": [
+   "country:EG:fx"
+  ],
+  "USDKES": [
+   "country:KE:fx"
+  ],
+  "USDKZT": [
+   "country:KZ:fx"
+  ],
+  "USDMYR": [
+   "commodity:soybeans:producer_fx",
+   "country:MY:fx"
+  ],
+  "USDNGN": [
+   "country:NG:fx"
+  ],
+  "USDPEN": [
+   "commodity:copper:producer_fx",
+   "commodity:zinc:producer_fx",
+   "country:PE:fx"
+  ],
+  "USDPHP": [
+   "country:PH:fx"
+  ],
+  "USDPKR": [
+   "commodity:cotton:producer_fx",
+   "country:PK:fx"
+  ],
+  "USDSAR": [
+   "country:SA:fx"
+  ],
+  "USDTWD": [
+   "country:TW:fx"
+  ],
+  "USDUAH": [
+   "commodity:corn:producer_fx",
+   "country:UA:fx"
+  ],
+  "USDVND": [
+   "country:VN:fx"
+  ]
+ }
+}

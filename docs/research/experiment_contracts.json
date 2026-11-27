@@ -281,6 +281,21 @@
     "after": "any pass: a decay report judging no sleeve has lost the roster and every lane state file"
    }
   },
+  "judge_calibration": {
+   "hypothesis": "Measuring the sealed judge against matured forward clocks -- forward-over-backtest per family, leaks per gate, false kills where a rejected cell has a clock -- and proposing two-sided family priors and gate moves only when they beat the current judge leave-one-family-out, names the families whose certificates do not survive forward (F2) before more capital or clock capacity is spent on them.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "summary.n_matured_certified",
+    "better": "up",
+    "organ": "report:JUDGE_CALIBRATION.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_matured_joined",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: no matured clock joins its certificate's backtest edge, so not one forward-over-backtest ratio, prior or gate move can be measured"
+   }
+  },
   "cluster_judge": {
    "hypothesis": "Judging the forward clocks at the Tier S bar as ONE hypothesis, with their pairwise correlation and eigenvalue N_eff measured from each clock's own per-key ledger, shows how many independent bets they really are before any promotion reads them, and the share of cluster clocks it can measure rises as per-key ledgers accrue.",
    "metric": {
@@ -339,6 +354,111 @@
     "op": "==",
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
+   }
+  },
+  "funnel": {
+   "hypothesis": "Publishing every conversion from raw info to live profit per producer, class and family -- with its depth in independent units, the weakest stage against the median, an attack order naming the owning organ, and floors that only ratchet up -- lets the desk attack its thinnest conversion first, so no measured floor stays violated, without changing a gate, a trial count or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.n_violated",
+    "better": "down",
+    "organ": "report:FUNNEL.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_violated",
+    "op": ">",
+    "threshold": 3,
+    "after": "30 days on the trading box: more than three stages or transitions still read VIOLATED, so naming the weakest conversion and its owner moved none of them back above its floor"
+   }
+  },
+  "judge_reach": {
+   "hypothesis": "Naming every producer whose rows are emitted but never judged, or judged only as prose or family defaults, and paging it to Claude, raises the share of producers whose own executable rules actually reach the judge, without changing a gate, a trial count or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.n_reaching",
+    "better": "up",
+    "organ": "report:JUDGE_REACH.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_reaching",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: no producer reads REACHING, so the guardian names leaks nobody closes and its pages bought nothing"
+   }
+  },
+  "producer_loop": {
+   "hypothesis": "Naming the funnel stage where each producer dies and applying the fixed remedy for that stage -- charged to the lifetime trial count, judged held-out, reverted when worse -- while steering judge order by independent forward-kept edges per CPU-hour, raises the desk's independent certified edges without raising its false-discovery charge beyond the trials it records.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.k_eff_edges_window",
+    "better": "up",
+    "organ": "report:PRODUCER_LOOP.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_healthy",
+    "op": "==",
+    "threshold": 0,
+    "after": "60 days on the trading box: after two full remedy rounds no producer's funnel reaches certified and forward-kept, so the remedies bought nothing"
+   }
+  },
+  "tick_features": {
+   "hypothesis": "Publishing the tick tape as point-in-time conditioners (spread regime, liquidity by hour, post-news response) per non-exotic symbol gives the generators tape state they could not name before, so exogenous_conditioner and causal_lab cells on tick_features_/tick_news_ series reach the gauntlet.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "series_published",
+    "better": "up",
+    "organ": "report:TICK_FEATURES.json"
+   },
+   "falsifier": {
+    "metric": "symbols_measured",
+    "op": "==",
+    "threshold": 0,
+    "after": "48h on the trading box: no non-exotic symbol has a published hour, so the tape never reached the lake and the conditioners do not exist"
+   }
+  },
+  "exotic_state_features": {
+   "hypothesis": "Publishing the post-sample firing state of the banned exotics' certified rules as point-in-time lake series, and conditioning certified non-exotic parents in the same macro bloc on it as a fixed, declared trial set, adds independent breadth from 12,730 certificates the book can never trade, without trading an exotic.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "features_valid",
+    "better": "up",
+    "organ": "report:EXOTIC_STATE_FEATURES.json"
+   },
+   "falsifier": {
+    "metric": "features_valid",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no exotic certificate yields a look-ahead-clean post-sample feature, so no conditioner exists to mint on"
+   }
+  },
+  "dataset_translator": {
+   "hypothesis": "Translating every dataset the desk holds -- free stack, deep forest, axes, keyed roster, key catalogue and unclaimed lake series -- to the FX pairs, index CFDs, commodity CFDs and metals its country, central bank, commodity or sector bears on, and minting one exogenous_conditioner cell per dataset with a series, puts information in front of the gauntlet that no roster had connected to a tradable.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "wired_share",
+    "better": "up",
+    "organ": "report:DATASET_TRANSLATION.json"
+   },
+   "falsifier": {
+    "metric": "datasets_with_series",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no translated dataset has a lake series under its prefixes, so every mapping stays MAPPED_AWAITING_SERIES and the translator mints nothing for the gauntlet to judge"
+   }
+  },
+  "conversion_lanes": {
+   "hypothesis": "Using the free models to CONVERT rows the desk already holds -- prose conditioners and sandbox rules translated into exact settings with no invented number, lineage-charged near-miss mutants, a deterministic judge-feedback block for the generators, deduplicated before donation -- raises the number of judge-testable cells and, through them, certified and live edges, without changing a gate, a trial charge or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.donated",
+    "better": "up",
+    "organ": "report:CONVERSION_LANES.json"
+   },
+   "falsifier": {
+    "metric": "summary.donated",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: the lanes donated no testable row, so the free-model calls converted nothing the judge could test"
    }
   }
  },

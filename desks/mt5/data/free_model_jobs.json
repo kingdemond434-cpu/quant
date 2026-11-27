@@ -1,0 +1,87 @@
+{
+ "jobs": [
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "alt_generation",
+   "name": "alt_generation",
+   "status": "ACTIVE",
+   "template": "alt_catalog_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "data_discovery",
+   "name": "data_discovery",
+   "status": "PLACEHOLDER",
+   "template": "data_discovery_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "translate",
+   "name": "translator",
+   "status": "ACTIVE",
+   "template": "translate_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "feedback",
+   "name": "judge_feedback",
+   "status": "ACTIVE",
+   "template": "feedback_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "near_miss",
+   "name": "near_miss",
+   "status": "ACTIVE",
+   "template": "near_miss_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:conversion-lanes",
+   "kind": "critic",
+   "name": "redundancy_critic",
+   "status": "ACTIVE",
+   "template": "critic_v1",
+   "weight": 1.0
+  },
+  {
+   "added_at": "2026-11-25T00:00:00+00:00",
+   "added_by": "claude:mathlab-llm-proposer",
+   "kind": "math_proposer",
+   "name": "math_proposer",
+   "status": "ACTIVE",
+   "template": "math_proposer_v1",
+   "weight": 1.0
+  }
+ ],
+ "kinds": [
+  "alt_generation",
+  "critic",
+  "data_discovery",
+  "feedback",
+  "math_proposer",
+  "near_miss",
+  "translate"
+ ],
+ "rule": "one entry per free-model job: name, kind, template, status, weight, added_by, added_at. Kinds and templates are code in research/conversion_lanes.py; an unknown one is refused, never run. Weights are re-scored each pass from FUNNEL.json by_lane; a PARKED job is kept and re-tested, never deleted.",
+ "schema": 1,
+ "templates": {
+  "alt_catalog_v1": "alt_generation",
+  "critic_v1": "critic",
+  "data_discovery_v1": "data_discovery",
+  "feedback_v1": "feedback",
+  "math_proposer_v1": "math_proposer",
+  "near_miss_v1": "near_miss",
+  "translate_v1": "translate"
+ }
+}

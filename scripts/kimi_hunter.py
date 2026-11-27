@@ -28,6 +28,7 @@ public sources only -- no paid data APIs, no institutional terminals.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -457,6 +458,34 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
 
 
 
+def _shared_chain_lit() -> int:
+    """How many routes the shared free chain has lit on this host (0 on any error)."""
+    try:
+        from libs.ops import free_chain
+        return len(free_chain.routes(ALT_ORGAN, public=True))
+    except Exception:  # blind-except intentional (BLE001)
+        return 0
+
+
+def _shared_chain_ask(wave: int, system: str, user: str, attempts: list[dict]
+                      ) -> tuple[str, str]:
+    """(text, "provider/model") from the shared free chain, or ("", "") with the refusal
+    recorded in `attempts`. Never raises."""
+    try:
+        from libs.ops import free_chain
+        txt, who, err = free_chain.ask(
+            ALT_ORGAN, OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n" + _doctrine("kimi_hunter")
+            + system, user, max_tokens=8000, temperature=1.0)
+    except Exception as e:  # blind-except intentional (BLE001)
+        txt, who, err = "", "", f"{type(e).__name__}"
+    if txt.strip():
+        print(f"    shared free chain served wave {wave}: {who}")
+        return txt, who
+    attempts.append({"wave": wave, "model": "(shared free chain)",
+                     "error": str(err or "empty response")[:300]})
+    return "", ""
+
+
 def _admit(line: str, wave: int, wave_text: str = "") -> tuple[bool, str, str, list[str]]:
     """SINGLE SOURCE OF TRUTH for admission. Returns (keep, reason, claim_class, fields).
 
@@ -664,6 +693,65 @@ def _donate(findings: list[dict]) -> Path | None:
     return path
 
 
+#: THE ALT CATALOG REACHES THIS HUNTER (2026-11-25). Waves 2 and 3 are shown a rotating,
+#: gap-weighted slice of the lake series the gauntlet applies as `alt:` conditioners
+#: (desks/mt5/research/alt_catalog.py), and an `ALT_CELL | family | SYMBOL | alt:... | why` line
+#: is donated as an EXACT recipe (family + params.conditioner + symbols) instead of prose. Before
+#: this, no free-model prompt named a single lake series and no seat row carried a testable one.
+ALT_ORGAN = "kimi_hunt"
+
+
+def _alt_catalog():
+    """The alt_catalog module, or None (an absent desk tree never costs the hunt)."""
+    try:
+        desk = ROOT / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in sys.path:
+                sys.path.insert(0, p)
+        from research import alt_catalog
+        return alt_catalog
+    except Exception:  # blind-except intentional (BLE001): the hunt runs without the slice
+        return None
+
+
+def _data_discovery():
+    """research/data_discovery (the "find data yourself" task), or None when the desk tree is
+    absent -- the hunt never depends on it."""
+    try:
+        if _alt_catalog() is None:
+            return None
+        from research import data_discovery
+        return data_discovery
+    except Exception:  # blind-except intentional (BLE001)
+        return None
+
+
+def _donate_alt(rows: list[dict]) -> Path | None:
+    """ALT_CELL rows, in the compiler's EXACT_RECIPE shape, where the compiler reads."""
+    if not rows:
+        return None
+    DONATE_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(tz=UTC)
+    from libs.research.source_provenance import stamp_row
+    out = []
+    for r in rows:
+        row = dict(r, source="kimi_k3_deep_forest", date=now.date().isoformat(),
+                   url=f"kimi://{now.date().isoformat()}/alt/"
+                       + hashlib.sha256(json.dumps([r.get("family"), r.get("symbols"),
+                                                    r.get("params")], sort_keys=True)
+                                        .encode("utf-8")).hexdigest()[:12])
+        stamp_row(row, ground="kimi", retrieved_at=now.isoformat(timespec="seconds"))
+        out.append(row)
+    from libs.data.pit import stamp_or_refuse
+    out, refused = stamp_or_refuse(out, "kimi_k3_deep_forest")
+    if refused:
+        raise ValueError(f"Kimi refused {len(refused)} unstamped alt cells")
+    path = DONATE_DIR / f"discoveries_alt_{now.strftime('%Y%m%d_%H%M%S')}.json"
+    path.write_text(json.dumps({"source": "kimi_k3_deep_forest", "generated_at": now.isoformat(),
+                                "discoveries": out}, indent=1), "utf-8")
+    return path
+
+
 def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
     """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
 
@@ -738,7 +826,7 @@ def main() -> None:
     # is unfunded" from "the hunter was never built", which is the difference between a bill to
     # pay and a thing to build.
     chain = _providers(deep=deep)
-    if not chain:
+    if not chain and not _shared_chain_lit():
         _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
                  "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
                  "this is a funding/credential blocker, not a defect in the hunt.")
@@ -770,12 +858,40 @@ def main() -> None:
     # donated only after Wave 3 returned, so a pass the hourly leg's cap cut during Wave 3 (each
     # ask may wait 240 s and walk the chain) lost Wave 2's findings with it -- every hour.
     donated_upto, donated = 0, None
+    ac = _alt_catalog()
+    alt_cat = None
+    if ac is not None:
+        try:
+            alt_cat = ac.catalog()
+        except Exception:  # blind-except intentional (BLE001)
+            alt_cat = None
+    alt_cells: list[dict] = []
+    # FIND DATA YOURSELF (2026-11-25): wave 2 also asks for keyless official series the desk
+    # does not hold; DATA_SOURCE lines from waves 2/3 are vetted into the seat's queue
+    # (data/intelligence/kimi/data_source_proposals.json), which research/keyed_sources.py on the
+    # box fetches point-in-time and alt_catalog then offers back as testable series.
+    dd = _data_discovery()
+    dd_labels, dd_full = (dd.known() if dd is not None else ([], set()))
+    data_sources: list[dict] = []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
         _sec = hf.prompt_sections(state, cooldown_d=_VECTOR_COOLDOWN_D)
         _cover = _sec["priority"] + (f"\n\n{_sec['exclude']}" if _sec["exclude"] else "")
         user = f"{brief}\n\n{_cover}" + (f"\n\n{prior}" if prior else "")
+        if w > 1 and ac is not None and alt_cat is not None:
+            _alt = ac.prompt_block(ALT_ORGAN, cat=alt_cat)
+            if _alt:
+                user += f"\n\n{_alt}"
+            # JUDGE FEEDBACK (research/conversion_lanes.py): what became of this seat's earlier
+            # rows, as deterministic aggregates -- no cell, metric or held-out gate is named.
+            with contextlib.suppress(Exception):
+                from research import conversion_lanes as _cl
+                _fb = _cl.feedback_block(ALT_ORGAN)
+                if _fb:
+                    user += f"\n\n{_fb}"
+        if w == 2 and dd is not None:
+            user += "\n\n" + dd.prompt_block(existing=dd_labels)
         print(f"  WAVE {w} -- {name}")
         # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
@@ -802,8 +918,7 @@ def main() -> None:
                   f"budget resets at 00:00 UTC and the next cadence picks it up.")
             attempts.append({"wave": w, "model": "(none tried)",
                              "error": "free daily allowance spent before the walk"})
-            break
-        for model, base, key in chain:
+        for model, base, key in (chain if _left is None or _left > 0 else []):
             try:
                 txt = _ask(base, key, CHARTER, user, model=model)
             except Exception as e:  # blind-except intentional (BLE001)
@@ -822,6 +937,11 @@ def main() -> None:
                 break
             attempts.append({"wave": w, "model": model, "error": "empty response"})
             print(f"    {model}: empty response")
+        if not used:
+            # THE SHARED FREE CHAIN (libs/ops/free_chain): every other lit key on the host --
+            # Groq, Cerebras, GitHub Models, SiliconFlow, the relays (public prompts only), any
+            # FREE_LLM_<NAME>_KEY -- gets the wave before it is given up.
+            txt, used = _shared_chain_ask(w, CHARTER, user, attempts)
         if not used:
             # EVERY door on this wave is shut. Keep whatever the earlier waves produced -- a
             # completed Wave 1 map is worth having and re-deriving it costs a full run.
@@ -849,9 +969,43 @@ def main() -> None:
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
+        if ac is not None and alt_cat is not None:
+            _cells, _why = ac.parse_cells(txt, cat=alt_cat, organ=ALT_ORGAN)
+            # THE FORBIDDEN ZONES HOLD FOR A RECIPE TOO, read on what it claims (the mechanism
+            # and the series), never on the family's own name.
+            _kept = []
+            for _c in _cells:
+                _z = _forbidden(f"{_c.get('mechanism', '')} {_c.get('alt_series', '')}")
+                if _z:
+                    _why.append(f"forbidden zone ({_z})")
+                    continue
+                _c.update(wave=w, model=used)
+                _kept.append(_c)
+            _cells = _kept
+            alt_cells += _cells
+            dropped += [{"wave": w, "reason": f"alt cell: {r}", "line": ""} for r in _why]
+            if _cells:
+                _p = _donate_alt(_cells)
+                print(f"    wave {w}: {len(_cells)} alt-conditioned cell(s) -> {_p}")
+        if dd is not None:
+            _props = []
+            for _p in dd.parse_lines(txt):
+                _z = _forbidden(str(_p.get("mechanism") or _p.get("_malformed") or ""))
+                _props.append(dict(_p, _reject=f"forbidden_zone:{_z}") if _z else _p)
+            if _props:
+                _got = dd.record("kimi", _props, organ=ALT_ORGAN, model=used,
+                                 root=DONATE_DIR.parent, known_paths=dd_full)
+                _got["wave"] = w
+                data_sources.append(_got)
+                print(f"    wave {w}: {_got['proposed']} data source(s) proposed, "
+                      f"{_got['accepted']} accepted -> {dd.queue_path('kimi', DONATE_DIR.parent)}")
         for ln in txt.splitlines():
             if ln.count("|") < 3:
                 continue
+            if ac is not None and ac.CELL_LINE.match(ln):
+                continue                   # an ALT_CELL line is a recipe, handled above
+            if dd is not None and dd.LINE.match(ln):
+                continue                   # a DATA_SOURCE line is a data proposal, handled above
             keep, reason, cls, parts = _admit(ln, w, txt)
             if reason:
                 dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
@@ -916,7 +1070,9 @@ def main() -> None:
                                "territories_hunted": n_terr,
                                "donated_to": str(donated) if donated else None,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
-                               "findings": findings, "dropped": dropped}, indent=1), "utf-8")
+                               "findings": findings, "dropped": dropped,
+                               "alt_cells": alt_cells,
+                               "data_sources": data_sources}, indent=1), "utf-8")
     print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
     print(f"  -> {OUT}")
 

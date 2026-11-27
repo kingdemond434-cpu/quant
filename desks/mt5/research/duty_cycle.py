@@ -92,7 +92,8 @@ WINDOW_HOURS = 24
 #: the ones the box's own ledger carries, read off it rather than invented.
 MINT_LEGS: frozenset[str] = frozenset({
     "compile_candidates", "merge_docket", "miner_conversion", "independence_intake",
-    "expression_factory", "axis_proposer", "axis_registry", "alpha_evolution", "alpha_lineage",
+    "expression_factory", "formula_library", "axis_proposer", "axis_registry",
+    "alpha_evolution", "alpha_lineage",
     "coevolution", "sandbox_runner", "math_lab", "physics_lab", "weak_signals", "scout_swarm",
     "moat_miner", "deepen", "world_crawler", "deep_forest_miner", "graveyard_resurrection",
     "trajectory_evolution", "paradigm_router", "pack_cells", "alpha_replenishment",

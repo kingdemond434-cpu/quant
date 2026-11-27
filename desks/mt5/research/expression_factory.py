@@ -58,6 +58,7 @@ less than MIN_FREE_MB is free -- exactly as `miner_candidate_compiler` sizes its
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -114,6 +115,16 @@ STAGES: tuple[str, ...] = ("harvest", "transfer", "mutation", "invention")
 STAGE_SHARE: dict[str, float] = {"harvest": 0.10, "transfer": 0.45, "mutation": 0.35,
                                  "invention": 0.10}
 MIN_FREE_MB = 400.0
+#: THE WRITE IS RESERVED BEFORE THE SEARCH STARTS (2026-10-13). PRODUCER_YIELD on the box read
+#: this leg DEAD: 2.1 compute hours in 7 days and 0 cells into the registry. The search ran to its
+#: full `--budget-s 600` and only THEN wrote -- state files, the seat file, and last the registry,
+#: one commit per row (four doors per cell, thousands of cells) on the desk's most contended
+#: database -- inside the 90-120 s the cycle cap leaves above 600. A pass killed in that window
+#: writes nothing the judge can read, every hour, at the same point. The search now stops at the
+#: cycle cap (QUANT_LEG_BUDGET_S, exported by `hourly_cycle._producer`) minus this reserve, the
+#: registry is written FIRST and in chunked transactions, and the phase file says how far it got.
+WRITE_RESERVE_FRAC = 0.25
+WRITE_RESERVE_MIN_S = 120.0
 BARS_PER_YEAR = 24 * 260
 NORM, ENTRY_Z = 240, 1.5
 IS_SHARE = 0.6
@@ -152,6 +163,24 @@ TRANSITIONS: dict[str, frozenset[str]] = {
 }
 
 
+#: THE LEG IS STOPPED AT ITS CAP; THE FACTORY STOPS ITSELF THIS FAR INSIDE IT (2026-11-25). The
+#: box measured `expression_factory` killed at 720 s on both 11-25 passes with 0 of 1 artifacts
+#: moved: the search honoured its budget, the unbounded registry write after it did not. Every
+#: write phase now checks `Factory.hard_deadline_s` (the cap less this margin), the report is
+#: published partial BEFORE the registry write, and whatever the deadline leaves unwritten is
+#: kept in `pending_registry.json` and written FIRST next pass -- a cursor, never a drop.
+LEG_MARGIN_S = 60.0
+#: The seconds kept after the registry write for the state files, the donation and the report.
+WRITE_TAIL_S = 25.0
+#: Rows replayed from the cursor are capped so one pass never inherits an unbounded backlog.
+PENDING_KEEP = 20_000
+
+#: Campaign states a re-proposed cell may not be re-run from (see `Factory.run_cell`).
+CAMPAIGN_PAST_SCREEN: frozenset[str] = frozenset({"QUEUED", "TESTING", "FORWARD", "FAILED"})
+#: The most recent seen keys kept across passes.
+SEEN_KEEP = 50_000
+
+
 class TransferBeforeTuning(RuntimeError):
     """Raised when a parent is mutated before its unchanged transfer sweep has run."""
 
@@ -168,6 +197,12 @@ class Paths:
     @property
     def report(self) -> Path:
         return self.desk / "reports" / "EXPRESSION_FACTORY.json"
+
+    @property
+    def status(self) -> Path:
+        """The small, PUBLISHED phase file (the full report above is gitignored): how far the
+        last pass got, so a pass killed before it writes is a measurement, not a silence."""
+        return self.desk / "reports" / "EXPRESSION_FACTORY_STATUS.json"
 
     @property
     def intel_dir(self) -> Path:
@@ -199,6 +234,50 @@ DEFAULT_PATHS = Paths(_DESK)
 
 def now_iso() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds")
+
+
+def _harvestable(e: Any) -> bool:
+    """A harvested parent must be a grammar tree the factory can MUTATE. A published library
+    formula (`["lib", key]`, minted by `formula_library`) is evaluated exactly as published and
+    has no subtrees to mutate; it is that producer's cell, never this one's parent."""
+    return e is not None and ag.is_valid(e) and not ag.has_library(e)
+
+
+def search_budget_s(requested: float, leg_cap: str | None) -> float:
+    """The seconds the SEARCH may spend: the requested budget, or less when the cycle's cap minus
+    the write reserve is shorter. An absent or unreadable cap leaves the request unchanged."""
+    budget = float(requested)
+    try:
+        cap = float(leg_cap) if leg_cap else 0.0
+    except ValueError:
+        cap = 0.0
+    if cap > 0:
+        reserve = max(WRITE_RESERVE_MIN_S, WRITE_RESERVE_FRAC * cap)
+        budget = min(budget, max(30.0, cap - reserve))
+    return budget
+
+
+def hard_deadline_s(leg_cap: str | None) -> float | None:
+    """Seconds from the pass's start at which every write stops: the cycle's cap less
+    LEG_MARGIN_S. None when no cap is known (a manual run is not killed by a cycle)."""
+    try:
+        cap = float(leg_cap) if leg_cap else 0.0
+    except ValueError:
+        cap = 0.0
+    return max(30.0, cap - LEG_MARGIN_S) if cap > 0 else None
+
+
+def write_status(paths: Paths, phase: str, **fields: Any) -> None:
+    """One small phase record; never raises (a status write must not kill the pass)."""
+    try:
+        prev = read_json(paths.status, {}) if phase != "STARTED" else {}
+        phases = dict((prev or {}).get("phases") or {}) if isinstance(prev, dict) else {}
+        phases[phase] = now_iso()
+        doc = {**(prev if isinstance(prev, dict) else {}), **fields, "source": SOURCE,
+               "phase": phase, "phases": phases, "at": now_iso(), "pid": os.getpid()}
+        atomic_json(paths.status, doc)
+    except Exception:
+        pass
 
 
 def _count_by(items: Iterable[str]) -> dict[str, int]:
@@ -1246,6 +1325,14 @@ class Campaign:
         if state not in CAMPAIGN_STATES:
             raise CampaignError(f"{state!r} is not one of {CAMPAIGN_STATES}")
         cur = str(row["state"])
+        if state == cur:
+            # A SAME-STATE ADVANCE IS IDEMPOTENT (box 2026-11-24, pass 5: "SCREENED -> SCREENED is
+            # not a legal transition" at the cheap layer killed the whole pass). A cell the
+            # campaign already holds can be re-screened when `seen` has forgotten it; the row is
+            # where it already stands, so the new reasons are recorded and nothing is counted
+            # twice -- no transition, no pass count, no journal line.
+            row.update(why)
+            return row
         if state not in TRANSITIONS[cur]:
             raise CampaignError(f"{cur} -> {state} is not a legal transition")
         row["state"], row["at"] = state, now_iso()
@@ -1261,13 +1348,22 @@ class Campaign:
         if row is not None and row["state"] not in ("FORWARD", "FAILED"):
             self.advance(key, "FAILED", why=why)
 
-    def refresh(self, conn: Any) -> dict[str, int]:
+    def refresh(self, conn: Any, stop: Callable[[], bool] | None = None) -> dict[str, int]:
         """QUEUED / TESTING rows re-read from the registry: claimed -> TESTING; survived ->
-        FORWARD; judged and not survived -> FAILED with the failing gate named."""
-        moved = {"TESTING": 0, "FORWARD": 0, "FAILED": 0, "unchanged": 0}
-        for key, row in list(self.rows.items()):
-            if row["state"] not in ("QUEUED", "TESTING") or not row.get("candidate_id"):
-                continue
+        FORWARD; judged and not survived -> FAILED with the failing gate named.
+
+        OLDEST FIRST, AND `stop()` ENDS IT. The open rows grow while the judge is behind, so the
+        read is bounded by the pass's deadline; the rows it did not reach are counted
+        `not_reached` and, being the newest, are the first the next pass's read meets after the
+        rows it already advanced have left the open set."""
+        moved = {"TESTING": 0, "FORWARD": 0, "FAILED": 0, "unchanged": 0, "not_reached": 0}
+        open_rows = sorted(((k, r) for k, r in self.rows.items()
+                            if r["state"] in ("QUEUED", "TESTING") and r.get("candidate_id")),
+                           key=lambda kr: str(kr[1].get("at") or ""))
+        for n, (key, row) in enumerate(open_rows):
+            if stop is not None and stop():
+                moved["not_reached"] = len(open_rows) - n
+                break
             cid = str(row["candidate_id"])
             r = conn.execute("SELECT status, survived, terminal_gate, failure_class FROM "
                              "research_candidates WHERE id=? OR donated_cell=?",
@@ -1333,8 +1429,13 @@ class Factory:
         self.state: dict[str, Any] = read_json(paths.state_dir / "state.json", {}) or {}
         self.archive: dict[str, dict[str, Any]] = (read_json(paths.state_dir / "archive.json", {})
                                                    or {}).get("cells", {})
-        self.seen: set[str] = set((read_json(paths.state_dir / "seen.json", {}) or {})
-                                  .get("keys", [])[-50_000:])
+        #: Keys in the order they were first seen, so the 50,000 KEPT are the most RECENT.
+        #: It used to be persisted as `sorted(self.seen)[-50_000:]` -- the lexicographic tail,
+        #: not the recent tail -- so once the set passed 50,000 every pass forgot an arbitrary
+        #: slice of what it had already evaluated and re-evaluated it, and a cell the campaign
+        #: still held as SCREENED was re-screened into the CampaignError above.
+        self.seen: dict[str, None] = dict.fromkeys(
+            (read_json(paths.state_dir / "seen.json", {}) or {}).get("keys", [])[-SEEN_KEEP:])
         self.parents: dict[str, Parent] = {}
         self.parent_book: dict[str, dict[str, Any]] = (read_json(paths.state_dir / "parents.json",
                                                                  {}) or {}).get("parents", {})
@@ -1362,6 +1463,10 @@ class Factory:
         self.log: list[str] = []
         self.started = time.monotonic()
         self.budget_s = 0.0
+        #: Seconds from `started` at which every write phase stops (None = no leg cap known).
+        self.hard_deadline_s: float | None = None
+        #: Registry rows the deadline left unwritten this pass (persisted as the cursor).
+        self.pending_rows: list[dict[str, Any]] = []
         self.cells_done = 0
         #: Inventions seeded by the optional proposer seat this pass. Counted so the report can
         #: say what share of the population a model prior supplied -- zero is the normal reading
@@ -1386,6 +1491,11 @@ class Factory:
 
     def _clock(self, stage: str, t0: float) -> None:
         self.stage_s[stage] = self.stage_s.get(stage, 0.0) + (time.monotonic() - t0)
+
+    def past_hard_deadline(self, reserve_s: float = 0.0) -> bool:
+        """True once the pass is within `reserve_s` of its own stop inside the leg cap."""
+        return (self.hard_deadline_s is not None
+                and self.elapsed() >= self.hard_deadline_s - reserve_s)
 
     def out_of_budget(self, stage: str | None = None) -> bool:
         if self.cells_done >= self.caps.max_cells:
@@ -1517,7 +1627,7 @@ class Factory:
             if str(row.get("fate") or "").upper() not in ("FAILED", "RETIRED", "KILLED"):
                 continue
             e = (row.get("params") or {}).get("expr")
-            if e is not None and ag.is_valid(e):
+            if _harvestable(e):
                 n_dead += 1
                 found.setdefault(f"graveyard:{dsl.canonical_key(e)[:24]}", e)
         # parked: registry candidates of the formula family not yet judged
@@ -1531,7 +1641,7 @@ class Factory:
                     params = c.get("params_json") or c.get("params") or "{}"
                     params = json.loads(params) if isinstance(params, str) else params
                     e = (params or {}).get("expr")
-                    if e is not None and ag.is_valid(e):
+                    if _harvestable(e):
                         n_parked += 1
                         found.setdefault(f"parked:{dsl.canonical_key(e)[:24]}", e)
                         if n_parked >= MAX_PARKED_PER_PASS:
@@ -1544,7 +1654,7 @@ class Factory:
             doc = read_json(f, {})
             for row in (doc.get("discoveries") or []) if isinstance(doc, dict) else []:
                 e = ((row or {}).get("params") or {}).get("expr")
-                if e is not None and ag.is_valid(e):
+                if _harvestable(e):
                     n_own += 1
                     found.setdefault(f"own:{dsl.canonical_key(e)[:24]}", e)
         keys = sorted(found)
@@ -1588,7 +1698,15 @@ class Factory:
         if cell.key in self.seen:
             self._reject("tier0", "duplicate AST")
             return {"tier": 0, "why": "duplicate AST"}
-        self.seen.add(cell.key)
+        self.seen[cell.key] = None
+        held = self.campaign.state_of(cell.key)
+        if held in CAMPAIGN_PAST_SCREEN:
+            # THE CAMPAIGN IS A DURABLE SEEN. A row already queued to the judge, under test or
+            # terminal is not a new cell: re-running it would charge a second trial for one
+            # hypothesis. A PROPOSED or SCREENED row (a pass stopped before its registry write)
+            # runs again and reaches the judge this time.
+            self._reject("tier0", "duplicate AST")
+            return {"tier": 0, "why": f"duplicate AST (campaign holds it {held})"}
         self.cells_done += 1
         self.campaign.propose(cell)
         self.families.charge(cell.expr, descriptors={
@@ -2215,16 +2333,37 @@ class Factory:
             return report
         written = self.persist(report)
         report["written"] = [str(p) for p in written]
+        report["completed_at"] = now_iso()
         atomic_json(self.paths.report, report)
         return report
 
     def persist(self, report: dict[str, Any]) -> list[Path]:
         written: list[Path] = []
         sd = self.paths.state_dir
+        # THE ARTIFACT MOVES BEFORE ANYTHING CAN STOP IT: a partial report the moment the search
+        # is done, replaced by the full one at the end. A kill inside the registry write then
+        # leaves this pass's measured counts on disk instead of "0 of 1 artifacts moved".
+        with contextlib.suppress(OSError, TypeError, ValueError):
+            prev = read_json(self.paths.report, {}) or {}
+            carried = ({"completed_at": prev["completed_at"]}
+                       if isinstance(prev, dict) and prev.get("completed_at") else {})
+            atomic_json(self.paths.report, {**report, "partial": True, "phase": "SEARCHED",
+                                            **carried})
+        # THE JUDGE'S DOOR FIRST (see WRITE_RESERVE_FRAC): the registry rows are the pass's
+        # output; the state files below only make the next pass smarter.
+        write_status(self.paths, "SEARCHED", search_seconds=round(self.elapsed(), 1),
+                     rows_to_write=(len(self.counts["survivors"]) + len(self.counts["deferred"])
+                                    + len(self.counts["blocked"])))
+        report["registry"] = self.record_registry()
+        reg_out = report["registry"] if isinstance(report["registry"], dict) else {}
+        write_status(self.paths, "REGISTRY_WRITTEN", seconds=round(self.elapsed(), 1),
+                     registry={k: reg_out.get(k) for k in ("cells", "queued", "queued_existing",
+                                                           "blocked", "error")},
+                     registry_errors=list(reg_out.get("errors") or [])[:3])
         self.families.save()
         written.append(self.families.path)
         atomic_json(sd / "archive.json", {"at": now_iso(), "cells": self.archive})
-        atomic_json(sd / "seen.json", {"at": now_iso(), "keys": sorted(self.seen)[-50_000:]})
+        atomic_json(sd / "seen.json", {"at": now_iso(), "keys": list(self.seen)[-SEEN_KEEP:]})
         for pid, p in self.parents.items():
             self.parent_book[pid] = {**p.as_dict(), "recent": p.recent[-EXHAUST_TAIL:]}
         atomic_json(sd / "parents.json", {"at": now_iso(), "parents": self.parent_book})
@@ -2235,11 +2374,15 @@ class Factory:
                                           "migrants_per_pass": MIGRANTS_PER_PASS})
         self.credits.save()
         written += [sd / "islands.json", self.credits.path]
+        atomic_json(sd / "pending_registry.json",
+                    {"at": now_iso(), "rows": self.pending_rows[-PENDING_KEEP:],
+                     "rule": "registry rows a pass's own deadline left unwritten; the next pass "
+                             "writes these FIRST, so a stopped write is resumed, never dropped"})
+        written.append(sd / "pending_registry.json")
         donated = self.donate()
         if donated is not None:
             written.append(donated)
         report["donation"] = self._donation_counts()
-        report["registry"] = self.record_registry()
         written += self.campaign.save()
         report["campaign"] = self.campaign.counts()
         return written
@@ -2325,96 +2468,116 @@ class Factory:
         # that is the executor's absence, a fact about this desk, not a verdict on the edge.
         deferred = sorted(self.counts["deferred"],
                           key=lambda r: -float(r.get("score") or -9e9))
-        rows = [(r, False) for r in self.counts["survivors"]] + \
+        carried = [r for r in ((read_json(self.paths.state_dir / "pending_registry.json", {})
+                                or {}).get("rows") or []) if isinstance(r, dict)]
+        rows = [(r, bool(r.get("executor_block"))) for r in carried] + \
+            [(r, False) for r in self.counts["survivors"]] + \
             [(r, bool(r["executor_block"])) for r in deferred] + \
             [(r, True) for r in self.counts["blocked"]]
+        out["carried_from_previous_pass"] = len(carried)
         try:
             conn = reg.connect()
         except Exception as exc:
             return {"error": f"registry connect: {type(exc).__name__}: {exc}"}
         try:
-            for row, blocked in rows:
-                c = row["cell"]
-                pid = str(c.get("parent") or "")
-                try:
-                    if pid and pid not in parent_ids:
-                        p = self.parents.get(pid)
-                        g = dsl.parent_genomes().get(pid)
-                        did, _ = reg.record_discovery(
-                            source_id="alpha101" if pid.startswith("alpha") else pid.split(":")[0],
-                            source_type="parent_genome", mechanism=f"{pid}: " + (
-                                g.formula if g is not None else
-                                ag.to_str(p.expr) if p is not None else pid),
-                            origin=origin, generator=SOURCE, assets=[],
-                            exact_rule=json.dumps(g.as_dict() if g is not None else
-                                                  {"expr": p.expr if p else None},
-                                                  default=str)[:4000],
-                            economic_rationale="public formula family, a seed (LAWS 5l)",
-                            conn=conn)
-                        parent_ids[pid] = did
-                        out["parents"] += 1
-                    params = {**RECIPE, "hold_bars": int(c["hold"]), "expr": c["expr"],
-                              "side_mode": row["t1"]["side_mode"]}
-                    did, _ = reg.record_discovery(
-                        source_id=f"parent:{pid}" if pid else "invention",
-                        source_type="expression_cell",
-                        mechanism=ag.describe(c["expr"], row["t1"]["side_mode"]), origin=origin,
-                        generator=SOURCE, assets=[c["symbol"]], horizons=[c["hold"]],
-                        sessions=[c["state"]] if c["state"].startswith("session") else [],
-                        regimes=[c["state"]] if c["state"].startswith("regime") else [],
-                        exact_rule=json.dumps({"family": "formula", "params": params},
-                                              sort_keys=True, default=str),
-                        falsifier=row["falsifier"], novelty=row["orthogonality"],
-                        confidence=min(1.0, max(0.0, row["t1"]["t_oos"] / 4.0)),
-                        parent_ids=[parent_ids[pid]] if pid in parent_ids else [],
-                        payload={"tier1": row["t1"], "tier2": row["t2"], "cell": c,
-                                 "trial_family": c["family"]}, conn=conn)
-                    if pid in parent_ids:
-                        reg.link("discovery", parent_ids[pid], "discovery", did, "derived",
-                                 conn=conn)
-                        out["links"] += 1
-                    if blocked:
-                        reg.set_discovery_state(did, "BLOCKED",
-                                                reason=f"NO_EXECUTOR: {row['executor_block']}",
-                                                blocked_cells=1, conn=conn)
-                        self.campaign.fail(str(c["key"]), f"NO_EXECUTOR: {row['executor_block']}")
-                        out["blocked"] += 1
-                    else:
-                        reg.set_discovery_state(did, "QUEUED", possible_cells=1,
-                                                generated_cells=1, compiled_cells=1,
-                                                queued_cells=1, conn=conn)
-                        # THE CAMPAIGN ADAPTER: the survivor becomes a registry candidate the
-                        # ONE gauntlet judges, carrying its provenance -- parent genome,
-                        # mutation chain, operator credits -- as lineage.
-                        cid, created = reg.enqueue_candidate(
-                            family="formula", symbol=c["symbol"], params=params, origin=origin,
-                            mechanism=ag.describe(c["expr"], row["t1"]["side_mode"]),
-                            generator=SOURCE, department="mathlab",
-                            source_id=f"parent:{pid}" if pid else "invention",
-                            discovery_id=did, trial_family=c["family"],
-                            parent_ids_json=[parent_ids[pid]] if pid in parent_ids else [],
-                            falsifier=row["falsifier"], horizon=str(c["hold"]),
-                            session=c["state"] if c["state"].startswith("session") else "",
-                            regime=c["state"] if c["state"].startswith("regime") else "",
-                            asset_class=str(c.get("asset_class") or ""),
-                            expected_costs=(self.lake.worlds[c["symbol"]].cost
-                                            if c["symbol"] in self.lake.worlds else None),
-                            novelty_vs_live=row["orthogonality"],
-                            exact_rules=json.dumps({"family": "formula", "params": params,
-                                                    "entry": f"|z_{NORM}| >= {ENTRY_Z}",
-                                                    "hold_bars": c["hold"]}, default=str),
-                            lineage_json=self._provenance(c, pid, g, p), conn=conn)
-                        self.campaign.advance(str(c["key"]), "QUEUED", candidate_id=cid,
-                                              created=created)
-                        out["queued" if created else "queued_existing"] += 1
-                    out["cells"] += 1
-                except Exception as exc:
-                    out["errors"].append(f"{type(exc).__name__}: {exc}"[:200])
-            out["campaign_refresh"] = self.campaign.refresh(conn)
+            # ONE TRANSACTION PER 500 WRITES, not four commits per cell: the same doors, through
+            # `registry.batch`, so the write lock is held in short chunks and the pass finishes.
+            ctx = reg.batch(conn, every=500) if hasattr(reg, "batch") else contextlib.nullcontext()
+            with ctx:
+                self._record_rows(reg, conn, rows, origin, parent_ids, out)
+            out["campaign_refresh"] = self.campaign.refresh(
+                conn, stop=lambda: self.past_hard_deadline(WRITE_TAIL_S))
         finally:
             conn.close()
         out["errors"] = out["errors"][:10]
         return out
+
+    def _record_rows(self, reg: Any, conn: Any, rows: list[tuple[dict[str, Any], bool]],
+                     origin: str, parent_ids: dict[str, str], out: dict[str, Any]) -> None:
+        for i, (row, blocked) in enumerate(rows):
+            if self.past_hard_deadline(WRITE_TAIL_S):
+                # THE CURSOR: what the deadline leaves is written first next pass.
+                self.pending_rows = [r for r, _b in rows[i:]]
+                out["pending_for_next_pass"] = len(self.pending_rows)
+                break
+            c = row["cell"]
+            pid = str(c.get("parent") or "")
+            try:
+                if pid and pid not in parent_ids:
+                    p = self.parents.get(pid)
+                    g = dsl.parent_genomes().get(pid)
+                    did, _ = reg.record_discovery(
+                        source_id="alpha101" if pid.startswith("alpha") else pid.split(":")[0],
+                        source_type="parent_genome", mechanism=f"{pid}: " + (
+                            g.formula if g is not None else
+                            ag.to_str(p.expr) if p is not None else pid),
+                        origin=origin, generator=SOURCE, assets=[],
+                        exact_rule=json.dumps(g.as_dict() if g is not None else
+                                              {"expr": p.expr if p else None},
+                                              default=str)[:4000],
+                        economic_rationale="public formula family, a seed (LAWS 5l)",
+                        conn=conn)
+                    parent_ids[pid] = did
+                    out["parents"] += 1
+                params = {**RECIPE, "hold_bars": int(c["hold"]), "expr": c["expr"],
+                          "side_mode": row["t1"]["side_mode"]}
+                did, _ = reg.record_discovery(
+                    source_id=f"parent:{pid}" if pid else "invention",
+                    source_type="expression_cell",
+                    mechanism=ag.describe(c["expr"], row["t1"]["side_mode"]), origin=origin,
+                    generator=SOURCE, assets=[c["symbol"]], horizons=[c["hold"]],
+                    sessions=[c["state"]] if c["state"].startswith("session") else [],
+                    regimes=[c["state"]] if c["state"].startswith("regime") else [],
+                    exact_rule=json.dumps({"family": "formula", "params": params},
+                                          sort_keys=True, default=str),
+                    falsifier=row["falsifier"], novelty=row["orthogonality"],
+                    confidence=min(1.0, max(0.0, float(row["t1"]["t_oos"]) / 4.0)),
+                    parent_ids=[parent_ids[pid]] if pid in parent_ids else [],
+                    payload={"tier1": row["t1"], "tier2": row["t2"], "cell": c,
+                             "trial_family": c["family"]}, conn=conn)
+                if pid in parent_ids:
+                    reg.link("discovery", parent_ids[pid], "discovery", did, "derived",
+                             conn=conn)
+                    out["links"] += 1
+                if blocked:
+                    reg.set_discovery_state(did, "BLOCKED",
+                                            reason=f"NO_EXECUTOR: {row['executor_block']}",
+                                            blocked_cells=1, conn=conn)
+                    self.campaign.fail(str(c["key"]), f"NO_EXECUTOR: {row['executor_block']}")
+                    out["blocked"] += 1
+                else:
+                    reg.set_discovery_state(did, "QUEUED", possible_cells=1,
+                                            generated_cells=1, compiled_cells=1,
+                                            queued_cells=1, conn=conn)
+                    # THE CAMPAIGN ADAPTER: the survivor becomes a registry candidate the
+                    # ONE gauntlet judges, carrying its provenance -- parent genome,
+                    # mutation chain, operator credits -- as lineage.
+                    cid, created = reg.enqueue_candidate(
+                        family="formula", symbol=c["symbol"], params=params, origin=origin,
+                        mechanism=ag.describe(c["expr"], row["t1"]["side_mode"]),
+                        generator=SOURCE, department="mathlab",
+                        source_id=f"parent:{pid}" if pid else "invention",
+                        discovery_id=did, trial_family=c["family"],
+                        parent_ids_json=[parent_ids[pid]] if pid in parent_ids else [],
+                        falsifier=row["falsifier"], horizon=str(c["hold"]),
+                        session=c["state"] if c["state"].startswith("session") else "",
+                        regime=c["state"] if c["state"].startswith("regime") else "",
+                        asset_class=str(c.get("asset_class") or ""),
+                        expected_costs=(self.lake.worlds[c["symbol"]].cost
+                                        if c["symbol"] in self.lake.worlds else None),
+                        novelty_vs_live=row["orthogonality"],
+                        exact_rules=json.dumps({"family": "formula", "params": params,
+                                                "entry": f"|z_{NORM}| >= {ENTRY_Z}",
+                                                "hold_bars": c["hold"]}, default=str),
+                        lineage_json=self._provenance(c, pid, g, p), conn=conn)
+                    if self.campaign.state_of(str(c["key"])) in ("PROPOSED", "SCREENED",
+                                                                 "QUEUED"):
+                        self.campaign.advance(str(c["key"]), "QUEUED", candidate_id=cid,
+                                              created=created)
+                    out["queued" if created else "queued_existing"] += 1
+                out["cells"] += 1
+            except Exception as exc:
+                out["errors"].append(f"{type(exc).__name__}: {exc}"[:200])
 
     def _provenance(self, c: dict[str, Any], pid: str, genome: Any, parent: Parent | None
                     ) -> dict[str, Any]:
@@ -2444,8 +2607,32 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-symbols", type=int, default=None)
     ap.add_argument("--seed", type=int, default=None)
     a = ap.parse_args(argv)
-    fac = Factory(seed=a.seed, dry_run=a.dry_run)
-    rep = fac.run(a.budget_s, a.symbols, a.max_symbols)
+    cap = os.environ.get("QUANT_LEG_BUDGET_S")
+    budget = search_budget_s(a.budget_s, cap)
+    if not a.dry_run:
+        write_status(DEFAULT_PATHS, "STARTED", requested_budget_s=a.budget_s, leg_cap_s=cap,
+                     search_budget_s=budget, started_at=now_iso())
+    try:
+        fac = Factory(seed=a.seed, dry_run=a.dry_run)
+        fac.hard_deadline_s = hard_deadline_s(cap)
+        rep = fac.run(budget, a.symbols, a.max_symbols)
+    except Exception as exc:
+        # A CRASH IS A MEASUREMENT: named in the published phase file, and a non-zero exit the
+        # cycle records, never a silent hour.
+        import traceback
+        if not a.dry_run:
+            write_status(DEFAULT_PATHS, "CRASHED", error=f"{type(exc).__name__}: {exc}"[:300],
+                         traceback_tail=traceback.format_exc()[-1500:])
+        raise
+    if not a.dry_run:
+        reg_out = rep.get("registry") if isinstance(rep.get("registry"), dict) else {}
+        write_status(DEFAULT_PATHS, "DONE", status=rep.get("status"), why=rep.get("why", ""),
+                     seconds=rep.get("seconds"),
+                     cells_to_judge=(rep.get("cells") or {}).get("deferred_to_judge", 0)
+                     + (rep.get("cells") or {}).get("survivors", 0),
+                     registry={k: reg_out.get(k) for k in ("cells", "queued",
+                                                           "queued_existing", "blocked",
+                                                           "error")})
     cells = rep.get("cells") or {}
     print(f"expression_factory: {rep.get('status')} in {rep.get('seconds')}s -- "
           f"tier0 {cells.get('tier0', {}).get('evaluated', 0)} / tier1 "

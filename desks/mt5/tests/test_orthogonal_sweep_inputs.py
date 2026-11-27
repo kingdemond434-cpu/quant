@@ -138,7 +138,9 @@ def test_every_family_needing_an_input_is_wired_to_one() -> None:
     unwired = []
     for fam, fn in ORTHOGONAL_FAMILIES.items():
         need, _source = FAMILY_INPUTS.get(fam, ("", None))
-        if not need or need == "price only":
+        # Tick volume rides on every MT5 bar, so "price and tick volume only" needs no input
+        # the sweep must pass -- it is price-only for this check (the hypgen model families).
+        if not need or need in ("price only", "price and tick volume only"):
             continue
         if (fam in kwargs_map or osw._unsuppliable(fn, {})
                 or fam in osw.NOT_SOURCED_HERE):

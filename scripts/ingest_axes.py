@@ -38,6 +38,13 @@ from pathlib import Path
 
 import certifi
 
+_REPO = Path(__file__).resolve().parent.parent
+if str(_REPO) not in __import__("sys").path:
+    __import__("sys").path.insert(0, str(_REPO))
+# Hosts whose own terms refuse automated contact (FRED, Cboe, Yahoo, ...): both transports below
+# refuse them before the wire (BACKLOG 609). No list, no ingester: unclear terms fail closed.
+from libs.data.refused_hosts import guard  # noqa: E402
+
 ROOT = Path("/home/quant/quant-platform")
 BRONZE = ROOT / "data/lake/bronze"
 CTX = ssl.create_default_context(cafile=certifi.where())
@@ -49,16 +56,28 @@ def curl(url: str, timeout: int = 90) -> bytes:
     """Some hosts (FRED, Treasury) serve curl but hang urllib -- TLS fingerprint blocking.
     Verified 2026-07-21: curl instant, urllib timed out twice on the same URL."""
     import subprocess
-    r = subprocess.run(
-        ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
-         "-A", "Mozilla/5.0 (research; solo quant desk)", url],
-        capture_output=True, timeout=timeout + 15)
-    if r.returncode != 0 or not r.stdout:
-        raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
-    return r.stdout
+    # REDIRECTS ARE FOLLOWED HERE, ONE HOP AT A TIME, so every hop passes the refused-hosts
+    # guard: `curl -L` would walk a 30x into a refused host unseen (audit of the FRED refusal).
+    marker = b"\n@@redirect@@"
+    for _ in range(6):
+        guard(url)
+        r = subprocess.run(
+            ["curl", "-sS", "--compressed", "--max-time", str(timeout),
+             "-A", "Mozilla/5.0 (research; solo quant desk)",
+             "-w", "\n@@redirect@@%{redirect_url}", url],
+            capture_output=True, timeout=timeout + 15)
+        body, _, nxt = r.stdout.rpartition(marker)
+        if r.returncode == 0 and nxt.strip():
+            url = nxt.decode("utf-8", "replace").strip()
+            continue
+        if r.returncode != 0 or not body:
+            raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
+        return body
+    raise RuntimeError("curl: more than 5 redirects")
 
 
 def fetch(url: str, timeout: int = 60) -> bytes:
+    guard(url)
     last: Exception | None = None
     for attempt in (1, 2):                       # one retry -- transient read timeouts
         try:

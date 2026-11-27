@@ -5,18 +5,21 @@ s55 built data/external/aqr/article_pdfs.json (563 article pages, 137 carrying a
 This fetches each PDF once (resumable) and writes text + per-file extraction stats so an
 unreadable PDF and an empty one stay different claims (libs.research.pdf_text contract).
 
-Public unauthenticated GETs to www.aqr.com only; no robots.txt served (302 -> homepage;
-absent = allow-all, RFC 9309, as recorded in s52/s53). 2s spacing.
+Public unauthenticated GETs to www.aqr.com only, 2s spacing. s52/s53 recorded "no robots.txt
+served (302 -> homepage; absent = allow-all)". That reading failed OPEN: a homepage in place of
+rules is UNREAD, and unread robots are not permission (only 404/410 means no rules). So robots.txt
+is read once per run through libs.data.robots_body and no PDF is downloaded unless it allows.
 """
+import functools
 import json
 import pathlib
 import re
-import zlib
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-
+import urllib.robotparser
+import zlib
 
 # R0768: libs/research/pdf_text._SHOW_RE's TJ-array branch has AMBIGUOUS ALTERNATION
 # ((?:\\.|[^\]])* -- [^\]] also matches the backslash \\. matches), so any '[' not closed
@@ -93,9 +96,34 @@ HERE = pathlib.Path(__file__).resolve().parent
 PDF_DIR = HERE / "pdfs"
 TXT_DIR = HERE / "pdftext"
 OUT = HERE / "article_pdf_text.json"
-UA = "ClaudeBot/1.0 (+quant desk research; contact via site owner)"
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 BASE = "https://www.aqr.com"
 DELAY_S = 2.0
+
+
+@functools.lru_cache(maxsize=1)
+def _robots_rules() -> urllib.robotparser.RobotFileParser | str:
+    """www.aqr.com's robots rules, or a refusal string. One read per run."""
+    from libs.data.robots_body import robots_rules_or_refusal
+    req = urllib.request.Request(urllib.parse.urljoin(BASE, "/robots.txt"),
+                                 headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            got = robots_rules_or_refusal(resp.status, resp.headers.get("Content-Type"),
+                                          resp.read(500_000))
+    except urllib.error.HTTPError as exc:
+        got = robots_rules_or_refusal(exc.code, None, "")
+    except Exception as exc:
+        got = f"ROBOTS_UNREAD: robots.txt unreachable ({type(exc).__name__})"
+    return got
+
+
+def robots_refusal(url: str) -> str | None:
+    """None when www.aqr.com's robots.txt allows `url` for UA, else why not (fail closed)."""
+    got = _robots_rules()
+    if isinstance(got, str):
+        return got
+    return None if got.can_fetch(UA, url) else "robots.txt disallows this path"
 
 
 def main() -> None:
@@ -114,8 +142,11 @@ def main() -> None:
         href = row["media_pdfs"][0]
         url = urllib.parse.urljoin(BASE, href)
         pdf_path = PDF_DIR / f"{slug}.pdf"
-        code = 200
-        if not pdf_path.exists():
+        code: int | str = 200
+        if not pdf_path.exists() and (refused := robots_refusal(url)):
+            code = refused
+            print(f"  {slug}: {refused}"[:160])
+        elif not pdf_path.exists():
             req = urllib.request.Request(url, headers={"User-Agent": UA})
             try:
                 with urllib.request.urlopen(req, timeout=60) as resp:

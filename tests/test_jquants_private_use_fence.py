@@ -456,7 +456,11 @@ def test_e8_book_refuses_private_lineage(monkeypatch: pytest.MonkeyPatch,
     }}), encoding="utf-8")
     monkeypatch.setattr(B, "SURVIVORS", surv)
     monkeypatch.setattr(B, "_family_banned", lambda fam: False)
-    doc = B.select(tradeable=None)
+    # The worst-day stress cap (prop/stress.py) reads the desk's world tensor, whose content is
+    # environment state: a flat fixture day keeps this test about lineage only.
+    import numpy as np
+    doc = B.select(tradeable=None, days=(["USDJPY_session_range_breakout_asia"],
+                                         np.zeros((1, 1, 1))))
     chosen = {r["key"] for r in doc["sleeves"]}
     refused = {r["key"] for r in doc["refused_private_lineage"]}
     assert "pub" in chosen

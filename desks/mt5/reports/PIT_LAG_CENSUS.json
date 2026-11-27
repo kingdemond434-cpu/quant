@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-19T03:02:27+00:00",
+ "generated_utc": "2026-11-24T17:52:55+00:00",
  "publication_lags": {
   "bis_eer": {
    "lag_s": 1728000,
@@ -145,7 +145,7 @@
  },
  "registries": {
   "desks/mt5/data/data_registry.json": {
-   "n": 11213,
+   "n": 11229,
    "declared": [
     "alt_proxies_equity_handoff",
     "bis_eer",
@@ -3081,6 +3081,7 @@
     "world:CSO/CNA13",
     "world:CSO/CNA40",
     "world:CSO/CNAPA01",
+    "world:CSO/COEA10",
     "world:CSO/CPA01",
     "world:CSO/CPA02",
     "world:CSO/CPA04",
@@ -3280,6 +3281,11 @@
     "world:CSO/E1070",
     "world:CSO/E1071",
     "world:CSO/E1072",
+    "world:CSO/E1073",
+    "world:CSO/E1074",
+    "world:CSO/E1075",
+    "world:CSO/E1076",
+    "world:CSO/E1077",
     "world:CSO/E1079",
     "world:CSO/E2007",
     "world:CSO/E2011",
@@ -5711,6 +5717,7 @@
     "world:DESTATIS/43312BM002",
     "world:DESTATIS/43312BM004",
     "world:DESTATIS/43321BM001",
+    "world:DESTATIS/43351BJ007",
     "world:DESTATIS/43351BJ008",
     "world:DESTATIS/43381BJ001",
     "world:DESTATIS/43411BJ001",
@@ -10944,6 +10951,15 @@
     "world:RBA/C1.1-2",
     "world:RBA/C1.1-3",
     "world:RBA/C1.2",
+    "world:RBA/C12-1",
+    "world:RBA/C12-2",
+    "world:RBA/C12-3",
+    "world:RBA/C13-1",
+    "world:RBA/C13-2",
+    "world:RBA/C13-3",
+    "world:RBA/C13-4",
+    "world:RBA/C13-5",
+    "world:RBA/C13-6",
     "world:RBA/C2",
     "world:RBA/C2.1-1",
     "world:RBA/C2.1-2",

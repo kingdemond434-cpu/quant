@@ -135,9 +135,11 @@ def capture(symbols: tuple[str, ...] = PROBE_SYMBOLS) -> tuple[list[dict[str, An
         with contextlib.suppress(Exception):
             from mt5desk.config import terminal_path
             path = terminal_path()
-        if not attach_or_initialize(mt5, path=path, timeout=15_000):
-            return [], ("NO_TERMINAL: attach refused or failed (Session 0, a competing "
-                        "terminal, or none running)")
+        # require_path: this probe MEASURES a venue's bar clock, so a substituted terminal would
+        # attribute another broker's clock to this one.
+        if not attach_or_initialize(mt5, path=path, timeout=15_000, require_path=True):
+            return [], ("NO_TERMINAL: attach refused or failed (none running, a spawn refused "
+                        "from Session 0, or a different terminal answered than the one pinned)")
     except Exception as exc:
         return [], f"NO_TERMINAL: {type(exc).__name__}: {str(exc)[:120]}"
     return _watch(mt5, symbols)

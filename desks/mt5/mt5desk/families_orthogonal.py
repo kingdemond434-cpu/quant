@@ -1777,6 +1777,30 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# THE TIER-1 IDEA ROWS (zuck, 2026-11-11): U1 intraday momentum, U2 the overnight/day tug of war,
+# U3 the GVZ/OVX premium over realised vol, U4 the weekend crypto move into the Monday session,
+# U5 share-CFD opening-gap breadth traded on the index, N1 the pre- and post-holiday sessions.
+# U1 and U2 need bars only; U4, U5 and N1 read their input themselves (the named crypto CFD's
+# bars, the US share panel, a rule-generated venue calendar), so every caller rebuilds the same
+# cell from the recipe. U3 has no terms-clean source: it fires only on a series handed to it.
+# Their search is charged once, by `research/tier1_idea_proposer.py` (see orthogonal_sweep.NOT_SOURCED_HERE).
+from mt5desk.family_tier1_ideas import TIER1_IDEA_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(TIER1_IDEA_FAMILIES)
+FAMILY_INPUTS["intraday_momentum"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["overnight_day_tug"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["implied_realised_gap"] = ("CBOE GVZ / OVX (implied_series on the recipe), handed "
+                                         "in by the caller: no terms-clean source, never fetched",
+                                         "none (BLOCKED_SOURCE_REFUSED)")
+FAMILY_INPUTS["weekend_crypto_gap"] = ("the named Fusion crypto CFD's bars (driver_symbol on the "
+                                       "recipe), read by the family on this chart",
+                                       "data/universe/*_<TF>.parquet")
+FAMILY_INPUTS["equity_gap_breadth"] = ("the US share-CFD class's bars on this chart, read by the "
+                                       "family itself", "data/universe/*_<TF>.parquet")
+FAMILY_INPUTS["holiday_drift"] = ("price only + the rule-generated venue holiday calendar "
+                                  "(calendar on the recipe)",
+                                  "data/calendars/holidays_<venue>.json")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
@@ -2479,6 +2503,46 @@ ORTHOGONAL_FAMILIES["exit_operated"] = family_exit_operated
 FAMILY_INPUTS["exit_operated"] = ("price only; rebuilds its base family from bars and params",
                                   "data/universe/*_H1.parquet")
 
+# THE RULE BUILDER (2026-11-20): StrategyQuant / Adaptrade-style cells -- 1-3 entry blocks ANDed,
+# 0-2 filters, ATR stop/target/time exit -- proposed by `research/strategy_builder.py`'s genetic
+# search, which charges every genome it evaluated. Price (and tick volume) only.
+from mt5desk.family_rule_builder import family_rule_builder  # noqa: E402
+
+ORTHOGONAL_FAMILIES["rule_builder"] = family_rule_builder
+FAMILY_INPUTS["rule_builder"] = ("price and tick volume only", "data/universe/*_H1.parquet")
+
+# THE FOUR GENERATED MODEL FAMILIES (2026-11-24): analog/kNN, time-series learning-to-rank,
+# NEAT networks and grammatical-evolution strategies, proposed by `research/hypgen_engine.py`.
+# Price and tick volume only; the two fitted ones refit causally inside the cell.
+from mt5desk.family_hypgen_models import (  # noqa: E402
+    family_analog_knn,
+    family_gbm_classifier,
+    family_ge_strategy,
+    family_neural_policy,
+    family_ranked_linear,
+)
+
+for _name, _fn in (("analog_knn", family_analog_knn), ("ranked_linear", family_ranked_linear),
+                   ("neural_policy", family_neural_policy), ("ge_strategy", family_ge_strategy),
+                   ("gbm_classifier", family_gbm_classifier)):
+    ORTHOGONAL_FAMILIES[_name] = _fn
+    FAMILY_INPUTS[_name] = ("price and tick volume only", "data/universe/*_H1.parquet")
+
+# COINTEGRATION PAIRS (2026-11-25): the Engle-Granger tested pair relative_value is not -- an OLS
+# hedge ratio, an ADF test on its residual and an AR(1) half-life, all on a trailing window, and a
+# trade only while the pair is cointegrated now. Single-leg proxy; the peer is named by
+# `peer_symbol` exactly as relative_value's, minted by `research/breadth_sweep.py`.
+from mt5desk.family_coint_pairs import family_coint_pairs  # noqa: E402
+
+ORTHOGONAL_FAMILIES["coint_pairs"] = family_coint_pairs
+FAMILY_INPUTS["coint_pairs"] = ("a peer instrument, on this cell's own chart",
+                                "data/universe/<PEER>_<TF>.parquet")
+FAMILY_TIMEFRAMES["coint_pairs"] = (
+    ("H1", "H4", "D1"),
+    "the same bar-for-bar join as relative_value: below the hour an inner join of two "
+    "instruments with different quoting hours measures the asynchrony, and an ADF test on that "
+    "residual tests the quoting calendar rather than a common stochastic trend")
+
 # THE NAME THAT WAS BEING MINTED UNDER AND DID NOT EXIST (measured 2026-09-24). `pack_cells` has
 # minted 432 registry cells under `exogenous_conditioner`, each naming a lake series, a column and
 # a transform, and no generator implemented the name -- so every one of them exited
@@ -2551,6 +2615,28 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# FOUR METHODS FROM WORLD PRACTICE (2026-11-25), minted by `research/global_methods.py`: the
+# cross-sectional LambdaRank learner over the class panel, the Chinese high-frequency factor
+# school's intraday realised moments ranked within the class, the market-profile value-area rules
+# and the Korean volatility breakout. The two class books load their own exotic-free class panel
+# from the bar store given only `symbol` (required, so no sweep calls them blind); the other two
+# read the bars in hand.
+from mt5desk.family_global_methods import GLOBAL_METHOD_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(GLOBAL_METHOD_FAMILIES)
+for _gm_name in ("cross_sectional_class_ltr", "cross_sectional_class_hf_moment"):
+    FAMILY_INPUTS[_gm_name] = ("the symbol's exotic-free peer class "
+                               "(research.universe_policy.peer_class), read as of each decision "
+                               "bar from the bar store", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_gm_name] = (
+        ("H1",),
+        "ranks the class once a day at a broker decision HOUR from the H1 store, exactly like the "
+        "families_cross_sectional books; the intraday moments are measured on H1 returns, so a "
+        "finer or coarser chart would join the panel to a clock it does not carry")
+FAMILY_INPUTS["value_area_rule"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["volatility_breakout_kr"] = ("price only", "data/universe/*_H1.parquet")
+del _gm_name
 
 
 # A HUNT16 CELL, JUDGEABLE BY THE ONE DOOR THAT MINTS (2026-09-30). The hunt16 population

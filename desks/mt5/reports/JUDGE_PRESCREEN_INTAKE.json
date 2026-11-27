@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-19T00:51:46+00:00",
+ "generated_at": "2026-11-23T17:11:17+00:00",
  "mode": "SHADOW",
- "rows": 1595941,
- "rows_already_ruled_not_screened": 803840,
+ "rows": 1674749,
+ "rows_already_ruled_not_screened": 867979,
  "would_kill": {
-  "needs_data": 1410,
+  "needs_data": 1411,
   "chart_short": 0,
-  "sibling_dead": 253583
+  "sibling_dead": 256555
  },
- "would_kill_total": 254993,
- "would_kill_share": 0.159776,
+ "would_kill_total": 257966,
+ "would_kill_share": 0.154033,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 253583,
-  "10": 202691,
-  "20": 123059,
-  "40": 54178,
-  "80": 23264
+  "5": 256555,
+  "10": 205991,
+  "20": 126533,
+  "40": 56550,
+  "80": 24442
  },
- "ms_per_row": 1.43252,
- "seconds": 2286.21,
+ "ms_per_row": 0.28054,
+ "seconds": 469.837,
  "samples": {
   "needs_data": [
    {
@@ -160,177 +160,177 @@
   "chart_short": [],
   "sibling_dead": [
    {
-    "cell": "USCOCOA@M15.session_range_breakout.p=876ce6dfa3d615ca",
-    "bucket": "USCOCOA|M15|session_range_breakout",
-    "named_cells": 6,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USCOCOA@M5.session_range_breakout.p=2c8b8fe9fc53b47b",
-    "bucket": "USCOCOA|M5|session_range_breakout",
-    "named_cells": 7,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURPLN@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
-    "bucket": "EURPLN|M5|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "GBPDKK@M5.session_range_breakout.p=73efa2b1e954e0cb",
-    "bucket": "GBPDKK|M5|session_range_breakout",
-    "named_cells": 39,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "SUGARRAW@M15.session_range_breakout.p=09ec998c9e70fe1f",
-    "bucket": "SUGARRAW|M15|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD@M30.session_range_breakout.p=8da9f788ae82e32f",
-    "bucket": "AUDNZD|M30|session_range_breakout",
-    "named_cells": 47,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "JPN225@M30.session_range_breakout.p=d8cbcee59c635221",
-    "bucket": "JPN225|M30|session_range_breakout",
-    "named_cells": 31,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFARA@M5.session_range_breakout.p=a9a0809070c1b39f",
-    "bucket": "COFARA|M5|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFROB@M5.session_range_breakout.p=a9a0809070c1b39f",
-    "bucket": "COFROB|M5|session_range_breakout",
-    "named_cells": 6,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "E35@M15.session_range_breakout.p=163bcc8e2612497b",
-    "bucket": "E35|M15|session_range_breakout",
-    "named_cells": 7,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "E35@M30.session_range_breakout.p=f749eb385e602aa8",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "E35@M5.session_range_breakout.p=87d385528356709a",
-    "bucket": "E35|M5|session_range_breakout",
-    "named_cells": 9,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD@M5.session_range_breakout.p=c26d631986e3ee76",
-    "bucket": "AUDNZD|M5|session_range_breakout",
-    "named_cells": 40,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "E35@M30.session_range_breakout.p=c5b34a13aba324e3",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURSEK@M5.session_range_breakout.p=7dab36768dd1393b",
-    "bucket": "EURSEK|M5|session_range_breakout",
+    "cell": "USDHKD@M5.session_range_breakout.p=255f0f56ac7b15c5",
+    "bucket": "USDHKD|M5|session_range_breakout",
     "named_cells": 43,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "E35@M5.session_range_breakout.p=136244711b0b25c0",
-    "bucket": "E35|M5|session_range_breakout",
-    "named_cells": 9,
+    "cell": "EURGBP@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
+    "bucket": "EURGBP|M5|session_range_breakout",
+    "named_cells": 53,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "GBPSEK@M5.session_range_breakout.p=3d1e6fb73ac597f5",
-    "bucket": "GBPSEK|M5|session_range_breakout",
-    "named_cells": 43,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFROB@M5.session_range_breakout.p=3d1e6fb73ac597f5",
-    "bucket": "COFROB|M5|session_range_breakout",
-    "named_cells": 6,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "XNGUSD@M5.session_range_breakout.p=56584bc7776c6b12",
+    "cell": "XNGUSD@M5.session_range_breakout.p=73efa2b1e954e0cb",
     "bucket": "XNGUSD|M5|session_range_breakout",
     "named_cells": 47,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ADAUSD@M15.session_range_breakout.p=5369bf3d96504f40",
-    "bucket": "ADAUSD|M15|session_range_breakout",
-    "named_cells": 104,
+    "cell": "USCOCOA@M5.session_range_breakout.p=8c3adad210469dc8",
+    "bucket": "USCOCOA|M5|session_range_breakout",
+    "named_cells": 7,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ADAUSD@M5.session_range_breakout.p=e6f0b2c661609c1c",
-    "bucket": "ADAUSD|M5|session_range_breakout",
-    "named_cells": 54,
+    "cell": "NOKSEK@M5.session_range_breakout.p=959c1d284573a5ba",
+    "bucket": "NOKSEK|M5|session_range_breakout",
+    "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ADAUSD@M5.session_range_breakout.p=6b3b82d4c5692910",
-    "bucket": "ADAUSD|M5|session_range_breakout",
-    "named_cells": 54,
+    "cell": "GBPPLN@M5.session_range_breakout.p=56fbec9ebd929bbf",
+    "bucket": "GBPPLN|M5|session_range_breakout",
+    "named_cells": 39,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "AUDCAD@M15.session_range_breakout.p=51d736130ae7fecd",
-    "bucket": "AUDCAD|M15|session_range_breakout",
-    "named_cells": 100,
+    "cell": "USCOCOA@M15.session_range_breakout.p=ab4173cec5f9ea8c",
+    "bucket": "USCOCOA|M15|session_range_breakout",
+    "named_cells": 6,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "AUDCAD@M30.session_range_breakout.p=683a17359820d66f",
-    "bucket": "AUDCAD|M30|session_range_breakout",
-    "named_cells": 65,
+    "cell": "USDCHF@M5.session_range_breakout.p=c2a7b8762db48f42",
+    "bucket": "USDCHF|M5|session_range_breakout",
+    "named_cells": 39,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "AUDCHF@M5.overnight_drift.p=e5b51a909397fe09",
-    "bucket": "AUDCHF|M5|overnight_drift",
-    "named_cells": 17,
+    "cell": "CHFHUF@M5.session_range_breakout.p=a95109ed5224c541",
+    "bucket": "CHFHUF|M5|session_range_breakout",
+    "named_cells": 39,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "JPN225@M30.session_range_breakout.p=2edc8e5309e16f5c",
+    "bucket": "JPN225|M30|session_range_breakout",
+    "named_cells": 31,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "SUGARRAW@M15.session_range_breakout.p=163bcc8e2612497b",
+    "bucket": "SUGARRAW|M15|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDNZD@M30.session_range_breakout.p=f749eb385e602aa8",
+    "bucket": "AUDNZD|M30|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "GBPUSD@M5.session_range_breakout.p=574280c92d59f30d",
+    "bucket": "GBPUSD|M5|session_range_breakout",
+    "named_cells": 49,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M15.session_range_breakout.p=74f2db4deb519056",
+    "bucket": "E35|M15|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "COFARA@M5.session_range_breakout.p=d53073cf305d3995",
+    "bucket": "COFARA|M5|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "COFROB@M5.session_range_breakout.p=d53073cf305d3995",
+    "bucket": "COFROB|M5|session_range_breakout",
+    "named_cells": 6,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M5.session_range_breakout.p=d4fd81c818b8336f",
+    "bucket": "E35|M5|session_range_breakout",
+    "named_cells": 9,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDNZD@M5.session_range_breakout.p=86bbf735f03f644d",
+    "bucket": "AUDNZD|M5|session_range_breakout",
+    "named_cells": 40,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "CHFSEK@M5.session_range_breakout.p=7dab36768dd1393b",
+    "bucket": "CHFSEK|M5|session_range_breakout",
+    "named_cells": 42,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M30.session_range_breakout.p=78e7a748bde53f0f",
+    "bucket": "E35|M30|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M30.session_range_breakout.p=91f68d69c992be39",
+    "bucket": "E35|M30|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "SEKJPY@M5.session_range_breakout.p=8c038a207da3c523",
+    "bucket": "SEKJPY|M5|session_range_breakout",
+    "named_cells": 43,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M5.session_range_breakout.p=1efa90c2456645fc",
+    "bucket": "E35|M5|session_range_breakout",
+    "named_cells": 9,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "EURPLN@M5.session_range_breakout.p=29a876e1392f92b1",
+    "bucket": "EURPLN|M5|session_range_breakout",
+    "named_cells": 44,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "GBPSEK@M5.session_range_breakout.p=36ce9846feba03ed",
+    "bucket": "GBPSEK|M5|session_range_breakout",
+    "named_cells": 43,
     "cleared_cells": 0,
     "k": 5
    }
@@ -338,8 +338,8 @@
  },
  "missed_growth": [
   {
-   "day": "2026-11-19",
-   "at": "2026-11-19T00:51:46+00:00",
+   "day": "2026-11-23",
+   "at": "2026-11-23T17:11:17+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -353,14 +353,14 @@
    },
    "would_act_sibling_dead": {
     "k": 5,
-    "true_survivors_killed": 32,
-    "cleared_in_sample_killed": 2329,
+    "true_survivors_killed": 33,
+    "cleared_in_sample_killed": 2416,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-11-19",
-   "at": "2026-11-19T00:51:46+00:00",
+   "day": "2026-11-23",
+   "at": "2026-11-23T17:11:17+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.09937065253395164,
-   "would_free_seconds_if_all_rules_acted": 25338.8
+   "seconds_per_cell": 0.06180469715698393,
+   "would_free_seconds_if_all_rules_acted": 15943.5
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."

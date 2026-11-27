@@ -16,7 +16,7 @@ the published file carries no free text from GitHub or from an exception -- only
     AUDIT_STALE     the newest row is for an older head: the current head needs a fresh audit
     CI_FAILED       a gating job (audit_gate.GATING_JOBS) concluded failure/cancelled/timed out
     CI_PENDING      a gating job is queued or running, or has not reported on this head
-    VETO_WINDOW     CLEAR on this head, CI green, inside the gate's 24 h veto window
+    VETO_WINDOW     CLEAR on this head, CI green, inside the gate's veto window (0 h since 11-25)
     GATE_PATH_OFF   the gate says the registry path is off (e.g. the ROOT pin does not match)
     READY           nothing above: it waits only for the box sweep to reach it
     UNMEASURED      a read for this PR failed this run (named, never guessed)
@@ -63,7 +63,7 @@ def gate_code(gate: Mapping[str, Any] | None) -> str:
             "error": "GATE_ERROR"}.get(state, "GATE_NONE")  # fmt: skip
 #: .github/scripts/audit_gate.py GATING_JOBS and REGISTRY_HOLD_H (pinned by the tests).
 GATING_JOBS = ("quality", "mt5-money-path", "coverage-floor")
-VETO_H = 24.0
+VETO_H = 0.0  # the merge veto wait is gone (021fa4cee1, zuck 11-25 18:53Z)
 REPORT = ROOT / "desks" / "mt5" / "reports" / "PR_BLOCKERS.json"
 UA = "pr-blockers"
 ORDER = ("CONFLICT", "AUDIT_MISSING", "AUDIT_HOLD", "AUDIT_STALE", "CI_FAILED", "CI_PENDING",
@@ -77,7 +77,7 @@ WORDS = {
     "AUDIT_STALE": "Auditor verdict is for an older head",
     "CI_FAILED": "a gating CI job failed",
     "CI_PENDING": "gating CI queued or running",
-    "VETO_WINDOW": "inside the 24 h veto window",
+    "VETO_WINDOW": "inside the veto window",
     "GATE_PATH_OFF": "the box's registry merge path is off",
     "READY": "waiting only for the box sweep",
     "UNMEASURED": "its facts could not be read this run",

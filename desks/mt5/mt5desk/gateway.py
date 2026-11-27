@@ -313,7 +313,9 @@ from mt5desk.decision_core import (
     minlot_floor_risk_frac as minlot_floor_risk_frac,
 )
 from mt5desk.decision_core import (
+    SUPERSEDED_CERT_ZEROS as SUPERSEDED_CERT_ZEROS,
     cert_book_zero as cert_book_zero,
+    lifted_rule_breaches as lifted_rule_breaches,
 )
 from mt5desk.decision_core import (
     FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
@@ -527,6 +529,30 @@ def load_sleeves() -> list[dict]:
     sleeves, notes = _core.load_sleeves_verbose(SLEEVES_FILE)
     for note in notes:
         log(note)
+    # THE EXOTIC BAN AT THE GATEWAY'S DOOR (Audit gate (a), 2026-11-26): a LIVE row on an exotic
+    # or unclassified symbol is not traded, whatever wrote it (research/universe_policy.
+    # live_class_refusal; the promoter demotes it on its next pass). Logged, never silent.
+    try:
+        try:
+            from research.universe_policy import live_class_refusal, registry_readable
+        except ImportError:                                # pragma: no cover - path
+            import sys as _sys
+            if str(BASE) not in _sys.path:
+                _sys.path.insert(0, str(BASE))
+            from research.universe_policy import live_class_refusal, registry_readable
+        if not registry_readable():
+            log("live class door: registry unreadable -- only the exotic leg test binds")
+    except Exception as exc:                               # fail closed: nothing on the class
+        log(f"live class door unreadable ({type(exc).__name__}): no promoted sleeve this pass")
+        return []
+    kept = []
+    for s in sleeves:
+        why = live_class_refusal(s.get("symbol")) if isinstance(s, dict) else "not a row"
+        if why:
+            log(f"sleeve {s.get('name') if isinstance(s, dict) else s!r} refused: {why}")
+            continue
+        kept.append(s)
+    sleeves = kept
     # LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). This is the last mandatory edge of the
     # whole pipeline -- promoter -> allocator -> GATEWAY -- and without the acknowledgement the
     # control plane can only observe that sleeves.json was written, never that the gateway read
@@ -1008,7 +1034,10 @@ def _strategy_state_identity(sleeve: object, symbol: object) -> str:
             dynamic = {"status", "risk_frac", "risk_frac_source", "admission",
                        "forward_verdict", "shadow_exp", "shadow_n", "shadow_days",
                        "admit_streak", "admit_scan", "restored_at", "restore_reason",
-                       "promoted_at", "principal_override", "artifact"}
+                       "promoted_at", "principal_override", "artifact",
+                       # certificate lineage (research/cert_lineage.py, 2026-10-20): a record
+                       # of which certificate a row stands on, never part of what it trades
+                       "cert_id", "cert_spec_hash", "cert_gated_at", "cert_lineage"}
             ids: dict[str, str] = {}
             for spec in rows if isinstance(rows, list) else []:
                 if not isinstance(spec, dict) or not spec.get("name"):
@@ -4925,9 +4954,50 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
+def publish_paused_reading() -> str:
+    """READ-ONLY ACCOUNT READING WHILE PAUSED (2026-11-19). No order, no cancel, no close.
+
+    THE DEADLOCK THIS ENDS. The ruin rail (`proposals/fusion_deadman.py`) judges equity from
+    `gateway_state.json`, and this gateway is the only writer of that file. While paused, the
+    gateway returned before it read the account, so the rail kept judging the frozen 2026-10-30
+    reading (EUR 266.01) and could never see a recovery, even after the floor moved to EUR 10.
+    Fusion then had no trade from 10-30 and no alert.
+
+    A paused pass now publishes `equity`, `margin_free`, `reading_at` and the open position
+    and order COUNTS, and nothing else.
+    `last_reconcile` is untouched, because no management ran, so the rail's stale-gateway clock
+    still reads the truth. No rail threshold, verdict or re-arm rule changes: the rail simply
+    gets a current number to judge.
+    """
+    if not connect():
+        return "paused reading UNMEASURED: terminal not connected"
+    acc = mt5.account_info()
+    if acc is None:
+        return "paused reading UNMEASURED: account_info() returned None"
+    st = load_state()
+    st["equity"] = round(float(acc.equity), 2)
+    st["margin_free"] = round(float(acc.margin_free), 2)
+    st["reading_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    st["reading_source"] = "paused_read_only"
+    # The open book's SIZE, as counts only: the position list stays the last managed pass's,
+    # so a reader can see when the book moved while nothing was managing it (Audit 11-19).
+    for _key, _fn in (("reading_positions_total", "positions_total"),
+                      ("reading_orders_total", "orders_total")):
+        try:
+            st[_key] = int(getattr(mt5, _fn)())
+        except Exception:
+            st[_key] = None
+    save_state(st)
+    return f"paused reading published: equity {st['equity']:.2f}"
+
+
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
+        try:
+            log(publish_paused_reading())
+        except Exception as exc:
+            log(f"paused reading FAILED ({type(exc).__name__}: {exc}); no trading either way")
         return
     if not connect():
         return

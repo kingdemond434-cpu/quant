@@ -457,10 +457,20 @@ def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> N
 
 
 def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
-                  screen: list[dict], door: str | None = None) -> dict:
-    """build_universe over one certified EURUSD column, every venue read stubbed."""
+                  screen: list[dict], door: str | None = None, proven_n: int | None = 50,
+                  col: str = "EURUSD_x_asia") -> dict:
+    """build_universe over one certified EURUSD column, every venue read stubbed. The column is
+    fill-proven at `proven_n` trades (None: no fill record)."""
+    import json as _json
+
     import kelly_survival as ks
-    col = "EURUSD_x_asia"
+    from prop import e8_book
+    fp = tmp_path / "FILL_PROVEN.json"
+    fp.write_text(_json.dumps({"schema": e8_book.FILL_PROVEN_SCHEMA,
+                            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                            "sleeves": [] if proven_n is None else [
+        {"sleeve": col, "n_out": proven_n, "adjR_out": 0.2}]}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", fp)
     worlds = tmp_path / "worlds.npz"
     np.savez(worlds, names=np.asarray([col]), r=np.full((2, 5, 1), 0.1))
     monkeypatch.setattr(ks, "WORLDS", worlds)
@@ -468,7 +478,7 @@ def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
     monkeypatch.setattr(ks, "certified_roster", lambda names: ([col], screen))
     monkeypatch.setattr(ks, "_extend_worlds", lambda r, c, s, seed: (r, c, ""))
     monkeypatch.setattr(pca, "tier_s_columns", lambda s, d: dict(tier_s))
-    monkeypatch.setattr(pca, "venue_listing", lambda: ({"EURUSD": {}}, "test listing"))
+    monkeypatch.setattr(pca, "venue_listing", lambda: ({"EURUSD": {}, col[:6]: {}}, "test listing"))
     monkeypatch.setattr(pca, "e8_symbols", lambda: set())
     monkeypatch.setattr(pca, "quarantined_symbols", lambda: set())
     monkeypatch.setattr(pca, "ftmo_commissions", lambda: {})
@@ -495,6 +505,32 @@ def test_ftmo_admits_the_same_certified_roster_fusion_and_e8_trade(tmp_path, mon
     assert c["admitted"] and c["tier_s"] is False and "certified via" in c["why"]
     assert uni["specs"]["EURUSD_x_asia"]["key"] == "external.EURUSD.x.p=1"
     assert pca.executable_columns(uni["cols"], uni) == {"EURUSD_x_asia"}
+    # SIZE BY EVIDENCE: 50 fill-proven trades -> half of MAX_RISK_FRAC as the column's ceiling.
+    from mt5desk.sizing import MAX_RISK_FRAC
+    assert abs(uni["caps"]["EURUSD_x_asia"] - 0.5 * MAX_RISK_FRAC) < 1e-12
+
+
+def test_a_certified_column_with_no_fill_record_trades_at_its_prior(tmp_path,
+                                                                   monkeypatch) -> None:
+    """zuck 2026-11-24 18:34Z, no blockers but exotics: a certificate with no fill record yet is
+    admitted at its certificate prior, the same door as E8."""
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen, proven_n=None)
+    assert uni["status"] == "OK" and uni["columns"]["EURUSD_x_asia"]["admitted"]
+    from mt5desk.sizing import MAX_RISK_FRAC
+    from prop import e8_book
+    prior = e8_book.fill_shrink(e8_book.CERT_PRIOR_N)
+    assert abs(uni["caps"]["EURUSD_x_asia"] - prior * MAX_RISK_FRAC) < 1e-12
+    assert uni["columns"]["EURUSD_x_asia"]["evidence_notes"]
+
+
+def test_an_exotic_column_is_the_one_refusal(tmp_path, monkeypatch) -> None:
+    screen = [{"certificate": "external.USDSGD.x.p=1", "column": "USDSGD_x_asia",
+               "symbol": "USDSGD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen, col="USDSGD_x_asia")
+    assert uni["columns"]["USDSGD_x_asia"]["admitted"] is False
+    assert "exotic" in uni["columns"]["USDSGD_x_asia"]["why"]
 
 
 def test_a_column_no_certificate_vouches_for_is_still_refused(tmp_path, monkeypatch) -> None:
@@ -505,14 +541,15 @@ def test_a_column_no_certificate_vouches_for_is_still_refused(tmp_path, monkeypa
     assert uni["columns"]["EURUSD_x_asia"]["admitted"] is False
 
 
-def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkeypatch) -> None:
-    """Auditor SF1 on #769: a column ftmo_executor would refuse as TIER_S_BLOCKED is refused
-    before the solve, named, and counted -- never sized heat that cannot trade."""
+def test_a_column_the_executors_door_doubts_is_sized_down_not_refused(tmp_path,
+                                                                     monkeypatch) -> None:
+    """zuck 2026-11-24 18:34Z: the Tier S door's verdict is still named and counted, but it
+    halves the column's ceiling instead of refusing it (ftmo_executor's door sizes too)."""
     screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
                "symbol": "EURUSD"}]
     uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen,
                         door="replication MISMATCH")
-    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE" and uni["door_blocked"] == ["EURUSD_x_asia"]
+    assert uni["status"] == "OK" and uni["door_blocked"] == ["EURUSD_x_asia"]
     row = uni["columns"]["EURUSD_x_asia"]
-    assert row["admitted"] is False and "TIER_S_BLOCKED" in row["why"]
-    assert "replication MISMATCH" in row["why"]
+    assert row["admitted"] is True
+    assert any("replication MISMATCH" in n for n in row["evidence_notes"])

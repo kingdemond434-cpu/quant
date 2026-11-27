@@ -29,7 +29,7 @@ from __future__ import annotations
 import json
 import math
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -196,6 +196,7 @@ def _load_survivors() -> list[dict[str, Any]]:
             "lockbox": ((val.get("gates") or {}).get("lockbox") or {}).get("lockbox_sharpe"),
             "days": val.get("days"),
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
+            "tier_s": _is_tier_s((val.get("gates") or {}).get("deflated_sharpe") or {}),
             # PRIVATE-USE LINEAGE IS NEVER IN THE E8 BOOK (coordinator ruling, 2026-10-07).
             # J-Quants is permitted for the registered individual's private use only; E8 trades
             # the prop firm's capital, so a cell derived from it is e8_ineligible. Fusion (the
@@ -205,10 +206,386 @@ def _load_survivors() -> list[dict[str, Any]]:
     return rows
 
 
+def probe_rows(now: datetime | None = None) -> tuple[list[dict[str, Any]], str]:
+    """THE PROBE TIER'S LIVE ROWS, shaped as survivor rows (research/probe_tier.py, zuck
+    2026-11-26 22:50Z: every promising strategy flows into E8 directly, sized by its own forward
+    record). Only rows whose enrolment identity is known (their params travel) are offered; the
+    integrity door, the venue, the duplicate and block rules, the stress cap and a solve, where
+    one exists, judge them exactly as they judge a certificate. ([], why) when the artifact is
+    absent or stale: nothing is added, nothing is removed."""
+    try:
+        from research import probe_tier
+    except Exception:
+        try:
+            import probe_tier  # type: ignore[no-redef]
+        except Exception as exc:
+            return [], f"probe tier unavailable ({type(exc).__name__})"
+    live, why = probe_tier.load_live(now=now)
+    out: list[dict[str, Any]] = []
+    for key, v in sorted(live.items()):
+        params = v.get("params")
+        sym, fam = str(v.get("symbol") or "").upper(), str(v.get("family") or "")
+        if not sym or not fam or not isinstance(params, dict) or _family_banned(fam):
+            continue
+        out.append({
+            "key": key, "symbol": sym, "family": fam,
+            "selector": v.get("selector") or "asia",
+            "fingerprint": f"probe:{key}", "params": dict(params),
+            "ev": v.get("exp_r"), "exp_x3": None, "lockbox": None, "days": None,
+            "n_trials": None, "tier_s": False, "private_lineage": False,
+            "probe": {"n": int(v.get("n") or 0), "shrink": float(v.get("shrink") or 0.0),
+                      "forward_t": v.get("forward_t")},
+        })
+    return out, f"{why}; {len(out)} offered to E8"
+
+
 def _spec_fingerprint(spec: dict[str, Any]) -> str:
     from admission_integrity import spec_fingerprint
     return spec_fingerprint(spec.get("symbol"), spec.get("family"),
                             spec.get("selector"), spec.get("side"), spec.get("params"))
+
+
+#: ZEROS IN THE E8 PRINCIPAL BOOK THAT THE PRINCIPAL HAS SINCE LIFTED (zuck 2026-11-19 12:15Z: "all
+#: the strategies [should] flow into [E8] ... because we want both accounts to pass with high
+#: probability and speed"). They were written by the 2026-10-20 21:52Z order "trade only gold asia"
+#: and its 17:02Z companion ("USDJPY, NZDJPY and AUDCHF stay at 0.0"), which the 11-19 order
+#: replaces. CERT_BOOK_LIVE.json is box state (libs/ops/release.STATE_PREFIXES), so an origin edit
+#: of its e8 block would be reverted by the box's next push; the lift is therefore read here, in
+#: one place both readers use (this book and prop/e8_executor).
+#: 2026-11-24 (principal 18:31Z "I removed the e8 gold only rule ages ago", 18:34Z "no blockers for
+#: anything. Only exotics"): gold_london_am and gold_afternoon -- the gold-only order's own two
+#: zeros -- and USDJPY_session_range_breakout_asia (its Reddit-lineage quarantine went with the
+#: 2026-11-13 reddit_origin_lift) are lifted too. One set, in decision_core, read by every door.
+from mt5desk.decision_core import SUPERSEDED_CERT_ZEROS  # noqa: E402
+
+SUPERSEDED_E8_ZEROS: frozenset[str] = SUPERSEDED_CERT_ZEROS["e8"]
+#: Principal exclusions the principal has since lifted (the box's CERT_BOOK_LIVE `excluded` still
+#: names USDJPY's Reddit-lineage quarantine). Exotic exclusions need none: exotics are refused.
+SUPERSEDED_EXCLUSIONS: frozenset[str] = frozenset({"USDJPY_session_range_breakout_asia"})
+
+
+#: FAMILIES HELD AT ZERO UNTIL THEY HOLD UP FORWARD (Judge forward calibration 2026-11-19,
+#: reports/judging/FORWARD_CALIBRATION_2026-11-19.md; coordinator 17:00Z; zuck 17:02Z "all of them
+#: ... through allocator" = every PROMOTABLE strategy, certified AND holding forward). Over 798
+#: certified clocks with 30+ days and 10+ forward trades, these families kept their edge on 14-41%
+#: of clocks at a negative trade-weighted mean R (cross_asset_residual 24% / -0.237R,
+#: macro_conditional 14% / -0.192R, carry 41% / -0.180R, pca_residual 33% / -0.086R), most likely
+#: from look-ahead in their outside-data joins. The price-only families held 95-100%. A family
+#: leaves this set when the Judge's point-in-time fix lands and its forward hit rate holds; the
+#: refusal is billed by name in E8_BOOK.json. REVERT: empty this set.
+FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
+    "cross_asset_residual", "macro_conditional", "carry", "pca_residual"})
+
+
+#: FILL-PROVEN SLEEVES (Box read 2026-11-19 19:05Z, reports/hourly_pass/FILL_PROVEN_READ.md): the
+#: sleeve's own forward trades, re-priced at the measured ask-bid for its symbol and entry hour,
+#: outside the 00:00-01:59 broker rollover slice. Written box-side each pass as
+#: {"sleeves": [{"sleeve": "SYM_family_selector", "n_out": int, "adjR_out": float}, ...]}
+#: (research/fill_proven.py, hourly leg "fill_proven"; `sleeve` is the forward ledger's label).
+#: A sleeve's OWN fill evidence outranks its family's average: a fill-proven sleeve of a
+#: forward-failing family is admitted, and every admitted sleeve is sized by how much evidence
+#: it has (`fill_shrink`). Absent or unreadable: no sleeve is fill-proven (fail closed).
+FILL_PROVEN = DESK / "reports" / "FILL_PROVEN.json"
+FILL_PROVEN_SCHEMA = "fill-proven/1"
+#: STALE FAILS CLOSED (Audit HOLD 2026-11-19 19:41Z): the organ is an hourly leg, so a file
+#: older than three missed passes means the organ stopped and its verdicts no longer describe
+#: today's fills. Past this bound no sleeve is fill-proven. The wrong schema, a missing or
+#: unparseable generated_at, or one in the future reads the same way.
+FILL_PROVEN_MAX_AGE_H = 3.0
+FILL_MIN_N = 10
+#: Shrinkage prior, in trades: a sleeve with n fill-proven trades is sized at n / (n + N0) of
+#: RISK_FRAC, so a 15-trade edge trades at ~23% of full size and a 500-trade one at ~91%.
+FILL_SHRINK_N0 = 50
+
+
+def load_fill_proven(path: Path | None = None,
+                     now: datetime | None = None) -> dict[str, dict[str, float]]:
+    """{sleeve: {"n": n_out, "adjR": adjR_out}} for sleeves positive after spread outside the
+    rollover slice with at least FILL_MIN_N trades; {} when the artifact is absent, of another
+    schema, undated, future-dated or older than FILL_PROVEN_MAX_AGE_H (fail closed)."""
+    try:
+        doc = json.loads((path or FILL_PROVEN).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("schema") != FILL_PROVEN_SCHEMA:
+        return {}
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}
+    if gen.tzinfo is None:
+        return {}
+    age_h = ((now or datetime.now(UTC)) - gen).total_seconds() / 3600.0
+    if not 0.0 <= age_h <= FILL_PROVEN_MAX_AGE_H:
+        return {}
+    return {k: v for k, v in _fill_records(doc).items() if v["adjR"] > 0}
+
+
+def _fill_records(doc: Mapping[str, Any]) -> dict[str, dict[str, float]]:
+    out: dict[str, dict[str, float]] = {}
+    rows = doc.get("sleeves") or []
+    for r in rows if isinstance(rows, list) else []:
+        try:
+            n, adj = int(r["n_out"]), float(r["adjR_out"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if n >= FILL_MIN_N:
+            out[str(r["sleeve"])] = {"n": float(n), "adjR": adj}
+    return out
+
+
+def load_fill_losers(path: Path | None = None,
+                     now: datetime | None = None) -> dict[str, dict[str, float]]:
+    """The other half of FILL_PROVEN.json: sleeves with n >= FILL_MIN_N whose after-spread record
+    is NOT positive. They are not refused (no blockers but exotics); `evidence_mult` sizes them
+    at a quarter of the certificate prior so their own fills keep deciding. Same freshness
+    fence as `load_fill_proven`; {} when it fails."""
+    doc = _fresh_doc(path, now)
+    return {k: v for k, v in _fill_records(doc).items() if v["adjR"] <= 0} if doc else {}
+
+
+def _fresh_doc(path: Path | None, now: datetime | None) -> dict[str, Any] | None:
+    try:
+        doc = json.loads((path or FILL_PROVEN).read_text(encoding="utf-8-sig"))
+        gen = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    if not isinstance(doc, dict) or doc.get("schema") != FILL_PROVEN_SCHEMA or gen.tzinfo is None:
+        return None
+    age_h = ((now or datetime.now(UTC)) - gen).total_seconds() / 3600.0
+    return doc if 0.0 <= age_h <= FILL_PROVEN_MAX_AGE_H else None
+
+
+def fill_shrink(n: float) -> float:
+    return n / (n + FILL_SHRINK_N0) if n > 0 else 0.0
+
+
+#: NO BLOCKERS BUT EXOTICS (principal 2026-11-24 18:34Z: "make sure all promoted strategies get to
+#: EA and FTMO, and the rule never intervenes or anything, no blockers for anything. Only exotics
+#: are blocked"). What used to REFUSE a promoted sleeve now SIZES it: a sleeve with no fill record
+#: yet trades at the size its certificate is worth as a prior of CERT_PRIOR_N trades (10/(10+50) =
+#: 1/6 of RISK_FRAC), half that when its family fails forward, and a sleeve whose live rebuild did
+#: not replicate, or that trades under a placebo alarm, is halved again rather than stood aside.
+#: Its own fills then grow or shrink it through `fill_shrink` like every other sleeve. The firm's
+#: rails (daily and maximum loss, the profit cap) and survival sizing are untouched and still bind
+#: the whole book. Exotics stay refused (`is_exotic_pair`).
+CERT_PRIOR_N = 10
+DOUBT_MULT = 0.5
+#: Structured doubt codes (Audit should-fix 4 on 9dc6bbfe4): a door that already priced a doubt
+#: writes its code on the row (`doubt_codes`) and the next door never charges it twice.
+DOUBT_PLACEBO, DOUBT_REPLICATION, DOUBT_TIER_S = "placebo_alarm", "replication", "tier_s_door"
+#: The reopen judge (research/real_edge.py) lists the certificate and does not verify it: a doubt
+#: that SIZES the sleeve, never refuses it (Audit MF2 on #1211; zuck 2026-11-24 18:34Z).
+DOUBT_REAL_EDGE = "real_edge_unverified"
+_MAJORS = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
+
+
+def is_exotic_pair(symbol: object) -> bool:
+    """A six-letter FX pair with a leg outside the eight majors (mt5desk.live_policy.is_exotic,
+    restated so the prop lanes refuse exotics even where that module is older). Metals, indices,
+    energy and crypto are never exotic."""
+    try:
+        from mt5desk.live_policy import is_exotic
+        return bool(is_exotic(symbol))
+    except ImportError:
+        s = str(symbol or "").upper()[:6]
+        a, b = s[:3], s[3:6]
+        return (len(s) == 6 and s.isalpha() and not s.startswith(("XAU", "XAG", "XPT", "XPD"))
+                and not (a in _MAJORS and b in _MAJORS) and (a in _MAJORS or b in _MAJORS))
+
+
+def evidence_mult(proven: Mapping[str, float] | None, family: str,
+                  doubts: Sequence[str] = (),
+                  losing: Mapping[str, float] | None = None) -> tuple[float, list[str]]:
+    """(size multiplier on RISK_FRAC, why) for a promoted sleeve. Pure. Never zero."""
+    notes: list[str] = []
+    if proven:
+        m = fill_shrink(float(proven["n"]))
+    elif losing:
+        m = fill_shrink(float(CERT_PRIOR_N)) * DOUBT_MULT * DOUBT_MULT
+        notes.append(f"own fills not positive after costs (n={int(losing['n'])}, adjR="
+                     f"{losing['adjR']:+.3f}): x{DOUBT_MULT * DOUBT_MULT} of the prior")
+    else:
+        m = fill_shrink(float(CERT_PRIOR_N))
+        notes.append(f"no fill record yet: certificate prior of {CERT_PRIOR_N} trades")
+        if family in FORWARD_FAILING_FAMILIES:
+            m *= DOUBT_MULT
+            notes.append(f"{family} fails forward as a family: x{DOUBT_MULT}")
+    for d in doubts:
+        m *= DOUBT_MULT
+        notes.append(f"{d}: x{DOUBT_MULT}")
+    return m, notes
+#: THE ONE ALLOCATOR'S E8 BOOK (research/prop_challenge_allocator.py --venue e8, hourly).
+E8_ALLOCATOR = DESK / "reports" / "E8_ALLOCATOR.json"
+E8_ALLOCATOR_MAX_AGE_S = 2 * 3600
+
+
+def _e8_ceiling() -> float:
+    """E8's per-sleeve risk ceiling (mt5desk.decision_core.E8_CERT_CEILING, the executor's cap);
+    0.006 if that module cannot be read, so the clip never loosens on an import failure."""
+    try:
+        from mt5desk.decision_core import E8_CERT_CEILING
+        return float(min(E8_CERT_CEILING, 0.006))
+    except Exception:
+        return 0.006
+
+
+def e8_solved_book(path: Path | None = None, now: datetime | None = None
+                   ) -> tuple[dict[str, float], str]:
+    """{column: equity fraction} for EVERY column E8's solve priced (0.0 where it chose not to
+    fund), or ({}, why) when the solve is absent, stale, not deployable or malformed."""
+    p = path or E8_ALLOCATOR
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable: evidence rule"
+    if not isinstance(doc, dict) or doc.get("venue") != "e8":
+        return {}, f"{p.name} is not an E8 solve: evidence rule"
+    if doc.get("deployable") is not True:
+        return {}, f"{p.name} not deployable ({doc.get('status')}): evidence rule"
+    try:
+        at = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}, f"{p.name} undated: evidence rule"
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age = ((now or datetime.now(UTC)) - at).total_seconds()
+    if not 0 <= age <= E8_ALLOCATOR_MAX_AGE_S:
+        return {}, f"{p.name} is {age / 3600:.1f}h old: evidence rule"
+    cols, ex = doc.get("solved_columns"), doc.get("executable")
+    if not isinstance(cols, list) or not isinstance(ex, dict):
+        return {}, f"{p.name} carries no solved_columns/executable: evidence rule"
+    ceiling = _e8_ceiling()
+    out: dict[str, float] = {}
+    for c in cols:
+        v = ex.get(c, 0.0)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+            out[str(c)] = float(min(max(v, 0.0), ceiling))
+    return out, f"{p.name} {age:.0f}s old: {sum(1 for v in out.values() if v > 0)} funded"
+
+
+def apply_solved(chosen: list[dict[str, Any]], solved: Mapping[str, float]
+                 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Size each chosen row by the solve where it priced the row's column; drop the rows it
+    zeroed (sovereignty: zero sends no order). Returns (kept rows, zeroed columns)."""
+    ceiling = _e8_ceiling()
+    zeroed: list[dict[str, Any]] = []
+    for r in chosen:
+        col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        if col in solved and r.get("principal_funded"):
+            # THE PRINCIPAL'S NUMBER STANDS (Audit MF-3 on eb3134ee2): a principal-funded key is
+            # sized by the principal; the solve's view is journaled beside it, never applied.
+            r["solve_risk_frac"] = round(float(solved[col]), 6)
+            continue
+        if col in solved:
+            before = float(r.get("risk_frac") or 0.0)
+            frac = min(float(solved[col]), ceiling)
+            # THE DOUBTS STAY PRICED (Audit MF-2/MF-2b): the solve prices returns, not a placebo
+            # alarm, a replication miss or thin fills. A row the admission door sized by
+            # `evidence_mult` is capped at that multiple of E8's per-sleeve ceiling
+            # (E8_CERT_CEILING, the executor's own cap), so the solve can never lift a doubted
+            # sleeve to the full ceiling.
+            if "evidence_mult" in r:
+                cap = float(r["evidence_mult"]) * ceiling
+                if frac > cap:
+                    r["evidence_capped_from"] = round(frac, 6)
+                    frac = cap
+            r["risk_frac"] = round(frac, 6)
+            r["risk_source"] = "one allocator (E8_ALLOCATOR.json)"
+            if solved[col] <= 0:
+                # A SOLVE ZERO IS SIZING, AND VISIBLE (Audit should-fix 1): the risk the evidence
+                # rule would have carried is its missed-growth line.
+                zeroed.append({"column": col, "missed_growth_risk_frac": round(before, 6),
+                               "rail": "e8_one_allocator_zero"})
+    return [r for r in chosen if r["risk_frac"] > 0], zeroed
+
+
+#: TIER S IS A SIZE MULTIPLIER, NOT A GATE (zuck 2026-11-19 19:23Z: "ur bigger size one is the
+#: right approach not block"). A certificate whose deflated Sharpe passed at or over DSR_BAR
+#: carries the stronger statistical evidence, so its fill-proven size is raised by this factor;
+#: the executor's E8_CERT_CEILING and the worst-day stress cap still bound the result.
+TIER_S_DSR_BAR = 0.95
+TIER_S_MULT = 1.5
+
+
+def _is_tier_s(gate: Mapping[str, Any]) -> bool:
+    dsr = gate.get("dsr")
+    return gate.get("passed") is True and isinstance(dsr, (int, float)) and dsr >= TIER_S_DSR_BAR
+
+
+def sleeve_risk(row: Mapping[str, Any]) -> float:
+    """RISK_FRAC x n/(n+N0) for the sleeve's fill-proven depth, x TIER_S_MULT when Tier S. A
+    sleeve admitted on a principal-funded key alone (no fill record) keeps RISK_FRAC."""
+    fp = row.get("fill_proven")
+    probe = row.get("probe")
+    if isinstance(probe, Mapping) and not fp and not row.get("principal_funded"):
+        # A PROBE ROW IS SIZED BY ITS OWN FORWARD RECORD: n/(n+N0) of RISK_FRAC on its forward n,
+        # in place of the certificate prior, with every priced doubt kept (evidence_mult over the
+        # prior's own shrink is the product of the doubt multipliers).
+        doubt = (float(row["evidence_mult"]) / fill_shrink(float(CERT_PRIOR_N))
+                 if "evidence_mult" in row else 1.0)
+        return round(RISK_FRAC * fill_shrink(float(probe.get("n") or 0)) * min(doubt, 1.0), 6)
+    if "evidence_mult" in row:
+        base = RISK_FRAC * float(row["evidence_mult"])
+    else:
+        base = RISK_FRAC * fill_shrink(float(fp["n"])) if fp else RISK_FRAC
+    return round(base * (TIER_S_MULT if row.get("tier_s") else 1.0), 6)
+
+
+#: THE ROLLOVER ENTRY GATE (coordinator + hourly pass 2026-11-19 19:24Z, zuck "fix all so all is
+#: ready to reach live"). A fill-proven sleeve's evidence EXCLUDES broker 00:00-01:59 -- the slice
+#: where spreads run 10-1000x and the bid-only record was flattering it -- so the sleeve may not
+#: enter there: its edge was never shown in that slice. A principal-funded key with no fill record
+#: is the principal's and is not gated here. The executor bills each refusal as missed growth.
+ROLLOVER_BROKER_HOURS = frozenset({0, 1})
+
+
+def rollover_block(row: Mapping[str, Any], now_utc: datetime) -> str | None:
+    """The reason this sleeve may not enter now, or None. Broker hour = UTC + E8 server offset."""
+    if not row.get("fill_proven"):
+        return None
+    from prop.e8_guard import server_offset_hours
+    hour = (now_utc.astimezone(UTC).hour + server_offset_hours(now_utc)) % 24
+    if hour in ROLLOVER_BROKER_HOURS:
+        return (f"broker hour {hour:02d} is in the rollover slice its fill evidence excludes "
+                "(reports/FILL_PROVEN.json, outside 00:00-01:59 only)")
+    return None
+
+
+def fallback_filter(chosen: list[dict[str, Any]]
+                    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(kept, dropped) for the evidence-rule fallback (no deployable solve): only fill-proven or
+    principal-funded rows. Each drop carries its missed-growth line. Pure. The rollover hours
+    stay gated for every fill-proven row by `rollover_block` at the executor (survivor rows carry
+    no entry_hours, so an entry-hour artefact test here would be inert -- Audit rev note)."""
+    kept: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+    for r in chosen:
+        col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        why = None
+        if not (r.get("fill_proven") or r.get("principal_funded") or r.get("probe")):
+            why = "no deployable solve, and no fill record, principal funding or live probe"
+        if why:
+            dropped.append({"column": col, "why": why,
+                            "missed_growth_risk_frac": float(r.get("risk_frac") or 0.0),
+                            "rail": "e8_fallback_unproven"})
+            continue
+        kept.append(r)
+    return kept, dropped
+
+
+def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
+    """The E8 principal book as it stands today: the cert block, less the zeros the principal
+    lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
+    block does not name is sized by the book's RISK_FRAC."""
+    out: dict[str, float] = {}
+    for k, v in (raw or {}).items():
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            continue
+        if k in SUPERSEDED_E8_ZEROS and not v > 0:
+            continue
+        out[str(k)] = float(v)
+    return out
 
 
 def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
@@ -221,9 +598,17 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     if not isinstance(excluded, dict):
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
-    authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
+    from mt5desk.live_policy import exit_parity_refusal
+    principal_book = principal_e8_book(load_cert_book(CERT_BOOK, "e8"))
+    proven = load_fill_proven()
+    losers = load_fill_losers()
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
+    # THE REOPEN JUDGE (research/real_edge.py) PRICES, IT NEVER REFUSES: a certificate it lists
+    # unverified carries doubt code DOUBT_REAL_EDGE and is sized x DOUBT_MULT; a verified one is
+    # marked `real_edge_verified`. A verdict that cannot be read changes nothing.
+    import real_edge
+    edges, _edges_status = real_edge.load()
     accepted: list[dict[str, Any]] = []
     blocked: list[dict[str, str]] = []
     for row in rows:
@@ -231,21 +616,57 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
-        if not (authorized_book.get(book_key, 0) > 0):
-            reason = "not named with positive risk in the E8 principal book"
-        elif book_key in excluded:
+        doubts: list[str] = []
+        codes: list[str] = []
+        # EVERY PROMOTED SLEEVE FLOWS INTO E8 AND FTMO; ONLY EXOTICS ARE BLOCKED (zuck 2026-11-19
+        # 12:15Z, 2026-11-24 18:34Z). An explicit zero the principal wrote in the book and his
+        # named exclusions still stand (his own words, per sleeve); the terms fence stands (the
+        # data's own licence). Fill evidence, forward-failing families, replication and the
+        # placebo alarm SIZE the sleeve (`evidence_mult`) and never refuse it.
+        # EXIT-POLICY LIVE PARITY (Audit HOLD MF1 on #628): a certificate earned with an exit the
+        # live executors cannot run is a research trial, never an E8 sleeve. Named, never silent.
+        parity = exit_parity_refusal(row)
+        if is_exotic_pair(sym):
+            reason = "exotic FX pair: exotics are banned (principal 2026-11-24 18:04Z)"
+        elif parity:
+            reason = parity
+        elif book_key in principal_book and not principal_book[book_key] > 0:
+            reason = "principal zero in the E8 principal book"
+        elif book_key in excluded and book_key not in SUPERSEDED_EXCLUSIONS:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
             reason = f"terms-fenced input data ({source})"
-        elif gate.alarm.get("blocks"):
-            reason = str(gate.alarm.get("why") or "placebo gate alarm")
         else:
+            if gate.alarm.get("blocks"):
+                doubts.append(f"placebo alarm ({gate.alarm.get('why') or 'placebo gate'})")
+                codes.append(DOUBT_PLACEBO)
             verdict, why = gate.replication(key, str(row.get("fingerprint") or ""))
             if verdict != REPLICATED:
-                reason = f"replication {verdict}: {why}"
+                doubts.append(f"replication {verdict}: {why}")
+                codes.append(DOUBT_REPLICATION)
+            edge_doubt = real_edge.doubt(key, edges)
+            if edge_doubt:
+                doubts.append(edge_doubt)
+                codes.append(DOUBT_REAL_EDGE)
+            elif real_edge.verified(key, edges):
+                row = {**row, "real_edge_verified": True}
         if reason:
             blocked.append({"certificate": key, "why": reason})
         else:
+            if book_key in proven:
+                row = {**row, "fill_proven": proven[book_key]}
+            if codes:
+                row = {**row, "doubt_codes": codes}
+            if principal_book.get(book_key, 0) > 0:
+                # The principal's own number sizes it; a doubt is journaled, never applied.
+                row = {**row, "principal_funded": True}
+                if doubts:
+                    row = {**row, "evidence_notes": [f"{d} (journaled; principal-funded)"
+                                                     for d in doubts]}
+            else:
+                mult, notes = evidence_mult(proven.get(book_key), fam, doubts,
+                                             losers.get(book_key))
+                row = {**row, "evidence_mult": round(mult, 6), "evidence_notes": notes}
             accepted.append(row)
     return accepted, blocked
 
@@ -360,7 +781,8 @@ def growth_score(row: Mapping[str, Any], risk_frac: float = 0.0) -> float | None
 
 
 def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
-           rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+           rows: list[dict[str, Any]] | None = None,
+           days: tuple[list[str], Any] | None = None) -> dict[str, Any]:
     """The book, plus everything refused and why. An absence here is always named (L1.28a)."""
     rows = _load_survivors() if rows is None else rows
     blocked = []
@@ -492,6 +914,47 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
             break
         i += 1
 
+    # THE WORST HISTORICAL DAY, WITH CORRELATIONS, UNDER 60% OF THE 2.5% DAILY LIMIT
+    # (prop/stress.py;
+    # CIO review 2026-11-19 move #1). E8's gold lane trades on the same account, so its size is
+    # counted on every day and never cut; the sleeve book gives way, weakest-of-the-worst-family
+    # first, and every cut is a missed-growth line.
+    from prop import stress
+    from prop.e8_guard import DAILY_DRAWDOWN
+    if days is None:
+        days = stress.load_days()
+    try:
+        from mt5desk.kelly_sizing import load_cert_book
+        gold = principal_e8_book(load_cert_book(CERT_BOOK, "e8")).get("gold_asia", 0.0)
+    except Exception:
+        gold = 0.0
+    # SIZE BY EVIDENCE (`sleeve_risk`): fill-proven depth, then Tier S as a multiplier.
+    for r in chosen:
+        r["risk_frac"] = sleeve_risk(r)
+        r["risk_source"] = "evidence rule (sleeve_risk)"
+    # THEN BY THE ONE ALLOCATOR (one-pipe step 1): where E8's own solve priced the sleeve, its
+    # fraction IS the size -- larger or smaller than the evidence rule, and zero sends no order
+    # (ALLOCATOR SOVEREIGNTY). A sleeve the solve did not price keeps the evidence rule; a stale,
+    # undeployable or unreadable solve changes nothing. The stress cap below still binds.
+    solved, solved_why = e8_solved_book()
+    chosen, zeroed = apply_solved(chosen, solved)
+    # THE FALLBACK ADMITS ONLY WHAT IS PROVEN (Audit gate (b), 2026-11-26). With no deployable
+    # solve, a survivors row with no fill record used to carry the full evidence-rule size, and
+    # the allocator's rollover zero vanished with the solve. Now only a fill-proven or a
+    # principal-funded row trades in fallback (rollover hours stay gated by rollover_block at
+    # the executor). Each drop is billed.
+    fallback_dropped: list[dict[str, Any]] = []
+    if not solved:
+        chosen, fallback_dropped = fallback_filter(chosen)
+    stressed = stress.cap_book(
+        chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
+        daily_limit=DAILY_DRAWDOWN, days=days,
+        col_of=lambda r: f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}",
+        fixed={"gold_asia": gold},
+        set_risk=lambda r, v: r.update(risk_frac=float(v), risk_source=(
+            f"{r.get('risk_source')}; scaled by the stress cap")))
+    chosen = stressed.pop("kept")
+
     fams: dict[str, int] = {}
     for r in chosen:
         fams[r["family"]] = fams.get(r["family"], 0) + 1
@@ -525,6 +988,10 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "n_selected": len(chosen),
         "gross_exposure_if_all_fire": round(len(chosen) * RISK_FRAC, 5),
         "by_mechanism": fams,
+        "stress": stressed,
+        "allocator": {"source": solved_why, "n_priced": len(solved),
+                      "zeroed_by_allocator": zeroed,
+                      "fallback_dropped": fallback_dropped},
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),
@@ -596,11 +1063,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        eligible, integrity_blocked = live_admissible(_load_survivors())
+        _probes, probe_why = probe_rows()
+        eligible, integrity_blocked = live_admissible(_load_survivors() + _probes)
     except (OSError, ValueError, ImportError) as exc:
         print(f"REFUSING to write E8 book: integrity authority unavailable ({type(exc).__name__}: {exc})")
         return 1
     doc = select(tradeable, rows=eligible)
+    doc["probe_tier"] = {"why": probe_why, "offered": len(_probes),
+                         "selected": sum(1 for r in doc.get("sleeves") or []
+                                         if isinstance(r, dict) and r.get("probe"))}
     doc["blocked_by_integrity"] = integrity_blocked
     doc["n_blocked_by_integrity"] = len(integrity_blocked)
     from kelly_survival import terms_fence_state
