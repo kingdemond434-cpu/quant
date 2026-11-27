@@ -1,6 +1,6 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-26T15:16:29+00:00",
+ "generated_at": "2026-11-26T23:58:40+00:00",
  "producer": "desks/mt5/research/judge_prescreen.py (hourly leg judge_prescreen)",
  "mode": "SHADOW",
  "canon_switch": "the code constant judge_prescreen.CANON (a reviewed commit flips it)",
@@ -473,9 +473,9 @@
   "bytes": 587656387
  },
  "timing_s": {
-  "charts": 27.408,
-  "replay": 187.918,
-  "total": 284.527
+  "charts": 39.115,
+  "replay": 74.073,
+  "total": 146.655
  },
  "priority": {
   "applied": true,
@@ -501,8 +501,8 @@
    "coverage": {
     "gate_bytes_read": 587656387,
     "gate_bytes": 587656387,
-    "graph_bytes_read": 4808001460,
-    "graph_bytes": 4808001460,
+    "graph_bytes_read": 4808067039,
+    "graph_bytes": 4808067039,
     "backfill_ids_waiting": 0,
     "backfill_cursor": null,
     "backfill_end": null,
@@ -524,13 +524,13 @@
    ],
    "sample_graph_only": [],
    "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
-   "seconds": 63.568
+   "seconds": 25.956
   }
  },
  "missed_growth": [
   {
    "day": "2026-11-26",
-   "at": "2026-11-26T15:16:29+00:00",
+   "at": "2026-11-26T23:58:40+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -551,7 +551,7 @@
   },
   {
    "day": "2026-11-26",
-   "at": "2026-11-26T15:16:29+00:00",
+   "at": "2026-11-26T23:58:40+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
