@@ -319,7 +319,50 @@ def test_the_default_authority_is_the_audit_clear_and_ci_is_advisory(
 def test_the_launcher_guard_root_and_decision_follow_the_authority() -> None:
     s = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text("utf-8")
     assert 'refs/remotes/origin/$Branch' in s
-    assert '"release") { "refs/remotes/origin/production"' in s
+    assert '"release") { @("refs/remotes/origin/production")' in s
+    # the guard tree's ancestry is judged in the live clone, never through the guard's own remote
+    assert 'git -C $RepoRoot merge-base --is-ancestor $script:GuardHead $r' in s
+    assert '"refs/quant/release-gate/tip"' in s
+    assert 'git -C $guardDir merge-base' not in s
+
+
+def test_adopt_remote_reads_env_then_file_and_never_writes_git_config(
+        world: dict[str, Path], box: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The box's adoption source is the box-local forge, named without touching .git/config
+    (a config rewrite drops the sealed ACL and the pinned adopter refuses)."""
+    monkeypatch.delenv(rp.REMOTE_ENV, raising=False)
+    assert rp.adopt_remote(box) == "origin"
+    f = box / rp.REMOTE_FILE_REL
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("# box-local forge\n" + str(world["origin"]) + "\n", encoding="utf-8")
+    assert rp.adopt_remote(box) == str(world["origin"])
+    monkeypatch.setenv(rp.REMOTE_ENV, "elsewhere")
+    assert rp.adopt_remote(box) == "elsewhere"
+    monkeypatch.delenv(rp.REMOTE_ENV)
+    _g(box, "remote", "set-url", "origin", str(box / "nowhere.git"))   # origin now unreachable
+    cfg = (box / ".git" / "config").read_bytes()
+    monkeypatch.setenv(rp.AUTHORITY_ENV, rp.AUTHORITY_AUDIT_CLEAR)
+    dev = world["dev"]
+    tip = _commit(dev, {"libs/a.py": "A = 9\n"}, "forge-only tip")
+    _g(dev, "push", "-q", "origin", f"HEAD:refs/heads/{LIVE}")
+    d = rp.gate(box)                                     # fetched through the file's path
+    assert (d.decision, d.target) == ("ADOPT_CLEAR", tip)
+    assert (box / ".git" / "config").read_bytes() == cfg
+
+
+def test_an_unreachable_forge_decides_from_the_last_fetched_tip_only_under_audit_clear(
+        world: dict[str, Path], box: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    dev = world["dev"]
+    tip = _commit(dev, {"libs/a.py": "A = 8\n"}, "clear tip")
+    _g(dev, "push", "-q", "origin", f"HEAD:refs/heads/{LIVE}")
+    monkeypatch.setenv(rp.AUTHORITY_ENV, rp.AUTHORITY_AUDIT_CLEAR)
+    assert rp.gate(box).target == tip                    # one good fetch lands the private ref
+    world["origin"].rename(world["origin"].with_name("gone.git"))
+    d = rp.gate(box)
+    assert (d.decision, d.target) == ("ADOPT_CLEAR", tip)
+    monkeypatch.setenv(rp.AUTHORITY_ENV, rp.AUTHORITY_RELEASE)
+    with pytest.raises(rp.GitError):                     # the CI rule still fails closed
+        rp.gate(box)
     assert "adopt_guard.py" in s and 'Invoke-AdoptGuard @("pre", "--target", $gateTarget)' in s
 
 

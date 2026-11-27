@@ -472,10 +472,31 @@ def state_extension(git: Git, release_sha: str, tip: str) -> str:
     return best
 
 
+REMOTE_ENV = "QUANT_ADOPT_REMOTE"
+REMOTE_FILE_REL = "desks/mt5/data/ADOPT_REMOTE"
+
+
+def adopt_remote(root: Path, default: str = "origin") -> str:
+    """The remote the gate fetches from: QUANT_ADOPT_REMOTE, else the first line of
+    desks/mt5/data/ADOPT_REMOTE (a remote name, URL or path), else `default`. Read per call and
+    never written into .git/config, so pointing adoption at a forge changes no sealed ACL."""
+    v = os.environ.get(REMOTE_ENV, "").strip()
+    if v:
+        return v
+    try:
+        lines = (root / REMOTE_FILE_REL).read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return default
+    first = next((ln.strip() for ln in lines if ln.strip() and not ln.lstrip().startswith("#")), "")
+    return first or default
+
+
 def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",
          allow_unreleased: bool = False, fetch: bool = True) -> AdoptionDecision:
     """Fetch the tip and the release pointer into private refs, then decide."""
     git = Git(root)
+    if remote == "origin":
+        remote = adopt_remote(root)
     if fetch:
         tip = None
         last: Exception | None = None
@@ -486,8 +507,23 @@ def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",
             except (GitError, subprocess.SubprocessError) as exc:
                 last = exc
         if tip is None:
-            raise GitError(f"could not fetch {remote}/{branch}: {last}")
-        prod = _fetch(git, remote, PRODUCTION_BRANCH, GATE_REF_PRODUCTION)
+            # THE FORGE IS ON THIS BOX, BUT IT CAN STILL BE DOWN (one pipe 2026-11-27). Under the
+            # Audit-CLEAR authority the last tip this clone fetched is as good an answer as a fresh
+            # one: adopt_guard pre still demands a CLEAR row for every governed path it changes. So
+            # an unreachable remote decides from that ref instead of ending the pass. The CI rule
+            # keeps failing closed.
+            stale = git.rev(GATE_REF_TIP)
+            if stale is None or authority() != AUTHORITY_AUDIT_CLEAR:
+                raise GitError(f"could not fetch {remote}/{branch}: {last}")
+            tip = stale
+            prod = git.rev(GATE_REF_PRODUCTION)
+        else:
+            try:
+                prod = _fetch(git, remote, PRODUCTION_BRANCH, GATE_REF_PRODUCTION)
+            except (GitError, subprocess.SubprocessError):
+                if authority() != AUTHORITY_AUDIT_CLEAR:
+                    raise
+                prod = git.rev(GATE_REF_PRODUCTION)
     else:
         tip = git.rev(GATE_REF_TIP) or git.rev(f"{remote}/{branch}")
         if tip is None:

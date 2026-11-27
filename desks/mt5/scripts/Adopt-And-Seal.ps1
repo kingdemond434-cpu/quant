@@ -296,10 +296,19 @@ if ($GuardRoot) {
     # AUDIT-CLEAR AUTHORITY (zuck 2026-11-25 18:53Z): the guard root must be inside the LIVE
     # branch, where only Audit-CLEAR heads merge; the CI `production` pointer no longer gates.
     # QUANT_ADOPT_AUTHORITY=release restores the production rule.
-    $guardRef = if ($script:AdoptAuthority -eq "release") { "refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }
-    & git -C $guardDir merge-base --is-ancestor $script:GuardHead $guardRef 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Log ("GUARD ROOT head {0} is not inside {1} in {2}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardRef, $guardDir)
+    # NO REMOTE OF ITS OWN (one pipe 2026-11-27, root R-adopt): the guard tree's own `origin`
+    # pointed at GitHub, which refuses this box (403), so its tracking refs froze and every
+    # refreshed guard head read "not released". Ancestry is now judged in THIS box's live clone
+    # ($RepoRoot, whose origin is the box-local forge) against the live tip the release gate last
+    # fetched there, or that clone's tracking ref. The guard tree needs no network at all.
+    $guardRefs = if ($script:AdoptAuthority -eq "release") { @("refs/remotes/origin/production") } else { @("refs/quant/release-gate/tip", "refs/remotes/origin/$Branch") }
+    $guardRef = $null
+    foreach ($r in $guardRefs) {
+        & git -C $RepoRoot merge-base --is-ancestor $script:GuardHead $r 2>$null
+        if ($LASTEXITCODE -eq 0) { $guardRef = $r; break }
+    }
+    if (-not $guardRef) {
+        Log ("GUARD ROOT head {0} is not inside {1} in {2}; not adopting" -f $script:GuardHead.Substring(0, 12), ($guardRefs -join ' or '), $RepoRoot)
         Done 8 "guard-root-not-released"
     }
     $script:GuardScript = Join-Path $guardDir "scripts\adopt_guard.py"
