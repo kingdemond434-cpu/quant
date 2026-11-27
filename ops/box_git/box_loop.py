@@ -50,6 +50,7 @@ from ops.box_git import (  # noqa: E402
     delivery_leadtime,
     drop_pull,
     forge_api,
+    guard,
     impacted,
     inbox,
     state_publish,
@@ -69,6 +70,20 @@ DIRECT_LIVE = True
 DIRECT_ENV = "QUANT_FORGE_DIRECT"
 ADOPT_TASK = "MT5-AdoptRelease"
 RELEASE_JSON = "desks/mt5/data/RELEASE.json"
+#: (boot r23) THE GUARD HOLDS THE PEN. zuck 2026-11-27 13:13Z: an independent, protected,
+#: automated checker validates AI-written code and it deploys automatically; he intervenes only
+#: for authority and protected safeguards. Every PR into LIVE is checked by ops/box_git/guard.py
+#: (its code runs under quantci, the verdict is written by this loop) and merged on a PASS with no
+#: seat's CLEAR. A TRUST-class PR takes the legacy owner path. False is r21/r22 exactly.
+GUARD_LIVE = True
+#: (boot r23, Audit D1, measured on the box 2026-11-27 13:20Z) The pen is only independent while
+#: the code it lets through cannot write the pen. Today it can: MT5-Gateway and MT5-HourlyCore run
+#: the live tree as Administrator (Highest), MT5-Hourly, MT5-AdoptRelease and the forward clocks
+#: as SYSTEM, and both may write C:\ProgramData\QuantBox\guard and \trust. So until every task
+#: that runs C:\opt\quant runs as a non-admin account denied those folders (boot r24), a PASS
+#: also needs the Auditor's CLEAR of the exact head. The checks run at once and in parallel with
+#: the review (quantci is already isolated), so the CLEAR adds no wait beyond the review itself.
+REQUIRE_SEAT_CLEAR = True
 
 
 @dataclass(frozen=True)
@@ -563,6 +578,15 @@ def gate_code(cfg: Config, live: str) -> str:
 
 
 def gate_tick(cfg: Config, live: str) -> str:
+    if GUARD_LIVE:
+        merged = guard_merge_tick(cfg)
+        return f"guard: {merged}; {legacy_gate(cfg, live)}"
+    return legacy_gate(cfg, live)
+
+
+def legacy_gate(cfg: Config, live: str) -> str:
+    """The audit gate (r22 and before). Under r23 it is the OWNER path: it can still merge only
+    what the pinned checker or the owner's AUTHORIZE TRUST allows, at the door too."""
     with worktree(cfg, gate_code(cfg, live)) as root:
         env = {**os.environ, forge_api.FORGE_URL_ENV: cfg.forge_url,
                forge_api.FORGE_CA_ENV: str(cfg.ca), forge_api.FORGE_BARE_ENV: str(cfg.bare),
@@ -783,8 +807,9 @@ def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
             continue
         if checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue
-        if not audited_clear(f.gh(f"repos/x/y/issues/{p.get('number')}/comments"), head):
-            continue  # Audit MF-2: unreviewed code never runs on the trading box
+        if not GUARD_LIVE and not audited_clear(
+                f.gh(f"repos/x/y/issues/{p.get('number')}/comments"), head):
+            continue  # Audit MF-2 (r23: head code runs only as quantci, Audit D1)
         out.append(p)
     return out
 
@@ -803,6 +828,8 @@ def check_pr(cfg: Config, p: Mapping[str, Any], hold: Hold | None = None) -> str
     head = str((p.get("head") or {}).get("sha") or "")
     base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
     changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
+    if GUARD_LIVE:
+        return guard_check(cfg, p, base, head, changed)
     if DIRECT_LIVE:
         return direct_check(cfg, p, base, head, changed)
     with worktree(cfg, head) as root:
@@ -894,6 +921,147 @@ def direct_check(cfg: Config, p: Mapping[str, Any], base: str, head: str,
         post(cfg, head, "success" if rok else "failure", f"box: {rwhy} [{mwhy}]",
              (RISK_CONTEXT,))
     return f"PR #{n}: direct live, money path ({mwhy}), risk {'ok' if rok else 'FAIL'}"
+
+
+# ------------------------------------------------------------------------------ boot r23
+GUARD_FILES = ("guard.py", "trust_check.py", "TRUST_SET.json")
+
+
+def guard_dir(cfg: Any) -> Path:
+    return Path(getattr(cfg, "guard_dir", None) or guard.GUARD_DIR)
+
+
+def guard_id(cfg: Any) -> str:
+    """The hash a verdict must carry: this loop's own guard and the PINNED checker and policy."""
+    tc = getattr(cfg, "trust_checker", None)
+    files = [HERE / "guard.py"]
+    if tc:
+        files += [Path(tc), Path(tc).parent / "TRUST_SET.json"]
+    return guard.guard_hash(files)
+
+
+def pinned_trust(cfg: Any, base: str, head: str) -> tuple[bool, str, str]:
+    """(allowed, class, why) from the PINNED checker, the one the door also runs. Fails closed."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_guard_trust", cfg.trust_checker)
+        assert spec is not None and spec.loader is not None
+        tc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tc)
+        pin = json.loads(Path(cfg.trust_pin).read_text(encoding="utf-8"))
+        pol = tc.load_policy((Path(cfg.trust_checker).parent / "TRUST_SET.json")
+                             .read_text(encoding="utf-8"))
+        ok, cls, why, _t = tc.verdict(tc.strict_git("git", "-C", str(cfg.bare)), base, head,
+                                      pin, pol)
+        return bool(ok), str(cls), str(why)
+    except Exception as exc:
+        return False, "TRUST", f"trust UNMEASURED ({type(exc).__name__}: {str(exc)[:120]})"
+
+
+def _show(cfg: Any, sha: str, path: str) -> str | None:
+    try:
+        return git(cfg, "show", f"{sha}:{path}")
+    except Exception:
+        return None
+
+
+_SMOKE_PROBE = ("import sys; from pathlib import Path; sys.path.insert(0, '.');"
+                "from libs.ops import adopt_guard as g; rc, d = g.smoke(Path('.'));"
+                "print('SMOKE=' + str(d.get('decision')) + ' ' + str(d.get('reason') or ''));"
+                "raise SystemExit(rc)")
+
+
+def smoke_job(cfg: Config, root: Path) -> tuple[bool, str]:
+    rc, out = _run_untrusted(cfg, [cfg.python, "-I", "-c", _SMOKE_PROBE], cwd=root, timeout=600)
+    m = re.search(r"^SMOKE=(.*)$", out or "", re.M)
+    said = m.group(1) if m else ""
+    return (rc == 0 and said.startswith("SMOKE_OK"),
+            f"smoke rc={rc}: {(said or (out or '').strip()[-120:])[:160]}")
+
+
+def _held_by_audit(cfg: Config, n: Any, head: str) -> bool:
+    """An Auditor's or the owner's latest verdict line names this head as HOLD."""
+    try:
+        comments = _forge(cfg, forge_api.BOX_CI_USER).gh(f"repos/x/y/issues/{n}/comments")
+    except Exception:
+        return True  # unreadable: a HOLD may be there
+    last = None
+    for c in comments or []:
+        for m in _VERDICT.finditer(str(c.get("body") or "")):
+            last = (m.group(1), m.group(2))
+    return last == ("HOLD", head)
+
+
+def guard_check(cfg: Config, p: Mapping[str, Any], base: str, head: str,
+                changed: Sequence[str]) -> str:
+    """(boot r23) The guard's checks for one PR head; the verdict file is the pen."""
+    n = p.get("number")
+    gid = guard_id(cfg)
+    trust = pinned_trust(cfg, base, head)
+    with worktree(cfg, base) as b, worktree(cfg, head) as root:
+        money, mwhy = money_changes(cfg, b, root, changed)
+        scan = changed if money is None else money
+        static = guard.static_problems(
+            (c, _show(cfg, base, c), _show(cfg, head, c)) for c in scan
+            if c.endswith(".py") and not c.startswith("tests/"))
+        raises = guard.ceiling_raises(_show(cfg, base, guard.CEILINGS),
+                                      _show(cfg, head, guard.CEILINGS))
+        risk = smoke = None
+        if money != [] and trust[1] != "REFUSE":
+            risk = risk_job(cfg, root, base, head, suite_timeout_s=FAST_RISK_TIMEOUT_S)
+            if risk[0]:
+                smoke = smoke_job(cfg, root)
+    gd = guard_dir(cfg)
+    v = guard.decide(head, base, trust=trust, static=static, raises=raises, money=money,
+                     risk=risk, smoke=smoke, merges_today=guard.money_merges_today(gd),
+                     rolled_back=guard.rolled_back_heads(gd), held=_held_by_audit(cfg, n, head),
+                     guard=gid)
+    guard.write_verdict(gd, v)
+    post(cfg, head, "success" if v.ok else "failure", f"box guard {v.cls}: {v.why} [{mwhy}]",
+         (guard.CONTEXT,))
+    # the legacy (owner) path reads risk-invariants: green only for a PASS, or for a TRUST-class
+    # head whose risk run passed (or was not needed), so the owner's AUTHORIZE TRUST can merge it
+    owner_ok = v.cls == "TRUST" and (risk is None or risk[0]) and (smoke is None or smoke[0])
+    post(cfg, head, "success" if v.ok or owner_ok else "failure",
+         f"box guard {v.cls}: {v.why}"[:250], (RISK_CONTEXT,))
+    return f"PR #{n}: guard {v.cls} ({mwhy})"
+
+
+def guard_merge_tick(cfg: Config) -> str:
+    """(boot r23) Merge every open PR whose head holds this guard's PASS. Pinned to the head sha;
+    a money PR behind LIVE is brought up first (its new head is checked again)."""
+    f = _forge(cfg, "merge-gate")
+    gd, gid = guard_dir(cfg), guard_id(cfg)
+    live = live_head(cfg)
+    out = []
+    for p in f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}") or []:
+        n, head = p.get("number"), str((p.get("head") or {}).get("sha") or "")
+        if not str((p.get("head") or {}).get("ref") or "").startswith("claude/"):
+            continue
+        v = guard.read_verdict(gd, head, gid)
+        if v is None:
+            continue
+        comments = f.gh(f"repos/x/y/issues/{n}/comments") or []
+        if _held_by_audit(cfg, n, head):
+            out.append(f"#{n} HOLD")
+            continue
+        if REQUIRE_SEAT_CLEAR and not audited_clear(comments, head):
+            out.append(f"#{n} guard PASS, waits for the Auditor's CLEAR (until boot r24)")
+            continue
+        behind = _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", live, head],
+                      timeout=120)[0] != 0
+        if behind and v.money:
+            f.gh(f"repos/x/y/pulls/{n}/update-branch", "-X", "PUT", data={})
+            out.append(f"#{n} brought up to LIVE; checked again")
+            continue
+        f.gh(f"repos/x/y/pulls/{n}/merge", "-X", "PUT",
+             data={"sha": head, "merge_method": "merge",
+                   "commit_title": f"Merge #{n} (box guard PASS {head[:9]})"})
+        merged = live_head(cfg)
+        guard.record_merge(gd, n, head, merged, v.money)
+        live = merged
+        out.append(f"#{n} merged ({'money' if v.money else 'not money'})")
+    return "; ".join(out) or "nothing to merge"
 
 
 def _held(hold: Hold, fn: Callable[..., str], cfg: Config, p: Mapping[str, Any]) -> str:

@@ -74,4 +74,4 @@ def test_pull_stages_packets_after_drop_local(tmp_path) -> None:
     i, j = src.index("stage_local(local, drop.checkout)"), src.index(
         "stage_packets(packets, drop.checkout, keep=local)")
     assert i < j
-    assert D.PACKETS_LOCAL == Path(r"C:\opt\bridge\quant\packets_inbox")
+    assert Path(r"C:\opt\bridge\quant\packets_inbox") == D.PACKETS_LOCAL
