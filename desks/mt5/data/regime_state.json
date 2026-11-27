@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-27T16:45:03.328418+00:00",
+  "swept_at": "2026-11-27T17:00:05.547936+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1384,7 +1384,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5106,
+      "shadow_exp_r": -0.4952,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -1527,7 +1527,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0939,
+      "shadow_exp_r": -0.0819,
       "woke_on_shadow": false
     },
     "USDSEK|overnight_gap_decay_asia": {
@@ -1879,7 +1879,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4481,
+      "shadow_exp_r": -0.363,
       "woke_on_shadow": false
     },
     "XTIUSD|range_reversion_asia": {
@@ -1890,7 +1890,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -1.874,
+      "shadow_exp_r": -0.512,
       "woke_on_shadow": false
     },
     "xau|m15_anti_breakout": {
