@@ -524,7 +524,13 @@ if (Test-Path $gateScript) {
 # obeys and only a passing health check lifts. A guard that cannot run keeps the running release.
 # A GUARD ROOT DECIDES ONLY FOR CODE IT IS PART OF: its commit must be an ancestor of (or be) the
 # target, so the guard that vouches is never newer than, or foreign to, the release it lets in.
-if ($script:GuardHead) {
+# UNDER -Pinned THE GUARD IS THE OWNER'S INSTALL, NOT PART OF THE RELEASE (one pipe 2026-11-27).
+# The pinned guard tree lives on the boot line (r24/r25), which LIVE does not contain and cannot
+# take without trust-set and gate edits that need the owner. Requiring it inside the target held
+# every release forever. Its authority is install_guard's ACL and pin, already checked above; the
+# target is judged by pre (CLEAR rows), smoke, health and rollback exactly as before. Unpinned
+# guard roots keep the ancestry rule.
+if ($script:GuardHead -and -not $Pinned) {
     & git -C $RepoRoot merge-base --is-ancestor $script:GuardHead $gateTarget 2>$null
     if ($LASTEXITCODE -ne 0) {
         Log ("GUARD ROOT head {0} is not an ancestor of the target {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $gateTarget.Substring(0, 12))

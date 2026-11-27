@@ -31,6 +31,8 @@ def test_a_guard_root_is_clean_and_inside_the_target_before_pre() -> None:
     assert ADOPT.index("$gateTarget = [string]$gate.target") < anc
     assert anc < ADOPT.index('Invoke-AdoptGuard @("pre"') < ADOPT.index("\n$script:Adopted = $true")
     assert 'Done 8 "guard-root-not-in-target"' in ADOPT
+    # the owner's pinned install is exempt: the boot line is never inside LIVE
+    assert "if ($script:GuardHead -and -not $Pinned) {" in ADOPT
 
 
 def test_the_scheduled_task_never_passes_a_guard_root() -> None:
