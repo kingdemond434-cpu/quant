@@ -1,0 +1,9 @@
+{
+ "file": "install_auto_boot_move.r13.ps1",
+ "sha256": "1abb7ceded6ab19be205e180964f7c7ca21c2928c666cb0a0e38f0577a2cf5e3",
+ "line": "AUDIT CLEAR install_auto_boot_move.r13.ps1 1abb7ceded6ab19be205e180964f7c7ca21c2928c666cb0a0e38f0577a2cf5e3",
+ "must_fix": [],
+ "conditions": [
+  "run with -ExpectSha256 5b1439a8d7bf0693c70acfc3a633a26a5ea86f599614068585e4e637dd2b78ad (mover r18c) only"
+ ]
+}

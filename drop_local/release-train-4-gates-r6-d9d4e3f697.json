@@ -1,7 +1,0 @@
-{
- "branch": "claude/release-train-4-gates-r6",
- "head": "d9d4e3f697ea3cb2d0fb31881ef569408db5b995",
- "title": "release-train-4-gates r6: probe tier 11141703f + promoter re-sign",
- "body": "Audit CLEAR d9d4e3f69. Train r5 23f3b984e + probe tier (every promising forward clock live at n/(n+50), SPRT demote). Revert: data/PROBE_TIER_OFF.",
- "comments": []
-}

@@ -1,22 +1,16 @@
-# Drop delivery brief (Autonomy). Audit CLEAR packets, transport only.
+# Owner act brief (Autonomy), 2026-11-27. Audit CLEAR: mover r18c, installer r13, boot r20.
 
-Do this only if this session is elevated, meaning `whoami /groups` shows S-1-16-12288.
+Do this only if this session is elevated (`whoami /groups` shows S-1-16-12288). It is zuck's own act: he asked for it by typing the sentence that pointed here.
 
-1. Clone this branch (autonomy/drop-local-20261126 of kingdemond434-cpu/quant) at commit fe5383fbfa27fc2f599fe78d57004d1e483d018a into a temp folder.
-2. Copy these 15 files from its `drop_local\` into `C:\opt\bridge\quant\drop_local\`, keeping their relative paths:
-   - ceilings-ftmo-gold-e8-probe-7c3fbc4a20.{bundle,json}
-   - gold-session-probe-forge-a52e840922.{bundle,json}
-   - ftmo-gold-decouple-forge-cc85654d0e.{bundle,json}
-   - ftmo-gold-sleeves-forge-09f8cba568.{bundle,json}
-   - release-train-4-gates-r6-d9d4e3f697.{bundle,json}
-   - verdicts\<each of those five ids>.json
-
-   Copy all .bundle files first, then the manifests, and the verdicts last. Write each one through a temp name in the destination folder, then rename it. Skip anything named ftmo-gold-decouple-forge-74bb2d4433.
-3. Check each bundle's sha256 before you copy it, and refuse any mismatch:
-   - ceilings E2DC0DFD1B9CFB5131DB59A8C4A5ED37D2F04CCB74BC1D8AB23BB59655FA2A78
-   - gold-session-probe E181C99F854E07CBE3AA6FF90CE0B937EC29655A5CDB6D4705269585720FB172
-   - decouple 2944A8E4ED8D5430DD53DC5C9F0B1EB5656FA990476467DA94EE43001AF5F6E3
-   - sleeves B5D0A729148667954850AF14183B6908A2513E4A19642C1DB32A4E10C07BF48D
-   - train r6 48AFF72D3B95F70A72ED0CD79CF89DABE9E51B8882EAA0514EB2160B7F013A77
-4. Touch nothing else. Do not run the inbox or the loop, do not initialize MT5, and do not stop any task.
-5. Print the last 6 lines of C:\ProgramData\QuantBox\forge\boot_moves.jsonl, plus `Get-ScheduledTask QuantForge-Loop,QuantForge-BootMove | Get-ScheduledTaskInfo`.
+1. Clone this branch (autonomy/drop-local-20261127 of kingdemond434-cpu/quant) into a temp folder.
+2. Copy these 5 files from its `drop_local\forge_reboot\` into `C:\opt\bridge\quant\drop_local\forge_reboot\`. Write each one through a temp name in that folder and then rename it.
+   - auto_boot_move.r18c.ps1 (sha256 must be 5B1439A8D7BF0693C70ACFC3A633A26A5EA86F599614068585E4E637DD2B78AD)
+   - install_auto_boot_move.r13.ps1 (sha256 must be 1ABB7CEDED6AB19BE205E180964F7C7CA21C2928C666CB0A0E38F0577A2CF5E3)
+   - boot-r20-8426165f3.bundle (sha256 must be 27467AF88577848DCB4A06ABA508CD779B4965D183931BA4979B2A7114418408). Copy it first.
+   - boot-r20-8426165f3.bundle.sha256. Copy it second.
+   - boot-r20-8426165f3.verdict.json. Copy it last.
+   Refuse any file whose sha256 does not match.
+3. Run `& C:\opt\bridge\quant\drop_local\forge_reboot\install_auto_boot_move.r13.ps1 -ExpectSha256 5b1439a8d7bf0693c70acfc3a633a26a5ea86f599614068585e4e637dd2b78ad` and print its output.
+4. As the owner's approval of boot r20, create the empty file `C:\ProgramData\QuantBox\forge\owner_approvals\8426165f334de49ce5b6e043483da831a28d2afe.txt`. Use New-Item only: no copy, no link, nothing else in that folder.
+5. Touch nothing else. Do not run the loop or the inbox, do not initialize MT5, and do not stop any task.
+6. Print the last 6 lines of C:\ProgramData\QuantBox\forge\boot_moves.jsonl and `Get-ScheduledTask QuantForge-Loop,QuantForge-BootMove | Get-ScheduledTaskInfo`.

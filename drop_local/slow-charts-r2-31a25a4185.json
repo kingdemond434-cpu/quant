@@ -1,7 +1,0 @@
-{
- "branch": "claude/slow-charts-r2",
- "head": "31a25a418541010e972c1947efa09156e91de847",
- "title": "Slow charts r2: H4 and D1 candidates reach the docket first",
- "body": "Research packet, Audit CLEAR 31a25a4185 (supersedes 7f8f0e9908). Additive only; D1 skips clock-hour families. Box proof: HYPOTHESIS_FAMILIES.json D1/H4 counts rise.",
- "comments": []
-}

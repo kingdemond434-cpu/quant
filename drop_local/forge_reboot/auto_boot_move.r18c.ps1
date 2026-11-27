@@ -1,3 +1,5 @@
+# (r18c, 2026-11-27) D2 restored: a TRUST/CONTRACT boot that cannot narrow T moves after a 10-min silent veto on an
+#   announced chat notice (zuck 11-26 22:25Z/22:59Z); the clock is this mover's own journal. D1 still needs the owner file.
 # (r18b, owner 2026-11-26 20:51Z) every boot bundle the mover skips leaves one journal row (result skipped, bundle, why).
 # (r18, 2026-11-26 17:33Z) D is now decided by the current boot's own trust checker: ORDINARY/TIGHTEN move on CLEAR alone,
 #   everything else needs $F\owner_approvals\<sha>.txt in an admin-only folder outside the drop (the owner's act; no hour,
@@ -253,11 +255,45 @@ if ($hitT) {
                 if ($LASTEXITCODE -or $links.Count -ne 1) { $why1 = "approval file has $($links.Count) hard links" }
             }
         }
+        # D2 (r18c, zuck 2026-11-26 22:25:48Z "make it so silence is my word" + 22:59Z "make it 10 minutes all these"):
+        #     with no owner file, a TRUST/CONTRACT boot that cannot narrow T passes after a 10-minute silent veto. The
+        #     clock is the MOVER'S OWN journal (first time it saw the announcement, box clock, admin-only file), never a
+        #     drop file's mtime. The announcement is forge_reboot\announced\<sha>.txt holding the project-chat message id
+        #     of the coordinator's one-line notice to zuck (Claude discipline, as in r11; the box cannot verify the post).
+        #     A VETO <sha> anywhere in the drop (checked above) blocks forever. D1 paths always need the owner file.
+        $D1 = @('ops/box_git/TRUST_SET.json', 'ops/box_git/trust_check.py', 'ops/box_git/protect.py')
+        $d1Hit = @($hitT | Where-Object { $D1 -contains $_ -or $_ -like 'ops/release/authority/*' })
+        $VetoMin = 10
+        if ($why1 -and -not $d1Hit -and $cls -in @('TRUST', 'CONTRACT')) {
+            $annD = Join-Path $Drop "forge_reboot\announced\$New.txt"
+            $msg = $null
+            try { if (Test-Path -LiteralPath $annD -PathType Leaf) {
+                $m = [regex]::Match([IO.File]::ReadAllText($annD, $U8), 'cmsg_[0-9A-Za-z]{20,}')
+                if ($m.Success) { $msg = $m.Value } } } catch {}
+            if ($msg) {
+                $seen = $null
+                foreach ($ln in [IO.File]::ReadAllLines($Journal, $U8)) {
+                    try { $r = $ln | ConvertFrom-Json } catch { continue }
+                    if ($r.result -eq 'announce_seen' -and $r.new -eq $New -and -not $seen) { $seen = [datetime]::Parse($r.at).ToUniversalTime() }
+                }
+                if (-not $seen) {
+                    Journal @{ result = 'announce_seen'; old = $Old; new = $New; class = $cls; msg = $msg; veto_min = $VetoMin; paths = @($hitT | Select-Object -First 20) }
+                    exit 0
+                }
+                $age = ((Get-Date).ToUniversalTime() - $seen).TotalMinutes
+                if ($age -lt $VetoMin) {
+                    Journal @{ result = 'awaiting_silence'; old = $Old; new = $New; class = $cls; msg = $msg; minutes_left = [Math]::Round($VetoMin - $age, 1) }
+                    exit 0
+                }
+                Journal @{ result = 'silence_approved'; old = $Old; new = $New; class = $cls; why = $clsWhy; msg = $msg; seen = $seen.ToString('o'); veto_min = $VetoMin }
+                $why1 = $null; $ann = $annD
+            }
+        }
         if ($why1) {
-            Journal @{ result = 'awaiting_owner'; old = $Old; new = $New; class = $cls; why = $clsWhy; owner = $why1; paths = @($hitT | Select-Object -First 20) }
+            Journal @{ result = 'awaiting_owner'; old = $Old; new = $New; class = $cls; why = $clsWhy; owner = $why1; d1 = $d1Hit; paths = @($hitT | Select-Object -First 20) }
             exit 0
         }
-        Journal @{ result = 'owner_approved'; old = $Old; new = $New; class = $cls; why = $clsWhy; file = $ann }
+        if ($ann -notlike '*\announced\*') { Journal @{ result = 'owner_approved'; old = $Old; new = $New; class = $cls; why = $clsWhy; file = $ann } }
     }
 }
 

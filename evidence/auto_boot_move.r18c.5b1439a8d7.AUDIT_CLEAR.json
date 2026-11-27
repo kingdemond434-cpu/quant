@@ -1,0 +1,11 @@
+{
+ "file": "auto_boot_move.r18c.ps1",
+ "sha256": "5b1439a8d7bf0693c70acfc3a633a26a5ea86f599614068585e4e637dd2b78ad",
+ "line": "AUDIT CLEAR auto_boot_move.r18c.ps1 5b1439a8d7bf0693c70acfc3a633a26a5ea86f599614068585e4e637dd2b78ad",
+ "must_fix": [],
+ "conditions": [
+  "operating condition 1: the notice to zuck names the sha, what changes in plain words, and 'reply stop to veto', posted before the announced file",
+  "operating condition 2: any zuck reply in an open window that is not a yes is a VETO; coordinator relays, Autonomy writes VETO <sha> before the window ends",
+  "operating condition 3: Audit spot-checks every silence_approved row against a real coordinator post naming that sha; mismatch = incident + revert"
+ ]
+}

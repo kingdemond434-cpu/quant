@@ -1,7 +1,0 @@
-{
- "branch": "claude/gold-session-probe-forge",
- "head": "a52e8409224a9c86d8cdc578678f09bd90bfecee",
- "title": "E8 gold: London/afternoon live probe with latched auto-demote, asia speed lift to 0.0075 (#1370 r3, forge)",
- "body": "Audit CLEAR a52e8409224a9c86d8cdc578678f09bd90bfecee. Train after ceilings-ftmo-gold-e8-probe (7c3fbc4a2): its ceilings rows bound this PR's money-path knobs.",
- "comments": []
-}

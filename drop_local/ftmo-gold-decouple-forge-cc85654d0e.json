@@ -1,7 +1,0 @@
-{
- "branch": "claude/ftmo-gold-decouple-forge",
- "head": "cc85654d0ecd410a5475a243e9d05a3692da2f97",
- "title": "gold_oco: decouple FTMO from E8/Fusion gold (#1371 r2, forge)",
- "body": "Audit CLEAR 74bb2d4433142bfb7180c47ad21ac2c5a3aa5b96. Train after ceilings-ftmo-gold-e8-probe (7c3fbc4a2): its ceilings rows bound this PR's money-path knobs.",
- "comments": []
-}
