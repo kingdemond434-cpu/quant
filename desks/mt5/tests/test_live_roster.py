@@ -79,3 +79,16 @@ def test_the_zero_live_page_counts_e8_gold_as_e8_trading(tmp_path, monkeypatch) 
     doc = z.assess(NOW)
     assert doc["accounts"]["e8"]["status"] == z.LIVE and doc["accounts"]["e8"]["via"] == "e8_gold"
     assert "e8" not in doc["not_trading"]
+
+
+def test_gold_never_hides_a_broken_e8_book(tmp_path, monkeypatch) -> None:
+    """Audit MF1: an UNMEASURED E8_BOOK keeps E8 down and paging even while gold trades."""
+    p = _paths(tmp_path)
+    p["e8_book"].write_text("{torn", encoding="utf-8")
+    for attr, key in (("E8_GOLD", "e8_gold"), ("E8_BOOK", "e8_book"), ("FTMO_BOOK", "ftmo"),
+                      ("SLEEVES", "fusion"), ("PAUSE", "pause")):
+        monkeypatch.setattr(z, attr, p[key])
+    doc = z.assess(NOW)
+    assert doc["accounts"]["e8"]["status"] == z.UNMEASURED
+    assert doc["accounts"]["e8"]["gold_live"] == 2
+    assert "e8" in doc["not_trading"] and doc["page"] is True

@@ -154,9 +154,14 @@ def assess(now: datetime | None = None, *, live: dict[str, Any] | None = None) -
     with contextlib.suppress(Exception):
         live = live if live is not None else roster(now)
         gold = [r for r in live.get("rows") or [] if r.get("lane") == "e8_gold"]
-        if gold and accounts["e8"]["status"] in (ZERO, UNMEASURED):
+        # Only ZERO is lifted. An UNMEASURED E8_BOOK is a broken book or allocator (the 6-day
+        # crash class this page exists to catch), so it keeps E8 down and paging even while
+        # the gold windows trade (Audit MF1, 2026-11-27).
+        if gold and accounts["e8"]["status"] == ZERO:
             accounts["e8"] = {"status": LIVE, "n": len(gold), "via": "e8_gold",
-                              "book_status": accounts["e8"]["status"]}
+                              "book_status": ZERO}
+        elif gold and accounts["e8"]["status"] == UNMEASURED:
+            accounts["e8"]["gold_live"] = len(gold)
     trading = market_day(now)
     down = sorted(a for a, v in accounts.items() if v["status"] in (ZERO, UNMEASURED))
     page = trading and bool(down)
