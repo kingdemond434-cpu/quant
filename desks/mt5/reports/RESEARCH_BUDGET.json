@@ -1,5 +1,5 @@
 {
- "at": "2026-11-27T06:19:33+00:00",
+ "at": "2026-11-27T06:42:10+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-27T06:19:28+00:00",
+   "at": "2026-11-27T06:41:55+00:00",
    "bandit_at": "2026-11-27T01:43:54.260116+00:00",
    "hour": "2026-11-27T06",
    "arm": "control",
@@ -18,17 +18,17 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 1677.7,
-   "surplus_why": "department 'discovery' measured spare 1678s/hour",
+   "surplus_s": 1654.6,
+   "surplus_why": "department 'discovery' measured spare 1655s/hour",
    "contract": {
     "n_treated": 32,
-    "n_control": 11,
+    "n_control": 12,
     "mean_treated": 0.4375,
-    "mean_control": 0.181818,
-    "delta": 0.255682,
-    "t": 1.56,
-    "verdict": "UNDECIDED",
-    "why": "Welch t=1.56 over 32 treated vs 11 held-out leg-runs in the last 14 days",
+    "mean_control": 0.166667,
+    "delta": 0.270833,
+    "t": 1.727,
+    "verdict": "ADMITTED",
+    "why": "Welch t=1.727 over 32 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -121,17 +121,17 @@
   "organ": "report:RESEARCH_BUDGET.json"
  },
  "control_arm": {
-  "admitted": 0.0,
+  "admitted": 1.0,
   "legs": {
    "alpha_evolution": {
     "n_treated": 32,
-    "n_control": 11,
+    "n_control": 12,
     "mean_treated": 0.4375,
-    "mean_control": 0.181818,
-    "delta": 0.255682,
-    "t": 1.56,
-    "verdict": "UNDECIDED",
-    "why": "Welch t=1.56 over 32 treated vs 11 held-out leg-runs in the last 14 days",
+    "mean_control": 0.166667,
+    "delta": 0.270833,
+    "t": 1.727,
+    "verdict": "ADMITTED",
+    "why": "Welch t=1.727 over 32 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
