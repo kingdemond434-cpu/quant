@@ -125,6 +125,7 @@ def test_the_classifier_is_replay_shadows_own(tmp_path) -> None:
 
 
 def test_check_pr_routes_every_pr_to_the_direct_check(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(L, "GUARD_LIVE", False)  # pins r21 behaviour (r23 routes to the guard)
     monkeypatch.setattr(L, "git", lambda cfg, *a, **k: A if a[0] == "merge-base" else "x.py")
     seen = []
     monkeypatch.setattr(L, "direct_check", lambda cfg, p, base, head, ch: seen.append(
