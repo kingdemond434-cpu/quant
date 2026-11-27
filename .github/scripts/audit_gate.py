@@ -191,6 +191,8 @@ PROTECTED = (
     # the box runner of this gate: it sets the authority's key, folder and pin paths, so an AUTO
     # merge of it could point the gate at another key (ops/release/authority/ROOT_POLICY.json)
     "ops/box/workflow_gate.ps1",
+    # the box forge: its branch protection, CI trust anchor and release loop (D-20261119-BOXGIT)
+    "ops/box_git/*",
 )  # fmt: skip
 #: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
 SECRETS = ("data/secrets/*", "*/data/secrets/*")
@@ -265,6 +267,18 @@ CEILINGS_FILE = "ops/release/ceilings.json"
 #: The job that holds a PR to the ceilings and the firm rules. Required on every merge that rests on
 #: the standing approval, so a prop firm's own limit binds on every autonomous path.
 RISK_JOB = "risk-invariants"
+#: On the box forge there is no owner APPROVE and no host branch protection behind the gate, so
+#: every PR needs the risk invariants AND replay-shadow green at its head (Audit MF-5).
+FORGE_REQUIRED = ("risk-invariants", "replay-shadow")
+
+
+FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
+#: (boot r21) set by the box loop when DIRECT_LIVE is on: the risk invariants are the one check.
+DIRECT_ENV = "QUANT_FORGE_DIRECT"
+
+
+def forge_need(need: tuple[str, ...]) -> tuple[str, ...]:
+    return (*need, *(j for j in FORGE_REQUIRED if j not in need))
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
@@ -681,7 +695,140 @@ def newest_run_id(
 GH_TIMEOUT_S = 120
 
 
+_FORGE: Any = None
+
+
+def _forge() -> Any:
+    """The box forge's answer to `_gh` (ops/box_git/forge_api.py), when QUANT_FORGE_URL is set.
+
+    THE BOX IS THE SOURCE OF TRUTH (principal 2026-11-19, D-20261119-BOXGIT). The rules in this
+    file are unchanged; only where their facts come from moves. The forge module is read from
+    THIS checkout (the base's), like every other part of the gate."""
+    global _FORGE
+    if _FORGE is None:
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[2] / "ops" / "box_git" / "forge_api.py"
+        spec = importlib.util.spec_from_file_location("_gate_forge_api", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("the forge adapter is missing from this checkout")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        issue = os.environ.get("QUANT_FORGE_APPROVALS_ISSUE")
+        _FORGE = mod.Forge(mod.http_transport(), workflow_of=WORKFLOW_OF,
+                           bare=os.environ.get(mod.FORGE_BARE_ENV),
+                           approvals_issue=int(issue) if issue and issue.isdigit() else None)
+    return _FORGE
+
+
+#: THE TRUST BOUNDARY ON THE BOX FORGE (zuck 2026-11-19 20:22Z; Governance's policy,
+#: D-20261119-TRUSTSET). ops/box_git/trust_check.py and TRUST_SET.json are loaded from a box-local
+#: folder only Administrators and SYSTEM can write, never from this checkout or a PR. The pin
+#: beside them is the hash of the trust set T as last authorized. ORDINARY changes merge on the
+#: Auditor's CLEAR and green box CI; TIGHTEN (proven grow-only) merges too and moves the pin; a
+#: TRUST change needs the owner's own, unedited, non-app `AUTHORIZE TRUST <head sha>`.
+TRUST_CHECKER_ENV = "QUANT_TRUST_CHECKER"
+TRUST_PIN_ENV = "QUANT_TRUST_PIN"
+AUTHORIZE_TRUST = re.compile(r"AUTHORIZE TRUST ([0-9a-f]{40})")
+_TRUST_MOD: Any = None
+
+
+def _trust_checker() -> Any:
+    global _TRUST_MOD
+    if _TRUST_MOD is None:
+        import importlib.util
+
+        path = os.environ.get(TRUST_CHECKER_ENV) or ""
+        spec = importlib.util.spec_from_file_location("_box_trust_check", path) if path else None
+        if spec is None or spec.loader is None:
+            raise RuntimeError("no pinned trust checker on this box")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _TRUST_MOD = mod
+    return _TRUST_MOD
+
+
+def owner_authorized(comments: Iterable[Mapping[str, Any]], head: str) -> bool:
+    """The owner typed exactly `AUTHORIZE TRUST <head>` (no app, never edited)."""
+    for c in comments:
+        m = AUTHORIZE_TRUST.fullmatch(str(c.get("body") or "").strip())
+        if m and m.group(1) == head and _zuck_typed(c):
+            return True
+    return False
+
+
+def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
+                comments: Iterable[Mapping[str, Any]], git: Callable[..., str] | None = None,
+                checker: Any = None, pin_path: str | None = None) -> tuple[bool, str, None]:
+    """(may merge, why, None). The pinned checker's one `verdict`, read-only: the gate never
+    writes the pin (Governance 2026-11-19: only the SYSTEM pin writer does). FAILS CLOSED: no
+    checker, no pin, or any error refuses. A trust change the owner has typed AUTHORIZE TRUST for
+    waits until the pin writer has verified and recorded it."""
+    try:
+        mod = checker or _trust_checker()
+        pp = pin_path if pin_path is not None else os.environ.get(TRUST_PIN_ENV) or ""
+        pin = json.loads(Path(pp).read_text(encoding="utf-8"))
+        changed = sorted({str(f.get("filename")) for f in files if f.get("filename")} |
+                         {str(f.get("previous_filename")) for f in files
+                          if f.get("previous_filename")})
+        # the checker's own strict reader: the gate's _git strips and replaces, so it measured a
+        # different T than the pin writer and no forge merge could ever pass (Audit MF-7)
+        g = git or mod.strict_git("git")
+        # What LIVE would become, as the door measures the pushed merge: a branch older than the
+        # trust set's own files would otherwise read as deleting them (2026-11-20 box). A
+        # conflict or any odd output is unmeasured and refuses. The bootstrap head is pinned
+        # exactly, so it is measured as itself.
+        sha40 = re.compile(r"[0-9a-f]{40}")
+        tip = g("rev-parse", "--verify", f"{base}^{{commit}}").strip()  # the sha the pin names
+        if not sha40.fullmatch(tip):
+            raise RuntimeError("the base could not be resolved")
+        target = head
+        if head != pin.get("bootstrap_head"):
+            out = g("merge-tree", "--write-tree", tip, head).split()
+            if not out or not sha40.fullmatch(out[0]):
+                raise RuntimeError("the merge result could not be measured")
+            target = out[0]
+        ok, cls, why, _t = mod.verdict(g, tip, target, pin, changed=changed)
+    except Exception as exc:  # anything unmeasured refuses
+        return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
+    if ok:
+        return True, f"{cls}: {why}", None
+    if cls == "REFUSE":  # a prop firm's own published limit: nobody overrides it
+        return False, f"refused: {why}", None
+    hint = (" (the owner has authorized it; the pin writer records that within minutes)"
+            if owner_authorized(comments, head) else
+            f": needs the owner's AUTHORIZE TRUST {head}" if cls == "TRUST" else "")
+    return False, f"{cls}: {why}{hint}", None
+
+
+RULES_LOG_ENV = "QUANT_FORGE_RULES_LOG"
+
+
+def rules_log(pr: int, head: str, files: list[Mapping[str, Any]],
+              clear: Mapping[str, Any]) -> None:
+    """One row per merged change to the gate's own rules or the AI's permissions (a ROOT path),
+    so that history stays visible with no notification and no tap (Simplify rules, 2026-11-19).
+    Never fatal: the merge already happened."""
+    path = os.environ.get(RULES_LOG_ENV)
+    if not path or not touches_root(files):
+        return
+    row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "pr": pr, "head": head,
+           "by": clear.get("by") or "auditor", "verdict_at": clear.get("at"),
+           "files": sorted({str(f.get("filename")) for f in files if f.get("filename")})[:50],
+           "undo": f"git revert -m 1 <merge of #{pr}> (head {head[:12]}), merged by the gate"}
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+    except OSError:
+        pass
+
+
 def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
+    if os.environ.get("QUANT_FORGE_URL"):
+        try:
+            return _forge().gh(*args, data=data)
+        except (OSError, ValueError, KeyError) as exc:
+            raise RuntimeError(f"forge {' '.join(args)}: {type(exc).__name__}: {exc}") from exc
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
@@ -1011,7 +1158,7 @@ def gate_root_digest() -> str | None:
         # file must never change what is pinned
         names = subprocess.run(
             ["git", "-C", str(top), "ls-tree", "-r", "--name-only", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, check=True, encoding="utf-8", errors="replace",
         ).stdout.splitlines()  # fmt: skip
 
         def read(n: str) -> bytes | None:
@@ -1601,6 +1748,19 @@ def run(
                 twhy
             )
         clear, why = cleared(found, head, same_change)
+        if clear is not None and os.environ.get("QUANT_FORGE_URL"):
+            # THE BOX FORGE (principal 2026-11-19 19:56-19:59Z and 20:22Z): no paste, no wait, no
+            # comment from zuck. The Auditor's CLEAR of the exact head plus green box CI merges
+            # every change outside the trust set T; inside T only what the pinned checker proves
+            # is a tightening, or what the owner himself pinned. Marked standing, so
+            # risk-invariants (the ceilings and the prop firms' own limits) must still pass.
+            ok_t, twhy_t, _ = forge_trust(
+                base, head, files,
+                _flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
+                          "--slurp")))
+            if not ok_t:
+                return None, f"{why}; {twhy_t}"
+            return {**clear, "standing": "yes"}, f"{why}; {twhy_t}"
         if clear is not None:
             ap = _gh(
                 f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
@@ -1725,6 +1885,20 @@ def run(
         need = required + auto
         if clear.get("standing") and RISK_JOB not in need:
             need = (*need, RISK_JOB)
+        if os.environ.get("QUANT_FORGE_URL"):
+            need = forge_need(need)
+            # THE FAST PATH (zuck 2026-11-25 18:53Z; Audit 18:53Z, HOLD H2 19:08Z): on the box
+            # forge an Auditor CLEAR at the exact head plus the two KEPT money gates decide (risk
+            # invariants and replay-shadow); quality and coverage are informational.
+            # QUANT_FORGE_FULL_GATING=1 restores all.
+            if os.environ.get(FULL_GATING_ENV, "").strip() not in {"1", "true", "yes"}:
+                need = FORGE_REQUIRED
+            # DIRECT LIVE (boot r21; zuck 2026-11-27 11:40-11:42Z "js built n direct live",
+            # "ok only that nth else"): the Auditor CLEAR at the exact head plus the risk
+            # invariants, which the box runs only on a money-path diff (else it posts a success
+            # that says no check applies). replay-shadow no longer gates.
+            if os.environ.get(DIRECT_ENV, "").strip() in {"1", "true", "yes"}:
+                need = (RISK_JOB,)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
@@ -1812,6 +1986,7 @@ def run(
         },
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
+    rules_log(pr, head, files, clear)
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

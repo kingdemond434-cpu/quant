@@ -57,6 +57,13 @@ def _commit(repo: Path, msg: str) -> str:
     return _g(repo, "rev-parse", "HEAD")
 
 
+@pytest.fixture(autouse=True)
+def _no_guard_lists(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The guard checkout's own closure would govern only real money paths; these fixtures use
+    toy paths, so the guard copy is absent and each test's own commits decide."""
+    monkeypatch.setattr(ag, "_GUARD_ROOT", tmp_path / "no-guard-checkout")
+
+
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
     """A box checkout: code, box state, and a seal commit naming the code."""
@@ -707,7 +714,7 @@ def test_adopt_and_seal_runs_the_guard_in_order() -> None:
         "$adoptOut = @(& powershell.exe",
         'Invoke-AdoptGuard @("smoke")',
         'Invoke-AdoptGuard @("blackout", "--margin-min", "30")',
-        "release.seal(by='Adopt-And-Seal')",
+        "release.seal(root=Path(sys.argv[1]), by='Adopt-And-Seal')",
         "$script:Recycled = $true",
         '$hlArgs = @("health", "--sealed", $head',
         '"--arm-canary", "--release", $head, "--prev", $script:HeadBefore',
@@ -1156,3 +1163,48 @@ def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
     text = json.dumps(_ROW) + "\n" + json.dumps(_ROW, indent=1) + "\n\n{oops\n"
     with pytest.raises(ag.GuardError, match=rf":{text.count(chr(10))} is not JSON"):
         ag.parse_clears(text)
+
+
+# ------------------------------------------------- money code only (Audit 2026-11-27 lock 3 (b))
+def test_only_money_closure_and_protected_code_needs_a_row(repo: Path) -> None:
+    head = _head(repo)
+    lists = _origin(repo, head, {ag.MONEY_CLOSURE_REL: "libs/x.py\n",
+                                 ag.PROTECTED_REL: "# the controller\nops/release/*\n"})
+    _g(repo, "merge", "-q", "--ff-only", lists)
+    target = _origin(repo, lists, {"libs/x.py": "X = 2\n", "libs/y.py": "Y = 2\n",
+                                   "ops/release/gate.py": "G = 1\n"})
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == [
+        "libs/x.py", "ops/release/gate.py", ag.PROTECTED_REL], doc
+    row = ag.clear_row(repo, target, "CLEAR", "reports/audit/2026-11-27/X.md", base=head)
+    row["paths"] = {k: v for k, v in row["paths"].items() if k != "libs/y.py"}
+    cleared = _with_clears(repo, target, row)
+    assert ag.pre(repo, cleared, now=QUIET, offset_h=summer)[0] == ag.GO   # y.py ships ungated
+
+
+def test_a_target_cannot_take_a_path_off_the_closure(repo: Path) -> None:
+    head = _head(repo)
+    lists = _origin(repo, head, {ag.MONEY_CLOSURE_REL: "libs/x.py\n"})
+    _g(repo, "merge", "-q", "--ff-only", lists)
+    _write(repo, REL,
+           json.dumps({"code_sha": lists}) + "\n")
+    _commit(repo, "seal the closure")
+    target = _origin(repo, _head(repo), {ag.MONEY_CLOSURE_REL: "libs/y.py\n",
+                                         "libs/x.py": "X = 3\n"})
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and "libs/x.py" in doc["uncovered"], doc
+
+
+def test_no_readable_closure_anywhere_governs_every_code_path(repo: Path) -> None:
+    governed = ag.money_governed(repo, _head(repo))
+    assert governed("libs/anything.py") and governed("desks/mt5/x.ps1")
+
+
+def test_the_guard_checkouts_own_closure_counts(repo: Path, tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    g = tmp_path / "guard"
+    (g / "ops").mkdir(parents=True)
+    (g / ag.MONEY_CLOSURE_REL).write_text("libs/y.py\n", encoding="utf-8")
+    monkeypatch.setattr(ag, "_GUARD_ROOT", g)
+    governed = ag.money_governed(repo, _head(repo))
+    assert governed("libs/y.py") and not governed("libs/x.py")

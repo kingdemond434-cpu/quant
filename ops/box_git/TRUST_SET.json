@@ -1,0 +1,395 @@
+{
+ "_why": "The trust set T (zuck 2026-11-19 20:22Z; Governance policy, D-20261119-TRUSTSET). Changes inside T need the owner's own AUTHORIZE TRUST <head sha> on the forge, unless ops/box_git/trust_check.py proves they only tighten. Everything outside T merges on an Auditor CLEAR plus green box CI with no wait and no comment.",
+ "files": [
+  "ops/box_git/trust_check.py",
+  "ops/box_git/protect.py",
+  "tests/ops/test_box_git_trust.py",
+  "ops/release/authority/*",
+  "ops/signing/*",
+  "ops/release_authority.py",
+  "ops/run_release_authority.cmd",
+  ".github/scripts/memecoin_gate.py",
+  "ops/release/risk_invariants.py",
+  "ops/release/replay_shadow.py",
+  "ops/release/expected_divergence.json",
+  "ops/release/protected_paths.txt",
+  "ops/release/risk_suites.txt",
+  "ops/release/trusted_eval_suites.txt",
+  "conftest.py",
+  "*/conftest.py",
+  "pytest.ini",
+  "tox.ini",
+  "setup.cfg",
+  "pyproject.toml",
+  "ops/box_git/pin_writer.py",
+  "ops/money_closure.txt",
+  "ops/release/not_money_scripts.txt",
+  "scripts/sign_train.py",
+  "scripts/check_immutable_evaluator.py",
+  "desks/mt5/data/SEAL_CLEARS.jsonl",
+  "ops/box_git/state_fence.py",
+  "ops/box_git/state_publish.py",
+  "ops/box_git/box_guardian.ps1",
+  "ops/box_git/guardian/*"
+ ],
+ "grow_only": [
+  "ops/release/protected_paths.txt",
+  "ops/release/risk_suites.txt",
+  "ops/release/trusted_eval_suites.txt",
+  "ops/money_closure.txt",
+  "desks/mt5/data/SEAL_CLEARS.jsonl"
+ ],
+ "symbols": {
+  ".github/scripts/audit_gate.py": [
+   "run",
+   "forge_trust",
+   "_trust_checker",
+   "_zuck_typed",
+   "verdicts",
+   "VERDICT",
+   "TRUSTED",
+   "GATING_JOBS",
+   "cleared",
+   "checks",
+   "_from_ci_app",
+   "_forge",
+   "SECRETS",
+   "SEAL_CARRIERS",
+   "SEAL_CARRIER_BRANCH",
+   "PROTECTED",
+   "NEVER_STANDING",
+   "touches_root",
+   "authority_verdicts",
+   "authority_clear",
+   "patch_id",
+   "AUTHORIZE_TRUST",
+   "owner_authorized",
+   "FORGE_REQUIRED",
+   "forge_need"
+  ],
+  "ops/box_git/forge_api.py": [
+   "BOX_CI_USER",
+   "OWNER_USERS",
+   "AUDITOR_USERS",
+   "CI_APP",
+   "_comment",
+   "_status_state",
+   "Forge"
+  ],
+  "ops/box_git/box_loop.py": [
+   "GATING",
+   "post",
+   "gate_code",
+   "risk_job",
+   "replay_job",
+   "pr_tick",
+   "promote_tick",
+   "seal_and_push",
+   "gate_tick",
+   "sign_tick",
+   "sign_diff_problems",
+   "SIGNED_PATHS",
+   "SIGN_TRIGGERS",
+   "SIGN_TRAIN"
+  ],
+  "ops/box_git/box_ci.py": [
+   "promotable"
+  ],
+  "ops/box_git/inbox.py": [
+   "BRANCH",
+   "parse_manifest",
+   "import_one"
+  ],
+  "libs/ops/release.py": [
+   "NON_CODE",
+   "STATE_PREFIXES"
+  ],
+  "ops/box_git/impacted.py": [
+   "select",
+   "ALL"
+  ]
+ },
+ "hard_caps": {
+  "_why": "Prop firms' own published limits (coordinator 2026-11-19 20:39Z: risk limits and money-path lists are autonomous via Auditor CLEAR; prop-firm caps stay hard). A PR whose ceilings.json drops one of these rows or sets it above the cap is REFUSED outright.",
+  "ops/release/ceilings.json": [
+   [
+    "max",
+    "desks/mt5/prop/ftmo_follower.py",
+    "DAILY_LOSS_FRAC",
+    0.05
+   ],
+   [
+    "max",
+    "desks/mt5/prop/ftmo_follower.py",
+    "MAX_LOSS_FRAC",
+    0.1
+   ]
+  ]
+ },
+ "contracts": {
+  "_why": "CONTRACT class (Governance standing policy 2026-11-19 21:00Z): enforcement code of an area may change without the owner when that area's authority constants are AST-identical and its contract suite, pinned in the trust folder and run against the head, passes. Never the checker or the pin writer.",
+  "gate": {
+   "modules": [
+    ".github/scripts/audit_gate.py",
+    "ops/box_git/box_loop.py",
+    "ops/box_git/forge_api.py",
+    "ops/box_git/inbox.py",
+    "ops/box_git/box_ci.py",
+    "ops/box_git/impacted.py"
+   ],
+   "authority": {
+    ".github/scripts/audit_gate.py": [
+     "VERDICT",
+     "TRUSTED",
+     "GATING_JOBS",
+     "AUTHORIZE_TRUST",
+     "_zuck_typed",
+     "verdicts",
+     "cleared",
+     "checks",
+     "_from_ci_app",
+     "SECRETS",
+     "PROTECTED",
+     "NEVER_STANDING",
+     "tier",
+     "standing",
+     "approved",
+     "approval_covers",
+     "forge_trust",
+     "owner_authorized",
+     "SEAL_CARRIERS",
+     "SEAL_CARRIER_BRANCH",
+     "touches_root",
+     "patch_id",
+     "FORGE_REQUIRED",
+     "forge_need",
+     "RISK_JOB",
+     "REPLAY_JOB"
+    ],
+    "ops/box_git/forge_api.py": [
+     "BOX_CI_USER",
+     "OWNER_USERS",
+     "AUDITOR_USERS",
+     "CI_APP",
+     "_comment",
+     "_status_state"
+    ],
+    "ops/box_git/box_loop.py": [
+     "GATING",
+     "audited_clear",
+     "gate_code",
+     "_run_untrusted",
+     "worker_pass",
+     "sign_tick",
+     "sign_diff_problems",
+     "SIGNED_PATHS",
+     "SIGN_TRIGGERS",
+     "SIGN_TRAIN"
+    ],
+    "ops/box_git/box_ci.py": [
+     "promotable"
+    ],
+    "ops/box_git/inbox.py": [
+     "BRANCH",
+     "RESERVED",
+     "VERDICT_LINE",
+     "parse_manifest",
+     "parse_verdict"
+    ],
+    "ops/box_git/impacted.py": [
+     "select"
+    ]
+   },
+   "suite": [
+    "tests/ops/test_audit_gate.py",
+    "tests/ops/test_box_git_forge_api.py",
+    "tests/ops/test_box_git_loop.py",
+    "tests/ops/test_box_git_inbox.py",
+    "tests/ops/test_box_git_impacted.py",
+    "tests/ops/test_box_git_ci.py"
+   ]
+  },
+  "memecoin": {
+   "modules": [
+    ".github/scripts/memecoin_gate.py"
+   ],
+   "authority": {
+    ".github/scripts/memecoin_gate.py": [
+     "REPO",
+     "BASE",
+     "LIVE_PATHS",
+     "LIVE_WORDS",
+     "NAME_ONLY_EXEMPT",
+     "DOC_PATHS",
+     "REQUIRED_JOBS",
+     "DISABLE_FILE",
+     "fenced"
+    ]
+   },
+   "suite": [
+    "tests/ops/test_memecoin_gate.py"
+   ]
+  }
+ },
+ "knobs": {
+  "_why": "Boot r17 (zuck 2026-11-26 17:33Z 'cut every protected change possible all except core'; Audit pre-read TRUST_SHRINK_AUDIT_PREREAD.md). The closure CUTS at these names once trust_check proves each is still a ranged literal constant or a pure function whose only callers are named; judged against the INSTALLED policy. One-sided ranges pin today's value where the knob protects the live box (disk, cores, workers) or evidence (CI logs).",
+  "ops/box_git/box_loop.py": {
+   "constants": {
+    "FAST_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "FAST_RISK_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "FAST_REPLAY_TIMEOUT_S": [
+     300,
+     14400
+    ],
+    "PR_TICK_BUDGET_S": [
+     60,
+     14400
+    ],
+    "WORKTREE_ADD_TIMEOUT": [
+     60,
+     14400
+    ],
+    "JOB_POLL_S": [
+     0.5,
+     60
+    ],
+    "KEEP_CI_LOGS": [
+     200,
+     null
+    ],
+    "STALE_PENDING_S": [
+     600,
+     172800
+    ],
+    "ENV_RERUNS": [
+     0,
+     10
+    ],
+    "ENV_RERUN_AFTER_S": [
+     60,
+     86400
+    ],
+    "UNDERCAP_REDS_MAX": [
+     0,
+     20
+    ],
+    "_TIMED_OUT": {
+     "regex": true
+    }
+   },
+   "functions": {
+    "pr_order": {
+     "callers": [
+      "pr_tick"
+     ]
+    },
+    "_undercap": {
+     "callers": [
+      "checked"
+     ]
+    },
+    "_cap_now": {
+     "callers": [
+      "_undercap"
+     ]
+    },
+    "_at": {
+     "callers": [
+      "checked"
+     ]
+    }
+   },
+   "frozen_refs": [
+    "datetime",
+    "UTC",
+    "Any",
+    "Mapping",
+    "Sequence",
+    "REPLAY_CONTEXT",
+    "_TRAIN"
+   ],
+   "frozen_calls": [
+    "_env_red"
+   ],
+   "methods": [
+    "get",
+    "items",
+    "keys",
+    "values",
+    "startswith",
+    "endswith",
+    "lower",
+    "upper",
+    "strip",
+    "split",
+    "search",
+    "match",
+    "fullmatch",
+    "group",
+    "replace",
+    "isoformat",
+    "timestamp",
+    "fromisoformat",
+    "total_seconds",
+    "now"
+   ],
+   "attrs": [
+    "min"
+   ]
+  },
+  "ops/box_git/box_ci.py": {
+   "constants": {
+    "DISK_FLOOR_GB": [
+     25.0,
+     null
+    ],
+    "RESERVE_CORES": [
+     2,
+     null
+    ],
+    "MAX_WORKERS": [
+     1,
+     8
+    ],
+    "IDLE_THRESHOLD_PCT": [
+     1.0,
+     20.0
+    ],
+    "FLOOR_WORKERS": [
+     1,
+     4
+    ],
+    "BOX_TEST_TIMEOUT_S": [
+     300,
+     14400
+    ]
+   }
+  },
+  "ops/box_git/inbox.py": {
+   "constants": {
+    "MAX_COMMENTS": [
+     1,
+     200
+    ],
+    "MAX_COMMENT": [
+     1000,
+     200000
+    ],
+    "MAX_BUNDLE_BYTES": [
+     1048576,
+     1073741824
+    ],
+    "MAX_PAGES": [
+     1,
+     400
+    ]
+   }
+  }
+ }
+}
