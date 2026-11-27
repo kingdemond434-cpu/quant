@@ -1172,7 +1172,7 @@ def test_only_money_closure_and_protected_code_needs_a_row(repo: Path) -> None:
     code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
     assert code == ag.HOLD and doc["uncovered"] == [
         "libs/x.py", "ops/release/gate.py", ag.PROTECTED_REL], doc
-    row = _clear(repo, target)
+    row = ag.clear_row(repo, target, "CLEAR", "reports/audit/2026-11-27/X.md", base=head)
     row["paths"] = {k: v for k, v in row["paths"].items() if k != "libs/y.py"}
     cleared = _with_clears(repo, target, row)
     assert ag.pre(repo, cleared, now=QUIET, offset_h=summer)[0] == ag.GO   # y.py ships ungated
