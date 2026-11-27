@@ -22,8 +22,10 @@ THE RULES THIS MODULE ENFORCES (each pure, each tested):
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import re
 import shutil
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -74,10 +76,48 @@ class FullRunPlan:
     why: str
 
 
-def plan_full_run(state: Mapping[str, Any], live_head: str) -> FullRunPlan:
+#: (boot r20) A FULL result caused by the BOX, not the code, is run again: 11-20 the only full
+#: run of LIVE a301e334c died on the worker's unreadable checkout (PermissionError on
+#: pyproject.toml, fixed by shared_dir the same day) and a law-gate timeout, and since a recorded
+#: head counted as done it was never run again -- so nothing was ever promotable and nothing
+#: reached production for a week. At most FULL_ENV_RERUNS more runs, FULL_ENV_RERUN_AFTER_S
+#: apart. An env-classed result never counts as green (nor, later, as a baseline).
+FULL_ENV_RERUNS = 2
+FULL_ENV_RERUN_AFTER_S = 3600
+_FULL_ENV = re.compile(r"law gate rc=124\b|pytest rc=124\b|did not answer in time|PermissionError"
+                       r"|No space left|exit status 128|Could not determine home directory")
+
+
+def full_env(why: str) -> bool:
+    return bool(_FULL_ENV.search(why or ""))
+
+
+def _done_heads(rows: Sequence[Mapping[str, Any]], now: datetime) -> set[Any]:
+    by: dict[Any, list[Mapping[str, Any]]] = {}
+    for r in rows:
+        if r.get("kind") == FULL:
+            by.setdefault(r.get("head"), []).append(r)
+    done = set()
+    for head, rs in by.items():
+        env = [r for r in rs if r.get("ok") is not True and full_env(str(r.get("why") or ""))]
+        if len(env) < len(rs) or len(env) > FULL_ENV_RERUNS:
+            done.add(head)  # a code answer exists, or the re-runs are spent
+            continue
+        try:
+            last = max(datetime.fromisoformat(str(r.get("at"))) for r in env)
+        except (TypeError, ValueError):
+            done.add(head)
+            continue
+        if (now - last).total_seconds() < FULL_ENV_RERUN_AFTER_S:
+            done.add(head)  # not yet: the re-run waits its interval
+    return done
+
+
+def plan_full_run(state: Mapping[str, Any], live_head: str,
+                  now: datetime | None = None) -> FullRunPlan:
     """Coalescing: one full run at a time; while it runs only the NEWEST head waits behind it."""
     running = state.get("full_running")
-    done = {r.get("head") for r in state.get("full_results") or [] if r.get("kind") == FULL}
+    done = _done_heads(state.get("full_results") or [], now or datetime.now(UTC))
     if live_head in done or live_head == running:
         return FullRunPlan(None, state.get("full_pending"), "LIVE's head is already run or running")
     if running:
@@ -175,3 +215,56 @@ def shared_dir(parent: Path, prefix: str) -> Path:
         except FileExistsError:
             continue
     raise OSError(f"no free directory name under {parent}")
+
+
+#: (boot r20) Every FULL run keeps its per-test outcomes, so a later promotion rule can compare
+#: a head's reds with a reviewed baseline (Audit 11-27 01:29Z: node ids plus a signature each,
+#: collected count, collection errors). Written beside the CI state; read by nothing yet.
+FULL_NODES = "full_nodes"
+
+
+def junit_outcomes(junit: Path) -> dict[str, Any]:
+    """{collected, failed, errors, skipped, outcomes: {node: outcome}, sigs: {node: signature}}
+    from a pytest junit file; {"unreadable": why} when it cannot be read. Never raises."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.parse(junit).getroot()
+    except (OSError, ET.ParseError) as exc:
+        return {"unreadable": f"{type(exc).__name__}: {str(exc)[:200]}"}
+    outcomes: dict[str, str] = {}
+    sigs: dict[str, str] = {}
+    for tc in root.iter("testcase"):
+        cls, name = tc.get("classname") or "", tc.get("name") or ""
+        node = f"{cls.replace('.', '/')}.py::{name}" if cls else name
+        outcome, sig = "passed", None
+        for tag in ("failure", "error", "skipped"):
+            el = tc.find(tag)
+            if el is not None:
+                outcome = {"failure": "failed", "error": "error", "skipped": "skipped"}[tag]
+                if tag != "skipped":
+                    first = (el.get("message") or (el.text or "")).strip().splitlines()
+                    sig = f"{el.get('type') or tag}: {first[0][:200] if first else ''}"
+                break
+        outcomes[node] = outcome
+        if sig:
+            sigs[node] = sig
+    count = {k: sum(1 for v in outcomes.values() if v == k)
+             for k in ("passed", "failed", "error", "skipped")}
+    errs = 0
+    for suite in root.iter("testsuite"):
+        with contextlib.suppress(ValueError):
+            errs = max(errs, int(suite.get("errors") or 0))
+    return {"collected": len(outcomes), **count, "suite_errors": errs,
+            "outcomes": outcomes, "sigs": sigs}
+
+
+def save_full_nodes(state_path: Path, head: str, doc: Mapping[str, Any]) -> Path | None:
+    try:
+        d = state_path.parent / FULL_NODES
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / f"{head}.json"
+        save_state(f, {"head": head, "at": datetime.now(UTC).isoformat(timespec="seconds"),
+                       **doc})
+        return f
+    except OSError:
+        return None

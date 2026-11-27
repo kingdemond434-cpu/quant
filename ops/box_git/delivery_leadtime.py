@@ -218,6 +218,64 @@ def stuck(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
             "n": len(no_ci) + len(not_live)}
 
 
+#: (boot r20) PER-STAGE SLA (zuck 2026-11-27 01:18-01:21Z: every stage as fast as possible, 10
+#: min a ceiling, not a target). Minutes a change may WAIT IN a stage (as bottleneck() counts
+#: it) before it is a breach. The limits are what the r20 loop can hold today, not what is
+#: wanted; each week's measured p90 is the bar. A breach is reported on every pass, never
+#: hidden, and the CI zero-output alarm names a checker that has gone silent.
+SLA_MIN: dict[str, float] = {
+    "forge_pr": 10.0,     # the PR exists and is CLEAR: the first box check must start
+    "clear": 10.0,
+    "ci_start": 60.0,     # checks running: risk-invariants + replay-shadow must answer
+    "ci_end": 10.0,       # checks green: the merge
+    "live": 180.0,        # merged: the full suite on a head that contains it
+    "full_green": 15.0,   # full green: seal and promote to production
+    "production": 75.0,   # production: the box adopts it (MT5-AdoptRelease is hourly)
+}
+#: No box-ci status at all for this long while a CLEARed PR waits for its first check.
+CI_SILENT_MIN = 30.0
+
+
+def sla(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any]:
+    """Open changes past their current stage's SLA, and the CI zero-output alarm. Read only.
+    A change held at 'ci_end' by a code red is the code's answer, not a breach of the loop."""
+    breaches: dict[str, list[dict[str, Any]]] = {}
+    last_ci: datetime | None = None
+    waiting_first: list[Any] = []
+    for r in rows:
+        st = {k: _ts(v) for k, v in (r.get("stages") or {}).items()}
+        for k in ("ci_start", "ci_end"):
+            t = st.get(k)
+            if t is not None and (last_ci is None or t > last_ci):
+                last_ci = t
+        if not st.get("clear") or st.get("adopted"):
+            continue
+        if r.get("state") not in (None, "open") and not st.get("live"):
+            continue  # closed unmerged: nothing to deliver
+        reached = sorted(((k, t) for k in STAGES if (t := st.get(k))), key=lambda kv: kv[1])
+        stage, since = reached[-1]
+        causes = [c for c in r.get("ci_causes") or [] if c != "env"]
+        if stage == "ci_end" and causes:
+            continue
+        if stage in ("clear", "forge_pr"):
+            waiting_first.append(r.get("pr"))
+        mins = round((now - since).total_seconds() / 60, 1)
+        limit = SLA_MIN.get(stage)
+        if limit is not None and mins > limit:
+            breaches.setdefault(stage, []).append({"pr": r.get("pr"), "waited_min": mins})
+    alarms = []
+    silent = round((now - last_ci).total_seconds() / 60, 1) if last_ci else None
+    if waiting_first and (silent is None or silent > CI_SILENT_MIN):
+        alarms.append({"alarm": "ci_zero_output", "silent_min": silent,
+                       "waiting": len(waiting_first), "limit_min": CI_SILENT_MIN})
+    out = {"targets_min": SLA_MIN, "ok": not breaches and not alarms, "alarms": alarms,
+           "breaches": {k: {"n": len(v), "oldest_min": max(i["waited_min"] for i in v),
+                            "prs": [i["pr"] for i in
+                                    sorted(v, key=lambda i: -i["waited_min"])][:10]}
+                        for k, v in breaches.items()}}
+    return out
+
+
 def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[str, Any]],
             now: datetime) -> dict[str, Any]:
     since = now - WEEK
@@ -256,6 +314,7 @@ def summary(rows: Sequence[Mapping[str, Any]], full_results: Sequence[Mapping[st
         "bottleneck": next(iter(held), None),
         "unmeasured_stages": UNMEASURED_STAGES,
         "stuck": stuck(rows, now),
+        "sla": sla(rows, now),
     }
 
 

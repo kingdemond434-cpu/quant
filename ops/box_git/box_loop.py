@@ -181,6 +181,21 @@ def git(cfg: Config, *args: str, timeout: float = 300) -> str:
     return out.strip()
 
 
+#: (boot r20) Stages run concurrently (parallel PR checks, the light loop beside the heavy
+#: stages): git's worktree bookkeeping in the one bare repo is serialised here, and every
+#: read-modify-write of the CI state file holds STATE_LOCK.
+_WT_LOCK = threading.Lock()
+STATE_LOCK = threading.RLock()
+
+
+def _drop_worktree(cfg: Config, d: Path) -> None:
+    with _WT_LOCK:
+        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(d)], timeout=300)
+    box_ci.prune(d)  # a plain delete of what git left: outside the lock, it can take minutes
+    with _WT_LOCK:
+        _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+
+
 @contextlib.contextmanager
 def worktree(cfg: Config, sha: str) -> Iterator[Path]:
     cfg.work.mkdir(parents=True, exist_ok=True)
@@ -191,20 +206,17 @@ def worktree(cfg: Config, sha: str) -> Iterator[Path]:
         raise RuntimeError(f"no checkout: {why}")
     d = box_ci.shared_dir(cfg.work, "wt_")
     try:
-        git(cfg, *_FAST_CHECKOUT, "worktree", "add", "-q", "--detach", str(d), sha,
-            timeout=WORKTREE_ADD_TIMEOUT)
+        with _WT_LOCK:
+            git(cfg, *_FAST_CHECKOUT, "worktree", "add", "-q", "--detach", str(d), sha,
+                timeout=WORKTREE_ADD_TIMEOUT)
     except RuntimeError:
         # a half-made checkout must not wait for the next pass's sweep to give its disk back
-        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(d)], timeout=300)
-        box_ci.prune(d)
-        _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+        _drop_worktree(cfg, d)
         raise
     try:
         yield d
     finally:
-        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(d)], timeout=300)
-        box_ci.prune(d)
-        _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+        _drop_worktree(cfg, d)
 
 
 def sweep_stale(cfg: Config) -> int:
@@ -305,26 +317,61 @@ def _run_untrusted(cfg: Config, argv: Sequence[str], *, cwd: Path,
     return 124, "the CI worker did not answer in time"
 
 
-def worker_pass(jobs: Path) -> int:
-    """One pass of the unprivileged CI worker: run every pending job, write its result."""
+#: (boot r20) The worker runs jobs CONCURRENTLY and keeps taking new ones while any run: with
+#: parallel PR checks a serial worker would have been the queue again. Bounded like the checks.
+WORKER_PARALLEL_MAX = 6
+WORKER_IDLE_EXIT_S = 240.0  # stays up between back-to-back checks: the task is periodic
+
+
+def _run_job(f: Path, done: Path) -> bool:
+    try:
+        job = json.loads(f.read_text(encoding="utf-8"))
+        f.unlink()
+    except (OSError, ValueError):
+        return False
+    env = {str(k): str(v) for k, v in (job.get("env") or {}).items()
+           if str(k).upper() not in WORKER_OWN_ENV}
+    env.update({k: os.environ[k] for k in WORKER_OWN_ENV if k in os.environ})
+    rc, out = _run([str(a) for a in job.get("argv") or []], cwd=Path(job["cwd"]),
+                   env=env, timeout=float(job.get("timeout") or 3600), idle=True)
+    tmp = done / f"{job['id']}.tmp"
+    done.mkdir(parents=True, exist_ok=True)
+    tmp.write_text(json.dumps({"rc": rc, "out": out}), encoding="utf-8")
+    os.replace(tmp, done / f"{job['id']}.json")
+    return True
+
+
+def worker_pass(jobs: Path, *, parallel: int | None = None,
+                idle_exit_s: float = WORKER_IDLE_EXIT_S, poll_s: float = 2.0) -> int:
+    """One pass of the unprivileged CI worker: run pending jobs concurrently, taking new ones as
+    they arrive, until nothing is running and nothing has arrived for `idle_exit_s`."""
+    import concurrent.futures as cf
     pending, done = jobs / "pending", jobs / "done"
+    k = parallel or max(1, min(WORKER_PARALLEL_MAX, (os.cpu_count() or 1) // 3))
     n = 0
-    for f in sorted(pending.glob("*.json")) if pending.is_dir() else []:
-        try:
-            job = json.loads(f.read_text(encoding="utf-8"))
-            f.unlink()
-        except (OSError, ValueError):
-            continue
-        env = {str(k): str(v) for k, v in (job.get("env") or {}).items()
-               if str(k).upper() not in WORKER_OWN_ENV}
-        env.update({k: os.environ[k] for k in WORKER_OWN_ENV if k in os.environ})
-        rc, out = _run([str(a) for a in job.get("argv") or []], cwd=Path(job["cwd"]),
-                       env=env, timeout=float(job.get("timeout") or 3600), idle=True)
-        tmp = done / f"{job['id']}.tmp"
-        done.mkdir(parents=True, exist_ok=True)
-        tmp.write_text(json.dumps({"rc": rc, "out": out}), encoding="utf-8")
-        os.replace(tmp, done / f"{job['id']}.json")
-        n += 1
+    taken: set[str] = set()
+    running: set[cf.Future[bool]] = set()
+    quiet_since = time.monotonic()
+    with cf.ThreadPoolExecutor(max_workers=k, thread_name_prefix="ci-job") as pool:
+        while True:
+            for f in sorted(pending.glob("*.json")) if pending.is_dir() else []:
+                if len(running) >= k:
+                    break
+                if f.name in taken:
+                    continue
+                taken.add(f.name)
+                running.add(pool.submit(_run_job, f, done))
+            if running:
+                fin, _ = cf.wait(running, timeout=poll_s, return_when=cf.FIRST_COMPLETED)
+                for fu in fin:
+                    running.discard(fu)
+                    with contextlib.suppress(Exception):
+                        n += 1 if fu.result() else 0
+                quiet_since = time.monotonic()
+                continue
+            if time.monotonic() - quiet_since >= idle_exit_s:
+                break
+            time.sleep(poll_s)
     return n
 
 
@@ -513,10 +560,27 @@ def _undercap(r: Mapping[str, Any]) -> bool:
             and int(m.group(1)) < _cap_now(str(r.get("name") or "")))
 
 
+#: (boot r20) The box's OWN framing of a status: "box: <job> rc=<N>: <child output tail>". The
+#: exit code is the box's measurement; the tail is the child's text. 11-26: PR #127/#128's
+#: replay-shadow went red with rc=1 (a real FUSION-ROSTER divergence), but the tail of that output
+#: matched _ENV_RED, so the red was read as a box defect and re-run every pass, alternating
+#: with #128 at the head of the queue while 18 newer CLEARed PRs never got a check.
+_BOX_FRAME = re.compile(r"\Abox: [^:\n]{0,80}?rc=(\d+)(?::|\Z)")
+#: Exit codes that are the box's own (a run outliving its limit, git unable to read the repo).
+#: Any other framed code -- 1 above all -- is the code's answer and decides the head.
+ENV_RCS = frozenset({"124", "128"})
+
+
 def _env_red(r: Mapping[str, Any]) -> bool:
-    out = r.get("output") if isinstance(r.get("output"), Mapping) else {}
-    return (r.get("status") == "completed" and r.get("conclusion") == "failure"
-            and bool(_ENV_RED.search(str(out.get("summary") or ""))))
+    raw = r.get("output")
+    out: Mapping[str, Any] = raw if isinstance(raw, Mapping) else {}
+    text = str(out.get("summary") or "")
+    if not (r.get("status") == "completed" and r.get("conclusion") == "failure"):
+        return False
+    framed = _BOX_FRAME.search(text)
+    if framed:
+        return framed.group(1) in ENV_RCS
+    return bool(_ENV_RED.search(text))
 
 
 def checked(runs: Sequence[Mapping[str, Any]], now: datetime | None = None) -> bool:
@@ -629,82 +693,130 @@ def pr_order(prs: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
     return sorted(prs, key=key)
 
 
-#: ONE PR per pass (11-20..11-26) at 1-2 h a pass left 86 open PRs days from their checks:
-#: the stage now checks PRs until this budget is spent (the PR in hand always finishes).
-PR_TICK_BUDGET_S = 1500
+#: ONE PR per pass (11-20..11-26) at 1-2 h a pass left 86 open PRs days from their checks.
+#: (boot r20) PRs are now checked IN PARALLEL and CONTINUOUSLY: every CLEARed head without an
+#: answer is started as soon as a slot is free, and the stage re-lists the forge as slots free,
+#: so a PR imported mid-pass starts within PR_RELIST_S instead of waiting a whole pass. Each
+#: check is its own worktree and its own CI-worker jobs (the worker runs them concurrently).
+#: The stage stops STARTING checks after PR_TICK_BUDGET_S; checks in hand always finish.
+PR_TICK_BUDGET_S = 10800
+PR_RELIST_S = 60
+#: Concurrent PR checks: a third of the cores, at most 6, at least 1 (each replay is one
+#: below-normal process tree; the trading terminal and gateway run at normal priority).
+PR_PARALLEL_MAX = 6
 _TRAIN = re.compile(r"(^|/)(release[-_])?train[-_]?\d", re.I)
 
 
-def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S) -> str:
-    f = _forge(cfg, forge_api.BOX_CI_USER)
-    prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
-    done: list[str] = []
-    until = time.monotonic() + budget_s
-    for p in pr_order(prs or []):
-        if done and time.monotonic() >= until:
-            done.append("budget spent; the rest wait for the next pass")
-            break
+def pr_parallel(cores: int | None = None) -> int:
+    n = cores if cores is not None else (os.cpu_count() or 1)
+    return max(1, min(PR_PARALLEL_MAX, n // 3))
+
+
+def _eligible(f: forge_api.Forge, prs: Sequence[Mapping[str, Any]],
+              skip: set[str]) -> list[Mapping[str, Any]]:
+    out = []
+    for p in pr_order(prs):
         head = str((p.get("head") or {}).get("sha") or "")
-        if not head or checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
+        if not head or head in skip:
+            continue
+        if checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue
         if not audited_clear(f.gh(f"repos/x/y/issues/{p.get('number')}/comments"), head):
             continue  # Audit MF-2: unreviewed code never runs on the trading box
-        base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
-        changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
-        with worktree(cfg, head) as root:
-            if fast_path():
-                rok, rwhy = fast_risk(cfg, root, base, head)
-                post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", (RISK_CONTEXT,))
-                sok, swhy = fast_replay(cfg, base, head, changed)
-                post(cfg, head, "success" if sok else "failure", f"box: {swhy}",
-                     (REPLAY_CONTEXT,))
-                done.append(f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}; "
-                            f"replay {'ok' if sok else 'FAIL'}")
-                continue
-            sel = impacted.select(root, changed)
-            if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
-                why = "box CI: documents and images only (fast lane)"
-                post(cfg, head, "success", why, (*GATING, "risk-invariants", "replay-shadow"))
-                done.append(f"PR #{p.get('number')}: fast lane")
-                continue
-            if sel == []:
-                post(cfg, head, "success", "box CI: no change any test can observe")
-            ok, n, why = _resources(cfg)
-            if not ok:
-                done.append(f"PR #{p.get('number')} waits: {why}")
+        out.append(p)
+    return out
+
+
+def check_pr(cfg: Config, p: Mapping[str, Any]) -> str:
+    """One PR's box checks, posted as statuses. Unchanged in substance from the serial stage."""
+    head = str((p.get("head") or {}).get("sha") or "")
+    base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
+    changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
+    with worktree(cfg, head) as root:
+        if fast_path():
+            rok, rwhy = fast_risk(cfg, root, base, head)
+            post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", (RISK_CONTEXT,))
+            sok, swhy = fast_replay(cfg, base, head, changed)
+            post(cfg, head, "success" if sok else "failure", f"box: {swhy}", (REPLAY_CONTEXT,))
+            return (f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}; "
+                    f"replay {'ok' if sok else 'FAIL'}")
+        sel = impacted.select(root, changed)
+        if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
+            post(cfg, head, "success", "box CI: documents and images only (fast lane)",
+                 (*GATING, "risk-invariants", "replay-shadow"))
+            return f"PR #{p.get('number')}: fast lane"
+        if sel == []:
+            post(cfg, head, "success", "box CI: no change any test can observe")
+        ok, n, why = _resources(cfg)
+        if not ok:
+            return f"PR #{p.get('number')} waits: {why}"
+        passed, scope = True, "no observable test"
+        if sel != []:
+            post(cfg, head, "pending", f"box CI running on {n} idle cores")
+            passed, what = run_tests(cfg, root, sel, n, f"pr{p.get('number')}_{head[:12]}")
+            scope = ("full suite" if sel == impacted.ALL
+                     else f"{len(sel)} impacted test file(s)")
+            post(cfg, head, "success" if passed else "failure",
+                 f"box CI, {scope}: {what}. Full suite runs after merge; release needs it "
+                 "green.")
+        rok, rwhy = risk_job(cfg, root, base, head)
+        post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", ("risk-invariants",))
+        sok, swhy = replay_job(cfg, base, head, changed)
+        post(cfg, head, "success" if sok else "failure", f"box: {swhy}", ("replay-shadow",))
+    return (f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
+            f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
+
+
+def pr_tick(cfg: Config, budget_s: float = PR_TICK_BUDGET_S, *,
+            parallel: int | None = None, relist_s: float = PR_RELIST_S) -> str:
+    import concurrent.futures as cf
+    f = _forge(cfg, forge_api.BOX_CI_USER)
+    k = parallel or pr_parallel()
+    done: list[str] = []
+    started: set[str] = set()
+    until = time.monotonic() + budget_s
+    running: dict[cf.Future[str], str] = {}
+    with cf.ThreadPoolExecutor(max_workers=k, thread_name_prefix="pr-check") as pool:
+        while True:
+            if time.monotonic() < until and len(running) < k:
+                prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
+                for p in _eligible(f, prs or [], started)[:k - len(running)]:
+                    head = str((p.get("head") or {}).get("sha") or "")
+                    started.add(head)
+                    running[pool.submit(check_pr, cfg, p)] = f"PR #{p.get('number')}"
+            if not running:
                 break
-            passed, scope = True, "no observable test"
-            if sel != []:
-                post(cfg, head, "pending", f"box CI running on {n} idle cores")
-                passed, what = run_tests(cfg, root, sel, n, f"pr{p.get('number')}_{head[:12]}")
-                scope = ("full suite" if sel == impacted.ALL
-                         else f"{len(sel)} impacted test file(s)")
-                post(cfg, head, "success" if passed else "failure",
-                     f"box CI, {scope}: {what}. Full suite runs after merge; release needs it "
-                     "green.")
-            rok, rwhy = risk_job(cfg, root, base, head)
-            post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", ("risk-invariants",))
-            sok, swhy = replay_job(cfg, base, head, changed)
-            post(cfg, head, "success" if sok else "failure", f"box: {swhy}", ("replay-shadow",))
-        done.append(f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
-                    f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
+            fin, _ = cf.wait(list(running), timeout=relist_s, return_when=cf.FIRST_COMPLETED)
+            if GUARD is not None:
+                GUARD.beat("pr")
+            for fu in fin:
+                name = running.pop(fu)
+                try:
+                    done.append(fu.result())
+                except Exception as exc:  # one PR failing never stops the others
+                    done.append(f"{name}: ERROR {type(exc).__name__}: {str(exc)[:200]}")
+    if time.monotonic() >= until and done:
+        done.append("budget spent; the rest wait for the next pass")
     return "; ".join(done)[:2000] if done else "no PR waiting for checks"
 
 
 def full_tick(cfg: Config, live: str) -> str:
-    state = box_ci.load_state(cfg.state)
-    plan = box_ci.plan_full_run(state, live)
-    if plan.pending:
-        state["full_pending"] = plan.pending
-    if not plan.start:
-        box_ci.save_state(cfg.state, state)
-        return plan.why
+    with STATE_LOCK:
+        state = box_ci.load_state(cfg.state)
+        plan = box_ci.plan_full_run(state, live)
+        if plan.pending:
+            state["full_pending"] = plan.pending
+        if not plan.start:
+            box_ci.save_state(cfg.state, state)
+            return plan.why
     ok, n, why = _resources(cfg)
     if not ok:
         return f"full run waits: {why}"
-    state["full_running"] = plan.start
-    box_ci.save_state(cfg.state, state)
-    passed, why = False, "the run did not finish"
+    with STATE_LOCK:
+        state = box_ci.load_state(cfg.state)
+        state["full_running"] = plan.start
+        box_ci.save_state(cfg.state, state)
+    passed, why, counts = False, "the run did not finish", ""
     try:
         with worktree(cfg, plan.start) as root:
             law_rc, _law = _run([cfg.python, "scripts/run_law_gate.py", "--laws-only"], cwd=root,
@@ -712,18 +824,27 @@ def full_tick(cfg: Config, live: str) -> str:
             passed, what = run_tests(cfg, root, impacted.ALL, n, f"full_{plan.start[:12]}")
             passed = passed and law_rc == 0
             why = f"law gate rc={law_rc}; {what}"
+            # (r20) the per-test outcomes, before the checkout (and its junit file) goes
+            nodes = box_ci.junit_outcomes(root / "box-junit.xml")
+            nodes["law_gate_rc"] = law_rc
+            box_ci.save_full_nodes(cfg.state, plan.start, nodes)
+            if "collected" in nodes:
+                counts = (f" [{nodes['collected']} collected, {nodes['failed']} failed, "
+                          f"{nodes['error']} error, {nodes['skipped']} skipped]")
     finally:
-        state = box_ci.load_state(cfg.state)
-        state["full_running"] = None
-        if state.get("full_pending") == plan.start:
-            state["full_pending"] = None
-        box_ci.record(state, head=plan.start, kind=box_ci.FULL, ok=passed, why=why)
-        box_ci.save_state(cfg.state, state)
-    return f"full {plan.start[:9]}: {'GREEN' if passed else 'RED'} ({why})"
+        with STATE_LOCK:
+            state = box_ci.load_state(cfg.state)
+            state["full_running"] = None
+            if state.get("full_pending") == plan.start:
+                state["full_pending"] = None
+            box_ci.record(state, head=plan.start, kind=box_ci.FULL, ok=passed, why=why + counts)
+            box_ci.save_state(cfg.state, state)
+    return f"full {plan.start[:9]}: {'GREEN' if passed else 'RED'} ({why}){counts}"
 
 
 def promote_tick(cfg: Config) -> str:
-    state = box_ci.load_state(cfg.state)
+    with STATE_LOCK:
+        state = box_ci.load_state(cfg.state)
 
     def anc(a: str, b: str) -> bool:
         return _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", a, b])[0] == 0
@@ -740,9 +861,10 @@ def promote_tick(cfg: Config) -> str:
                         "--remote", cfg.remote(), "--root", str(root)],
                        cwd=root, env=cfg.git_env("release-authority"), timeout=900)
     if rc == 0:
-        state = box_ci.load_state(cfg.state)
-        state["promoted"] = head
-        box_ci.save_state(cfg.state, state)
+        with STATE_LOCK:
+            state = box_ci.load_state(cfg.state)
+            state["promoted"] = head
+            box_ci.save_state(cfg.state, state)
     last = out.strip().splitlines()[-1][:160] if out.strip() else ""
     return f"promote {head[:9]}: rc={rc} {last}"
 
@@ -872,6 +994,11 @@ def sign_diff_problems(old_manifest: str, new_manifest: str, old_qb: str, new_qb
 
 
 def sign_tick(cfg: Config, live: str) -> str:
+    with STATE_LOCK:  # (r20) the full stage writes the same state file from its own thread
+        return _sign_tick(cfg, live)
+
+
+def _sign_tick(cfg: Config, live: str) -> str:
     state = box_ci.load_state(cfg.state)
     last = str(state.get("sign_checked") or "")
     if last == live:
@@ -980,7 +1107,8 @@ def drop_tick(cfg: Config) -> str:
 
 
 #: Lead time is re-measured at most this often (it reads every PR's comments and statuses).
-LEADTIME_EVERY_S = 1800
+LEADTIME_EVERY_S = 300  # (r20) the SLA alarm reads it: 5 min, not 30
+LOOP_ALARM = "LOOP_ALARM.json"
 
 
 def _production_commits(cfg: Config) -> list[tuple[datetime, str]]:
@@ -1022,31 +1150,104 @@ def leadtime_tick(cfg: Config, now: datetime | None = None) -> str:
         production=_production_commits(cfg), adopted=None, is_ancestor=anc, now=t)
     box_ci.save_state(out, doc)
     s = doc["summary"]
+    sl = s.get("sla") or {}
+    alarm = cfg.state.with_name(LOOP_ALARM)
+    with contextlib.suppress(OSError):
+        if sl.get("ok", True):
+            alarm.unlink(missing_ok=True)
+        else:
+            box_ci.save_state(alarm, {"at": doc.get("at"), "alarms": sl.get("alarms"),
+                                      "breaches": sl.get("breaches")})
+    flag = ("SLA ok" if sl.get("ok", True) else
+            "SLA BREACH " + ",".join([a["alarm"] for a in sl.get("alarms") or []]
+                                     + [f"{k}:{v['n']}" for k, v in
+                                        (sl.get("breaches") or {}).items()]))
     return (f"lead time: {len(prs)} PR(s), backlog {s['built_not_live']['n']}, "
-            f"p90 {s['lead_time_h']['p90']}h, bottleneck {s['bottleneck']}")
+            f"p90 {s['lead_time_h']['p90']}h, bottleneck {s['bottleneck']}; {flag}")
 
 
-def tick(cfg: Config) -> dict[str, Any]:
+#: (boot r20) THE LIGHT LOOP. Pickup, import, merge, sign and promote no longer wait for a whole
+#: pass: the heavy stages (PR checks, the full suite) run in their own threads, and the light
+#: stages repeat every LIGHT_EVERY_S while they run (11-26: a packet dropped at 01:10Z could not
+#: be picked up before the ~02:35Z pass, because each 2 h pass ran drop and inbox once, at its
+#: start). The pass ends when the heavy stages are done, after one last light round, so the
+#: mover still sees one pass at a time and nothing outlives it.
+LIGHT_EVERY_S = 90.0
+LIGHT = ("drop", "inbox", "state", "gate", "sign", "promote", "leadtime")
+HEAVY = ("pr", "full")
+
+
+def _stages(cfg: Config) -> dict[str, Callable[[], str]]:
+    return {"drop": lambda: drop_tick(cfg),
+            "inbox": lambda: inbox_tick(cfg),
+            "state": lambda: state_tick(cfg),
+            "gate": lambda: gate_tick(cfg, live_head(cfg)),
+            "sign": lambda: sign_tick(cfg, live_head(cfg)),
+            "pr": lambda: pr_tick(cfg),
+            "full": lambda: full_tick(cfg, live_head(cfg)),
+            "promote": lambda: promote_tick(cfg),
+            "leadtime": lambda: leadtime_tick(cfg)}
+
+
+def _call(name: str, fn: Callable[[], str]) -> str:
+    if GUARD is not None:
+        GUARD.beat(name)
+    try:
+        return fn()
+    except Exception as exc:  # one stage failing never stops the others
+        return f"ERROR {type(exc).__name__}: {str(exc)[:300]}"
+
+
+def tick(cfg: Config, *, light_every_s: float = LIGHT_EVERY_S,
+         stages: Mapping[str, Callable[[], str]] | None = None,
+         progress: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
     try:
         out["swept"] = sweep_stale(cfg)
     except Exception as exc:
         out["swept"] = f"ERROR {type(exc).__name__}: {str(exc)[:200]}"
-    for name, fn in (("drop", lambda: drop_tick(cfg)),
-                     ("inbox", lambda: inbox_tick(cfg)),
-                     ("state", lambda: state_tick(cfg)),
-                     ("gate", lambda: gate_tick(cfg, live_head(cfg))),
-                     ("sign", lambda: sign_tick(cfg, live_head(cfg))),
-                     ("pr", lambda: pr_tick(cfg)),
-                     ("full", lambda: full_tick(cfg, live_head(cfg))),
-                     ("promote", lambda: promote_tick(cfg)),
-                     ("leadtime", lambda: leadtime_tick(cfg))):
-        if GUARD is not None:
-            GUARD.beat(name)
-        try:
-            out[name] = fn()
-        except Exception as exc:  # one stage failing never stops the others
-            out[name] = f"ERROR {type(exc).__name__}: {str(exc)[:300]}"
+    fns = dict(stages or _stages(cfg))
+    timing: dict[str, Any] = {}
+
+    def run(name: str) -> None:
+        t0 = time.monotonic()
+        res = _call(name, fns[name])
+        t1 = time.monotonic()
+        with STATE_LOCK:
+            out[name] = res
+            row = timing.setdefault(name, {"runs": 0, "s_total": 0.0, "s_max": 0.0})
+            row["runs"] += 1
+            row["s_total"] = round(row["s_total"] + t1 - t0, 1)
+            row["s_max"] = round(max(row["s_max"], t1 - t0), 1)
+            row["last_end"] = datetime.now(UTC).isoformat(timespec="seconds")
+
+    # one light round first: a packet already in the drop is imported before any check starts
+    for name in LIGHT:
+        if name in fns:
+            run(name)
+    heavy = [threading.Thread(target=run, args=(n,), name=f"stage-{n}", daemon=True)
+             for n in HEAVY if n in fns]
+    for t in heavy:
+        t.start()
+    rounds = 1
+    while any(t.is_alive() for t in heavy):
+        for t in heavy:
+            t.join(timeout=light_every_s / max(1, len(heavy)))
+        if not any(t.is_alive() for t in heavy):
+            break
+        for name in LIGHT:
+            if name in fns:
+                run(name)
+        rounds += 1
+        if progress is not None:
+            with STATE_LOCK, contextlib.suppress(Exception):
+                progress({**out, "in_progress": True, "light_rounds": rounds,
+                          "stage_timing": timing})
+    for name in LIGHT:  # the heavy stages' answers are merged and promoted in this pass
+        if name in fns:
+            run(name)
+    out["light_rounds"] = rounds + 1
+    out["stage_timing"] = timing
     return out
 
 
@@ -1113,9 +1314,9 @@ def main(argv: list[str] | None = None) -> int:
 
     GUARD = StallGuard(float(raw.get("stall_s") or 2700.0), on_stall=_stalled)
     GUARD.watch()
-    doc = tick(cfg)
-    doc["trust"] = trust_status(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
+    doc = tick(cfg, progress=lambda d: box_ci.save_state(report, d))
+    doc["trust"] = trust_status(cfg)
     box_ci.save_state(report, doc)
     print(json.dumps(doc))
     return 0
