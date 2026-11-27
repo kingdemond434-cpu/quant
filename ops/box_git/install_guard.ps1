@@ -155,7 +155,40 @@ if (Test-Path -LiteralPath $tree) { Remove-Item -LiteralPath $tree -Recurse -For
 & git -c core.hooksPath=NUL clone -q --no-checkout $repo $tree
 & git -c core.hooksPath=NUL -C $tree checkout -q $bootSha
 if ($LASTEXITCODE -ne 0) { Stop-Here "could not check out $bootSha into $tree" }
-Set-Content -LiteralPath (Join-Path $adopt 'python.txt') -Value $py -Encoding ascii
+# THE PINNED PYTHON IS THE GUARD'S OWN (Audit C4, r24.2). The gateway's interpreter may be the
+# tree's .venv, or a base install quantrun or Users can write, so the adopter runs neither: the
+# BASE install is copied into guard\adopt\base (Admins and SYSTEM only), a fresh venv is built from
+# that copy in guard\adopt\venv, the gateway's packages are copied in (minus any .pth or editable
+# hook pointing into C:\opt), and the runtime fence becomes its sitecustomize. The install stops
+# if python is older than 3.11 (no PYTHONSAFEPATH) or any sys.path entry still points into C:\opt.
+& icacls $adopt /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
+$pyInfo = (& $py -I -c "import sys, json, sysconfig; print(json.dumps({'base': sys.base_prefix, 'ver': list(sys.version_info[:2]), 'site': sysconfig.get_paths()['purelib']}))" | Out-String).Trim() | ConvertFrom-Json
+if (-not $pyInfo) { Stop-Here "could not interrogate $py" }
+if ($pyInfo.ver[0] -lt 3 -or ($pyInfo.ver[0] -eq 3 -and $pyInfo.ver[1] -lt 11)) { Stop-Here "python $($pyInfo.ver -join '.') has no PYTHONSAFEPATH; the pinned adopter needs 3.11+" }
+$baseCopy = Join-Path $adopt 'base'; $venv = Join-Path $adopt 'venv'
+foreach ($d in @($baseCopy, $venv)) { if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Recurse -Force } }
+& robocopy "$($pyInfo.base)".TrimEnd('\') $baseCopy /E /XD site-packages __pycache__ /NFL /NDL /NJH /NJS /NP | Out-Null
+if (-not (Test-Path -LiteralPath (Join-Path $baseCopy 'python.exe'))) { Stop-Here "could not copy the base interpreter $($pyInfo.base)" }
+& (Join-Path $baseCopy 'python.exe') -I -m venv --without-pip $venv
+$pinnedPy = Join-Path $venv 'Scripts\python.exe'
+if (-not (Test-Path -LiteralPath $pinnedPy)) { Stop-Here "could not build the guard venv at $venv" }
+$vsite = Join-Path $venv 'Lib\site-packages'
+if (Test-Path -LiteralPath $pyInfo.site) { & robocopy $pyInfo.site $vsite /E /XD __pycache__ /NFL /NDL /NJH /NJS /NP | Out-Null }
+Get-ChildItem -LiteralPath $vsite -Filter '*.pth' -ErrorAction SilentlyContinue | Where-Object {
+    (Get-Content -LiteralPath $_.FullName -Raw) -match '(?i)c:[\\/]+opt|__editable__' } | ForEach-Object {
+    Remove-Item -LiteralPath $_.FullName -Force; Say "guard venv: dropped $($_.Name) (it pointed into C:\opt)" }
+Get-ChildItem -LiteralPath $vsite -Filter '__editable__*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+$sc = Join-Path $vsite 'sitecustomize.py'
+if (Test-Path -LiteralPath $sc) { Move-Item -LiteralPath $sc -Destination (Join-Path $vsite 'sitecustomize_orig.py') -Force }
+Copy-Item -LiteralPath (Join-Path $tree 'ops\box_git\pinned_sitecustomize.py') -Destination $sc -Force
+$env:QUANT_ADOPT_PINNED = '1'; $env:QUANT_LEDGER_ROOT = $Live; $env:PYTHONSAFEPATH = '1'; $env:PYTHONPATH = $tree
+$sp = (& $pinnedPy -c "import sys, json; print(json.dumps([bool(getattr(sys, '_quant_pinned_fence', False))] + sys.path))" | Out-String).Trim() | ConvertFrom-Json
+Remove-Item Env:QUANT_ADOPT_PINNED, Env:QUANT_LEDGER_ROOT, Env:PYTHONSAFEPATH, Env:PYTHONPATH -ErrorAction SilentlyContinue
+if (-not $sp -or $sp[0] -ne $true) { Stop-Here "the pinned fence did not arm in $pinnedPy" }
+$leak = @($sp | Select-Object -Skip 1 | Where-Object { "$_".ToLower().StartsWith('c:\opt\') -or "$_" -eq '' })
+if ($leak.Count -gt 0) { Stop-Here ("the guard venv still reaches into C:\opt: " + ($leak -join ', ')) }
+Set-Content -LiteralPath (Join-Path $adopt 'python.txt') -Value $pinnedPy -Encoding ascii
+Say "pinned python: $pinnedPy (base copied from $($pyInfo.base), fence armed, nothing on sys.path under C:\opt)"
 & icacls $adopt /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
 foreach ($g in @('config', 'hooks', 'info')) {
     $gp = Join-Path $Live ".git\$g"

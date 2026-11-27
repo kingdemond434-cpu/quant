@@ -43,7 +43,13 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+#: CODE is this checkout; ROOT is the tree checked. They differ only under the pinned adopter
+#: (QUANT_ADOPT_PINNED=1, r24.2): it runs this file from the owner-installed guard checkout against
+#: the live tree in QUANT_LEDGER_ROOT, and nothing is ever imported or executed from ROOT.
+CODE = Path(__file__).resolve().parents[1]
+ROOT = (Path(os.environ["QUANT_LEDGER_ROOT"]).resolve()
+        if os.environ.get("QUANT_ADOPT_PINNED") == "1" and os.environ.get("QUANT_LEDGER_ROOT")
+        else CODE)
 LOG = ROOT / "data" / "moneypath_fence.log"
 
 
@@ -126,7 +132,7 @@ def unstage_and_restore(path: str, status: str) -> None:
 
 def load_protected() -> dict[str, str | tuple[str, ...]]:
     spec = importlib.util.spec_from_file_location(
-        "check_moneypath_fence", ROOT / "scripts" / "check_moneypath_fence.py")
+        "check_moneypath_fence", CODE / "scripts" / "check_moneypath_fence.py")
     if spec is None or spec.loader is None:
         return {}
     mod = importlib.util.module_from_spec(spec)
@@ -143,7 +149,7 @@ def markers(spec: str | tuple[str, ...]) -> tuple[str, ...]:
 
 def load_ratchet_watch() -> tuple[dict, tuple[str, ...], object | None]:
     spec = importlib.util.spec_from_file_location(
-        "check_authority_ratchet", ROOT / "scripts" / "check_authority_ratchet.py")
+        "check_authority_ratchet", CODE / "scripts" / "check_authority_ratchet.py")
     if spec is None or spec.loader is None:
         return {}, (), None
     mod = importlib.util.module_from_spec(spec)

@@ -87,22 +87,41 @@ $release = Join-Path $desk "data\RELEASE.json"
 # first version fell straight from the venv (which this box does not have) to `python`, and a
 # box where that name is not on the task's PATH would have exited 4 at the seal -- adopted, never
 # sealed, gateway still refusing on the old seal, and the whole run reading as "it ran".
-$py = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $pyArgs = @()
-if (-not (Test-Path $py)) {
-    if (Get-Command py -ErrorAction SilentlyContinue) { $py = "py"; $pyArgs = @("-3") }
-    elseif (Get-Command python -ErrorAction SilentlyContinue) { $py = "python" }
-    else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
-}
-
 if ($Pinned) {
+    # (Audit C4, r24.2) AS SYSTEM, NOTHING UNDER -RepoRoot IS EVER EXECUTED OR IMPORTED. The
+    # interpreter is the guard's own venv (install_guard builds it outside C:\opt and refuses a
+    # base that quantrun can write); PYTHONSAFEPATH keeps the working directory and every script's
+    # folder off sys.path, so `-c "from libs.ops ..."` below imports the guard checkout's libs; and
+    # this probe refuses to adopt at all if any sys.path entry still sits under -RepoRoot. The tree
+    # is only ever DATA here: git reads it, the deciders measure it, release.seal(root=) writes it.
     if (-not $GuardRoot) { "adopt-and-seal: -Pinned needs -GuardRoot"; exit 2 }
     $pinPy = Join-Path (Split-Path -Parent $GuardRoot) "python.txt"
     if (-not (Test-Path -LiteralPath $pinPy)) { "adopt-and-seal: -Pinned has no $pinPy"; exit 2 }
     $py = (Get-Content -LiteralPath $pinPy -TotalCount 1).Trim(); $pyArgs = @()
     $env:QUANT_ADOPT_PINNED = "1"
     $env:PYTHONPATH = $GuardRoot
+    $env:PYTHONSAFEPATH = "1"
+    $env:PYTHONNOUSERSITE = "1"
+    Remove-Item Env:PYTHONHOME, Env:PYTHONSTARTUP -ErrorAction SilentlyContinue
     $env:QUANT_LEDGER_ROOT = $RepoRoot
+    $env:QUANT_PINNED_PYTHON = $py
+    $env:QUANT_GUARD_ROOT = $GuardRoot
     $env:GIT_CONFIG_PARAMETERS = "'core.hooksPath=NUL' 'core.fsmonitor=false' 'core.pager=' 'diff.external='"
+    $probe = (@(& $py -c "import sys, json; print(json.dumps([bool(getattr(sys.flags, 'safe_path', False)) and bool(getattr(sys, '_quant_pinned_fence', False))] + sys.path))" 2>$null) -join '')
+    $sp = @(); try { $sp = @(ConvertFrom-Json -InputObject $probe) } catch { $sp = @() }
+    $rootLow = $RepoRoot.TrimEnd('\').ToLowerInvariant() + '\'
+    $leak = @($sp | Select-Object -Skip 1 | Where-Object { "$_" -eq '' -or ("$_".TrimEnd('\') + '\').ToLowerInvariant().StartsWith($rootLow) })
+    if ($sp.Count -lt 1 -or $sp[0] -ne $true -or $leak.Count -gt 0) {
+        "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: -Pinned python is not isolated from $RepoRoot; not adopting: $probe"
+        exit 2
+    }
+} else {
+    $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $pyArgs = @()
+    if (-not (Test-Path $py)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $py = "py"; $pyArgs = @("-3") }
+        elseif (Get-Command python -ErrorAction SilentlyContinue) { $py = "python" }
+        else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
+    }
 }
 
 # EVERY LINE ALSO GOES TO A FILE, BECAUSE A SCHEDULED TASK'S STDOUT GOES NOWHERE (2026-09-14).
@@ -522,7 +541,7 @@ if ($pre.Code -ne 0) { Done 8 "adopt-guard-error" }
 # is the only way to test a change to the adoption against the live repository without first
 # committing that change into the very repository the adoption is about to overwrite.
 $adoptScript = Join-Path $PSScriptRoot "Adopt-Release.ps1"
-if (-not (Test-Path $adoptScript)) { $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1" }
+if (-not $Pinned -and -not (Test-Path $adoptScript)) { $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1" }
 if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; Done 2 "adopt-script-missing" }
 # THE CONSOLE IS KEPT, BECAUSE THE ONE LINE BELOW IS NOT A DIAGNOSIS (2026-09-23). For four days
 # this log said "Adopt-Release exited 1 -- partial adoption" once an hour and named nothing; the
@@ -638,6 +657,8 @@ foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
+    # (C4) the installers live in the tree; the pinned adopter never runs them as SYSTEM.
+    if ($Pinned) { Log "ensure-task: $($ensure.Task) missing; not installed under -Pinned (tree installer)"; continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
     try {
@@ -655,7 +676,7 @@ foreach ($ensure in @(
 # creates it ONCE and never overwrites; only its file name is logged, never its bytes. The key is
 # gitignored and never leaves this box. Best-effort: a failure here is logged, the seal goes on
 # (unsigned, with the reason written into the record).
-$keyOut = @(& $py @pyArgs -c "from libs.ops import release_signing as rs; created, msg = rs.ensure_key(); print(msg)" 2>&1 |
+$keyOut = @(& $py @pyArgs -c "import sys; from pathlib import Path; from libs.ops import release_signing as rs; created, msg = rs.ensure_key(Path(sys.argv[1])); print(msg)" $RepoRoot 2>&1 |
             ForEach-Object { "$_" })
 Log ("signing key: exit {0}: {1}" -f $LASTEXITCODE, ($keyOut -join ' | '))
 
@@ -666,7 +687,7 @@ Log ("signing key: exit {0}: {1}" -f $LASTEXITCODE, ($keyOut -join ' | '))
 # here lets its answer change the exit code.
 function Ensure-Signed {
     try {
-        $out = @(& $py @pyArgs -c "from libs.ops import release; d = release.ensure_signed(); print(d.get('state'), '-', d.get('why'))" 2>&1 |
+        $out = @(& $py @pyArgs -c "import sys; from pathlib import Path; from libs.ops import release; d = release.ensure_signed(root=Path(sys.argv[1])); print(d.get('state'), '-', d.get('why'))" $RepoRoot 2>&1 |
                  ForEach-Object { "$_" })
         Log ("ensure-signed: {0}" -f ($out -join ' | '))
     } catch {
@@ -679,7 +700,9 @@ function Ensure-Signed {
 # a person in an elevated window. ops\box\box_selfheal.ps1 says what each step will and will not
 # do; every step acts only on its exact stuck shape and never stops the seal.
 $selfheal = Join-Path $RepoRoot "ops\box\box_selfheal.ps1"
-if (Test-Path $selfheal) {
+if ($Pinned) {
+    Log "selfheal: skipped under -Pinned (box_selfheal.ps1 lives in the tree)"
+} elseif (Test-Path $selfheal) {
     try { . $selfheal; Invoke-BoxSelfHeal } catch { Log "selfheal: could not load: $($_.Exception.Message)" }
 }
 
@@ -703,7 +726,7 @@ if ($sealed -eq $head) {
 # RELEASE.json every hour forever. `release.accepts` is the rule the gateway itself applies
 # (the SHA differs only by seal/state paths), so it is the rule here too.
 if ($sealed) {
-    $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
+    $acc = & $py @pyArgs -c "import sys; from pathlib import Path; from libs.ops import release; r = Path(sys.argv[2]); ok, why, _ = release.accepts(sys.argv[1], release.load(r) or {}, root=r); print('OK' if ok else 'NO'); print(why)" $head $RepoRoot 2>$null
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
         Ensure-Signed
@@ -739,7 +762,7 @@ if ($dirty.Count -gt 0) {
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
     Undo-Adoption "$($dirty.Count) code path(s) dirty after adoption" 3 "dirty-code-path"
 }
-& $py @pyArgs -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
+& $py @pyArgs -c "import sys; from pathlib import Path; from libs.ops import release; d=release.seal(root=Path(sys.argv[1]), by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))" $RepoRoot
 if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Undo-Adoption "release.seal failed" 4 "seal-failed" }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
@@ -801,7 +824,11 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 # bought from a slow or unrelated-red gate. That reduces the book by fiat, which the principal's
 # standing order (2026-09-08) forbids. The bit is measured, logged and published; turning it
 # into a veto is the principal's call, not this script's.
-& $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
+if ($Pinned) {
+    Log "release authority: under -Pinned the hourly leg publishes it (the script lives in the tree)"
+} else {
+    & $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
+}
 
 # ------------------------------------------------ 6. THE NEW RELEASE MUST BE THE ONE RUNNING
 # The identity must run under the seal of $head, the code just sealed (not HEAD, which the box's

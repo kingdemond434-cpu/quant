@@ -22,12 +22,19 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+#: CODE is this checkout; ROOT is the tree checked. They differ only under the pinned adopter
+#: (QUANT_ADOPT_PINNED=1, r24.2): it runs this file from the owner-installed guard checkout against
+#: the live tree in QUANT_LEDGER_ROOT, and nothing is ever imported or executed from ROOT.
+CODE = Path(__file__).resolve().parents[1]
+ROOT = (Path(os.environ["QUANT_LEDGER_ROOT"]).resolve()
+        if os.environ.get("QUANT_ADOPT_PINNED") == "1" and os.environ.get("QUANT_LEDGER_ROOT")
+        else CODE)
 EVALUATOR = "scripts/check_immutable_evaluator.py"
 MANIFEST = "desks/mt5/data/IMMUTABLE_MANIFEST.json"
 #: The last verdict, for whoever asks off the adopter's console why a release was not taken.
@@ -63,7 +70,7 @@ def digest(raw: bytes) -> str:
 
 def judge(rev: str) -> tuple[int, list[str]]:
     """(rc, reasons): 0 sealed, 1 a frozen file differs from the signed manifest, 2 unmeasurable."""
-    here = ROOT / EVALUATOR
+    here = ROOT / EVALUATOR  # data (parsed, never run): the live tree under the pinned adopter
     names: set[str] = set()
     if here.exists():
         names.update(immutable_list(here.read_bytes()))

@@ -371,3 +371,132 @@ def test_the_adopter_script_takes_pinned() -> None:
     assert "[switch] $Pinned" in src and "$env:QUANT_ADOPT_PINNED = \"1\"" in src
     assert "core.hooksPath=NUL" in src and "QUANT_LEDGER_ROOT = $RepoRoot" in src
     assert 'Join-Path $script:DeciderRoot "scripts\\migrate_live_ledger_view.py"' in src
+
+
+# ---------------------------------------------------------------- r24.2: Audit C4, the hold on r4
+_REPO = __import__("pathlib").Path(__file__).resolve().parents[2]
+
+
+def _ps(rel: str) -> str:
+    return (_REPO / rel).read_text(encoding="utf-8")
+
+
+def _branch(src: str, anchor: str) -> str:
+    """The text of the `if ($Pinned) {...}` block that starts at the first line holding anchor."""
+    i = src.index(anchor)
+    j = src.index("if ($Pinned)", max(0, i - 400))
+    assert j <= i, f"{anchor!r} is not inside an `if ($Pinned)` block"
+    return src[j:i + len(anchor)]
+
+
+def test_the_pinned_adopter_executes_nothing_from_the_tree() -> None:
+    """Every step of Adopt-And-Seal that would execute or import from -RepoRoot or $desk sits
+    behind `if ($Pinned)`, and every libs.ops call names the tree as root= DATA."""
+    src = _ps("desks/mt5/scripts/Adopt-And-Seal.ps1")
+    # the interpreter: the tree's .venv only ever in the unpinned branch
+    pin = src.index("if ($Pinned) {\n    # (Audit C4, r24.2)")
+    venv = src.index('Join-Path $RepoRoot ".venv\\Scripts\\python.exe"')
+    assert venv > src.index("} else {", pin)
+    assert '$env:PYTHONSAFEPATH = "1"' in src and "_quant_pinned_fence" in src
+    # installers, selfheal, release_authority: skipped when pinned
+    assert "if ($Pinned) { Log \"ensure-task:" in src
+    _branch(src, ". $selfheal; Invoke-BoxSelfHeal")
+    _branch(src, 'research\\release_authority.py") --once')
+    assert 'if (-not $Pinned -and -not (Test-Path $adoptScript))' in src
+    # every `-c "... from libs.ops ..."` passes the tree as an explicit root
+    calls = [ln for ln in src.splitlines() if "from libs.ops import release" in ln]
+    assert len(calls) == 4
+    for ln in calls:
+        assert "Path(sys.argv[" in ln and "$RepoRoot" in ln, ln
+    # nothing else executes a path built from the tree
+    for bad in ("& $py @pyArgs (Join-Path $desk", "& $py @pyArgs (Join-Path $RepoRoot"):
+        for k in [i for i in range(len(src)) if src.startswith(bad, i)]:
+            _branch(src, src[k:src.index("\n", k)])
+
+
+def test_adopt_release_runs_guards_from_the_guard_checkout_when_pinned() -> None:
+    src = _ps("desks/mt5/scripts/Adopt-Release.ps1")
+    a, b = src.index("function Get-PinnedCode"), src.index("function Invoke-GuardedIndexCommit")
+    helper = src[a:b]
+    assert "QUANT_GUARD_ROOT" in helper and "QUANT_PINNED_PYTHON" in helper
+    rest = src.replace(helper, "")
+    assert '.venv\\Scripts\\python.exe' not in rest
+    assert "Get-PinnedCode $relativeGuard" in rest
+    assert 'Get-PinnedCode "scripts\\check_target_seal.py"' in rest
+
+
+def test_the_guard_scripts_measure_the_live_tree_but_load_their_own_code(
+        monkeypatch, tmp_path) -> None:
+    import importlib.util
+    monkeypatch.setenv("QUANT_ADOPT_PINNED", "1")
+    monkeypatch.setenv("QUANT_LEDGER_ROOT", str(tmp_path))
+    for rel in ("scripts/check_target_seal.py", "scripts/moneypath_precommit_guard.py",
+                "scripts/check_protected_records.py"):
+        name = "_pin_" + rel.replace("/", "_")[:-3]
+        spec = importlib.util.spec_from_file_location(name, _REPO / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        assert tmp_path.resolve() == mod.ROOT and mod.CODE == _REPO, rel
+    monkeypatch.delenv("QUANT_ADOPT_PINNED")
+    seal = _REPO / "scripts/check_target_seal.py"
+    spec = importlib.util.spec_from_file_location("_unpinned", seal)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.ROOT == mod.CODE == _REPO
+
+
+def test_the_identity_check_imports_the_guards_own_mt5desk() -> None:
+    import inspect
+
+    from libs.ops import adopt_guard as G
+    body = inspect.getsource(G._identity)
+    assert "code = code_root(root)" in body and "str(root)" not in body.split("ri.verdict")[0]
+
+
+def test_the_runtime_fence_refuses_tree_imports_and_tree_scripts(tmp_path) -> None:
+    import os
+    import shutil
+    import subprocess
+    import sys
+    live = tmp_path / "live"
+    (live / "libs").mkdir(parents=True)
+    (live / "evil.py").write_text("print('ran')\n")
+    site = tmp_path / "site"
+    site.mkdir()
+    shutil.copy(_REPO / "ops/box_git/pinned_sitecustomize.py", site / "sitecustomize.py")
+    (tmp_path / "ok").mkdir()
+    (tmp_path / "ok" / "fine.py").write_text("X = 1\n")
+    probe = (
+        "import sys, subprocess\n"
+        "assert sys._quant_pinned_fence\n"
+        "sys.path.insert(0, sys.argv[1]); sys.path.insert(0, sys.argv[2])\n"
+        "import fine\n"
+        "try:\n    import evil\n"
+        "except ImportError as e:\n    print('IMPORT', 'pinned fence' in str(e))\n"
+        "try:\n    subprocess.run([sys.executable, sys.argv[1] + '/evil.py'])\n"
+        "except RuntimeError as e:\n    print('RUN', 'pinned fence' in str(e))\n"
+        "subprocess.run(['git', '-C', sys.argv[1], '--version'], capture_output=True)\n"
+        "print('GIT ok')\n"
+    )
+    env = {**os.environ, "PYTHONPATH": str(site), "QUANT_ADOPT_PINNED": "1",
+           "QUANT_LEDGER_ROOT": str(live), "PYTHONSAFEPATH": "1"}
+    out = subprocess.run([sys.executable, "-c", probe, str(live), str(tmp_path / "ok")], env=env,
+                         capture_output=True, text=True, timeout=60, check=False)
+    assert out.returncode == 0, out.stderr
+    assert "IMPORT True" in out.stdout and "RUN True" in out.stdout and "GIT ok" in out.stdout
+    env["QUANT_ADOPT_PINNED"] = "0"
+    ask = "import sys; print(hasattr(sys, '_quant_pinned_fence'))"
+    off = subprocess.run([sys.executable, "-c", ask],
+                         env=env, capture_output=True, text=True, timeout=60, check=False)
+    assert off.stdout.strip() == "False"
+
+
+def test_install_guard_builds_its_own_python() -> None:
+    src = _ps("ops/box_git/install_guard.ps1")
+    i = src.index("THE PINNED PYTHON IS THE GUARD'S OWN")
+    j = src.index("Set-Content -LiteralPath (Join-Path $adopt 'python.txt') -Value $pinnedPy")
+    body = src[i:j]
+    for need in ("-m venv --without-pip", "robocopy", "pinned_sitecustomize.py", "Stop-Here",
+                 "PYTHONSAFEPATH", "c:\\opt\\"):
+        assert need in body, need
+    assert "Value $py -Encoding ascii" not in src[i:]  # the gateway's python is never the adopter's

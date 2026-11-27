@@ -963,8 +963,9 @@ def gateway_alive(root: Path, *, now: datetime | None = None) -> bool:
 
 
 def _identity(root: Path) -> dict[str, Any]:
-    desk = root / "desks" / "mt5"
-    for p in (str(root), str(desk)):
+    code = code_root(root)  # pinned: the guard checkout's mt5desk, never the tree's (C4)
+    desk = code / "desks" / "mt5"
+    for p in (str(code), str(desk)):
         if p not in sys.path:
             sys.path.insert(0, p)
     from mt5desk import release_identity as ri

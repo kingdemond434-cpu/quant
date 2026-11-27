@@ -705,7 +705,7 @@ def test_adopt_and_seal_runs_the_guard_in_order() -> None:
         "$adoptOut = @(& powershell.exe",
         'Invoke-AdoptGuard @("smoke")',
         'Invoke-AdoptGuard @("blackout", "--margin-min", "30")',
-        "release.seal(by='Adopt-And-Seal')",
+        "release.seal(root=Path(sys.argv[1]), by='Adopt-And-Seal')",
         "$script:Recycled = $true",
         'Invoke-AdoptGuard @("health", "--sealed", $head',
         'Done 0 "sealed"',

@@ -65,7 +65,13 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+#: CODE is this checkout; ROOT is the tree checked. They differ only under the pinned adopter
+#: (QUANT_ADOPT_PINNED=1, r24.2): it runs this file from the owner-installed guard checkout against
+#: the live tree in QUANT_LEDGER_ROOT, and nothing is ever imported or executed from ROOT.
+CODE = Path(__file__).resolve().parents[1]
+ROOT = (Path(os.environ["QUANT_LEDGER_ROOT"]).resolve()
+        if os.environ.get("QUANT_ADOPT_PINNED") == "1" and os.environ.get("QUANT_LEDGER_ROOT")
+        else CODE)
 OVERRIDE = "ALLOW_PROTECTED_RECORD_LOSS"
 REWRITE_OVERRIDE = "ALLOW_PROTECTED_RECORD_REWRITE"
 
@@ -203,7 +209,7 @@ def _merge_of_range(a: str, b: str) -> tuple[_Merge | None, str]:
 
 def _protected() -> dict[str, str]:
     """The one list, imported rather than restated (promotion rule: import the number)."""
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(CODE))
     from libs.ops.protected_artifacts import PROTECTED
     return {k: (v[0] if isinstance(v, tuple) else str(v)) for k, v in PROTECTED.items()}
 
