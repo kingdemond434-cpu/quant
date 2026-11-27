@@ -171,6 +171,13 @@ Set-ScheduledTask -TaskName 'MT5-AdoptRelease' -TaskPath $ar.TaskPath -Action $n
     ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $adopt 'old_action.json') -Encoding utf8
 Say "pinned adopter: $tree at $($bootSha.Substring(0,12)); MT5-AdoptRelease now runs it with -Pinned (old action kept in old_action.json)"
 
+# r22's packets inbox (BRIEF2 step 2, measured absent 14:00Z): author packets only; the loop's
+# drop stage refuses any verdict or seat line in it (drop_pull.stage_packets).
+$pk = 'C:\opt\bridge\quant\packets_inbox'
+$null = New-Item -ItemType Directory -Force -Path $pk
+& icacls $pk /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "Administrator:(OI)(CI)M" | Out-Null
+Say "packets inbox ready: $pk"
+
 # 6. the migrator's task
 $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Runas\migrate.ps1`""
 $trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
