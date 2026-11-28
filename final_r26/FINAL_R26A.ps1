@@ -1,4 +1,4 @@
-# FINAL_R26A.ps1 -- zuck's own act (run elevated). THREE PARTS, in this fixed order. If any
+# FINAL_R26A.ps1 -- zuck's own act (run elevated). FOUR PARTS, in this fixed order. If any
 # check fails, it stops before every later part. Every part was cleared by the Audit thread at
 # the exact sha named here.
 #
@@ -26,6 +26,15 @@
 #        one of its checks.
 #      - It also writes the owner approval file for that exact commit. This act IS the owner's
 #        approval.
+#   D. Boot r26 at 44eca6173260717ba9742572eb7669b382dbe8ce (child of r25d; AUDIT CLEAR
+#      2026-11-28 00:49Z). Staged and approved exactly as C. It adds merge lanes:
+#      - non-money heads merge on the box guard's PASS;
+#      - money heads still need an independent CLEAR;
+#      - gate, trust and adoption-door changes always need the Auditor;
+#      - a cap of 96 merges per 24h.
+#      It also adds the CODE for the box's own reviewer and signer. That code does NOTHING until
+#      a later install creates its accounts and key, and it can only ever add a CLEAR next to the
+#      guard's PASS, the risk invariants and the money cap.
 #
 # HOW THE ADMIN WINDOW CAN VERIFY BEFORE RUNNING
 #   - Every input is pinned below by sha256, and the script refuses on any mismatch.
@@ -39,14 +48,22 @@
 #                                (one head 923f01842...)
 #       boot-r25d-923f01842.verdict.json
 #                                a2c1f9403f76707c57d0a1098d65a66bc96d2592b0ff790957390684d1b8022b
-#   - The two verdict files are Audit's own files, copied unchanged. This script does not write
+#       boot-r26-44eca6173.bundle
+#                                31a0f7bc61521aad6cebaeb5b9bbccae3825b319750e51a9de4549f8b2c7d683
+#                                (one head 44eca6173...)
+#       boot-r26-44eca6173.verdict.json
+#                                6b92488a40027f4717789da5f815ae2f17350b6432759fab4069eb5a58c35355
+#   - The three verdict files are Audit's own files, copied unchanged. This script does not write
 #     a verdict.
 #       live-merge-r25-34d751ad43.verdict.json reads
 #         {"branch":"claude/live-merge-r25","line":"AUDIT CLEAR 34d751ad438ae5659ee8a5cad57e04faf98e595d merge"}
 #       boot-r25d-923f01842.verdict.json reads
 #         {"branch":"claude/boot-r25d","line":"AUDIT CLEAR 923f0184217e3fd76822c4a55658cda2e4f7dfb8 merge"}
+#       boot-r26-44eca6173.verdict.json reads
+#         {"branch":"claude/boot-r26","line":"AUDIT CLEAR 44eca6173260717ba9742572eb7669b382dbe8ce merge"}
 #   - Provenance: Audit's notes are autonomy/LIVE_MERGE_R25_9663b93706_AUDIT.md (and its
-#     follow-ups) and autonomy/R26_DESIGN.md ("Audit 2026-11-28 00:00Z") in the project files.
+#     follow-ups), autonomy/R26_DESIGN.md ("Audit 2026-11-28 00:00Z") and the BOOT_R26 audit note
+#     in the project files.
 #
 # It changes nothing it does not name above. It touches no task, no live position and no file in
 # the live tree. The forge and the adopter do the rest under their own checks. It takes no
@@ -60,14 +77,20 @@ $RB   = Join-Path $DL 'forge_reboot'
 $OA   = 'C:\ProgramData\QuantBox\forge\owner_approvals'
 $Forge = 'C:\ProgramData\QuantBox\forge'
 $LmHead = '34d751ad438ae5659ee8a5cad57e04faf98e595d'
-$BtHead = '923f0184217e3fd76822c4a55658cda2e4f7dfb8'
-$BtName = 'boot-r25d-923f01842'
+$Boots = @(
+    @{ head = '923f0184217e3fd76822c4a55658cda2e4f7dfb8'; name = 'boot-r25d-923f01842'; ref = 'refs/heads/claude/boot-r25d'
+       why = 'boot r25d: an unreadable packets inbox never stops the forge pass' },
+    @{ head = '44eca6173260717ba9742572eb7669b382dbe8ce'; name = 'boot-r26-44eca6173'; ref = 'refs/heads/claude/boot-r26'
+       why = 'boot r26: merge lanes, daily cap, and the inert reviewer/signer code' }
+)
 $Pins = [ordered]@{
     'live-merge-r25.bundle'                  = 'faee219570173302c896b885a799a051cbe4d0947963e8931040423b07972d07'
     'live-merge-r25.json'                    = 'ca9181ea9501c595c42d24a44ba073e4930616f556b253b63814fd906b0326b7'
     'live-merge-r25-34d751ad43.verdict.json' = '8625a6523739bc7dfe9082793ffe96d2d87e09d35c056faa0a38a5590e615461'
     'boot-r25d-923f01842.bundle'             = '57bab139ff43cee9b9bd6d010d03a7a9c195f3b8dbc714bcbc485cb15319380c'
     'boot-r25d-923f01842.verdict.json'       = 'a2c1f9403f76707c57d0a1098d65a66bc96d2592b0ff790957390684d1b8022b'
+    'boot-r26-44eca6173.bundle'              = '31a0f7bc61521aad6cebaeb5b9bbccae3825b319750e51a9de4549f8b2c7d683'
+    'boot-r26-44eca6173.verdict.json'        = '6b92488a40027f4717789da5f815ae2f17350b6432759fab4069eb5a58c35355'
 }
 $U8 = New-Object Text.UTF8Encoding($false)
 $G  = @('-c', 'safe.directory=*', '-c', 'core.hooksPath=NUL', '-c', 'core.fsmonitor=false')
@@ -90,11 +113,13 @@ foreach ($k in $Pins.Keys) {
     if ($x -ne $Pins[$k]) { Stop-Here "$k is sha256 $x, not $($Pins[$k])" }
 }
 if ((Get-OneHead (Join-Path $Here 'live-merge-r25.bundle')) -ne "$LmHead refs/heads/claude/live-merge-r25") { Stop-Here "the live-merge bundle's one head is not $LmHead" }
-if ((Get-OneHead (Join-Path $Here "$BtName.bundle")) -ne "$BtHead refs/heads/claude/boot-r25d") { Stop-Here "the r25d bundle's one head is not $BtHead" }
+foreach ($b in $Boots) {
+    if ((Get-OneHead (Join-Path $Here "$($b.name).bundle")) -ne "$($b.head) $($b.ref)") { Stop-Here "the $($b.name) bundle's one head is not $($b.head)" }
+}
 foreach ($d in @($PI, $DL, $RB, $OA)) { if (-not (Test-Path -LiteralPath $d -PathType Container)) { Stop-Here "no folder $d" } }
 try { $gateSid = (New-Object Security.Principal.NTAccount('quantgate')).Translate([Security.Principal.SecurityIdentifier]).Value }
 catch { Stop-Here 'the quantgate account does not exist' }
-Say 'inputs ok: five files match their pinned sha256, both bundles carry exactly their one head'
+Say 'inputs ok: seven files match their pinned sha256, every bundle carries exactly its one head'
 
 # ---- A. packets_inbox: quantgate may read and list it ----
 & icacls $PI /grant 'quantgate:(OI)(CI)(RX)' | Out-Null
@@ -123,26 +148,28 @@ foreach ($pair in @(@((Join-Path $DL 'live-merge-r25.bundle'), 'live-merge-r25.b
 }
 Say "B done: LIVE merge $LmHead packet and Audit's CLEAR staged in $DL (post-checked)"
 
-# ---- C. boot r25d for the box's mover ----
+# ---- C and D. boots r25d, then r26, for the box's mover ----
 $boot = "$((Get-Content -Raw -LiteralPath (Join-Path $Forge 'loop.json') | ConvertFrom-Json).boot)".Trim()
 if ($boot -notmatch '^[0-9a-f]{40}$') { Stop-Here 'cannot read the running boot from loop.json' }
-$tmp = Join-Path $env:TEMP ('r25dchk_' + [guid]::NewGuid().ToString('N'))
-& git @G clone -q --no-checkout (Join-Path $Forge 'boot-src') $tmp
-& git @G -C $tmp fetch -q (Join-Path $Here "$BtName.bundle") '+refs/heads/claude/boot-r25d:refs/heads/r25d' 2>$null
-& git @G -C $tmp merge-base --is-ancestor $boot $BtHead
-$ff = $LASTEXITCODE
-Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
-if ($ff -ne 0) { Stop-Here "$BtHead is not a fast-forward of the running boot $boot" }
-$dest = Join-Path $RB "$BtName.bundle"
-Copy-Item -LiteralPath (Join-Path $Here "$BtName.bundle") -Destination $dest -Force
-$h = Get-Sha $dest
-if ($h -ne $Pins["$BtName.bundle"]) { Stop-Here "post-check: the staged r25d bundle is $h" }
-[IO.File]::WriteAllText((Join-Path $RB "$BtName.bundle.sha256"), "$h  $BtName.bundle`n", $U8)
-$vd = Join-Path $RB "$BtName.verdict.json"
-[IO.File]::WriteAllBytes($vd, [IO.File]::ReadAllBytes((Join-Path $Here "$BtName.verdict.json")))
-if ((Get-Sha $vd) -ne $Pins["$BtName.verdict.json"]) { Stop-Here 'post-check: the staged r25d verdict is not Audit''s bytes' }
-[IO.File]::WriteAllText((Join-Path $OA "$BtHead.txt"), "zuck (owner) approves boot r25d ${BtHead}: an unreadable packets inbox never stops the forge pass`n", $U8)
-Say "C done: r25d $BtHead (fast-forward of $boot) staged with Audit's CLEAR and the owner approval"
+foreach ($b in $Boots) {
+    $tmp = Join-Path $env:TEMP ('bootchk_' + [guid]::NewGuid().ToString('N'))
+    & git @G clone -q --no-checkout (Join-Path $Forge 'boot-src') $tmp
+    & git @G -C $tmp fetch -q (Join-Path $Here "$($b.name).bundle") "+$($b.ref):refs/heads/chk" 2>$null
+    & git @G -C $tmp merge-base --is-ancestor $boot $b.head
+    $ff = $LASTEXITCODE
+    Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    if ($ff -ne 0) { Stop-Here "$($b.head) is not a fast-forward of the running boot $boot" }
+    $dest = Join-Path $RB "$($b.name).bundle"
+    Copy-Item -LiteralPath (Join-Path $Here "$($b.name).bundle") -Destination $dest -Force
+    $h = Get-Sha $dest
+    if ($h -ne $Pins["$($b.name).bundle"]) { Stop-Here "post-check: the staged $($b.name) bundle is $h" }
+    [IO.File]::WriteAllText((Join-Path $RB "$($b.name).bundle.sha256"), "$h  $($b.name).bundle`n", $U8)
+    $vd = Join-Path $RB "$($b.name).verdict.json"
+    [IO.File]::WriteAllBytes($vd, [IO.File]::ReadAllBytes((Join-Path $Here "$($b.name).verdict.json")))
+    if ((Get-Sha $vd) -ne $Pins["$($b.name).verdict.json"]) { Stop-Here "post-check: the staged $($b.name) verdict is not Audit's bytes" }
+    [IO.File]::WriteAllText((Join-Path $OA "$($b.head).txt"), "zuck (owner) approves $($b.why) ($($b.head))`n", $U8)
+    Say "staged $($b.name) $($b.head) (fast-forward of $boot) with Audit's CLEAR and the owner approval"
+}
 
-Say 'DONE: the loop can read its inbox again; the LIVE merge and r25d are staged; the box takes them on its next pass'
+Say 'DONE: the loop can read its inbox again; the LIVE merge, r25d and r26 are staged; the box takes them on its next pass'
 'ALL DONE - nothing more is needed from you'
