@@ -1193,6 +1193,14 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
+    from libs.data.refused_hosts import refusal
+    why = refusal("https://www.reddit.com/")
+    if why:
+        # Refused on Reddit's own terms: no request, and the status says so rather than EMPTY.
+        h.status = "BLOCKED_ON_TERMS"
+        h.detail = why
+        h.cursor = dict(cursor)
+        return h
     seen = set(cursor.get("seen_ids") or [])
     posts: list[dict[str, Any]] = []
     for sub in row.get("subreddits") or ():

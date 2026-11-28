@@ -9,6 +9,13 @@ Sources (all lawful, public, first-party):
 
 Every collector is isolated: one failing source never blocks the others.
 Network timeouts are short; results are cached to data/free_data_cache/.
+
+TERMS FENCE (2026-11-18): every request leaves through `_get`, and `_get` asks
+`libs.data.refused_hosts.refusal` before any socket is opened and sends through its `opener()`,
+which re-checks every redirect hop. A refused host is never contacted: the refusal is recorded
+(`blocked_on_terms()`, persisted to data/free_data_cache/blocked_on_terms.json) and the caller
+gets `BlockedOnTerms`, an exception, never a zero. A refused RSS feed comes back as `Unmeasured`,
+an empty list that carries its reason, so a reader can tell "refused" from "quiet".
 """
 
 from __future__ import annotations
@@ -17,22 +24,67 @@ import csv
 import io
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.refused_hosts import opener as _refusing_opener
+    from libs.data.refused_hosts import refusal as _refusal
+except ImportError:  # desk research dir run with only itself on sys.path: put the repo root on it
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from libs.data.refused_hosts import opener as _refusing_opener
+    from libs.data.refused_hosts import refusal as _refusal
+
 BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
+#: The honest User-Agent: says what is asking and claims to be no browser. One literal for every
+#: request in this file; no call overrides it.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
+
+class BlockedOnTerms(urllib.error.URLError):
+    """The host's own terms refuse automated contact; no request was sent."""
+
+
+class Unmeasured(list):
+    """An empty result that is NOT a measurement of quiet: it carries why nothing was read."""
+
+    status = "UNMEASURED"
+
+    def __init__(self, reason: str) -> None:
+        super().__init__()
+        self.reason = reason
+
+
+#: host-or-url -> the recorded refusal, for this process. Persisted on every new refusal.
+_BLOCKED: dict[str, dict] = {}
+
+
+def blocked_on_terms() -> dict[str, dict]:
+    """Every refusal this process recorded instead of a request: {url: {status, why, at}}."""
+    return dict(_BLOCKED)
+
+
+def _record_refusal(url: str, why: str) -> None:
+    _BLOCKED[url] = {"status": "BLOCKED_ON_TERMS", "url": url, "why": why,
+                     "at": datetime.now(UTC).isoformat()}
+    _cache_put("blocked_on_terms", _BLOCKED)
 
 
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    why = _refusal(url)
+    if why:
+        _record_refusal(url, why)
+        raise BlockedOnTerms(f"BLOCKED_ON_TERMS: {why}")
+    req = urllib.request.Request(url, headers={**(headers or {}), "User-Agent": UA})
+    with _refusing_opener().open(req, timeout=timeout) as r:
         return r.read()
 
 
@@ -181,14 +233,29 @@ RSS_FEEDS = {
     "FED": "https://www.federalreserve.gov/feeds/press_all.xml",
     "BLS": "https://www.bls.gov/feed/news_release_all.xml",
     "ECB": "https://www.ecb.europa.eu/rss/press.html",
-    "BOJ": "https://www.boj.or.jp/en/announcements/rss.rdf",
     "BOE": "https://www.bankofengland.co.uk/rss/news",
     "SNB": "https://www.snb.ch/en/node/10532/rss",
 }
 
 
+#: Feeds the desk once polled and no longer may, each with the reason a reader must see instead of
+#: an empty list. BoJ: "copying or reproduction of the content for commercial purposes requires
+#: the Bank's prior permission" (copyright page, read 2026-11-17; #1254, #1346).
+RSS_UNMEASURED: dict[str, dict[str, str]] = {
+    "BOJ": {"url": "https://www.boj.or.jp/en/announcements/rss.rdf", "status": "UNMEASURED",
+            "reason": ("BLOCKED_ON_TERMS: BoJ terms require the Bank's prior permission for "
+                       "commercial reproduction; the feed is not fetched")},
+}
+
+
 def rss_fetch(url: str) -> list[dict]:
-    """Parse an RSS/Atom feed into [{title, link, pub, guid}]. Stdlib only."""
+    """Parse an RSS/Atom feed into [{title, link, pub, guid}]. Stdlib only.
+
+    A host refused on its terms is not contacted: the result is `Unmeasured` with the reason."""
+    why = _refusal(url)
+    if why:
+        _record_refusal(url, why)
+        return Unmeasured(f"BLOCKED_ON_TERMS: {why}")
     out: list[dict] = []
     try:
         raw = _get(url, timeout=15)
@@ -230,9 +297,15 @@ def github_search(query: str) -> dict:
 
 
 def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
+    """Hot posts of a subreddit. Reddit's terms refuse a commercial desk's automated use, so on
+    the shared list this returns `Unmeasured` with the reason and sends nothing."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
+    why = _refusal(url)
+    if why:
+        _record_refusal(url, why)
+        return Unmeasured(f"BLOCKED_ON_TERMS: {why}")
     try:
-        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
+        data = json.loads(_get(url))
         posts = []
         for c in data.get("data", {}).get("children", []):
             p = c.get("data", {})

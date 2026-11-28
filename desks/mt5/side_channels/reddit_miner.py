@@ -7,6 +7,7 @@ Uses RSS (not blocked like JSON API).
 
 import json
 import re
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,11 @@ from pathlib import Path
 import requests
 
 BASE = Path(__file__).resolve().parent.parent
+_ROOT = str(BASE.parent.parent)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+from libs.data.refused_hosts import refusal  # noqa: E402
+
 OUT = BASE / "data" / "intelligence" / "reddit"
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -21,7 +27,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+HEADERS = {"User-Agent": "quant-desk-research/1.0 (automated research; honours robots.txt)"}
 
 SYMBOLS = [
     "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
@@ -102,8 +108,12 @@ def _parse_rss(xml_text: str, sub: str) -> list[dict]:
 
 
 def mine_subreddit(sub: str) -> list[dict]:
-    """Mine via RSS feed."""
+    """Mine via RSS feed. A host refused on its terms is never requested."""
     url = f"https://www.reddit.com/r/{sub}/.rss?limit=50"
+    why = refusal(url)
+    if why:
+        print(f"  reddit r/{sub}: BLOCKED_ON_TERMS ({why[:120]})")
+        return []
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15)
         resp.raise_for_status()
@@ -113,7 +123,17 @@ def mine_subreddit(sub: str) -> list[dict]:
         return []
 
 
+def blocked_on_terms() -> str | None:
+    """Why Reddit may not be contacted, or None."""
+    return refusal("https://www.reddit.com/")
+
+
 def mine_all() -> list[dict]:
+    why = blocked_on_terms()
+    if why:
+        # One line, no requests: every subreddit is the same refused host.
+        print(f"reddit: UNMEASURED, BLOCKED_ON_TERMS ({why[:160]})")
+        return []
     all_disc = []
     for i, sub in enumerate(SUBREDDITS):
         if i > 0:
@@ -126,6 +146,9 @@ def mine_all() -> list[dict]:
 
 
 def run_and_save() -> list[dict]:
+    if blocked_on_terms():
+        mine_all()  # prints the refusal
+        return []   # no discoveries file: a refused ground donates nothing, not an empty batch
     discoveries = mine_all()
     out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
     try:

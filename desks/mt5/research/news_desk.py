@@ -45,7 +45,7 @@ def log(msg: str) -> None:
 
 
 def poll_official_rss() -> int:
-    """Poll FREE official-government RSS feeds (Fed/BLS/ECB/BOJ/BOE/SNB) and
+    """Poll FREE official-government RSS feeds (Fed/BLS/ECB/BOE/SNB; BoJ is UNMEASURED on its terms) and
     record every headline with the four clocks. No invented data: only items
     that actually appeared in a first-party feed. Deduped by guid/link/title."""
     import free_data as fd
@@ -61,8 +61,14 @@ def poll_official_rss() -> int:
         except Exception:
             pass
     new = 0
+    for src, row in getattr(fd, "RSS_UNMEASURED", {}).items():
+        log(f"RSS {src}: {row.get('status', 'UNMEASURED')} ({row.get('reason', '')})")
     for src, url in fd.RSS_FEEDS.items():
-        for item in fd.rss_fetch(url):
+        items = fd.rss_fetch(url)
+        if getattr(items, "status", None) == "UNMEASURED":
+            log(f"RSS {src}: UNMEASURED ({getattr(items, 'reason', '')})")
+            continue
+        for item in items:
             title = item.get("title", "").strip()
             link = item.get("link", "").strip() or item.get("guid", "").strip()
             key = f"{src}:{title[:80]}:{link[:120]}"
