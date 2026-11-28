@@ -137,6 +137,29 @@ def _evict_one(sources: dict) -> bool:
     return True
 
 
+#: FRED/ALFRED/FRASER (stlouisfed.org) terms refuse every automated fetch
+#: (governance/fred-terms-ruling-2026-11-13.md). It is no seed and no data host, and `fetch`
+#: refuses it before a request is built, whichever frontier row or link put the URL in hand.
+FRED_TERMS_REFUSAL = ("BLOCKED_ON_TERMS: FRED/ALFRED (stlouisfed.org) terms refuse every "
+                      "automated fetch (governance/fred-terms-ruling-2026-11-13.md)")
+FRED_MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": "FRED/ALFRED/FRASER pages as crawl leads",
+                      "size": "UNMEASURED",
+                      "stand_in": "the primary publishers' own data hubs on the frontier",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use")}
+
+
+def _terms_refused(url: str) -> str:
+    try:
+        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ""
+    if host == "stlouisfed.org" or host.endswith(".stlouisfed.org"):
+        return FRED_TERMS_REFUSAL
+    return ""
+
+
 def log(msg: str) -> None:
     print(f"[{datetime.now(tz=UTC):%H:%M:%S}] {msg}", flush=True)
 
@@ -207,6 +230,9 @@ def fetch(url: str) -> tuple[bytes | None, str]:
     if refused:
         return None, f"BLOCKED_ON_TERMS: {refused}"
     try:
+        # FRED terms ruling: a stlouisfed.org URL is refused before a request is built.
+        if _terms_refused(url):
+            return None, _terms_refused(url)
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
             "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",

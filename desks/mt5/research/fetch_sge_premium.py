@@ -41,6 +41,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -68,11 +69,23 @@ GRAMS_PER_TROY_OZ = 31.1034768
 XAU_H1 = BASE / "data" / "universe" / "XAUUSD_H1.parquet"
 
 #: USDCNY primary: ECB reference rates, USD and CNY from the SAME 16:00 CET snapshot, crossed.
-#: Keyless, daily, ~0-1 day lag. Fallback: FRED DEXCHUS (H.10 noon-NY), keyless but published
-#: with weeks of lag. One source per run for the WHOLE join — never mixed day-by-day — and the
-#: report records which.
+#: Keyless, daily, ~0-1 day lag. One source per run for the WHOLE join — never mixed day-by-day —
+#: and the report records which. The old FRED DEXCHUS fallback is REFUSED ON TERMS
+#: (governance/fred-terms-ruling-2026-11-13.md): `_fred_csv` refuses before any request and the
+#: report carries `usdcny_fallback` with its missed_growth line. The URL stays as a record only.
 ECB_90D = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml"
-USDCNY_FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXCHUS"
+USDCNY_FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXCHUS"  # REFUSED, record only
+FRED_FALLBACK_REFUSAL = {
+    "status": "BLOCKED_ON_TERMS",
+    "reason": ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+               "(governance/fred-terms-ruling-2026-11-13.md)"),
+    "missed_growth": {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": ("the USDCNY leg on days the ECB cross is unreadable, so "
+                                       "the SGE premium is not computed those days"),
+                      "size": "UNMEASURED",
+                      "stand_in": "none yet; the ECB cross is the only USDCNY leg",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use, or a second lawful USDCNY reader lands")}}
 
 #: SGE official graph endpoint (R0649, verified live 2026-08-26). Serves ONE contract's
 #: current-session minute curve:
@@ -91,6 +104,11 @@ _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 
 def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
+    """A CSV series, or None. A stlouisfed.org URL is REFUSED ON TERMS before any request."""
+    host = (urllib.parse.urlsplit(str(url)).hostname or "").lower()
+    if host == "stlouisfed.org" or host.endswith(".stlouisfed.org"):
+        print(f"  {col}: BLOCKED_ON_TERMS -- {FRED_FALLBACK_REFUSAL['reason']}", flush=True)
+        return None
     try:
         r = requests.get(url, timeout=timeout)
         r.raise_for_status()
@@ -274,13 +292,15 @@ def main() -> int:
                    "source_sge": prov, "latest": latest})
     print(f"history: {len(hist)} day(s) recorded -> {HISTORY}", flush=True)
 
-    print("XAUUSD 07:00Z leg (desk feed) + USDCNY (ECB, FRED fallback)...", flush=True)
+    print("XAUUSD 07:00Z leg (desk feed) + USDCNY (ECB; FRED fallback refused on terms)...",
+          flush=True)
     intl = _desk_xau_usd_oz()
     cny = _ecb_usdcny()
     cny_source = "ecb_cross"
     if cny is None:
-        cny = _fred_csv(USDCNY_FRED, "usdcny")
-        cny_source = "fred_dexchus"
+        # The FRED DEXCHUS fallback is refused on terms; no request is made.
+        report["usdcny_fallback"] = FRED_FALLBACK_REFUSAL
+        cny_source = "BLOCKED_ON_TERMS:fred_dexchus"
     missing = [n for n, s in (("XAUUSD_H1", intl), ("USDCNY", cny)) if s is None]
     if missing:
         report.update({

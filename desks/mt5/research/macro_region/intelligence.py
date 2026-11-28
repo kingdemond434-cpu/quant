@@ -463,8 +463,9 @@ CATALOGUE: tuple[Any, ...] = (
           pit_feasible="NO through FRED itself -- use ALFRED for vintages",
           assets=("forex", "bonds", "indices", "metals", "energy"),
           mechanism_families=("rates_transmission", "macro_surprise", "risk_regime"),
-          how_to_fetch="fredgraph CSV, or the API with the key at data/secrets/fred.json; the "
-                       "desk's captured copy is desks/mt5/data/axes/fred.json",
+          how_to_fetch="BLOCKED_ON_TERMS (governance/fred-terms-ruling-2026-11-13.md): never "
+                       "fetched; the desk's captured copy desks/mt5/data/axes/fred.json stays "
+                       "readable",
           url="https://fred.stlouisfed.org/"),
     _spec(dataset_id="alfred", institution="FRED archival vintages (ALFRED)",
           coverage="the same series as FRED, by vintage date",
@@ -476,8 +477,8 @@ CATALOGUE: tuple[Any, ...] = (
           pit_feasible="YES -- the only PIT route for a revised US macro series",
           assets=("forex", "bonds", "indices"),
           mechanism_families=("macro_surprise", "revision_response"),
-          how_to_fetch="ALFRED API with realtime_start/realtime_end; key at "
-                       "data/secrets/fred.json (named, never printed)",
+          how_to_fetch="BLOCKED_ON_TERMS (governance/fred-terms-ruling-2026-11-13.md): never "
+                       "fetched; ALFRED vintages already in the lake stay readable",
           url="https://alfred.stlouisfed.org/"),
     _spec(dataset_id="ecb_sdw", institution="ECB Data Portal (SDMX)",
           coverage="euro area rates, reference exchange rates, AAA yield curve, monetary "

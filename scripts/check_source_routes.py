@@ -46,6 +46,7 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
@@ -75,6 +76,10 @@ def terms_refusal(route: dict[str, Any]) -> str | None:
 #:
 #: Probes are HEAD-like GETs of a few KB. Endpoints needing a key are declared with `needs_key`
 #: so an auth failure is never confused with a route change.
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md),
+#: and a route probe is automated contact: the three FRED rows are REFUSED, kept as a record.
+_FRED_TERMS_WHY = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+                   "(governance/fred-terms-ruling-2026-11-13.md)")
 ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "fred_series", "url": "https://api.stlouisfed.org/fred/series/observations",
      "expect": "json", "needs_key": True, "terms": "REFUSED"},
@@ -90,7 +95,9 @@ ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any"},
     {"name": "gld_holdings",
      "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
-     "expect": "binary"},
+     "expect": "binary", "terms": "REFUSED", "terms_why": (
+         "spdrgoldshares.com terms: personal, non-commercial use only; no access other than "
+         "the website's navigational structure (re-read 2026-11-17)")},
     {"name": "yahoo_chart",
      "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json",
      "terms": "REFUSED"},
@@ -112,6 +119,18 @@ MIN_BODY_BYTES = 64
 
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
+    url_host = (urlsplit(str(route.get("url") or "")).hostname or "").lower().rstrip(".")
+    if url_host == "stlouisfed.org" or url_host.endswith(".stlouisfed.org"):
+        # Whatever the row says: no stlouisfed.org host is probed (FRED terms ruling).
+        route = {**route, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY}
+    if str(route.get("terms") or "").upper() == "REFUSED":
+        # A route probe is still an automated contact: a terms-REFUSED route is never requested.
+        return {"name": str(route.get("name")), "url": str(route.get("url")),
+                "expect": str(route.get("expect") or "any"), "status": "BLOCKED_ON_TERMS",
+                "why": f"BLOCKED_ON_TERMS: {route.get('terms_why') or 'terms REFUSED'}",
+                "missed_growth": {"mechanism": f"{route.get('name')}_terms_refusal",
+                                  "lost": "the hourly MOVED/OK shape check for this route",
+                                  "verdict": "a gap, not a zero"}}
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}

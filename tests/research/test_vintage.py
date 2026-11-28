@@ -235,30 +235,40 @@ def _load_collector() -> Any:
     return module
 
 
-def test_the_collector_records_a_vintage_before_overwriting(
+def test_the_refused_collector_requests_nothing_and_keeps_the_vintages_on_disk(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """WIRED, NOT SHELVED. Until this, every run destroyed the previous vintage permanently.
+    """FRED IS REFUSED ON TERMS (governance/fred-terms-ruling-2026-11-13.md).
 
-    The archive write is a full overwrite AND the fetch truncates to a rolling window, so a store
-    that is merely importable changes nothing. This drives main() with the network faked and
-    asserts the log on disk.
+    This test used to drive main() with the fetch faked and assert that a revision was appended
+    to the vintage log before the archive was overwritten. The collector no longer fetches, so
+    the assertions now pin the other half of that promise: with a key present, main() reads no
+    key, calls no fetch, writes BLOCKED_ON_TERMS with a missed_growth line, and leaves both the
+    archive and the vintage log already on disk exactly as they were -- still readable.
     """
     collector = _load_collector()
-    monkeypatch.setattr(collector, "_ROOT", tmp_path)
-    monkeypatch.setattr(collector, "_ARCHIVE", tmp_path / "data" / "fred_macro.json")
-    monkeypatch.setattr(collector, "_WEB", tmp_path / "web" / "fred_macro.json")
-    monkeypatch.setattr(collector, "_SERIES", ("M2SL",))
-    monkeypatch.setattr(collector, "_key", lambda: "fake-key-never-used")
-    monkeypatch.setattr(collector, "_fetch", lambda key, sid: [("2026-06-01", 21500.0)])
+    record(tmp_path, "M2SL", {"2026-06-01": 21500.0}, vintage=_V1)
+    record(tmp_path, "M2SL", {"2026-06-01": 21987.3}, vintage=_V2)
+    archive = tmp_path / "data" / "fred_macro.json"
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    archive.write_text(json.dumps({"updated": _V2, "series": {"M2SL": [["2026-06-01", 21987.3]]}}))
+    before = archive.read_bytes()
+    monkeypatch.setattr(collector, "_ARCHIVE", archive)
+    monkeypatch.setattr(collector, "_STATUS", tmp_path / "data" / "fred_macro_status.json")
+    monkeypatch.setenv("FRED_API_KEY", "fake-key-never-used")
+
+    def _no_fetch(*_a: Any, **_k: Any) -> Any:
+        raise AssertionError("the refused collector called its fetch")
+
+    monkeypatch.setattr(collector, "_fetch", _no_fetch)
     collector.main()
 
-    assert latest_known(tmp_path, "M2SL") == {"2026-06-01": 21500.0}
-    assert json.loads((tmp_path / "data" / "fred_macro.json").read_text())["series"]
-
-    # Second run, same period revised UP: the archive is replaced, the vintage is not.
-    monkeypatch.setattr(collector, "_fetch", lambda key, sid: [("2026-06-01", 21987.3)])
-    collector.main()
+    status = json.loads((tmp_path / "data" / "fred_macro_status.json").read_text())
+    assert status["status"] == "BLOCKED_ON_TERMS"
+    assert "fred-terms-ruling-2026-11-13" in status["reason"]
+    assert status["missed_growth"]["mechanism"] == "fred_terms_refusal"
+    assert status["archive_present"] is True
+    assert archive.read_bytes() == before
     log = read_log(tmp_path, "M2SL")
-    assert len(log) == 2, "the revision must be appended, not overwrite the first publication"
-    assert log[0]["value"] == 21500.0 and log[1]["value"] == 21987.3
+    assert len(log) == 2 and log[0]["value"] == 21500.0 and log[1]["value"] == 21987.3
+    assert latest_known(tmp_path, "M2SL") == {"2026-06-01": 21987.3}

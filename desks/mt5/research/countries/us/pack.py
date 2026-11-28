@@ -710,6 +710,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         layer="official",
         roots=("https://www.bls.gov/schedule/news_release/", "https://www.bea.gov/news/schedule",
                "https://www.census.gov/economic-indicators/",
+               # REFUSED on terms (fred-terms-ruling-2026-11-13): named, never fetched;
+               # acquire_datasets.terms_refusal skips every stlouisfed.org root.
                "https://api.stlouisfed.org/fred/"),
         queries=("Employment Situation", "Consumer Price Index", "Producer Price Index",
                  "Personal Income and Outlays", "advance retail sales", "GDP advance estimate",
@@ -877,6 +879,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         layer="app_ecosystem",
         roots=("https://www.tradingview.com/scripts/", "https://www.quantconnect.com/forum/",
                "https://alpaca.markets/docs/", "https://interactivebrokers.github.io/",
+               # the FRED root is REFUSED on terms (fred-terms-ruling-2026-11-13); named only
                "https://polygon.io/docs", "https://fred.stlouisfed.org/docs/api/fred/"),
         queries=("pine script", "thinkscript study", "QuantConnect algorithm", "Alpaca "
                  "backtest", "IBKR API", "polygon aggregates", "fredapi", "backtrader"),
@@ -923,6 +926,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "us_fraser_archive", "FRASER (the Fed's historical archive), the five-year-lagged FOMC "
                              "transcripts, ALFRED vintages and the Wayback Machine",
         layer="archive",
+        # FRASER/ALFRED are REFUSED on terms (fred-terms-ruling-2026-11-13): named, never fetched
         roots=("https://fraser.stlouisfed.org/", "https://alfred.stlouisfed.org/",
                "https://www.federalreserve.gov/monetarypolicy/fomc_historical_year.htm",
                "https://web.archive.org/"),

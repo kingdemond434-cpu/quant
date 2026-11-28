@@ -15,12 +15,18 @@ in the rosters under desks/mt5/data/ (money path for replay-shadow): a roster ro
 of these hosts (baidu_index, cn_baidu_migration, cn_zhihu via Sogou, the Sogou-WeChat ground)
 stays visible, and every fetch of it is refused with this reason.
 
+FRED/ALFRED (every stlouisfed.org host) are refused on their terms for every automated fetch
+(governance/fred-terms-ruling-2026-11-13.md); the reason and missed_growth line live in
+`libs.data.fred_terms`, and every transport above refuses them here, before any request.
+
 missed_growth: whatever CN sentiment, attention and mobility these grounds carried is UNMEASURED
 from them; the substitutes named on each row (HK ImmD crossings, Juejin, Bilibili) stand in.
 """
 from __future__ import annotations
 
 from urllib.parse import urlsplit
+
+from libs.data import fred_terms
 
 #: Registrable domains whose every host is off-limits.
 OFF_LIMITS_DOMAINS: tuple[str, ...] = ("baidu.com", "sogou.com", "weixin.qq.com", "wechat.com")
@@ -49,6 +55,8 @@ def off_limits(url: str) -> str | None:
             return f"{WHY} [{host}]"
     if host in STATUTE_HOSTS:
         return f"{WHY_STATUTE} [{host}]"
+    if host == fred_terms.DOMAIN or host.endswith("." + fred_terms.DOMAIN):
+        return f"{fred_terms.STATUS}: {fred_terms.REASON} [{host}]"
     return None
 
 

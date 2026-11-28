@@ -162,9 +162,13 @@ def test_the_catalogue_rows_are_complete() -> None:
             "usda"} <= ids
 
 
-def test_the_catalogue_names_the_fred_key_path_and_never_a_key() -> None:
-    fred = IN.CATALOGUE_BY_ID["fred"]
-    assert IN.FRED_KEY_PATH in fred.how_to_fetch
+def test_the_catalogue_names_the_fred_refusal_and_never_a_key() -> None:
+    # FRED/ALFRED are refused on terms (2026-11-13 ruling): the catalogue's how_to_fetch names
+    # the refusal and the ruling instead of a key path that would invite a fetch.
+    for sid in ("fred", "alfred"):
+        how = IN.CATALOGUE_BY_ID[sid].how_to_fetch
+        assert "BLOCKED_ON_TERMS" in how and "fred-terms-ruling-2026-11-13" in how, sid
+        assert IN.FRED_KEY_PATH not in how, sid
     blob = json.dumps([spec.__dict__ if hasattr(spec, "__dict__") else str(spec)
                        for spec in IN.CATALOGUE], default=str)
     # A key is 32 lowercase hex characters; nothing shaped like one may be in this module.

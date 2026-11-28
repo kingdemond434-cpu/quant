@@ -14,7 +14,8 @@ world, with one backbone and a handful of direct doors:
     CFTC Socrata (publicreporting)       traders-in-financial-futures -- the EURO FX positioning
                                          the legacy schema never carried
     US Treasury fiscal data              average interest rates by security
-    FRED fredgraph.csv                   the desk's known ids, keyless
+    FRED fredgraph.csv                   REFUSED ON TERMS (governance/fred-terms-ruling-
+                                         2026-11-13.md): no row, never requested
     direct probes                        the ten registry rows that sat DISCOVERED
 
 ONE PASS, THREE PHASES, ONE CURSOR. Discovery lists providers (daily) and pages their dataset
@@ -378,6 +379,11 @@ class Client:
         return self.deadline - time.monotonic()
 
     def get(self, url: str) -> bytes:
+        if _is_fred_url(url):
+            # REFUSED ON TERMS before any request is built (governance/fred-terms-ruling-
+            # 2026-11-13.md); counted, never sent.
+            self.failures["blocked_on_terms"] += 1
+            raise FetchError("blocked_on_terms", FRED_REFUSAL["reason"])
         left = self.remaining()
         if left < 2.0:
             raise FetchError("budget_exhausted", url)
@@ -821,11 +827,28 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
-    for sid in _fred_ids():
-        out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
-                    "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
-                            + urllib.parse.urlencode({"id": sid})), "currencies": ["USD"]})
+    # FRED rows are REFUSED ON TERMS (governance/fred-terms-ruling-2026-11-13.md): none is
+    # declared, and `Client.get` refuses a stlouisfed.org URL from any other path. The ids the
+    # desk wanted stay listed by `_fred_ids` for the record (`FRED_REFUSAL`).
     return out
+
+
+#: Why the FRED doors are absent, with the missed_growth line every refusal carries.
+FRED_REFUSAL: dict[str, Any] = {
+    "status": "BLOCKED_ON_TERMS",
+    "reason": ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+               "(governance/fred-terms-ruling-2026-11-13.md)"),
+    "missed_growth": {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": "the desk's known FRED ids as direct series",
+                      "size": "UNMEASURED",
+                      "stand_in": "DBnomics mirrors of the primary publishers (FED, BLS, BEA)",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use")}}
+
+
+def _is_fred_url(url: str) -> bool:
+    host = (urllib.parse.urlsplit(str(url)).hostname or "").lower().rstrip(".")
+    return host == "stlouisfed.org" or host.endswith(".stlouisfed.org")
 
 
 def _fred_ids() -> list[str]:
@@ -845,9 +868,24 @@ def _fred_ids() -> list[str]:
 #: `search` seeds the DBnomics frontier with datasets that answer the same need.
 LEGACY_PROBES: dict[str, dict[str, Any]] = {
     "bis_eer": {"direct": "WS_EER", "search": "effective exchange rate"},
+    # BLOCKED_ON_TERMS: kept as a record of the door, never knocked on. The DBnomics search
+    # still seeds the frontier (a different host); the SPDR url is never requested.
     "spdr_gld_holdings": {"url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/"
                                  "GLD_US_archive_EN.csv", "mode": "csv", "stems": ["XAU"],
-                          "freq": "daily", "search": "gold reserves"},
+                          "freq": "daily", "search": "gold reserves",
+                          "blocked_on_terms": (
+                              "spdrgoldshares.com terms: personal, non-commercial use only; no "
+                              "access other than the website's navigational structure "
+                              "(re-read 2026-11-17; same verdict as research/fetch_gld.py)"),
+                          "missed_growth": {
+                              "mechanism": "gld_terms_refusal",
+                              "what_is_lost": ("GLD daily physical holdings flow as a "
+                                               "conditioner for XAUUSD/XAGUSD"),
+                              "size": "UNMEASURED",
+                              "stand_in": ("DBnomics 'gold reserves' frontier seeds; CFTC COT "
+                                           "metals positioning"),
+                              "reopens_when": ("SPDR grants written permission for automated "
+                                               "retrieval")}},
     "sge_benchmark": {"url": "https://en.sge.com.cn/data_BenchmarkPrice", "mode": "csv",
                       "stems": ["XAU"], "search": "gold price"},
     "shfe_gold": {"url": "https://www.shfe.com.cn/data/dailydata/kx/kx{bday}.dat",
@@ -1258,6 +1296,12 @@ def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until:
             if _rank(drow.get("lifecycle", "")) >= 2:
                 rec["status"] = "QUALITY-PASSED"
             stats[f"legacy:{rec['status']}"] += 1
+            continue
+        if probe.get("blocked_on_terms"):
+            # Terms refuse automated retrieval: the direct door is never requested.
+            rec.update({"status": "BLOCKED_ON_TERMS", "reason": probe["blocked_on_terms"],
+                        "missed_growth": probe.get("missed_growth")})
+            stats["legacy:BLOCKED_ON_TERMS"] += 1
             continue
         if not probe.get("url"):
             rec["reason"] = "no keyless endpoint known; frontier seeded by search"

@@ -52,13 +52,20 @@
   {
    "id": "fred_rates",
    "adapter": "fred",
-   "terms": "OPEN",
+   "terms": "REFUSED",
    "key_env": [
     "FRED_API_KEY",
     "FRED_KEY"
    ],
    "url": "https://api.stlouisfed.org/fred/series/observations",
-   "note": "US Treasury H.15 nominal and real yields and breakevens (public domain). The rates curve the futures side trades on, and a PIT rates factor while UST10Y bars on the box end 2025-12-31"
+   "note": "US Treasury H.15 nominal and real yields and breakevens (public domain). The rates curve the futures side trades on, and a PIT rates factor while UST10Y bars on the box end 2025-12-31",
+   "terms_why": "FRED terms refuse all automated fetches (governance/fred-terms-ruling-2026-11-13.md); the series' primary publishers are the route",
+   "missed_growth": {
+    "mechanism": "fred_terms_refusal",
+    "what_is_lost": "H.15 curve, real yields and breakevens as futures-state rate factors",
+    "size": "UNMEASURED",
+    "reopens_when": "a primary-publisher reader with confirmed terms replaces it"
+   }
   },
   {
    "id": "deribit_public",
@@ -76,9 +83,16 @@
   {
    "id": "fred_vixcls",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
+   "terms": "REFUSED",
    "url": "https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS",
-   "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed"
+   "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed",
+   "terms_why": "FRED terms refuse all automated fetches (governance/fred-terms-ruling-2026-11-13.md); the series' primary publishers are the route",
+   "missed_growth": {
+    "mechanism": "fred_terms_refusal",
+    "what_is_lost": "VIXCLS daily level",
+    "size": "UNMEASURED",
+    "reopens_when": "a primary-publisher reader with confirmed terms replaces it"
+   }
   },
   {
    "id": "binance_futures_public",

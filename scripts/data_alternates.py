@@ -57,18 +57,25 @@ DBNOMICS_MIRROR: dict[str, tuple[str, str, str]] = {
 }
 
 
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md).
+FRED_TERMS_WHY = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+                  "(governance/fred-terms-ruling-2026-11-13.md)")
+FRED_MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": "the fredgraph primary for every mapped macro series",
+                      "size": "UNMEASURED",
+                      "stand_in": "the DBnomics mirror of the primary publisher (next route)",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use")}
+
+
+class FredTermsRefused(RuntimeError):
+    """The FRED route refused on terms, before any request was built."""
+
+
 def fred_route(series_id: str) -> dict[str, float]:
-    """Primary: keyless fredgraph CSV."""
-    raw = _get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
-    out: dict[str, float] = {}
-    for row in csv.DictReader(io.StringIO(raw.decode("utf-8", "replace"))):
-        val = row.get(series_id) or row.get("VALUE") or ""
-        date = row.get("DATE") or row.get("observation_date") or ""
-        if date and val not in ("", "."):
-            out[date] = float(val)
-    if not out:
-        raise ValueError(f"fredgraph returned no rows for {series_id}")
-    return out
+    """The old fredgraph primary: REFUSED ON TERMS. Raises before any request is built, so the
+    walk moves to the next route and the provenance log records BLOCKED_ON_TERMS."""
+    raise FredTermsRefused(f"{series_id}: {FRED_TERMS_WHY}")
 
 
 def dbnomics_route(series_id: str) -> dict[str, float]:
@@ -132,7 +139,8 @@ def fetch_macro_series(series_id: str) -> tuple[dict[str, float], str]:
             return data, name
         except Exception as exc:
             import urllib.error as _ue
-            kind = ("AUTH_FAILED" if isinstance(exc, _ue.HTTPError)
+            kind = ("BLOCKED_ON_TERMS" if isinstance(exc, FredTermsRefused) else
+                    "AUTH_FAILED" if isinstance(exc, _ue.HTTPError)
                     and exc.code in (401, 403) else "BLOCKED")
             errors.append(f"{name}: {kind}: {type(exc).__name__}: {exc}")
             # AUTH_FAILED is a KEY problem, not a network problem: rerouting around it forever

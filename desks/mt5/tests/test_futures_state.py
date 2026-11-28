@@ -828,7 +828,9 @@ def test_bis_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
     notes: list[dict[str, Any]] = []
     out = fs.bis_collect(_bis_src(["GB", "JP"]), disallow, {}, notes, now)
     assert calls == ["https://bis.test/robots.txt"] and out.empty
-    assert notes == [{"source": "bis_stats", "status": "UNMEASURED", "why": "robots disallows"}]
+    assert [(n["source"], n["status"], n["why"]) for n in notes] == [
+        ("bis_stats", "BLOCKED_BY_ROBOTS", "robots disallows")]
+    assert notes[0]["missed_growth"] == fs.ROBOTS_MISSED_GROWTH
     assert not (tmp_desk / "raw" / "bis_cbpol.parquet").exists()
 
     # An unreadable robots.txt (anything but a 404) is never a yes.
@@ -866,6 +868,89 @@ def test_shipped_bis_reaction_row_matches_its_source() -> None:
                        "BIS_CPI_GB": 100 * 1.002 ** np.arange(n),
                        "BIS_CBPOL_NZ": np.linspace(1, 4, n)}, index=idx)
     assert [o[0] for o in fs.fred_outputs(row, yc)] == ["fred_cb_reaction_bis_boe"]
+
+
+# --------------------------------------------- robots fail closed before any request (#819)
+
+@pytest.mark.parametrize("answer", ["robots.txt disallows this path",
+                                    "robots.txt unreadable (HTTP 503)",
+                                    "robots.txt unreadable (URLError)"])
+def test_polite_makes_no_request_when_robots_refuses(monkeypatch: pytest.MonkeyPatch,
+                                                     answer: str) -> None:
+    """A disallowed or unreadable robots answer stops the fetch before the request is built:
+    the polite fetcher is never called, the refusal is counted with its missed_growth line."""
+    from libs.data import polite_fetch
+    from research import index_discovery as idx
+
+    def no_request(*_a: Any, **_k: Any) -> Any:
+        raise AssertionError("a request was made past a robots refusal")
+
+    monkeypatch.setattr(polite_fetch, "get", no_request)
+    monkeypatch.setattr(idx, "robots_refusal", lambda url: answer)
+    monkeypatch.setattr(fs, "ROBOTS_BLOCKED", [])
+    with pytest.raises(fs.RobotsBlocked):
+        fs.fetch_json("https://publicreporting.cftc.gov/resource/x.json?$limit=1")
+    with pytest.raises(fs.RobotsBlocked):
+        fs.fetch_text("https://www.mof.go.jp/a.csv")
+    assert [r["status"] for r in fs.ROBOTS_BLOCKED] == ["BLOCKED_BY_ROBOTS"] * 2
+    assert all(r["why"] == answer and r["missed_growth"] == fs.ROBOTS_MISSED_GROWTH
+               for r in fs.ROBOTS_BLOCKED)
+
+
+def test_robots_gate_unavailable_is_a_refusal(monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import index_discovery as idx
+
+    def boom(url: str) -> str | None:
+        raise RuntimeError("no robots helper")
+
+    monkeypatch.setattr(idx, "robots_refusal", boom)
+    assert "fail closed" in str(fs.robots_refusal("https://h/x.csv"))
+
+
+def test_robots_disallow_for_our_own_agent_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.robotparser
+
+    from research import index_discovery as idx
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse([f"User-agent: {fs.UA.split('/')[0]}", "Disallow: /"])
+    monkeypatch.setattr(idx, "robots_refusal", lambda url: None)
+    monkeypatch.setattr(idx, "_robots_for", lambda scheme, netloc: rp)
+    assert fs.robots_refusal("https://h/x.csv") == "robots.txt disallows this path for our agent"
+
+
+@pytest.mark.parametrize("body", ["<!DOCTYPE html><html>404</html>", "<html><body/></html>"])
+def test_an_html_robots_page_is_unreadable_and_mof_is_not_fetched(tmp_desk: Path,
+                                                                  body: str) -> None:
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        return body
+
+    notes: list = []
+    fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, {}, notes)
+    assert calls == ["https://h/robots.txt"]
+    assert notes[0]["status"] == "BLOCKED_BY_ROBOTS"
+    assert notes[0]["missed_growth"] == fs.ROBOTS_MISSED_GROWTH
+
+
+def test_a_cftc_set_refused_by_robots_is_named_not_errored(tmp_desk: Path,
+                                                           monkeypatch: pytest.MonkeyPatch
+                                                           ) -> None:
+    from libs.data import polite_fetch
+    from research import index_discovery as idx
+
+    def no_request(*_a: Any, **_k: Any) -> Any:
+        raise AssertionError("a request was made past a robots refusal")
+
+    monkeypatch.setattr(polite_fetch, "get", no_request)
+    monkeypatch.setattr(idx, "robots_refusal", lambda url: "robots.txt unreadable (HTTP 500)")
+    monkeypatch.setattr(fs, "ROBOTS_BLOCKED", [])
+    src = {"cftc_legacy_futonly": {"terms": "OPEN", "url": "https://publicreporting.cftc.gov/r"}}
+    _pos, info = fs.cftc_market({"id": "gold", "like": "%GOLD%"}, src, fs.fetch_json, {})
+    assert info["sets"]["cftc_legacy_futonly"].startswith("BLOCKED_BY_ROBOTS")
+    assert len(fs.ROBOTS_BLOCKED) == 1
 
 
 def test_relative_stance_is_the_difference_of_two_like_for_like_residuals() -> None:
@@ -1005,3 +1090,19 @@ def test_a_bis_only_set_never_asks_fred(tmp_desk: Path, monkeypatch: pytest.Monk
     f = frames["fred_rel_gbpusd"]
     lead = pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(f["event_time"], utc=True)
     assert (lead >= pd.Timedelta(days=75)).all()
+
+
+def test_no_fred_route_is_open_in_the_futures_state_registry() -> None:
+    """FRED terms refuse every automated fetch (2026-11-13 ruling): no registry row whose URL is
+    on stlouisfed.org may read OPEN, so the `terms == "OPEN"` gate never calls the FRED API even
+    when a FRED key is present. Each refused row names why and carries its missed_growth."""
+    import json as _json
+    doc = _json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    rows = doc if isinstance(doc, list) else [r for v in doc.values() if isinstance(v, list)
+                                              for r in v]
+    fred = [r for r in rows if isinstance(r, dict) and "stlouisfed.org" in str(r.get("url", ""))]
+    assert fred, "the FRED rows stay in the registry as a record"
+    for r in fred:
+        assert r.get("terms") == "REFUSED", r.get("id")
+        assert "fred-terms-ruling" in str(r.get("terms_why", ""))
+        assert r["missed_growth"]["mechanism"] == "fred_terms_refusal"

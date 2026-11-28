@@ -8,6 +8,15 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
+MACRO FLOW (MACRO_FLOW_SOURCES, terms re-read 2026-11-17). US Treasury coupon-auction demand from
+Fiscal Data (the public tail proxy high_yield - avg_med_yield, dealer take-down, indirect share,
+each against the same tenor's own run), the NY Fed Staff Nowcast's weekly revision as the USD
+growth state, and Bank of Canada / CNB policy-rate DECISIONS. These four are fetched only past a
+fetch-time robots.txt gate (MACRO_FLOW_ROBOTS_GATED, fail closed). Gold-ETF holdings (SPDR GLD,
+iShares IAU/SLV) and Atlanta Fed GDPNow are BLOCKED_ON_TERMS on their publishers' own clauses
+(quoted in TERMS_EVIDENCE), never fetched, and each carries a missed-growth line
+(MACRO_FLOW_MISSED_GROWTH). Nothing here is routed via FRED/ALFRED (terms-refused).
+
 BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
 CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
 crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB Open Data for
@@ -1768,6 +1777,269 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+# ============================================================================ macro-flow parsers
+# US Treasury auction demand (Fiscal Data), the NY Fed Staff Nowcast's revisions, and the policy
+# rate DECISIONS of central banks whose terms permit automated reuse (Bank of Canada Valet, CNB).
+# Each parser keeps only what the publisher printed; every derived number is named for what it is.
+
+#: Same-tenor auctions a tenor's own baseline is read over (strictly earlier auction dates only).
+UST_TENOR_BASE_N = 6
+#: The NY Fed Staff Nowcast was RELAUNCHED on 2023-09-08. Rows dated earlier in the download are
+#: the model's reconstruction (a 2002-15 history was published in 2019), not what was printed on
+#: those dates: they never become observations, so nothing before the relaunch reads as PIT.
+NOWCAST_SINCE = date(2023, 9, 8)
+
+
+def _fd_num(v: Any) -> float | None:
+    return None if v in (None, "", "null") else _num(str(v))
+
+
+def parse_fiscal_auctions(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Fiscal Data `auctions_query` JSON (`data[]`), nominal fixed-rate coupons only (TIPS and
+    FRNs skipped: a real yield and a discount margin are not the same tail).
+
+    Per auction: `tail_bp` = (high_yield - avg_med_yield) * 100 -- the PUBLIC tail proxy: the
+    stop-out yield over the median accepted competitive bid (the when-issued tail is not public);
+    `dealer_share` = primary_dealer_accepted / comp_accepted (dealers left holding supply);
+    `indirect_share` = indirect_bidder_accepted / comp_accepted; `bid_to_cover_ratio` as printed.
+    Each is turned into a deviation from the SAME TENOR's previous UST_TENOR_BASE_N auctions
+    (strictly earlier dates, so a 30-year tail is never compared with a 2-year one) and averaged
+    over the coupons auctioned that day: ust_tail_dev_bp, ust_dealer_dev, ust_indirect_dev,
+    ust_btc_dev. The tenor's first auctions, with no baseline yet, yield nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = doc.get("data") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return []
+    per: list[tuple[date, str, dict[str, float]]] = []
+    for r in rows:
+        if not isinstance(r, dict) or str(r.get("security_type")) not in ("Note", "Bond"):
+            continue
+        if str(r.get("inflation_index_security")) == "Yes" or str(r.get("floating_rate")) == "Yes":
+            continue
+        try:
+            d = date.fromisoformat(str(r.get("auction_date") or "")[:10])
+        except ValueError:
+            continue
+        m: dict[str, float] = {}
+        hy, med = _fd_num(r.get("high_yield")), _fd_num(r.get("avg_med_yield"))
+        if hy is not None and med is not None:
+            m["tail_dev_bp"] = (hy - med) * 100.0
+        btc = _fd_num(r.get("bid_to_cover_ratio"))
+        if btc is not None and btc > 0:
+            m["btc_dev"] = btc
+        comp = _fd_num(r.get("comp_accepted"))
+        if comp and comp > 0:
+            for key, col in (("dealer_dev", "primary_dealer_accepted"),
+                             ("indirect_dev", "indirect_bidder_accepted")):
+                x = _fd_num(r.get(col))
+                if x is not None:
+                    m[key] = x / comp
+        if m:
+            # A REOPENING prints its remaining term ("9-Year 10-Month"); the tenor's baseline is
+            # keyed on the ORIGINAL term so reopenings share their tenor's history.
+            term = r.get("original_security_term") or r.get("security_term") or "?"
+            per.append((d, str(term), m))
+    per.sort(key=lambda t: t[0])
+    hist: dict[tuple[str, str], list[tuple[date, float]]] = {}
+    day: dict[tuple[str, date], list[float]] = {}
+    for d, term, m in per:
+        for key, x in m.items():
+            prior = [v for dd, v in hist.get((term, key), []) if dd < d][-UST_TENOR_BASE_N:]
+            if len(prior) >= 3:
+                day.setdefault((key, d), []).append(x - sum(prior) / len(prior))
+            hist.setdefault((term, key), []).append((d, x))
+    return [Obs(f"ust_{key}", d, sum(v) / len(v)) for (key, d), v in sorted(day.items())]
+
+
+_XL_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_XL_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+_XL_COL = re.compile(r"^([A-Z]+)")
+
+
+def xlsx_sheets(body: bytes) -> dict[str, list[list[Any]]]:
+    """A stdlib .xlsx reader (no openpyxl on either box): sheet name -> rows of cell values
+    (shared and inline strings as str, numbers as float, blanks as None). Cached formula values
+    only; nothing is evaluated. Unreadable bytes give {}."""
+    import xml.etree.ElementTree as ET
+    import zipfile
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(body))
+        names = set(zf.namelist())
+        shared: list[str] = []
+        if "xl/sharedStrings.xml" in names:
+            for si in ET.fromstring(zf.read("xl/sharedStrings.xml")).iter(f"{_XL_NS}si"):
+                shared.append("".join(t.text or "" for t in si.iter(f"{_XL_NS}t")))
+        rels: dict[str, str] = {}
+        if "xl/_rels/workbook.xml.rels" in names:
+            for rel in ET.fromstring(zf.read("xl/_rels/workbook.xml.rels")):
+                tgt = str(rel.get("Target") or "").lstrip("/")
+                rels[str(rel.get("Id"))] = tgt if tgt.startswith("xl/") else f"xl/{tgt}"
+        out: dict[str, list[list[Any]]] = {}
+        wb = ET.fromstring(zf.read("xl/workbook.xml"))
+        for i, sh in enumerate(wb.iter(f"{_XL_NS}sheet")):
+            path = rels.get(str(sh.get(_XL_REL)), f"xl/worksheets/sheet{i + 1}.xml")
+            if path not in names:
+                continue
+            grid: list[list[Any]] = []
+            for row in ET.fromstring(zf.read(path)).iter(f"{_XL_NS}row"):
+                cells: dict[int, Any] = {}
+                for c in row.iter(f"{_XL_NS}c"):
+                    m = _XL_COL.match(str(c.get("r") or ""))
+                    col = 0
+                    for ch in (m.group(1) if m else ""):
+                        col = col * 26 + (ord(ch) - 64)
+                    col = col - 1 if m else len(cells)
+                    t, v = c.get("t"), c.find(f"{_XL_NS}v")
+                    if t == "inlineStr":
+                        val: Any = "".join(x.text or "" for x in c.iter(f"{_XL_NS}t"))
+                    elif v is None or v.text is None:
+                        val = None
+                    elif t == "s":
+                        k = int(v.text)
+                        val = shared[k] if 0 <= k < len(shared) else None
+                    elif t in ("str", "e", "b"):
+                        val = v.text
+                    else:
+                        val = _num(v.text)
+                    cells[col] = val
+                grid.append([cells.get(j) for j in range(max(cells) + 1)] if cells else [])
+            out[str(sh.get("name") or f"sheet{i + 1}")] = grid
+        return out
+    except Exception:
+        return {}
+
+
+_QUARTER = re.compile(r"(20\d{2})\s*[:\-_ ]?\s*Q([1-4])|Q([1-4])\s*[:\-_ ]?\s*(20\d{2})", re.I)
+_DATE_HEAD = re.compile(r"time\s*stamp|date|release|update|as\s*of", re.I)
+
+
+def _quarter_of(v: Any) -> tuple[int, int] | None:
+    m = _QUARTER.search(str(v or ""))
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2))) if m.group(1) else (int(m.group(4)),
+                                                                   int(m.group(3)))
+
+
+def _cell_date(v: Any) -> date | None:
+    if isinstance(v, float) and 20_000 < v < 80_000:             # an Excel serial day
+        return date(1899, 12, 30) + timedelta(days=int(v))
+    s = str(v or "").strip()
+    with contextlib.suppress(ValueError):
+        return date.fromisoformat(s[:10])
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", s)                 # the Fed writes m/d/Y
+    if m:
+        with contextlib.suppress(ValueError):
+            return date(int(m.group(3)), int(m.group(1)), int(m.group(2)))
+    return None
+
+
+def parse_nyfed_nowcast(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NY Fed Staff Nowcast download (.xlsx). Read by HEADER NAME, never by position: a header row
+    holding a date column (timestamp / date / release / update) and either one column per target
+    quarter ("2026:Q3", wide) or a target-quarter column beside a "nowcast" column (long).
+
+    Per update date: `nowcast_level` = the current target quarter's nowcast (the latest quarter
+    printed that day) and `nowcast_revision_pp` = that quarter's nowcast minus its value at the
+    PREVIOUS update -- the revision the week's data forced, the growth news itself. A layout this
+    does not recognise yields nothing (UNMEASURED), never a guess."""
+    for grid in xlsx_sheets(body).values():
+        for h, head in enumerate(grid[:30]):
+            names = [str(x or "").strip() for x in head]
+            dcol = next((j for j, n in enumerate(names) if _DATE_HEAD.search(n)), None)
+            if dcol is None:
+                continue
+            wide = {j: q for j, n in enumerate(names) if j != dcol and (q := _quarter_of(n))}
+            ncol = next((j for j, n in enumerate(names) if re.search(r"nowcast", n, re.I)
+                         and j != dcol), None)
+            qcol = next((j for j, n in enumerate(names) if j not in (dcol, ncol)
+                         and re.search(r"quarter|reference|target", n, re.I)), None)
+            by_day: dict[date, dict[tuple[int, int], float]] = {}
+            for row in grid[h + 1:]:
+                d = _cell_date(row[dcol]) if dcol < len(row) else None
+                if d is None:
+                    continue
+                if wide:
+                    for j, q in wide.items():
+                        x = row[j] if j < len(row) else None
+                        if isinstance(x, float):
+                            by_day.setdefault(d, {})[q] = x
+                elif ncol is not None and qcol is not None:
+                    q = _quarter_of(row[qcol] if qcol < len(row) else None)
+                    x = row[ncol] if ncol < len(row) else None
+                    if q and isinstance(x, float):
+                        by_day.setdefault(d, {})[q] = x
+            by_day = {d: v for d, v in by_day.items() if d >= NOWCAST_SINCE}
+            if len(by_day) < 2:
+                continue
+            out: list[Obs] = []
+            prev: dict[tuple[int, int], float] = {}
+            for d in sorted(by_day):
+                cur = by_day[d]
+                q = max(cur)
+                out.append(Obs("nowcast_level", d, cur[q]))
+                if q in prev:
+                    out.append(Obs("nowcast_revision_pp", d, cur[q] - prev[q]))
+                prev.update(cur)
+            return out
+    return []
+
+
+def _rate_changes(levels: Iterable[tuple[date, float]], since: date) -> list[Obs]:
+    """A policy rate's DECISIONS: one `policy_rate_change_bp` per date the printed rate differs
+    from the previous print (hike > 0, cut < 0). Unchanged days are not events and yield nothing."""
+    out: list[Obs] = []
+    prev: float | None = None
+    for d, v in sorted(lv for lv in levels if lv[0] >= since):     # the baseline is in-window
+        if prev is not None and not math.isclose(v, prev, abs_tol=1e-9):
+            out.append(Obs("policy_rate_change_bp", d, round((v - prev) * 100.0, 6)))
+        prev = v
+    return out
+
+
+#: Decisions before this are a different regime (pre-inflation-targeting CNB, pre-2000 BoC).
+POLICY_SINCE = date(2000, 1, 1)
+
+
+def parse_boc_valet(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Bank of Canada Valet JSON, `observations[].{d, V39079: {v}}` -- the target for the
+    overnight rate (business daily) -> its decisions (`_rate_changes`)."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    obs = doc.get("observations") if isinstance(doc, dict) else None
+    if not isinstance(obs, list):
+        return []
+    lv: list[tuple[date, float]] = []
+    for o in obs:
+        if not isinstance(o, dict) or not isinstance(o.get("V39079"), dict):
+            continue
+        x = _num(str(o["V39079"].get("v") or ""))
+        with contextlib.suppress(ValueError):
+            if x is not None:
+                lv.append((date.fromisoformat(str(o.get("d") or "")[:10]), x))
+    return _rate_changes(lv, POLICY_SINCE)
+
+
+def parse_cnb_repo(body: bytes, ctx: Ctx) -> list[Obs]:
+    """CNB 2W repo rate history, `VALID_FROM|CNB_REPO_RATE_IN_%` lines (YYYYMMDD|4.25, the Czech
+    file writes 4,25) -> its decisions (`_rate_changes`)."""
+    lv: list[tuple[date, float]] = []
+    for line in body.decode("utf-8", errors="replace").splitlines():
+        m = re.match(r"^\s*(\d{4})(\d{2})(\d{2})\s*\|\s*([\d.,]+)\s*$", line)
+        if not m:
+            continue
+        x = _num(m.group(4).replace(",", "."))
+        with contextlib.suppress(ValueError):
+            if x is not None:
+                lv.append((date(int(m.group(1)), int(m.group(2)), int(m.group(3))), x))
+    return _rate_changes(lv, POLICY_SINCE)
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -2706,6 +2978,301 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "analysis is the desk's own independent processing of the data'")),
 )
 
+# ---------------------------------------------------------------------------- macro-flow sources
+#: MACRO FLOW (2026-10-14, terms re-read 2026-11-17): US Treasury auction demand (F1), the NY Fed
+#: Staff Nowcast's revisions as the USD growth state (F2), gold-ETF holdings (F4) and the BoC / CNB
+#: policy decisions. They ride this organ's hourly leg and its one exogenous_conditioner path
+#: unchanged; the rows whose publishers' own terms refuse commercial or automated reuse are
+#: BLOCKED_ON_TERMS here with the clause that holds them, so the hourly report names them, and
+#: their missed growth, every pass.
+FISCAL_AUCTIONS_URL = (
+    "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/"
+    "auctions_query?fields=auction_date,security_type,security_term,original_security_term,"
+    "inflation_index_security,"
+    "floating_rate,high_yield,avg_med_yield,bid_to_cover_ratio,comp_accepted,"
+    "indirect_bidder_accepted,primary_dealer_accepted"
+    "&filter=security_type:in:(Note,Bond),auction_date:gte:2018-01-01"
+    "&sort=-auction_date&page%5Bsize%5D=5000")
+NYFED_NOWCAST_URL = ("https://www.newyorkfed.org/medialibrary/Research/Interactives/Data/NowCast/"
+                     "Downloads/New-York-Fed-Staff-Nowcast_download_data.xlsx")
+_HELD = "BLOCKED_ON_TERMS, HELD, NEVER FETCHED: "
+_USD_GROWTH = {"USDX": 1, "EURUSD": -1, "GBPUSD": -1, "USDJPY": 1, "US500": 1, "XAUUSD": -1}
+
+MACRO_FLOW_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="us_treasury_auctions",
+        name="US Treasury coupon auctions: tail proxy, dealer take-down, indirect share (Fiscal "
+             "Data)",
+        url=os.environ.get("ALT_FISCAL_AUCTIONS_URL", FISCAL_AUCTIONS_URL),
+        region="US", language="en", cadence="weekly", parse=parse_fiscal_auctions,
+        rule=_lag_rule(0, 19, weekday=True), transform="given",
+        instruments={"US500": -1, "NAS100": -1, "XAUUSD": -1, "USDJPY": 1},
+        signal_series=("ust_tail_dev_bp", "ust_dealer_dev"),
+        mechanism=("a coupon auction that stops through its own median bid by more than its tenor "
+                   "usually does, with primary dealers left holding more of it, is weak "
+                   "real-money demand for duration printed at 13:00 ET; the supply the market "
+                   "would not absorb at the median is a term-premium shock, which reprices "
+                   "equity duration, gold's real-yield leg and the dollar-yen rate differential"),
+        payer="duration-long and equity-duration holders who price the curve off the CPI and the "
+              "Fed path alone",
+        constraint="the quarterly refunding fixes the sizes; dealers must bid the whole offering",
+        licence=("Fiscal Data (U.S. Treasury): data offered free, without restriction, open API "
+                 "with no registration"),
+        source_culture="US/en", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when the tail is a month-end or holiday liquidity "
+                                 "artefact, and in refunding weeks when the size change was "
+                                 "already priced; high minus median is a dispersion proxy, not "
+                                 "the when-issued tail, so a wide bid spread can read as a tail"),
+        crowding_prior="high",
+        note=("PIT: competitive bids close 13:00 ET and results print within minutes, so a "
+              "result is available 19:00 UTC on the auction date (after 13:00 EST = 18:00 UTC), "
+              "never earlier. The when-issued yield is not public, so the tail is the PROXY "
+              "high_yield - avg_med_yield. TIPS and FRNs are excluded. Each measure is a "
+              "deviation from the same tenor's last six auctions. Credit line when published: "
+              "'Source: U.S. Department of the Treasury, Fiscal Data'")),
+    Source(
+        id="us_nyfed_nowcast",
+        name="New York Fed Staff Nowcast: weekly revision of the current-quarter GDP nowcast",
+        url=os.environ.get("ALT_NYFED_NOWCAST_URL", NYFED_NOWCAST_URL),
+        region="US", language="en", cadence="weekly", parse=parse_nyfed_nowcast,
+        rule=_lag_rule(0, 18, weekday=True), transform="given",
+        instruments=dict(_USD_GROWTH),
+        signal_series=("nowcast_revision_pp",),
+        mechanism=("the Staff Nowcast re-runs its dynamic factor model on every data release of "
+                   "the week; the revision it publishes is the week's growth news net of what "
+                   "the model already expected, the US growth state the dollar and US equities "
+                   "trade on, in one number"),
+        payer="positions marked to the consensus GDP path between monthly releases",
+        constraint="the official GDP print is quarterly and a month after the quarter",
+        licence=("Federal Reserve Bank of New York Terms of Use: non-exclusive licence to use, "
+                 "copy and distribute Content, and to access it manually or through an automated "
+                 "process"),
+        source_culture="US/en", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when one release (a revised GDP vintage, a benchmark "
+                                 "revision) moves the nowcast mechanically, and around quarter "
+                                 "turns when the target quarter changes"),
+        crowding_prior="medium",
+        note=("PIT: the nowcast updates Fridays at 11:45 ET; each update is available 18:00 UTC "
+              "on its update date (after 11:45 EST = 16:45 UTC), never earlier. The download is "
+              "read by header name; its layout was NOT readable from the authoring container "
+              "(the host is not reachable there), so a layout the parser does not recognise "
+              "yields nothing and the row reads UNMEASURED until the box parses it. Credit line "
+              "when published: 'Source: Federal Reserve Bank of New York Staff Nowcast'")),
+    Source(
+        id="ca_boc_policy_rate",
+        name="Bank of Canada target for the overnight rate: decisions (Valet API, V39079)",
+        url=("https://www.bankofcanada.ca/valet/observations/V39079/json?start_date=1999-06-01"),
+        region="CA", language="en", cadence="event", parse=parse_boc_valet,
+        rule=_lag_rule(0, 16, weekday=True), transform="given",
+        instruments={"USDCAD": -1, "CADJPY": 1, "EURCAD": -1},
+        signal_series=("policy_rate_change_bp",),
+        mechanism=("a Bank of Canada hike or cut is announced at 09:45 ET on a scheduled date; "
+                   "a decision larger than the run of recent ones is a CAD rate-path shock the "
+                   "carry differential absorbs over days, not minutes"),
+        payer="CAD carry positions sized on the previous rate path",
+        constraint="decisions come only on the eight scheduled dates (rarely between them)",
+        licence=("Bank of Canada Terms of Use: the Bank permits you to freely use, copy, "
+                 "distribute and transmit its website content, the Bank attributed"),
+        source_culture="CA/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when the decision was fully priced by OIS (the change is "
+                                 "not the surprise), which is most scheduled dates"),
+        crowding_prior="high",
+        note=("PIT: the change date is the date V39079 first prints the new target; the "
+              "announcement is 09:45 ET (14:45 UTC at the latest), so availability is 16:00 UTC "
+              "that day, never earlier. NOVELTY: the level is already held as a carry input "
+              "(data/axes/bis.json, BIS WS_CBPOL); this row adds the DECISION as an event cell. "
+              "Credit line when published: 'Source: Bank of Canada'")),
+    Source(
+        id="cz_cnb_repo_rate",
+        name="Czech National Bank 2W repo rate: decisions (CNB published history)",
+        url=("https://www.cnb.cz/en/faq/.galleries/development_of_the_cnb_2w_repo_rate.txt"),
+        region="CZ", language="en", cadence="event", parse=parse_cnb_repo,
+        rule=_lag_rule(0, 16, weekday=True), transform="given",
+        instruments={"EURCZK": -1, "USDCZK": -1},
+        signal_series=("policy_rate_change_bp",),
+        mechanism=("the CNB board's repo-rate decision is published 14:30 CET and is the koruna's "
+                   "rate path; a hike bids CZK against the euro whose own rate did not move"),
+        payer="EURCZK carry positions sized on the previous rate path",
+        constraint="eight scheduled board meetings a year; the repo rate is the only policy rate",
+        licence=("CNB copyright notice: users may store, distribute and reproduce all CNB "
+                 "Internet information, the CNB stated as the source"),
+        source_culture="CZ/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when the decision was priced by FRAs, and in 2013-2017 "
+                                 "when the CNB's EURCZK floor, not the repo rate, set the koruna"),
+        crowding_prior="medium",
+        note=("PIT: VALID_FROM is the day the new rate applies, on or after the announcement day "
+              "(14:30 CET, 13:30 UTC); availability is 16:00 UTC on VALID_FROM, never earlier. "
+              "NOVELTY: the level is already a BIS carry input (data/axes/bis.json); this row "
+              "adds the DECISION as an event cell. Credit line when published: 'Source: the "
+              "CNB'")),
+    # ---- HELD on the publisher's own terms: no parser, never fetched, named every pass.
+    Source(
+        id="us_atlfed_gdpnow", name="Atlanta Fed GDPNow: model nowcast revisions",
+        url="https://www.atlantafed.org/cqer/research/gdpnow", region="US", language="en",
+        cadence="event", parse=None, rule=_lag_rule(0, 23, weekday=True), transform="given",
+        instruments=dict(_USD_GROWTH), signal_series=("gdpnow_revision_pp",),
+        mechanism="GDPNow re-estimates current-quarter growth after each release",
+        payer="positions marked to the consensus GDP path", constraint="GDP prints quarterly",
+        licence="Atlanta Fed terms: reproduction only where not for commercial gain",
+        source_culture="US/en", participant_structure=("institutional",),
+        failure_mode_hypothesis="mechanical revisions from benchmark data", crowding_prior="high",
+        note=_HELD + "reproduction is permitted only 'not for commercial gain or monetary profit' "
+             "and no clause permits automated access; the NY Fed nowcast stands in"),
+    Source(
+        id="us_spdr_gld_holdings", name="SPDR Gold Shares (GLD) daily tonnes held",
+        url="https://www.spdrgoldshares.com/usa/gld/", region="US", language="en",
+        cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="given",
+        instruments={"XAUUSD": 1, "XAGUSD": 1}, signal_series=("gld_tonnes_flow_z",),
+        mechanism="ETF creations are physical bullion bought for the trust's vault",
+        payer="paper-gold positioning that ignores ETF physical offtake",
+        constraint="authorised participants deliver bars to create shares",
+        licence="WGTS terms: personal, non-commercial use only; no automated access",
+        source_culture="US/en", participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis="flows follow price (momentum buying), not lead it",
+        crowding_prior="high",
+        note=_HELD + "the WGTS terms permit saving or printing 'only for your personal, "
+             "non-commercial use' and forbid access 'other than using the Website's navigational "
+             "structure'"),
+    Source(
+        id="us_ishares_iau_holdings", name="iShares Gold Trust (IAU) and Silver Trust (SLV) "
+        "ounces held", url="https://www.ishares.com/us/products/239561/", region="US",
+        language="en", cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="given",
+        instruments={"XAUUSD": 1, "XAGUSD": 1}, signal_series=("iau_tonnes_flow_z",),
+        mechanism="ETF creations are physical bullion bought for the trust's vault",
+        payer="paper-gold positioning that ignores ETF physical offtake",
+        constraint="authorised participants deliver bars to create shares",
+        licence="BlackRock terms: personal, non-commercial use; no robots without permission",
+        source_culture="US/en", participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis="flows follow price (momentum buying), not lead it",
+        crowding_prior="high",
+        note=_HELD + "BlackRock's terms forbid any 'robot, spider, intelligent agent, other "
+             "automatic device ... to search, monitor or copy this Website without BlackRock's "
+             "permission'; SLV is on the same site and held for the same clause"),
+)
+
+MACRO_FLOW_TERMS: dict[str, tuple[str, str]] = {
+    "us_treasury_auctions": ("confirmed", "Fiscal Data: offered free, without restriction, for "
+                             "non-commercial or commercial purposes; open API, no registration"),
+    "us_nyfed_nowcast": ("confirmed", "NY Fed Terms of Use: licence to use, copy and distribute "
+                         "Content for personal or business purposes, access manual or automated"),
+    "ca_boc_policy_rate": ("confirmed", "Bank of Canada Terms of Use: permits you to freely use, "
+                           "copy, distribute and transmit its website content, attributed"),
+    "cz_cnb_repo_rate": ("confirmed", "CNB copyright notice: may store, distribute and reproduce "
+                         "all CNB Internet information, Source: the CNB"),
+    "us_atlfed_gdpnow": ("refused", "Atlanta Fed terms: reproduction only where not for "
+                         "commercial gain or monetary profit"),
+    "us_spdr_gld_holdings": ("refused", "WGTS terms: personal non-commercial use; access only "
+                             "through the Website's navigational structure"),
+    "us_ishares_iau_holdings": ("refused", "BlackRock terms: no robot, spider or automatic device "
+                                "without permission; personal non-commercial use"),
+}
+
+#: The terms re-read on this date (terms page and robots.txt only, nothing else fetched).
+_MF_CHK = "2026-11-17"
+MACRO_FLOW_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "us_treasury_auctions": {
+        "terms_url": "https://fiscaldata.treasury.gov/api-documentation/",
+        "terms_quote": ("The data is offered free, without restriction, and available to copy, "
+                        "adapt, redistribute, or otherwise use for non-commercial or commercial "
+                        "purposes / Our API is open, meaning that it does not require a user "
+                        "account or registration for a token."),
+        "robots": ("fiscaldata.treasury.gov/robots.txt: 'User-agent: * / Allow: /'. "
+                   "api.fiscaldata.treasury.gov/robots.txt answered a client error at review, "
+                   "so the fetch-time robots gate decides each pass (a 404 is no file; a "
+                   "401/403/429/451, 5xx or network error stops the host, fail closed). "
+                   "www.treasurydirect.gov refuses agents in robots.txt and is never a route"),
+        "credit": "Source: U.S. Department of the Treasury, Fiscal Data",
+        "checked_at": _MF_CHK},
+    "us_nyfed_nowcast": {
+        "terms_url": "https://www.newyorkfed.org/privacy/termsofuse",
+        "terms_quote": ("a license to use, copy, and distribute Content for your personal or "
+                        "business purposes / Access the Content, manually or through an "
+                        "automated process or device, provided your access does not have the "
+                        "effect of disabling, damaging, or interfering with the function of the "
+                        "Website"),
+        "robots": ("www.newyorkfed.org/robots.txt disallows /PrincipleInterest/ and two "
+                   "/research/economists/ calendar PDFs only; /medialibrary is not disallowed"),
+        "credit": "Source: Federal Reserve Bank of New York Staff Nowcast",
+        "checked_at": _MF_CHK},
+    "ca_boc_policy_rate": {
+        "terms_url": "https://www.bankofcanada.ca/terms/",
+        "terms_quote": ("the Bank permits you to freely use, copy, distribute and transmit its "
+                        "website content / You must attribute the Bank of Canada as the source "
+                        "of the content, and indicate if changes were made."),
+        "api_terms_quote": ("[not] Circumvent such limit or limits imposed by the Bank with "
+                            "respect to the number or frequency of requests made to a Bank Site "
+                            "... the retrieval of financial data and information using Bank of "
+                            "Canada services (e.g., the Bank of Canada Valet API)"),
+        "robots": "www.bankofcanada.ca/robots.txt disallows /wp-admin/ only; /valet is allowed",
+        "credit": "Source: Bank of Canada",
+        "checked_at": _MF_CHK},
+    "cz_cnb_repo_rate": {
+        "terms_url": ("https://www.cnb.cz/en/privacy-statement-and-disclaimer/"
+                      "disclaimer-copyright/"),
+        "terms_quote": ("You may store, distribute and reproduce all our Internet information "
+                        "with the exception of texts with an author / The CNB must always be "
+                        "stated as the source of the information (Source: the CNB)"),
+        "robots": ("www.cnb.cz/robots.txt disallows /export/sites/nc/ and /export/sites/pnu/ "
+                   "only; /en/faq/.galleries is allowed"),
+        "credit": "Source: the CNB",
+        "checked_at": _MF_CHK},
+    "us_atlfed_gdpnow": {
+        "terms_url": "https://www.atlantafed.org/terms-of-use",
+        "terms_quote": ("The Bank hereby grants permission to reproduce Bank-owned content "
+                        "(print and digital) offered through our website ... provided that such "
+                        "reproductions are not for commercial gain or monetary profit / to use "
+                        "this site or its content for other than its intended purpose are "
+                        "prohibited"),
+        "robots": ("www.atlantafed.org/robots.txt allows * apart from */features/*, /rss/, "
+                   "/forms/ and /search; robots permits, the TERMS refuse"),
+        "judgement": ("REFUSED: reproduction permitted only not for commercial gain; a trading "
+                      "desk's use is commercial"),
+        "checked_at": _MF_CHK},
+    "us_spdr_gld_holdings": {
+        "terms_url": "https://www.spdrgoldshares.com/terms-and-conditions/",
+        "terms_quote": ("You are permitted to save, display or print out information contained "
+                        "on this Website ... for your personal, non-commercial use / access or "
+                        "monitor this Website or any of its content other than using the "
+                        "Website's navigational structure"),
+        "robots": ("www.spdrgoldshares.com/robots.txt: 'User-agent: * / Allow: /'; robots "
+                   "permits, the TERMS refuse"),
+        "judgement": "REFUSED: personal non-commercial use; no automated monitoring",
+        "checked_at": _MF_CHK},
+    "us_ishares_iau_holdings": {
+        "terms_url": "https://www.blackrock.com/corporate/compliance/terms-and-conditions",
+        "terms_quote": ("Use any robot, spider, intelligent agent, other automatic device, or "
+                        "manual process to search, monitor or copy this Website without "
+                        "BlackRock's permission / Such content is solely for your personal, "
+                        "non-commercial use."),
+        "robots": ("www.ishares.com/robots.txt does not disallow /us/products/; robots permits, "
+                   "the TERMS refuse"),
+        "judgement": "REFUSED: no automatic devices without permission (IAU and SLV alike)",
+        "checked_at": _MF_CHK},
+}
+
+#: MISSED GROWTH OF EACH TERMS HOLD (Growth Governance Rule 1): what the held route would have
+#: carried, what stands in for it today, and the one act that reopens it. Its size is
+#: UNMEASURED because the series was never read; the hourly report prints one line per hold.
+MACRO_FLOW_MISSED_GROWTH: dict[str, dict[str, str]] = {
+    "us_atlfed_gdpnow": {
+        "forgone": ("a second, independently modelled US growth nowcast (bridge-equation, "
+                    "revised after every release) as a USD / US500 / XAUUSD conditioner"),
+        "stands_in": "us_nyfed_nowcast (weekly dynamic-factor revision)",
+        "reopens_when": ("the Atlanta Fed grants written permission for commercial automated "
+                         "use, or publishes the series under an open licence")},
+    "us_spdr_gld_holdings": {
+        "forgone": ("GLD tonnes held: daily physical gold-ETF creation/redemption flow as an "
+                    "XAUUSD / XAGUSD conditioner"),
+        "stands_in": "none in this organ (gold flow stays UNMEASURED here)",
+        "reopens_when": "World Gold Trust Services grants written consent for commercial use"},
+    "us_ishares_iau_holdings": {
+        "forgone": ("IAU / SLV ounces held: the second-largest gold trust's and the silver "
+                    "trust's daily physical flow as XAUUSD / XAGUSD conditioners"),
+        "stands_in": "none in this organ (gold and silver ETF flow stay UNMEASURED here)",
+        "reopens_when": "BlackRock grants permission for automated access in writing"},
+}
+
+
 #: THE TERMS GATE, FAIL CLOSED. `confirmed` only where the licence is plainly open: government
 #: open data under a stated open licence, CC/CC0 data, public statistics behind a documented API,
 #: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
@@ -3147,8 +3714,10 @@ AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": "2026-10-06"},
 }
 
+TERMS.update(MACRO_FLOW_TERMS)
+TERMS_EVIDENCE.update(MACRO_FLOW_TERMS_EVIDENCE)
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *MACRO_FLOW_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -3415,6 +3984,79 @@ def http_get(url: str, headers: dict[str, str] | None = None,
         if hop:
             raise PermissionError(hop)
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
+
+
+#: Routes fetched only past a robots.txt read at fetch time (Governance with the Auditor,
+#: 2026-11-13: robots is OBEYED for our own crawling). RFC 9309, failing closed: a parsed file is
+#: obeyed; a 404/410-style 4xx means no file (allowed); 401/403/429/451, a 5xx, a timeout, an HTML
+#: page or a parse error stops the host for this pass and is retried on the next one.
+MACRO_FLOW_ROBOTS_GATED = frozenset({"us_treasury_auctions", "us_nyfed_nowcast",
+                                     "ca_boc_policy_rate", "cz_cnb_repo_rate"})
+ROBOTS_HARD_STOP = (401, 403, 429, 451)
+ROBOTS_TTL_S = 3000.0
+_ROBOTS_CACHE: dict[str, tuple[float, Any]] = {}
+
+
+def _read_robots(robots_url: str) -> tuple[int, str]:
+    """(HTTP status, body) of a robots.txt, through the same off-limits-checked transport."""
+    try:
+        body, _ = http_get(robots_url)
+    except urllib.error.HTTPError as exc:
+        code = int(exc.code)
+        exc.close()
+        return code, ""
+    return 200, body[:200_000].decode("utf-8", errors="replace")
+
+
+def robots_allows(url: str, *, reader: Callable[[str], tuple[int, str]] | None = None
+                  ) -> tuple[bool, str]:
+    """Whether robots.txt on `url`'s host admits UA for `url`, and why. Fails closed."""
+    from urllib.robotparser import RobotFileParser
+    parts = urllib.parse.urlsplit(url)
+    host = f"{parts.scheme}://{parts.netloc}"
+    hit = _ROBOTS_CACHE.get(host) if reader is None else None
+    if hit is not None and time.monotonic() - hit[0] < ROBOTS_TTL_S:
+        verdict = hit[1]
+    else:
+        try:
+            code, text = (reader or _read_robots)(f"{host}/robots.txt")
+        except Exception as exc:
+            code, text = -1, f"{type(exc).__name__}"
+        if code == 200 and text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+            verdict = "robots.txt is an HTML page: host not fetched this pass (fail closed)"
+        elif code == 200:
+            rp = RobotFileParser()
+            try:
+                rp.parse(text.splitlines())
+                verdict = rp
+            except Exception as exc:
+                verdict = f"robots.txt did not parse ({type(exc).__name__}): host not fetched"
+        elif 400 <= code < 500 and code not in ROBOTS_HARD_STOP:
+            verdict = True
+        else:
+            verdict = (f"robots.txt unreadable ({'HTTP ' + str(code) if code > 0 else text}): "
+                       "host not fetched this pass (fail closed, retried next pass)")
+        if reader is None:
+            _ROBOTS_CACHE[host] = (time.monotonic(), verdict)
+    if verdict is True:
+        return True, "no robots.txt (4xx): allowed (RFC 9309)"
+    if isinstance(verdict, str):
+        return False, verdict
+    if verdict.can_fetch(UA, url):
+        return True, "robots.txt consulted: allowed"
+    return False, "robots.txt Disallow covers this path: not fetched"
+
+
+def robots_gated(getter: Callable[[str], tuple[bytes, str]],
+                 allows: Callable[[str], tuple[bool, str]] = robots_allows
+                 ) -> Callable[[str], tuple[bytes, str]]:
+    """`getter` behind the robots gate: a refusal raises (the pass records it, loud)."""
+    def gated(url: str) -> tuple[bytes, str]:
+        ok, why = allows(url)
+        if not ok:
+            raise PermissionError(f"robots gate: {why}")
+        return getter(url)
+    return gated
 
 
 def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
@@ -4220,7 +4862,7 @@ def _donate(paths: Paths, source: str, cands: list[dict[str, Any]], tests_run: i
 # ============================================================================ the pass
 def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | None:
     for name in (f"{src.id}.{i}", src.id):
-        for ext in ("html", "json", "csv", "txt"):
+        for ext in ("html", "json", "csv", "txt", "xlsx"):
             p = fixtures / f"{name}.{ext}"
             if p.exists() and (i == 0 or name != src.id):
                 return p.read_bytes()
@@ -4287,6 +4929,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     if getter is http_get and src.key_env:
         key = key_value(src)
         getter = functools.partial(http_get, secrets=(key,) if key else ())
+    if getter is http_get and src.id in MACRO_FLOW_ROBOTS_GATED:
+        getter = robots_gated(http_get)
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
@@ -4346,6 +4990,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             nxt = sst.pop(k)
             if not errors and fixtures is None and fetch:
                 sst[k[: -len("_next")]] = nxt
+    if src.id in MACRO_FLOW_ROBOTS_GATED and fetched and not parsed:
+        # FAIL LOUD: a body arrived and nothing parsed, so the publisher's layout moved. The
+        # row reads UNMEASURED with this error, never a quiet empty pass.
+        errors.append(f"fetched {fetched} bodies, parsed 0 rows: layout unrecognised, "
+                      "UNMEASURED until the parser is fixed")
     rec.update({"requests": len(reqs), "fetched": fetched, "parsed": parsed,
                 "errors": errors[:6], "store_rows": len(store)})
     if not parsed and not errors:
@@ -4658,6 +5307,13 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
+        # A terms hold is a growth cost too: one missed-growth line per HELD source, its size
+        # UNMEASURED (the series was never read) and its reason the publisher's own clause.
+        "missed_growth_lines": [
+            {"source": s.id, "kind": "terms_hold", "status": f"BLOCKED_ON_TERMS:{s.terms}",
+             "delta_elogw": "UNMEASURED", "reason": TERMS.get(s.id, ("", ""))[1],
+             "instruments": sorted(s.instruments), **MACRO_FLOW_MISSED_GROWTH.get(s.id, {})}
+            for s in sorted(SOURCES, key=lambda x: x.id) if s.terms != "confirmed"],
         "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
                                 if (v := verified_substitutes(sid))},
         "blocked_unsubstituted": unsubstituted(),
