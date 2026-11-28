@@ -1250,7 +1250,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
-    "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    "allocator_join", "rebalance_trigger", "rebalance_interval", "edge_reliability",
+    "edge_confidence", "capacity",
     # ORDER-SENSITIVE DECAY (R0312): a reader of the lane state files and the per-sleeve ledgers,
     # seconds; it runs every hour beside the fused reliability column it complements.
     "decay_verdicts",
@@ -2454,6 +2455,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # `enrol_clocks` was raised -- a cap below an organ's budget truncates it at the same prefix.
     "experiment_spine": 700,
     "certificate_truth": 150,
+    # REBALANCE INTERVAL is report-only: a few JSON reads, then a circular block bootstrap
+    # (N_BOOT x 5 seeds x 7 simulations) over a window capped at MAX_WINDOW_H = 2,016 h --
+    # measured ~27 s at the cap with seven sleeves. Without an entry it ran on the 720 s
+    # default; the cap sits well above the measured cost.
+    "rebalance_interval": 240,
     # Each standing battery stops itself at --budget-s 600 (it starts no organ it cannot finish
     # inside what is left); the cap sits above that so a rotation is never cut at the same prefix
     # every hour, which would starve the tail of the roster permanently.
@@ -4121,6 +4127,13 @@ def queue_compact() -> dict:
 def rebalance_trigger() -> dict:
     """P3/P35/P73: when a rebalance is worth its cost, whether the RL may run, exit domains."""
     return _producer("rebalance_trigger", "research/rebalance_trigger.py")
+
+
+def rebalance_interval() -> dict:
+    """Report-only: which rebalance interval (every pass, daily, 2-day, weekly, 10%/20% drift)
+    has the highest volatility-pumping gain net of measured markout+spread cost, read from the
+    live sleeves' own per-key forward ledgers. Changes no sizing."""
+    return _producer("rebalance_interval", "research/rebalance_interval.py")
 
 
 def edge_confidence() -> dict:
@@ -6079,6 +6092,7 @@ def main() -> None:
     ib = _costed("issue_board", issue_board)
     qc = _costed("queue_compact", queue_compact)
     rt = _costed("rebalance_trigger", rebalance_trigger)
+    rbi = _costed("rebalance_interval", rebalance_interval)
     ec = _costed("edge_confidence", edge_confidence)
     ro = _costed("research_org", research_org)
     xd = _costed("experiment_design", experiment_design)
@@ -6708,6 +6722,7 @@ def main() -> None:
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "rebalance_interval": rbi,
                     "queue_compact": qc, "issue_board": ib,
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
