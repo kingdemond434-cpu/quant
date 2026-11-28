@@ -349,14 +349,23 @@ def test_discoveries_carry_their_parents_and_the_expanded_state(desk: dict[str, 
 
 
 def test_the_rerun_records_nothing_new(desk: dict[str, Any]) -> None:
-    """The content hash is the combination's identity, so an hourly organ does not mint the same
-    gene pairing every hour."""
+    """The content hash is the combination's identity, so an hourly organ never mints the same
+    gene pairing twice: the rerun walks PAST what is recorded to the pool's unexplored tail
+    (2026-11-05: a deterministic cap re-picked the same forty every pass while the rest of the
+    pool was never reached), and once the pool is exhausted it records nothing."""
     _, combos = ar.build(max_combinations=4)
     assert ar.record(combos, {})[0] == len(combos)
-    n = R.counts()["discoveries"]
-    _, again = ar.build(max_combinations=4)
-    assert ar.record(again, {})[0] == 0
-    assert R.counts()["discoveries"] == n
+    rep, again = ar.build(max_combinations=4)
+    first = {c["combination_id"] for c in combos}
+    assert not first & {c["combination_id"] for c in again}
+    assert rep["refused_incoherent"]["n_already_recorded"] == len(first)
+    for _ in range(200):
+        n = R.counts()["discoveries"]
+        _, more = ar.build(max_combinations=4)
+        ar.record(more, {})
+        if not more:
+            break
+    assert more == [] and R.counts()["discoveries"] == n
 
 
 def test_hosted_combinations_are_enqueued_and_donated(desk: dict[str, Any]) -> None:
