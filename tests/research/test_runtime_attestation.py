@@ -660,3 +660,89 @@ def test_load_attestation_file_merges_the_sidecars_beside_any_monolith(tmp_path:
     assert doc is not None and [r["organ"] for r in doc["organs"]] == ["a", "b"]
     assert doc["census"] == {"LIVE": 1, "NEVER": 1} and doc["scope"]["attested"] == 2
     assert ra.load_attestation_file(tmp_path / "absent.json") is None
+
+
+# ------------------------------------------ self-heal: held organs, bad sidecars (2026-11-18)
+def _hold(tmp_path: Path, organ: str = "task:MT5-FTMO-Allocator") -> None:
+    p = ra.Paths.at(tmp_path)
+    p.out_json.parent.mkdir(parents=True, exist_ok=True)
+    (p.out_json.parent / ra.HELD_FILE).write_text(
+        json.dumps({"held": {organ: "audit HOLD"}}), encoding="utf-8")
+
+
+def test_only_missing_never_mints_a_held_organ(tmp_path: Path, monkeypatch) -> None:
+    """#1142/#1147: the FTMO-Allocator row LIVE dropped under audit HOLD was re-minted because
+    the registry still declares the task."""
+    _committed(tmp_path)
+    _hold(tmp_path)
+    fresh = [_row("task:MT5-FTMO-Allocator"), _row("new_c")]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    p = ra.Paths.at(tmp_path)
+    assert sorted(f.name for f in p.sidecars.iterdir()) == [ra.sidecar_name("new_c")]
+
+
+def test_the_full_pass_leaves_a_held_organ_out(tmp_path: Path, monkeypatch) -> None:
+    _hold(tmp_path)
+    rows = [_row("task:MT5-FTMO-Allocator"), _row("leg_a", "LIVE")]
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([dict(r) for r in rows], {"attested": 2}))
+    doc = ra.attest(ra.Paths.at(tmp_path))
+    assert [r["organ"] for r in doc["organs"]] == ["leg_a"]
+    assert doc["scope"]["held"] == ["task:MT5-FTMO-Allocator"]
+    assert doc["scope"]["attested"] == 1 and doc["census"]["NEVER"] == 0
+
+
+def test_every_pass_prunes_a_copied_misnamed_or_held_sidecar_and_keeps_a_minted_one(
+        tmp_path: Path, monkeypatch) -> None:
+    _committed(tmp_path)
+    _hold(tmp_path)
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    stamp = {"measured_on": "vm", "only_missing": {"on_attesting_host": False}}
+    files = {
+        ra.sidecar_name("copied"): _row("copied"),                          # no stamp
+        "wrong-name.json": dict(_row("misnamed"), **stamp),
+        ra.sidecar_name("task:MT5-FTMO-Allocator"): dict(_row("task:MT5-FTMO-Allocator"), **stamp),
+        ra.sidecar_name("good"): dict(_row("good"), **stamp),
+    }
+    for name, row in files.items():
+        (p.sidecars / name).write_text(json.dumps(row), encoding="utf-8")
+    (p.sidecars / "junk.json").write_text("{not json", encoding="utf-8")
+    assert fence.measure(tmp_path)["failures"] != []  # the fence is red before
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert sorted(f.name for f in p.sidecars.iterdir()) == [ra.sidecar_name("good")]
+    assert not fence.measure(tmp_path)["failures"]  # and green after one pass
+
+
+def test_the_committed_hold_list_holds_the_ftmo_allocator_row() -> None:
+    held = ra.held_organs(ra.Paths.at(ROOT))
+    assert "task:MT5-FTMO-Allocator" in held
+
+
+def test_a_sidecar_that_cannot_be_read_is_kept(tmp_path: Path, monkeypatch) -> None:
+    """Audit soft fix on #1329: a transient read error is no evidence, so nothing is removed."""
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    f = p.sidecars / ra.sidecar_name("copied")
+    f.write_text(json.dumps(_row("copied")), encoding="utf-8")  # unstamped: pruned if read
+    real = Path.read_bytes
+
+    def flaky(self: Path) -> bytes:
+        if self == f:
+            raise PermissionError("locked")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", flaky)
+    assert ra.prune_sidecars(p) == [] and f.exists()
+
+
+def test_a_bom_prefixed_stamped_sidecar_survives_the_prune(tmp_path: Path) -> None:
+    """Audit HOLD on #1329 (aa705aed7): the check reads utf-8-sig, so the prune must too."""
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    row = dict(_row("good"), measured_on="vm", only_missing={"on_attesting_host": False})
+    f = p.sidecars / ra.sidecar_name("good")
+    f.write_bytes(b"\xef\xbb\xbf" + json.dumps(row).encode("utf-8"))
+    assert ra.prune_sidecars(p) == [] and f.exists()

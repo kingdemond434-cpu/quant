@@ -1,0 +1,7 @@
+{
+ "schema": "runtime_state_held/1",
+ "why": "Organs no runtime_attestation pass may attest: a row for each was dropped on LIVE on purpose. The full pass leaves them out, --only-missing never mints them, and every pass prunes a sidecar for one. Remove an entry when its hold is lifted.",
+ "held": {
+  "task:MT5-FTMO-Allocator": "dropped under audit HOLD (3d2ffd653 2026-11-11, 74492b47f 2026-11-14); re-added by the box's full pass, --only-missing and the PR conflict resolver"
+ }
+}
