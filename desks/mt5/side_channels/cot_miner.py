@@ -8,19 +8,15 @@ COT data is published every Friday at 3:30 ET for the prior Tuesday.
 Uses positional parsing (no headers in the CFTC text file).
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import requests
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "cot"
 OUT.mkdir(parents=True, exist_ok=True)
 
 COT_URL = "https://www.cftc.gov/dea/newcot/FinFutWk.txt"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": "quant-desk-research/1.0 (CFTC open data)"}
 
 # Map CFTC contract names to our symbols
 CONTRACT_MAP = {
@@ -158,30 +154,77 @@ def _detect_extremes(records: list[dict]) -> list[dict]:
     return signals
 
 
-def mine_cot() -> list[dict]:
-    """Fetch and analyze COT data."""
-    discoveries = []
-    try:
-        resp = requests.get(COT_URL, headers=HEADERS, timeout=30)
-        resp.raise_for_status()
-        records = _parse_cot(resp.text)
-        print(f"  COT: {len(records)} records parsed")
-        discoveries.extend(records)
+#: Weeks of history behind each z-score (three years), and the |z| that marks an extreme.
+Z_WEEKS, Z_EXTREME, Z_SHIFT = 156, 2.0, 2.0
 
-        extremes = _detect_extremes(records)
-        if extremes:
-            print(f"  COT extremes: {len(extremes)} signals")
-            discoveries.extend(extremes)
 
-    except Exception as e:
-        print(f"  COT failed: {e}")
+def _socrata_rows(fetch=None) -> list[dict]:
+    """Positioning rows from the CFTC Public Reporting legacy futures-only dataset, one per symbol
+    and week, plus the z-score of net speculator share against its own three years.
 
+    THE ROUTE MOVED FROM www.cftc.gov/dea/newcot/FinFutWk.txt (2026-11-13). That file is the
+    Traders in Financial Futures report: no metals, and dealer / asset-manager columns that the
+    positional parser above read as non-commercial / commercial. publicreporting.cftc.gov is the
+    CFTC's own open-data API (robots allows /resource/), carries the legacy categories the
+    signals are named for, and covers gold, silver, platinum, palladium and WTI as well."""
+    import sys as _sys
+    _root = str(BASE.parent.parent)
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data import cot_source as C
+    get = fetch or C.fetch_net_spec
+    out: list[dict] = []
+    for sym, (code, sign) in C.COT_MAP.items():
+        try:
+            net = get(code)
+        except Exception as e:                      # one contract never kills the rest
+            print(f"  COT {sym}: {type(e).__name__}")
+            continue
+        if net is None or len(net) < 60:
+            continue
+        net = (net * sign).iloc[-(Z_WEEKS + 2):]
+        hist = net.iloc[:-1]
+        sd = float(hist.std())
+        if not sd or sd != sd:
+            continue
+        z = (float(net.iloc[-1]) - float(hist.mean())) / sd
+        dz = (float(net.iloc[-1]) - float(net.iloc[-2])) / sd
+        out.append({"symbol": sym, "date": net.index[-1].date().isoformat(),
+                    "spec_net_share": round(float(net.iloc[-1]), 4), "z": round(z, 2),
+                    "dz": round(dz, 2), "weeks": len(net)})
+    return out
+
+
+def mine_cot(fetch=None) -> list[dict]:
+    """Positioning state for every mapped symbol, and a signal row where it is extreme or moved."""
+    discoveries: list[dict] = []
+    for r in _socrata_rows(fetch):
+        sym, z, dz = r["symbol"], r["z"], r["dz"]
+        discoveries.append({"source": "cot", "type": "positioning", "symbols": [sym], **r,
+                            "description": f"{sym} spec net {r['spec_net_share']:+.1%} of OI, "
+                                           f"z={z:+.1f} vs 3y"})
+        if abs(z) >= Z_EXTREME:
+            crowd = "long" if z > 0 else "short"
+            discoveries.append({
+                "source": "cot", "type": "extreme_positioning", "symbol": sym, "symbols": [sym],
+                "z": z, "direction": crowd, "contrarian_signal": "short" if z > 0 else "long",
+                "confidence": round(min(0.8, abs(z) / 4), 3), "date": r["date"],
+                "description": f"Speculators crowded {crowd} {sym} (z={z:+.1f} vs 3y): "
+                               f"contrarian reversal hypothesis"})
+        if abs(dz) >= Z_SHIFT:
+            way = "increasing" if dz > 0 else "decreasing"
+            discoveries.append({
+                "source": "cot", "type": "positioning_shift", "symbol": sym, "symbols": [sym],
+                "dz": dz, "direction": way, "confidence": round(min(0.6, abs(dz) / 4), 3),
+                "date": r["date"],
+                "description": f"{sym} speculator share {way} by {abs(dz):.1f} sd in one week"})
+    print(f"  COT: {len(discoveries)} rows")
     return discoveries
 
 
 def run_and_save() -> list[dict]:
     discoveries = mine_cot()
-    out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
+    out_file = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
     try:
         from side_channels.discovery_io import write_discoveries
     except ModuleNotFoundError:

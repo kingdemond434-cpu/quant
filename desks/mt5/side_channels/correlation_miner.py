@@ -5,111 +5,93 @@ correlation breakdowns (which often signal regime changes).
 When gold and USD suddenly decouple = something is happening.
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import requests
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "correlations"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# Pairs to monitor
-CORR_PAIRS = [
-    ("XAUUSD", "USDJPY", "gold_jpy"),
-    ("XAUUSD", "DXY", "gold_dollar"),
-    ("EURUSD", "USDJPY", "eur_jpy"),
-    ("GBPUSD", "USDJPY", "gbp_jpy"),
-    ("US500", "USDJPY", "spy_jpy"),
-    ("US500", "XAUUSD", "spy_gold"),
-    ("USOIL", "USDCAD", "oil_cad"),
-    ("USOIL", "XAUUSD", "oil_gold"),
-]
+#: Short window, baseline window (trading days), and the |z| a correlation shift must reach.
+SHORT, BASE_DAYS, Z_MIN = 20, 250, 2.5
+#: Rows kept per pass, strongest |z| first. Every pair is still MEASURED; this bounds donations.
+TOP_K = 40
 
 
-def load_data(sym: str, lookback: int = 100) -> pd.Series | None:
-    """Load H1 data and compute returns."""
-    f = BASE / "data" / "universe" / f"{sym}_H1.parquet"
-    if not f.exists():
-        return None
-    df = pd.read_parquet(f)
-    if len(df) < lookback:
-        return None
-    return df["close"].pct_change().dropna().tail(lookback)
+def _returns(universe: Path | None = None) -> pd.DataFrame:
+    """Daily log returns of every hypothesis-lane symbol, aligned on common days."""
+    try:
+        from side_channels._bars import daily_close, hypothesis_symbols
+    except ModuleNotFoundError:
+        from _bars import daily_close, hypothesis_symbols
+    cols = {}
+    for sym in hypothesis_symbols(universe):
+        c = daily_close(sym, universe)
+        if c is not None and len(c) > BASE_DAYS + SHORT:
+            cols[sym] = np.log(c).diff()
+    if not cols:
+        return pd.DataFrame()
+    df = pd.DataFrame(cols)
+    df = df[df.index.dayofweek < 5].iloc[-(BASE_DAYS + 3 * SHORT):]   # crypto's weekends out
+    return df.dropna(axis=1, thresh=int(len(df) * 0.8))
 
 
-def mine_correlations() -> list[dict]:
-    """Calculate rolling correlations and detect breakdowns."""
-    discoveries = []
+def mine_correlations(universe: Path | None = None) -> list[dict]:
+    """Every pair's 20-day correlation against the distribution of its own 20-day correlation
+    over the past year. A shift of |z| >= Z_MIN is a regime break between two instruments; the
+    strongest TOP_K are donated as hypotheses.
 
-    for sym1, sym2, label in CORR_PAIRS:
-        try:
-            ret1 = load_data(sym1)
-            ret2 = load_data(sym2)
-            if ret1 is None or ret2 is None:
+    It replaces eight hard-coded pairs, three of which named symbols the broker does not carry
+    (DXY, USOIL), and two fixed thresholds (|change| > 0.4, |corr| > 0.7) that the remaining
+    pairs never crossed: 0 rows on every box run (2026-11-13 19:45Z, 21:45Z)."""
+    r = _returns(universe)
+    if r.shape[1] < 2:
+        return []
+    syms = list(r.columns)
+    x = r.to_numpy(dtype="float64")
+    rows: list[dict] = []
+    for i in range(len(syms)):
+        for j in range(i + 1, len(syms)):
+            pair = pd.DataFrame({"a": x[:, i], "b": x[:, j]}).dropna()
+            if len(pair) < BASE_DAYS // 2 + SHORT:
                 continue
-
-            # Align indices
-            common = ret1.index.intersection(ret2.index)
-            if len(common) < 50:
+            roll = pair["a"].rolling(SHORT).corr(pair["b"]).dropna()
+            if len(roll) < BASE_DAYS // 2:
                 continue
-
-            r1 = ret1.loc[common]
-            r2 = ret2.loc[common]
-
-            # Rolling correlation (20-period)
-            long_corr = r1.rolling(50).corr(r2).dropna()
-            short_corr = r1.rolling(20).corr(r2).dropna()
-
-            if len(long_corr) < 5 or len(short_corr) < 5:
+            now = float(roll.iloc[-1])
+            hist = roll.iloc[-BASE_DAYS:-SHORT] if len(roll) > BASE_DAYS else roll.iloc[:-SHORT]
+            sd = float(hist.std())
+            if not np.isfinite(now) or not np.isfinite(sd) or sd < 1e-6:
                 continue
-
-            current_long = long_corr.iloc[-1]
-            current_short = short_corr.iloc[-1]
-            avg_long = long_corr.mean()
-
-            # Detect correlation breakdown
-            corr_change = abs(current_short - current_long)
-            if corr_change > 0.4:
-                discoveries.append({
-                    "source": "correlation",
-                    "type": "correlation_breakdown",
-                    "pair": label,
-                    "symbol1": sym1,
-                    "symbol2": sym2,
-                    "long_correlation": round(float(current_long), 3),
-                    "short_correlation": round(float(current_short), 3),
-                    "change": round(float(corr_change), 3),
-                    "symbols": [sym1, sym2],
-                    "confidence": min(0.7, corr_change),
-                    "description": f"{label} correlation breakdown: {current_long:.2f} -> {current_short:.2f}",
-                })
-            # Also detect extreme correlations
-            elif abs(current_long) > 0.7:
-                discoveries.append({
-                    "source": "correlation",
-                    "type": "extreme_correlation",
-                    "pair": label,
-                    "symbol1": sym1,
-                    "symbol2": sym2,
-                    "correlation": round(float(current_long), 3),
-                    "symbols": [sym1, sym2],
-                    "confidence": min(0.5, abs(current_long)),
-                    "description": f"{label} extreme correlation: {current_long:.2f}",
-                })
-
-        except Exception:
-            continue
-
-    return discoveries
+            z = (now - float(hist.mean())) / sd
+            if abs(z) < Z_MIN:
+                continue
+            a, b = syms[i], syms[j]
+            rows.append({
+                "source": "correlation",
+                "type": "correlation_breakdown" if abs(now) < abs(float(hist.mean()))
+                        else "correlation_surge",
+                "pair": f"{a}~{b}",
+                "symbol1": a,
+                "symbol2": b,
+                "short_correlation": round(now, 3),
+                "baseline_correlation": round(float(hist.mean()), 3),
+                "z": round(z, 2),
+                "symbols": [a, b],
+                "confidence": round(min(0.7, abs(z) / 8), 3),
+                "description": (f"{a}/{b} {SHORT}d correlation {now:+.2f} vs one-year mean "
+                                f"{float(hist.mean()):+.2f} (z={z:+.1f})"),
+            })
+    rows.sort(key=lambda d: -abs(d["z"]))
+    return rows[:TOP_K]
 
 
 def run_and_save() -> list[dict]:
     discoveries = mine_correlations()
-    out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
+    out_file = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
     try:
         from side_channels.discovery_io import write_discoveries
     except ModuleNotFoundError:
