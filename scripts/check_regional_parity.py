@@ -58,7 +58,13 @@ from libs.research import forests as F  # noqa: E402
 from libs.research import regional_parity as RP  # noqa: E402
 
 DESK = ROOT / "desks" / "mt5"
-REPORT = DESK / "reports" / "regional_parity.json"
+#: THE DEPTH REPORT, UNDER A NAME OF ITS OWN (2026-11-10). It was `reports/regional_parity.json`,
+#: which differs only by case from `reports/REGIONAL_PARITY.json`, the hourly equivalence pass's
+#: output. The trading box is Windows, where those are ONE file: whichever organ wrote last
+#: replaced the other's document (measured on the box 2026-11-10: one 7.8 MB file carrying the
+#: pass's keys), so `regional_parity_pass` read its own output back as the depth report and
+#: `check_birth_obligations` found no `regions` block.
+REPORT = DESK / "reports" / "REGIONAL_DEPTH.json"
 #: The one flag that fails this fence. The other four in `RP.FLAGS` are live state and are
 #: reported; `--strict` promotes them for the hourly box gate, where the state is real.
 FATAL_FLAG = "NO_PACK"
