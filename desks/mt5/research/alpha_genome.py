@@ -65,6 +65,10 @@ MECHANISM_CLASS: dict[str, str] = {
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",
     "dav_range_filter_adx": "breakout",
+    # The quant-framework families (2026-11-10), classed with the Judge.
+    "garch_shock": "volatility", "kalman_trend": "trend", "kalman_pair": "residual",
+    "copula_pair": "residual", "ou_reversion": "reversion",
+    "particle_regime": "trend", "gp_forecast": "trend",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",
