@@ -1,0 +1,1188 @@
+{
+ "_doc": "Every dynamic site of the money import closure, pinned for scripts/check_research_data_fence.py (Governance, route A, 2026-11-18). A site the fence finds that is not pinned here by file, line and the sha256 of its stripped line -- a new site, or a pinned one whose line changed or moved -- FAILS the fence closed. A pin is not a proof the site cannot reach the research-data home; it records that the site was read as it stands, so any change to it is read again before the fence goes green. Re-pin only after reading the new line.",
+ "sites": [
+  {
+   "file": "desks/mt5/edge_search.py",
+   "line": 313,
+   "sha256": "a2296ab8294027e6877600a7d18b3ade04041c46fc6a95941097e2735d4648b8",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet under the tick tape: it returns parquet files only, never a JSON or YAML research file"
+  },
+  {
+   "file": "desks/mt5/frontier_intel/frontier_supervisor.py",
+   "line": 103,
+   "sha256": "046b376a9c613159578f5a556132fe15b238cecdb32c839d3ac9c08cc867646a",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "rglob *.json under INTEL_ROOTS, which are desks/mt5/data/intelligence and data/intelligence: neither is the home nor contains it (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/mt5desk/data.py",
+   "line": 110,
+   "sha256": "ac80a9e8e862418b3d164034847c807bf7dab045d1d6d52f53a6fd270bb606f8",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs part-*.parquet under the bronze lake: parquet partitions only"
+  },
+  {
+   "file": "desks/mt5/mt5desk/data.py",
+   "line": 125,
+   "sha256": "5d46ce2f59ab61805a1cb643580de35bc4eac9f65a0547387c5250932fa4aa66",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs part-*.parquet under the bronze lake: parquet partitions only"
+  },
+  {
+   "file": "desks/mt5/mt5desk/family_inputs.py",
+   "line": 357,
+   "sha256": "c78ae949e6c47a9c22091d3b82e1b3ea7421f753d320c0b29a20a970b091d71f",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet in the bar universe for symbol names: parquet files only"
+  },
+  {
+   "file": "desks/mt5/mt5desk/release_identity.py",
+   "line": 279,
+   "sha256": "422727092cf1c299cfe419295bb7355557f1abeed9ec770541b6b67463983526",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git with caller arguments (release identity); never names the home today; pinned so any change is re-read"
+  },
+  {
+   "file": "desks/mt5/mt5desk/tape.py",
+   "line": 878,
+   "sha256": "548eefa8e4a1133cbfad9724d8d701f013e86d9ea73b0ba502b6c48e47a0f7ff",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/mt5desk/tape.py",
+   "line": 906,
+   "sha256": "2c64bb040de5e858c69076d4cc606126e16f0d74e0f183d142d838b14b376aa9",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/mt5desk/triangle_tape.py",
+   "line": 72,
+   "sha256": "6550ad72dc24ecd5e28d5f43f7f7e63c42f68f3c0fb89bb320edbf2d2ab03690",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet under mt5desk.tape.TICKS = desks/mt5/data/tape/ticks/<symbol>: outside the home (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/ops/components.py",
+   "line": 120,
+   "sha256": "1b472092d94ca22e5b0df49031d31bcde66943350c1c5bbdddada96a8b4ba90d",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/ops/components.py",
+   "line": 716,
+   "sha256": "7272f44361737f8f342da30cf46162d78608afee140af65748b4927f1764a65d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/ops/components.py",
+   "line": 1015,
+   "sha256": "47b3229d758caa1a789f8e2e927d42ae617c1901fe6a246a66ede95feef68355",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/ops/components.py",
+   "line": 1272,
+   "sha256": "dee58f26823281472d1448be1efc3620add6f900d49c1d9210d38489e09afb3c",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/prop/e8_evidence.py",
+   "line": 578,
+   "sha256": "4966b0a035c948a3f357216061d447c1c9e6f19b15cd45df8ea34d0d23e0272a",
+   "kind": "a dynamic import (import_module)",
+   "reason": "imports the literal module libs.ops.provenance, which is in the import closure and scanned itself"
+  },
+  {
+   "file": "desks/mt5/proposals/fusion_deadman.py",
+   "line": 334,
+   "sha256": "63f5489d83a9614617c0dbaf6136818b790433b52c22786e99099326c4eb4826",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "loads mt5desk/fusion_equity_reference.py by a literal path; that module is in the import closure and scanned itself"
+  },
+  {
+   "file": "desks/mt5/research/allocator_trigger.py",
+   "line": 188,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/alpha_genome.py",
+   "line": 89,
+   "sha256": "0ce20bc098991f543e106990b05ceaa13ebb40b91b2ca49d0ae39b94dd744fc1",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/alt_proxies.py",
+   "line": 4369,
+   "sha256": "f38b67689aa4dc81e0df880991f0fa4d52bc82a280af6e76529dbc8953367bd7",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/carry_state.py",
+   "line": 188,
+   "sha256": "36c12c34b07e9fb81c98a5baba1f2aba4a2d67471700126a08b1507b5c82cf20",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet in the contract-terms tape: parquet files only"
+  },
+  {
+   "file": "desks/mt5/research/carry_state.py",
+   "line": 212,
+   "sha256": "cfb743679ea56602c758739348fa68e61abed05fa780f832b607e95763eead43",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.json in the broker swap panel directory its caller passes; pinned so any change is re-read"
+  },
+  {
+   "file": "desks/mt5/research/cost_surface.py",
+   "line": 322,
+   "sha256": "ffa48dbfda043c98ab268f3727d3ed597d7ec0794eb6376602630f6635b29a99",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/countries/__init__.py",
+   "line": 591,
+   "sha256": "4b80f9797d8622eab7337acb330c573957d965e8c9d17edc370f8529c1372e61",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/countries/br/data_plane.py",
+   "line": 176,
+   "sha256": "77ccd458ec03396329da00fee11a6616ca136f0b4e9c096accf1715029244bc3",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/discovery_compiler.py",
+   "line": 223,
+   "sha256": "9600c84d99a0b2303f3fc5264e010e976c12c111d56208733d4732e8d20f971d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/edge_search.py",
+   "line": 458,
+   "sha256": "a2296ab8294027e6877600a7d18b3ade04041c46fc6a95941097e2735d4648b8",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet under the tick tape: parquet files only"
+  },
+  {
+   "file": "desks/mt5/research/gateway_resident.py",
+   "line": 284,
+   "sha256": "2690b661c2089844735a3f37d29cc689de37185ad21845dd4d6e5f34ec1431a3",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "re-launches this same file (gateway_resident.py, an entry point in the scanned closure) with the running interpreter"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 116,
+   "sha256": "0bb8fafe2022eacf21fe2b83887b18a12e0d176180642715b5a25d288ab39d1d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "start() launches research\\\\<script> for EXPECTED = run_hunt12.py and run_hunt16.py only; their import closures (231 modules) were scanned by hand for this pin and name nothing in the home; their own dynamic sites are not judged by this pin (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 439,
+   "sha256": "ef0496c1895a82448e51bb7dbd098c5d2724fb4e69694bb288c0690205ddbf53",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs scripts/sync_shadow_to_git.ps1 through PowerShell -File: that .ps1 is a literal the fence collects and text-scans as a money script (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 638,
+   "sha256": "3b1d1a5872ab628940f4827a949f1ab4693fb0b12213cfcdfde662908d55f5b7",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs desks/mt5/scripts/smoke_release.py, which resolves and is scanned with its import closure (a money script) (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 780,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs desks/mt5/scripts/heal_identity_broken_clocks.py --apply, which resolves and is scanned with its import closure (a money script) (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hypothesis_families.py",
+   "line": 207,
+   "sha256": "e710d3713857cd684824e4052730724268e829f7c940f8da0aa2af974ded9f86",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/issue_board.py",
+   "line": 522,
+   "sha256": "fc41bfc905ff9c5d0c28985bb18966e06182f56142a121fc4af60906c941cd10",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a Python process (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 766,
+   "sha256": "260d0b87a4bd83c18b4091140043adc2ee9927452e7fab6cbc7c659ebe3d9cb5",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 815,
+   "sha256": "93a2fb15671367e96791e9d10a207758e269eae81c83f762bc1c86e3acf726e9",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 822,
+   "sha256": "2923f740b5be9c65aa5c7b93abb7eb8dd7ccb23cc0e6f99470c8fe7b65a97b49",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 827,
+   "sha256": "845b65814ae9c39124a6bc092d4b720d28554a571958883f04cd05d44ada903b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 845,
+   "sha256": "260d0b87a4bd83c18b4091140043adc2ee9927452e7fab6cbc7c659ebe3d9cb5",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 1943,
+   "sha256": "8d68818bc3852fdcff3da5ee3e6c0a4d8b475bb5388fc6ce621c5a17742dfc51",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 2395,
+   "sha256": "7283618af51b7a2ca1a3da4f31f688fdbe22e30787329aaec3c8a09a6fc26125",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 2396,
+   "sha256": "6edcf01cb948dc793f8ad81f3872fd3bf3c576afe496abd15ab6f72518245c6c",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 3004,
+   "sha256": "f21a279a62f98371f29af2496b83c4c58bb1ab11d61e97c3b93af8b416711629",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 3016,
+   "sha256": "9273d70c1f55321d45930a48d546a22bbeec9ced78f07257e0f190134494b729",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 3052,
+   "sha256": "674a92964e3cc3bd7bf2d2f15ede0d8123e3aacab29fad9f26c902ec280d8c58",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 3379,
+   "sha256": "074538ae4b871dc8ede0c4547f0e22315bae42b5c7922862c2370f77b6bd7e85",
+   "kind": "a dynamic import (__import__)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_coverage.py",
+   "line": 4780,
+   "sha256": "260d0b87a4bd83c18b4091140043adc2ee9927452e7fab6cbc7c659ebe3d9cb5",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_prescreen.py",
+   "line": 497,
+   "sha256": "b4d0c74d9c4e43d9ee3d38ae878f07581ede05f3a77a5d17be57df015a0f4d3d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judge_prescreen.py",
+   "line": 682,
+   "sha256": "a9c72bad16f4e636090c4789821b0ee9ec4a1dbc7b8efc11865df970c9ad904b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 999,
+   "sha256": "6e2f68f28c6a763d74aff66e5beec3b8e58c6dab07e1ca15472291933ca9536c",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts the Windows task scheduler CLI (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1178,
+   "sha256": "d629a460b0f299160529e22f88da9c496ef5d90697906f4d62986fcab2ab9352",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1186,
+   "sha256": "b2e9a3ff84a6ee507a4978ae66032a763efafad7c557c4e33c580e33bf36b980",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1206,
+   "sha256": "645f156e1fd904fbd4bdd4a70206b3149dc26e61803b80c543155064bd46d16f",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts the Windows task scheduler CLI (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1274,
+   "sha256": "7dd654cd9beb10438e7bfb2f626195c647663d3a5a567307b0e0c9f5a7c0889e",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts the Windows task scheduler CLI (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1367,
+   "sha256": "894dce04ce2f2f330409e7a3f2715c28426add66633d37c192f65296b6e18d15",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/judging_throughput.py",
+   "line": 1369,
+   "sha256": "f9f6c2e48e819fae72589fe7c5c6cab2e32ba4e194f687b1be756936bd056c10",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/macro_state_engine.py",
+   "line": 2507,
+   "sha256": "8163b89a1822d1b94f5a177b2c7e16efada804dc1b5e07fbbb14e97ce328999d",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/merge_hypotheses.py",
+   "line": 72,
+   "sha256": "e3da676914484e59e79daf9a041a2809c0891d7d237b9c776304ae62c5b6ea37",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/miner_candidate_compiler.py",
+   "line": 504,
+   "sha256": "cad0f3895eea6edb6764c4fe96412ccc5c2f348a07a647a38e49d0f4b1cf716c",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/orthogonal_sweep.py",
+   "line": 224,
+   "sha256": "79d28621c4a64e1f41e22db04adf9b9d437d6881b6ae098e897f278c8c83ff9c",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet under the tick tape: parquet files only"
+  },
+  {
+   "file": "desks/mt5/research/run_gateway_loop.py",
+   "line": 144,
+   "sha256": "7a247a1939a248702c2bce737abe0c3b2bcd49af9b6a128139c7ee7fad71bbe8",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs the fixed program tasklist to test whether a PID is alive; it reads no repository file"
+  },
+  {
+   "file": "desks/mt5/run_gateway_loop.py",
+   "line": 16,
+   "sha256": "876ce89c68ed6e7ef28c94fe31f80de52a1290213f533a53d434596b9094bf55",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "loads research/run_gateway_loop.py by a literal path: an entry point, in the import closure and scanned itself"
+  },
+  {
+   "file": "desks/mt5/scripts/_retired/pull_certs.py",
+   "line": 30,
+   "sha256": "120c67635895418177253489c83e4a7013163ad28448005d90b156668fb26621",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/_retired/pull_certs.py",
+   "line": 62,
+   "sha256": "1b1a25dfd5cb58d6e7d40aeb7f21cc7357b5147963a05ad01058606b98a459bc",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/_retired/reproduce_certificate.py",
+   "line": 87,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/archive_tape.py",
+   "line": 133,
+   "sha256": "bc9e8c2fd65091c0d642cd4638fc4bf53b462a18ea631bd1c5f935ee0785ecb3",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/arm_and_pass.py",
+   "line": 38,
+   "sha256": "6a7379f7b21e9584b2cc7901e8231909fa27acbcfa9df08655bcbdfcef0e8472",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts git, which can read any tracked file (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/arm_and_pass.py",
+   "line": 77,
+   "sha256": "c034394652dfc8787741cf961e1adf71c09e1ba162283cfe0c80f9a96eba5cdb",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/blas_thread_differential.py",
+   "line": 684,
+   "sha256": "d4c20accf1d205ce9a310c21bfa8a9255ae00b52f5607c2393b4b0e28d0801b7",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/blas_thread_differential.py",
+   "line": 1097,
+   "sha256": "aa93542914ba66f6516ae7a24ef5d1bb328bd22f19bf410b220565baca991861",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a Python process (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/box_heartbeat.py",
+   "line": 241,
+   "sha256": "a5653d5f8e48e49b24b8256e8fca27b13efae1ede893b1fc0b65401bea4fae3f",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a Python process (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_cols.py",
+   "line": 11,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_cols.py",
+   "line": 16,
+   "sha256": "685ebbca1d2af02066c26044320de1585a09bccdbd61277bca3836e77645a167",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_defaults.py",
+   "line": 3,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_desk_health.py",
+   "line": 155,
+   "sha256": "5bf86d9bb6f98632ce0262b8d93a02065c64cfe6060e984f3166e9ff50a54503",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_results.py",
+   "line": 3,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_symbols.py",
+   "line": 5,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_symbols.py",
+   "line": 17,
+   "sha256": "ed66ea845e03e08425cb1cfd52b26d6aadcfec515f39c552afc0f89f5a51752d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_symbols.py",
+   "line": 29,
+   "sha256": "6db8028df1d33621c73540dec4e7d93a50ca41fd4b53c53aa5ab393dac65724b",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_timeframe_coverage.py",
+   "line": 147,
+   "sha256": "7378199adc41ccad81f706266769650717507c1184810581873d2e98154e1c85",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_universe.py",
+   "line": 5,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_universe.py",
+   "line": 17,
+   "sha256": "ed66ea845e03e08425cb1cfd52b26d6aadcfec515f39c552afc0f89f5a51752d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/check_vps_universe.py",
+   "line": 3,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/chk_uni_vps.py",
+   "line": 3,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/disk_census.py",
+   "line": 86,
+   "sha256": "bbe3a77e8894982ccfda81d1dca181bd892f4b64c067dfa931c834261d9f7d55",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/disk_census.py",
+   "line": 145,
+   "sha256": "b95f4e151bcab9b5a7487aaf16354143cdc8bdb885d76b940138f5f186626391",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/disk_census.py",
+   "line": 154,
+   "sha256": "3a6c2ffc7ccc7d902279d37ff458b60f8b461aaeda861d5cf0275a8c3d54db08",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/download_all_symbols.py",
+   "line": 208,
+   "sha256": "084d116217e72aa5e1e2c584ee2163d809df120d04ea1f82212536f708da10c9",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/external_gauntlet.py",
+   "line": 4777,
+   "sha256": "078aab8c8a32e9ead537bfe26d65ec05cbee10fa43396641aa0a524e5119602a",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/external_gauntlet.py",
+   "line": 4811,
+   "sha256": "7a8ee0bc3361fb037a77dd8fa6f5d26f17b40769ae12c7e9d545e1e9b6113ae6",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fill_bar_gaps.py",
+   "line": 119,
+   "sha256": "8f113007dc76066d844e2117f52c772aeecd2b709e2b509f2663a1aecc88abe0",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fix_h1.py",
+   "line": 75,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fix_youtube.py",
+   "line": 4,
+   "sha256": "9b36fe6f1beacdd367ee4186164a9cf73fb045d19c08abb5c34b87fff5748dee",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fix_youtube.py",
+   "line": 24,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fix_youtube2.py",
+   "line": 4,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fix_youtube2.py",
+   "line": 44,
+   "sha256": "685ebbca1d2af02066c26044320de1585a09bccdbd61277bca3836e77645a167",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/fxblue_mechanism_summary.py",
+   "line": 162,
+   "sha256": "63f5489d83a9614617c0dbaf6136818b790433b52c22786e99099326c4eb4826",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/gauntlet_guard.py",
+   "line": 130,
+   "sha256": "0263fc236f7b868f9099aedae943a5f685129c2e8ea589c45d9ada6e099d69f9",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/git_push_local.py",
+   "line": 9,
+   "sha256": "460abaf0b4ba90e49f50e854d0f82d17b6def427dee5b614b8c75f9873078c2d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/judge_stall_pager.py",
+   "line": 547,
+   "sha256": "63f5489d83a9614617c0dbaf6136818b790433b52c22786e99099326c4eb4826",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/offsite_backup.py",
+   "line": 157,
+   "sha256": "b99a19e0cd8dc6be585e2266c76735591ec3589a12606c8feecf6a0e67260be8",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/offsite_backup.py",
+   "line": 227,
+   "sha256": "932f1f0cbaca2fcb57e12c971ee9035dca8940c57ba76889e40972f8c6998799",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/offsite_backup.py",
+   "line": 250,
+   "sha256": "8ca515e402d9d7de0506fe1132f8861f3c299ffe7fe390a28763424e266d56be",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/offsite_backup.py",
+   "line": 345,
+   "sha256": "47a86e9a8548efb253c41d44a7e656da2d4806000d7915b5b0dc756ba21d8986",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/read_risk.py",
+   "line": 16,
+   "sha256": "cd328daa0ed8cc1488ef7282045d0696c2b271fd5c9a993ce480ad8b87486253",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/read_risk2.py",
+   "line": 9,
+   "sha256": "b94529c13231c7f6f87ba106187b3e34ef3a0b763afb955c2d41c8509e1dda3b",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/read_sizing.py",
+   "line": 8,
+   "sha256": "0f395289065fdf165f4b772cbe5f48fa494d177ada2eae4576c65a72995a6272",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/reclaim_disk.py",
+   "line": 48,
+   "sha256": "7e199ca6bef0f81adb3791f2b542ef24043d55086610ed2e80a1b3b00a6861da",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/reclaim_disk.py",
+   "line": 75,
+   "sha256": "52c3d0d857c46a7915f2bf80c98389b467de18b1577984a8e471deb2eb464596",
+   "kind": "a recursive listing of <repository root>, an ancestor of the home",
+   "reason": "rglob over the repository root for the cache directory names in DERIVED_DIRS (__pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .hypothesis) only; it can reach a cache directory inside the home, never a data file"
+  },
+  {
+   "file": "desks/mt5/scripts/reclaim_disk.py",
+   "line": 233,
+   "sha256": "23d25d79f609e6b4920f080d44f4f115b9be74db6691310fee441c670d141eb0",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/refresh_tail.py",
+   "line": 233,
+   "sha256": "623bc215cc961f5d913e6da0350f1b6b8d061df7d4ed39699ad5fe939d44d310",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/refresh_tail.py",
+   "line": 402,
+   "sha256": "a5c55c6db1e0a7ccaaa96f810b2d24c66c0627060a1a7e8503801d7659d4b83e",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_research_reports.py",
+   "line": 185,
+   "sha256": "8a2e66903fca9ef3a2c5c2ad0bc8bda60d14cf90c9d6f3e664bf62e6c8dc746a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 160,
+   "sha256": "fedcdf56f7a7e4c12dc695c1c48b49487dc1d16f607ab10635e015933b76eeed",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 268,
+   "sha256": "fedcdf56f7a7e4c12dc695c1c48b49487dc1d16f607ab10635e015933b76eeed",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 1071,
+   "sha256": "8357c595348a0af9132dd31d504514f6f0c22801d2d1e15a6599e07b88721444",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 1223,
+   "sha256": "45a89561c2d7023db2e42f1aa87f5a7137e8003a96595ad273da5a37b359082b",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 1532,
+   "sha256": "66ce8cef3acadeb0fc6087f4974cbf6fa2248cc26ccc5ba6c1fd68c4721297d3",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 1632,
+   "sha256": "373820d4188e33208746249485df57cbbca535d6f02083f966f523d420c70efb",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/run_sharded_gauntlet.py",
+   "line": 2505,
+   "sha256": "ff12f8bd947d8bc0ae1e2e2d9464f719b421da037079516482eb9337d740d486",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a Python process (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/smoke_release.py",
+   "line": 101,
+   "sha256": "8a43c55c018acccff2fef3ac0a32e241f91cb4ddb6d8183b75163122c0fb49f2",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/smoke_release.py",
+   "line": 127,
+   "sha256": "02a4d4c5fc5651e41fe118b0537a76d885691979468f30668e54c03e40522a67",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/unknown_share_census.py",
+   "line": 208,
+   "sha256": "d7be42497aa7233b68db0420ea9d3f0f926de1ecf8f9d337cfaf781aad7276f9",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/unknown_share_census.py",
+   "line": 213,
+   "sha256": "638b668aba3ce43d3854dd4478c4f1d95e1a7fd4ab0f06bedd6762e45c41858e",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/warm_gauntlet_cache.py",
+   "line": 614,
+   "sha256": "63794ea0ba69d386f27c7092b5e474c205bed92dcc8133d9d805f7eea1d86c64",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/warm_gauntlet_cache.py",
+   "line": 732,
+   "sha256": "4bf12cd35b8cd43a095aa79c759fe443b5b798b9ebe6ec9cbe5680cc37df7b77",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/scripts/warm_gauntlet_cache.py",
+   "line": 1525,
+   "sha256": "a51db3eb7b089ade95bbd02636a2034799298ba2bcdc6e010a01aa9d53653a9e",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/side_channels/base.py",
+   "line": 68,
+   "sha256": "b2e3c25c10b7dc3cb1d0e5a86a4923884eb73e1cc962a8b2459abb15b5a61ae6",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs SC-*.yaml under DATA_DIR/hypotheses = desks/mt5/data/intelligence/hypotheses: outside the home (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/core/reproducibility.py",
+   "line": 38,
+   "sha256": "0bb8fafe2022eacf21fe2b83887b18a12e0d176180642715b5a25d288ab39d1d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git with caller arguments (reproducibility stamp); pinned so any change is re-read"
+  },
+  {
+   "file": "libs/data/feature_store.py",
+   "line": 806,
+   "sha256": "8c98c9bb621637b89070e8ca8b42a4f752fa000c68572dafe90936295a81dffb",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/data/lake.py",
+   "line": 489,
+   "sha256": "b336a81d21bffc72bc61028ab99ba64a3faa8cdceabf1f3a59692bb8a366f0dd",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "an existence test over *.parquet in a lake partition: parquet files only, and nothing is read"
+  },
+  {
+   "file": "libs/data/pit_certificate.py",
+   "line": 506,
+   "sha256": "3c79321e0dd1236f18dd3de6a810e35acd9114e373b0e72601a7146e9c918b9f",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/moat/registry.py",
+   "line": 2433,
+   "sha256": "7a70b28cbcc43c4b70bbcd9ee4d4ac126f1f552ab92026cffce1be1517f2b73b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs dept_*.lock lock files: lock files only"
+  },
+  {
+   "file": "libs/ops/__init__.py",
+   "line": 69,
+   "sha256": "3b4e3229cc9b0fce733fd4703919816ad4536c2e7df2dbd97ab6152fe355ae91",
+   "kind": "a dynamic import (import_module)",
+   "reason": "the libs.ops lazy attribute import over its own _LAZY table of libs.ops submodules; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/control_plane/watermarks.py",
+   "line": 173,
+   "sha256": "1f1cdf72b6e566c751d23c1dc5d2dacb473cf4f6f7bc731997a7dfd00a8cd46d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.json in WATERMARK_DIR or a given root; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/git_writer_lock.py",
+   "line": 363,
+   "sha256": "22f61f11098ca466200d8c832edcc02924b0c0d75c10965057f124d40925d7a0",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "pinned as read, not proven unable to reach the home: starts a process from a computed argv (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/ops/new_risk_hold.py",
+   "line": 75,
+   "sha256": "ce584d047cee1af9eaf0bd29c6cd8da956ab3ec58c28c16a8ea56282a3ef8e4f",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "iterates the new-risk hold directory under its base; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/proctree.py",
+   "line": 67,
+   "sha256": "3bcfac99b6b6e91fd670e3a6f2c54cba202d681d17ea4b2e3f1f63c9ad43de0d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs the fixed program taskkill on a PID; it reads no repository file"
+  },
+  {
+   "file": "libs/ops/proctree.py",
+   "line": 138,
+   "sha256": "18eb8a705b506f1a7f468bfca2e8756bd0db5a2996f113c455ad8dd90f81f5f5",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "the generic bounded process runner; its callers' argv is not resolvable here; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/provenance.py",
+   "line": 205,
+   "sha256": "18b3aa86c5c5c46753f28bd3576ac586b79aff9543fca64b29da19231dc6919d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "starts `python -m libs.ops.provenance --deliver-alerts` (cmd at line 196): a module in the scanned closure"
+  },
+  {
+   "file": "libs/ops/provenance.py",
+   "line": 207,
+   "sha256": "9933849f3bb3f8924371bc7b02a09e38a34561f9543d73061c32473d1be2c0df",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "starts `python -m libs.ops.provenance --deliver-alerts` (cmd at line 196): a module in the scanned closure"
+  },
+  {
+   "file": "libs/ops/provenance.py",
+   "line": 208,
+   "sha256": "6642722c5635d010a0a13ccd1f3c4b1a949e6889b801aaa40f765cf8f1805eed",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "starts `python -m libs.ops.provenance --deliver-alerts` (cmd at line 196): a module in the scanned closure"
+  },
+  {
+   "file": "libs/ops/provenance.py",
+   "line": 378,
+   "sha256": "8a7ba22b68a80a6f24d77e4f9c6032478c76f977dde2af65dc7064c2f0ea8e4b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs <outbox>.*.draining spill files of its own outbox: those files only"
+  },
+  {
+   "file": "libs/ops/release.py",
+   "line": 230,
+   "sha256": "75d6cd0de5a174424b41f49cad37f79480af1e839b6291b1f0378d2c3c44ad11",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git with caller arguments (release/seal); never names the home today; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/release.py",
+   "line": 285,
+   "sha256": "15ccc2720df7b08ea6543dd1ea75605bbe94895a6af0c36fe5e8e7173409a7c6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git show <commit>:<rel> for the seal's own file list; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/state_publication.py",
+   "line": 74,
+   "sha256": "d1e1c8c4ee3a1580fa40873b661aa9b521b9196849a87d9e40e57e1b115e4a3e",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs git with the caller's arguments: a git process, never a Python program (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/portfolio/leg_factors.py",
+   "line": 169,
+   "sha256": "9540aff5ec6dfebf1f67d1e61f6f077edadaf118cf9835304422522ea81e1e4d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *_H1.parquet in the bar universe: parquet files only"
+  },
+  {
+   "file": "libs/research/attribution.py",
+   "line": 408,
+   "sha256": "15bb430d9adbbe37966cbf745296f5a14eba0b10c72ad85962956c4b4658bf97",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "keeps only the names of sub-directories (is_dir) of the seat roots; no file is listed or read"
+  },
+  {
+   "file": "libs/research/bar_clock_release.py",
+   "line": 139,
+   "sha256": "4b5c01ef045cd30794de21cd569262b00e332b4fc4f0a664ab06f335115fa29a",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.json* in <root>/CALENDAR_REL (the calendars directory); pinned so any change is re-read"
+  },
+  {
+   "file": "libs/research/bar_span.py",
+   "line": 435,
+   "sha256": "868365b0338f26b8a3e6c7ba6c8abc2d9b1a18d81e1b48bbcca3bd70d7fe53c4",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "iterates symbol directories of the bar lake classes; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/research/causal_graph.py",
+   "line": 407,
+   "sha256": "82327036ae959bd4a73455665df8cd2f61699dd72ce3823353be749d05f85191",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/causal_graph.py",
+   "line": 409,
+   "sha256": "57d2c7d743f846ca5e209b8bc41842433a159f0435196d9a8fdd5319750ca2aa",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 503,
+   "sha256": "88e57b077278379595ef523b519f91c640f941174c5509fd737396ffe210eeaf",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 507,
+   "sha256": "88e57b077278379595ef523b519f91c640f941174c5509fd737396ffe210eeaf",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 511,
+   "sha256": "ee8a696c89397ee1c15103a52015e79e7888b49afd3bc47ed4c5843ea1baac9d",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 961,
+   "sha256": "2641333b1282aad0b5ef41c5aac8ae177c8d37b0c883a904613f09f1acd97113",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 964,
+   "sha256": "70d8075920a74156a8cab0def918e5ff74f1f8396934dd18f0917e6af317a4fc",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 1081,
+   "sha256": "aeee835aedcfbed936d6fad36e5d5f7329adadc3a6d23d54ff2b70273284d4ff",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 1091,
+   "sha256": "e8523552595c3cfaee9f3068ec677c29c5a3981c092bc3294eb3d8aa932f73c1",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/country_lab.py",
+   "line": 2966,
+   "sha256": "d4c20accf1d205ce9a310c21bfa8a9255ae00b52f5607c2393b4b0e28d0801b7",
+   "kind": "a dynamic import (import_module)",
+   "reason": "pinned as read, not proven unable to reach the home: loads a module dynamically (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/research/experiment_ledger.py",
+   "line": 254,
+   "sha256": "0ce579f77107b0f1abfb535b92b9a4fd3e2547eda98c1498a6c5e3969dcaec95",
+   "kind": "a dynamic import (import_module)",
+   "reason": "imports the literal research.judge_prescreen (outside the closure); pinned so any change is re-read"
+  },
+  {
+   "file": "libs/research/forward_ledger.py",
+   "line": 267,
+   "sha256": "02b22b53948ea7298056f9bad1a6201ceae2d2144630ade7314c6bd56382c30b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs a caller pattern in the forward-ledger directories; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/research/immutable_rails.py",
+   "line": 271,
+   "sha256": "676acc803ac331c49d8cbc5191694b83ebbcdc10c0254cc557280d958d77b1b6",
+   "kind": "a dynamic import (spec_from_file_location)",
+   "reason": "loads scripts/check_immutable_evaluator.py (or a given path) to read IMMUTABLE; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/research/measurement_resolver.py",
+   "line": 138,
+   "sha256": "da9954b1e7ee5c99996fd480c17646f1ac3312823a20b9e777cf83073c8151e2",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "libs/tiers/blinding.py",
+   "line": 50,
+   "sha256": "75ece17c865ce929d4e69bd8a5dbd8f11f72e9a65148fbbaee0ea0e7362b525b",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "keeps only the names of sub-directories (is_dir) of the intelligence roots; no file is listed or read"
+  },
+  {
+   "file": "libs/tiers/data_os.py",
+   "line": 135,
+   "sha256": "6943b5ea633f2647f3e47e946150f7ed2b186d79dc53c5bfa443061fa4e2965e",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.jsonl in a data/vintages directory, keeping only the stems: .jsonl files only"
+  },
+  {
+   "file": "libs/tiers/firewall.py",
+   "line": 175,
+   "sha256": "4447a6af8f61ede893d133119194d8aa7d924ee3a3c2c3086eb9c186639e46c5",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs the firewall's organ patterns under its root; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/tiers/regression_stop.py",
+   "line": 161,
+   "sha256": "1367a9f6ec287a03c990f39c5d504e406e9b07338c009b1bb0ecafa3a97adb5a",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git status over the sealed paths it is handed; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/tiers/regression_stop.py",
+   "line": 170,
+   "sha256": "9022fd858fcd33b540c3d0fbcc3ab6704e464ad2344f4a9bb6681cbaec15bf3e",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git diff over the sealed paths it is handed; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/tiers/rollback.py",
+   "line": 37,
+   "sha256": "93154757d60786eb9a45d08484737fcee414c1af858e10cd9e51fe872c951982",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git with caller arguments (rollback); pinned so any change is re-read"
+  },
+  {
+   "file": "libs/tiers/rollback.py",
+   "line": 187,
+   "sha256": "9daa95c0456ef0290ea5b269dea5e235e5179d026df4384850834794e6ec9731",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "git merge-base inside rollback's self-test sandbox; pinned so any change is re-read"
+  }
+ ]
+}
