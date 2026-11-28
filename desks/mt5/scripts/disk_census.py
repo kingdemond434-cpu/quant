@@ -174,6 +174,71 @@ def census(depth: int) -> list[dict]:
     return rows
 
 
+#: WHO IS GROWING (2026-11-11). C: fell to 1.9 GB because one blobless clone had gathered ~52
+#: pack files (25 GB) under .git/objects/pack, a path no prune ladder touches and nothing named.
+#: These are the places this box keeps clones: the repo's parent (C:\opt: quant, quant-ops,
+#: merger, ...), the workflow-gate / sign-train clones (C:\ProgramData\QuantBox), and temp.
+#: Read only: `pack_dirs` measures and never removes.
+CLONE_ROOTS_ENV = ("ProgramData", "TEMP", "USERPROFILE")
+CLONE_DEPTH = 3
+
+
+def clone_roots() -> list[Path]:
+    out = [REPO.parent]
+    for env in CLONE_ROOTS_ENV:
+        v = os.environ.get(env)
+        if v:
+            out.append(Path(v) / "QuantBox" if env == "ProgramData" else Path(v))
+    seen: set[str] = set()
+    uniq = []
+    for p in out:
+        key = str(p).lower()
+        if key not in seen and p.is_dir():
+            seen.add(key)
+            uniq.append(p)
+    return uniq
+
+
+def _pack_dir_of(d: Path) -> Path | None:
+    """`<clone>/.git/objects/pack`, or `<bare>/objects/pack` when `d` is a bare repo."""
+    for cand in (d / ".git" / "objects" / "pack", d / "objects" / "pack"):
+        if cand.is_dir() and (cand.parent.parent / "HEAD").is_file():
+            return cand
+    return None
+
+
+def pack_dirs(roots: list[Path] | None = None, *, depth: int = CLONE_DEPTH,
+              top: int = 5) -> list[dict]:
+    """The largest git pack directories under the clone roots, biggest first. Deletes nothing."""
+    found: dict[str, dict] = {}
+    for root in roots if roots is not None else clone_roots():
+        stack = [(root, 0)]
+        while stack:
+            d, level = stack.pop()
+            pack = _pack_dir_of(d)
+            if pack is not None:
+                key = str(pack).lower()
+                if key not in found:
+                    try:
+                        n = sum(1 for e in os.scandir(pack) if e.name.endswith(".pack"))
+                    except OSError:
+                        n = 0
+                    size = tree_size(pack)
+                    found[key] = {"path": str(pack), "bytes": size,
+                                  "gb": round(size / (1024 ** 3), 2), "packs": n}
+                continue                          # a clone's own tree holds no further clones
+            if level >= depth:
+                continue
+            try:
+                kids = [Path(e.path) for e in os.scandir(d)
+                        if e.is_dir(follow_symlinks=False)
+                        and e.name not in (".git", "node_modules")]
+            except OSError:
+                continue
+            stack.extend((k, level + 1) for k in kids)
+    return sorted(found.values(), key=lambda r: -r["bytes"])[:top]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
