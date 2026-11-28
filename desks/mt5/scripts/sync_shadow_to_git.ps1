@@ -668,6 +668,9 @@ function Publish-StateOnto {
 # would accept ignored files.
 $relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
+    # the CRO cycle ledger (2026-11-11): the box noon pass appends start/end rows here and
+    # nothing carried them up, so every reader off the box saw the last row as 10-21
+    "desks/mt5/data/cro_cycle_ledger.jsonl",
     "desks/mt5/data/gateway_state.json",
     "desks/mt5/data/sleeves.json",
     "desks/mt5/data/regime_state.json",
