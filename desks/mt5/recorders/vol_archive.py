@@ -219,6 +219,12 @@ class YahooVolSource:
     def _chart(self, ticker: str, range_: str) -> dict[str, float] | None:
         url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
                + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
+        if _terms_refused(url):
+            # Yahoo is terms-refused (governance ruling 2026-11-13, Yahoo addendum: Yahoo terms
+            # 2(d)(ix)). The keyless collector behind it (`free_data.yahoo_daily`) reads Yahoo
+            # too and is refused at its own gate, serving only its held cache; FRED serves only
+            # held rows. VIX/GVZ/OVX are Cboe's: a live route is Cboe under Cboe's terms.
+            return None
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
@@ -256,6 +262,21 @@ class YahooVolSource:
             self._fred_ok = False
             return None
         return {str(k): float(v) for k, v in got.items()} if got else None
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched. If the gate
+    cannot be loaded the fetch is refused: an unreadable rule is not a permission."""
+    import sys as _sys
+    from pathlib import Path as _P
+    _root = str(_P(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    try:
+        from libs.data.terms_refused import refused
+    except Exception as exc:
+        return f"terms gate unavailable ({type(exc).__name__})"
+    return refused(url)
 
 
 class FakeVolSource:

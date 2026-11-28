@@ -201,11 +201,16 @@ def _ascii_url(url: str) -> str:
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour.
 
-    A host whose own terms refuse automated contact (libs.data.refused_hosts) is never
-    requested, whichever seed, frontier row or link led here."""
+    A host whose own terms refuse automated contact (libs.data.refused_hosts, and the FRED
+    family in libs.data.terms_refused) is never requested, whichever seed, frontier row or link
+    led here."""
     refused = terms_refusal(url)
     if refused:
         return None, f"BLOCKED_ON_TERMS: {refused}"
+    from libs.data.terms_refused import refused as _fred_refused
+    why_refused = _fred_refused(url)
+    if why_refused:                   # a terms-refused host (FRED): never fetched
+        return None, why_refused
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,

@@ -105,6 +105,9 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     from libs.data.off_limits import off_limits, redirected_off_limits
     if off_limits(url):
         raise FetchError("off_limits", url)
+    from libs.data.terms_refused import refused as terms_refused
+    if terms_refused(url):            # a terms-refused host (FRED, Yahoo): no request, ever
+        raise FetchError("BLOCKED_TERMS", url)
     hdr = {"User-Agent": UA, "Accept": "*/*"}
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,

@@ -470,6 +470,21 @@ _YF_SYMBOLS = {
 }
 
 
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched. If the gate
+    cannot be loaded the fetch is refused: an unreadable rule is not a permission."""
+    import sys as _sys
+    from pathlib import Path as _P
+    _root = str(_P(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    try:
+        from libs.data.terms_refused import refused
+    except Exception as exc:
+        return f"terms gate unavailable ({type(exc).__name__})"
+    return refused(url)
+
+
 def from_yfinance(sym: str, start: datetime) -> Bars | None:
     """H1 from Yahoo. No account, no key — the source that works on a VPS.
 
@@ -483,6 +498,8 @@ def from_yfinance(sym: str, start: datetime) -> Bars | None:
     shadow record and useless for a backtest — do not reach for this to extend
     history, only to keep shadow alive.
     """
+    if _terms_refused("https://query1.finance.yahoo.com/"):
+        return None          # Yahoo is terms-refused (governance ruling 2026-11-13)
     try:
         import yfinance as yf
     except ImportError:

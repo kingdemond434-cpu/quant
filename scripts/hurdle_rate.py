@@ -32,6 +32,7 @@ Free (Yahoo + the MT5 bar store + the desk's own state). Read-only. Run from rep
 from __future__ import annotations
 
 import json
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -40,10 +41,28 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/hurdle_rate.json"
 
 
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched. If the gate
+    cannot be loaded the fetch is refused: an unreadable rule is not a permission."""
+    import sys as _sys
+    from pathlib import Path as _P
+    _root = str(_P(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    try:
+        from libs.data.terms_refused import refused
+    except Exception as exc:
+        return f"terms gate unavailable ({type(exc).__name__})"
+    return refused(url)
+
+
 def _get(u, t=35):
+    why = _terms_refused(u)
+    if why:          # Yahoo/FRED are terms-refused (governance ruling 2026-11-13)
+        raise urllib.error.URLError(f"BLOCKED_TERMS: {why[:120]}")
     return json.loads(
         urllib.request.urlopen(
-            urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=t
+            urllib.request.Request(u, headers={"User-Agent": "quant-desk-research/1.0"}), timeout=t
         )
         .read()
         .decode()

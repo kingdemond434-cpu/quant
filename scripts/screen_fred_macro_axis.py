@@ -260,7 +260,22 @@ def novelty(name: str, statement: str, features: tuple[str, ...]) -> dict:
 
 
 # --------------------------------------------------------------------------------------- data ---
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def fred_deep(sid: str, key: str) -> pd.Series:
+    why = _terms_refused(FRED)
+    if why:
+        raise RuntimeError(f"BLOCKED_TERMS: {why}")
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
                                 "observation_start": "1900-01-01"})
     req = urllib.request.Request(f"{FRED}?{q}", headers={"User-Agent": "quant-fred-screen/1.0"})

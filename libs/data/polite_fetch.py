@@ -257,6 +257,11 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     if refused:                       # an off-limits ground: no request, ever (fail closed)
         resp.error = refused
         return resp
+    from libs.data.terms_refused import refused as terms_refused
+    why_refused = terms_refused(url)
+    if why_refused:                   # a terms-refused host (FRED, Yahoo): no request, ever
+        resp.error = why_refused
+        return resp
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:
