@@ -61,6 +61,7 @@ BARS_DIR = DATA / "universe"
 CAPACITY = REPORTS / "CAPACITY.json"
 OUT_EVIDENCE = DATA / "allocator_evidence.json"
 OUT_REPORT = REPORTS / "FINANCING_LAB.json"
+OUT_LEVERAGE = REPORTS / "ACCOUNT_LEVERAGE.json"
 
 BUDGET_S = 600.0
 ACCOUNT_CCY_DEFAULT = "EUR"
@@ -177,6 +178,10 @@ def read_account() -> dict[str, Any]:
                             "margin": float(acc.margin), "leverage": float(acc.leverage),
                             "stop_out_pct": float(getattr(acc, "margin_so_so", 0.0) or 0.0)
                             or None, "source": "live terminal"})
+                # K3 feasibility reads the margin-call level as the venue publishes it; an
+                # absent one stays None and the verdict reads UNMEASURED (never a default).
+                out["margin_so_call"] = getattr(acc, "margin_so_call", None)
+                out["margin_so_mode"] = getattr(acc, "margin_so_mode", None)
                 rows = []
                 for p in mt5.positions_get() or ():
                     rows.append({"symbol": p.symbol, "type": int(p.type), "volume": p.volume,
@@ -184,6 +189,15 @@ def read_account() -> dict[str, Any]:
                                  "profit": p.profit, "swap": p.swap,
                                  "sleeve": str(getattr(p, "comment", "") or "")})
                 out["positions"] = rows
+                # K3 per symbol (folded in from #1145): the venue's own margin for one lot of
+                # every core and held symbol, read while the terminal is attached. Read-only.
+                try:
+                    from libs.ops.leverage_watch import CORE_SYMBOLS, intent_symbols, symbol_margins
+                    out["symbol_margin"] = symbol_margins(
+                        mt5, [*CORE_SYMBOLS, *intent_symbols("fusion"),
+                              *(r["symbol"] for r in rows)])
+                except Exception as exc:
+                    out["unmeasured"].append(f"symbol margin: {type(exc).__name__}")
                 return out
         except Exception as exc:  # the terminal is not a reason to lose the pass
             out["unmeasured"].append(f"terminal: {type(exc).__name__}: {exc}")
@@ -651,6 +665,19 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False) -> dict[str, Any]:
     if not dry_run:
         _atomic_write(OUT_EVIDENCE, evidence_doc)
         _atomic_write(OUT_REPORT, report)
+        # K3 (CRO 2026-11-13): keep the account's leverage from pass to pass and name every
+        # change; a reading only counts when it came from the live terminal.
+        try:
+            from libs.ops.leverage_watch import assess, observe
+            from libs.ops.leverage_watch import unmeasured as lw_unmeasured
+            live = acct.get("source") == "live terminal"
+            observe(OUT_LEVERAGE, _f(acct["leverage"]) if live else None,
+                    symbols=(acct.get("symbol_margin") or None) if live else None,
+                    feasibility=(assess(acct, acct.get("symbol_margin") or {}, "fusion")
+                                 if live else lw_unmeasured("the Fusion terminal was not "
+                                                            "attached on this pass")))
+        except Exception as exc:  # a report; never a reason to lose the pass
+            unmeasured.append(f"leverage watch: {type(exc).__name__}")
     return {"evidence": evidence_doc, "report": report}
 
 
