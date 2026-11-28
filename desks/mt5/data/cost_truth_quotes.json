@@ -7,7 +7,7 @@
   "margin_mode": 2,
   "server": "FTMO-Server2"
  },
- "at": "2026-11-28T06:47:51+00:00",
+ "at": "2026-11-28T13:35:27+00:00",
  "deals": [
   {
    "at": "2026-10-21T02:10:18+00:00",
@@ -410,8 +410,8 @@
    "vol": 0.07
   }
  ],
- "rollover_hour_utc": 7,
- "server_utc_offset_hours": -7,
+ "rollover_hour_utc": null,
+ "server_utc_offset_hours": null,
  "symbols": {
   "3M": {
    "ask": 170.4,
@@ -437,9 +437,9 @@
    "volume_step": 0.1
   },
   "ADAUSD": {
-   "ask": 0.1464,
-   "at": "2026-11-28T06:46:28+00:00",
-   "bid": 0.1461,
+   "ask": 0.1457,
+   "at": "2026-11-28T13:35:03+00:00",
+   "bid": 0.1454,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 4,
@@ -530,7 +530,7 @@
   },
   "AUDCAD": {
    "ask": 0.94764,
-   "at": "2026-11-28T06:46:31+00:00",
+   "at": "2026-11-28T13:35:04+00:00",
    "bid": 0.94685,
    "currency_margin": "AUD",
    "currency_profit": "CAD",
@@ -553,7 +553,7 @@
   },
   "AUDCHF": {
    "ask": 0.55615,
-   "at": "2026-11-28T06:46:33+00:00",
+   "at": "2026-11-28T13:35:04+00:00",
    "bid": 0.55564,
    "currency_margin": "AUD",
    "currency_profit": "CHF",
@@ -580,7 +580,7 @@
   },
   "AUDJPY": {
    "ask": 106.121,
-   "at": "2026-11-28T06:46:37+00:00",
+   "at": "2026-11-28T13:35:05+00:00",
    "bid": 106.042,
    "currency_margin": "AUD",
    "currency_profit": "JPY",
@@ -603,7 +603,7 @@
   },
   "AUDNZD": {
    "ask": 1.21688,
-   "at": "2026-11-28T06:46:39+00:00",
+   "at": "2026-11-28T13:35:05+00:00",
    "bid": 1.21581,
    "currency_margin": "AUD",
    "currency_profit": "NZD",
@@ -630,7 +630,7 @@
   },
   "AUDUSD": {
    "ask": 0.665,
-   "at": "2026-11-28T06:46:40+00:00",
+   "at": "2026-11-28T13:35:06+00:00",
    "bid": 0.66457,
    "currency_margin": "AUD",
    "currency_profit": "USD",
@@ -902,15 +902,15 @@
    "volume_step": 0.01
   },
   "BNBUSD": {
-   "ask": 553.07,
-   "at": "2026-11-28T06:46:44+00:00",
-   "bid": 553.06,
+   "ask": 551.5,
+   "at": "2026-11-28T13:35:07+00:00",
+   "bid": 551.48,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 2,
-   "live_spread_pts": 1.0,
+   "live_spread_pts": 2.0,
    "point": 0.01,
-   "spread": 1,
+   "spread": 2,
    "spread_float": true,
    "swap_long": -30.0,
    "swap_mode": 5,
@@ -925,9 +925,9 @@
    "volume_step": 0.01
   },
   "BTCUSD": {
-   "ask": 59839.36,
-   "at": "2026-11-28T06:46:47+00:00",
-   "bid": 59838.36,
+   "ask": 59242.92,
+   "at": "2026-11-28T13:35:08+00:00",
+   "bid": 59241.92,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 2,
@@ -1038,7 +1038,7 @@
   },
   "CADCHF": {
    "ask": 0.58703,
-   "at": "2026-11-28T06:46:50+00:00",
+   "at": "2026-11-28T13:35:09+00:00",
    "bid": 0.5867,
    "currency_margin": "CAD",
    "currency_profit": "CHF",
@@ -1061,7 +1061,7 @@
   },
   "CADJPY": {
    "ask": 112.009,
-   "at": "2026-11-28T06:46:51+00:00",
+   "at": "2026-11-28T13:35:09+00:00",
    "bid": 111.97,
    "currency_margin": "CAD",
    "currency_profit": "JPY",
@@ -1092,7 +1092,7 @@
   },
   "CHFJPY": {
    "ask": 190.868,
-   "at": "2026-11-28T06:46:54+00:00",
+   "at": "2026-11-28T13:35:10+00:00",
    "bid": 190.787,
    "currency_margin": "CHF",
    "currency_profit": "JPY",
@@ -1346,9 +1346,9 @@
    "why": "symbol not in this terminal's registry"
   },
   "DOGEUSD": {
-   "ask": 0.05702,
-   "at": "2026-11-28T06:46:56+00:00",
-   "bid": 0.05693,
+   "ask": 0.0565,
+   "at": "2026-11-28T13:35:10+00:00",
+   "bid": 0.05641,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 5,
@@ -1369,15 +1369,15 @@
    "volume_step": 0.01
   },
   "DOTUSD": {
-   "ask": 0.6561,
-   "at": "2026-11-28T06:47:00+00:00",
-   "bid": 0.654,
+   "ask": 0.646,
+   "at": "2026-11-28T13:35:11+00:00",
+   "bid": 0.6438,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 4,
-   "live_spread_pts": 21.0,
+   "live_spread_pts": 22.0,
    "point": 0.0001,
-   "spread": 21,
+   "spread": 22,
    "spread_float": true,
    "swap_long": -30.0,
    "swap_mode": 5,
@@ -1469,9 +1469,9 @@
    "why": "symbol not in this terminal's registry"
   },
   "ETHUSD": {
-   "ask": 1660.11,
-   "at": "2026-11-28T06:47:04+00:00",
-   "bid": 1659.51,
+   "ask": 1645.84,
+   "at": "2026-11-28T13:35:12+00:00",
+   "bid": 1645.24,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 2,
@@ -1493,7 +1493,7 @@
   },
   "EURAUD": {
    "ask": 1.6451099999999999,
-   "at": "2026-11-28T06:47:06+00:00",
+   "at": "2026-11-28T13:35:13+00:00",
    "bid": 1.64397,
    "currency_margin": "EUR",
    "currency_profit": "AUD",
@@ -1516,7 +1516,7 @@
   },
   "EURCAD": {
    "ask": 1.55799,
-   "at": "2026-11-28T06:47:08+00:00",
+   "at": "2026-11-28T13:35:14+00:00",
    "bid": 1.5575,
    "currency_margin": "EUR",
    "currency_profit": "CAD",
@@ -1539,7 +1539,7 @@
   },
   "EURCHF": {
    "ask": 0.91427,
-   "at": "2026-11-28T06:47:09+00:00",
+   "at": "2026-11-28T13:35:15+00:00",
    "bid": 0.91391,
    "currency_margin": "EUR",
    "currency_profit": "CHF",
@@ -1562,7 +1562,7 @@
   },
   "EURCZK": {
    "ask": 24.4324,
-   "at": "2026-11-28T06:47:12+00:00",
+   "at": "2026-11-28T13:35:15+00:00",
    "bid": 24.4104,
    "currency_margin": "EUR",
    "currency_profit": "CZK",
@@ -1589,7 +1589,7 @@
   },
   "EURGBP": {
    "ask": 0.83512,
-   "at": "2026-11-28T06:47:13+00:00",
+   "at": "2026-11-28T13:35:16+00:00",
    "bid": 0.83454,
    "currency_margin": "EUR",
    "currency_profit": "GBP",
@@ -1616,7 +1616,7 @@
   },
   "EURHUF": {
    "ask": 369.878,
-   "at": "2026-11-28T06:47:15+00:00",
+   "at": "2026-11-28T13:35:16+00:00",
    "bid": 369.493,
    "currency_margin": "EUR",
    "currency_profit": "HUF",
@@ -1643,7 +1643,7 @@
   },
   "EURJPY": {
    "ask": 174.479,
-   "at": "2026-11-28T06:47:17+00:00",
+   "at": "2026-11-28T13:35:17+00:00",
    "bid": 174.436,
    "currency_margin": "EUR",
    "currency_profit": "JPY",
@@ -1670,7 +1670,7 @@
   },
   "EURNOK": {
    "ask": 10.72257,
-   "at": "2026-11-28T06:47:18+00:00",
+   "at": "2026-11-28T13:35:18+00:00",
    "bid": 10.71472,
    "currency_margin": "EUR",
    "currency_profit": "NOK",
@@ -1693,7 +1693,7 @@
   },
   "EURNZD": {
    "ask": 2.00066,
-   "at": "2026-11-28T06:47:20+00:00",
+   "at": "2026-11-28T13:35:19+00:00",
    "bid": 1.99986,
    "currency_margin": "EUR",
    "currency_profit": "NZD",
@@ -1716,7 +1716,7 @@
   },
   "EURPLN": {
    "ask": 4.46767,
-   "at": "2026-11-28T06:47:22+00:00",
+   "at": "2026-11-28T13:35:20+00:00",
    "bid": 4.46508,
    "currency_margin": "EUR",
    "currency_profit": "PLN",
@@ -1755,7 +1755,7 @@
   },
   "EURUSD": {
    "ask": 1.09326,
-   "at": "2026-11-28T06:47:24+00:00",
+   "at": "2026-11-28T13:35:20+00:00",
    "bid": 1.0931899999999999,
    "currency_margin": "EUR",
    "currency_profit": "USD",
@@ -1878,7 +1878,7 @@
   },
   "GBPAUD": {
    "ask": 1.97102,
-   "at": "2026-11-28T06:47:29+00:00",
+   "at": "2026-11-28T13:35:21+00:00",
    "bid": 1.96876,
    "currency_margin": "GBP",
    "currency_profit": "AUD",
@@ -1901,7 +1901,7 @@
   },
   "GBPCAD": {
    "ask": 1.8666399999999999,
-   "at": "2026-11-28T06:47:31+00:00",
+   "at": "2026-11-28T13:35:21+00:00",
    "bid": 1.8652600000000001,
    "currency_margin": "GBP",
    "currency_profit": "CAD",
@@ -1924,7 +1924,7 @@
   },
   "GBPCHF": {
    "ask": 1.0955300000000001,
-   "at": "2026-11-28T06:47:34+00:00",
+   "at": "2026-11-28T13:35:22+00:00",
    "bid": 1.09459,
    "currency_margin": "GBP",
    "currency_profit": "CHF",
@@ -1955,7 +1955,7 @@
   },
   "GBPJPY": {
    "ask": 209.036,
-   "at": "2026-11-28T06:47:36+00:00",
+   "at": "2026-11-28T13:35:23+00:00",
    "bid": 208.897,
    "currency_margin": "GBP",
    "currency_profit": "JPY",
@@ -1986,7 +1986,7 @@
   },
   "GBPNZD": {
    "ask": 2.39697,
-   "at": "2026-11-28T06:47:37+00:00",
+   "at": "2026-11-28T13:35:23+00:00",
    "bid": 2.395,
    "currency_margin": "GBP",
    "currency_profit": "NZD",
@@ -2286,9 +2286,9 @@
    "volume_step": 0.1
   },
   "LNKUSD": {
-   "ask": 9.163,
-   "at": "2026-11-28T06:47:39+00:00",
-   "bid": 9.161,
+   "ask": 9.133,
+   "at": "2026-11-28T13:35:25+00:00",
+   "bid": 9.131,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 3,
@@ -2309,9 +2309,9 @@
    "volume_step": 0.01
   },
   "LTCUSD": {
-   "ask": 44.37,
-   "at": "2026-11-28T06:47:42+00:00",
-   "bid": 44.22,
+   "ask": 43.88,
+   "at": "2026-11-28T13:35:25+00:00",
+   "bid": 43.73,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 2,
@@ -2614,7 +2614,7 @@
   },
   "NZDCAD": {
    "ask": 0.77897,
-   "at": "2026-11-28T06:47:46+00:00",
+   "at": "2026-11-28T13:35:26+00:00",
    "bid": 0.77859,
    "currency_margin": "NZD",
    "currency_profit": "CAD",
@@ -2637,7 +2637,7 @@
   },
   "NZDCHF": {
    "ask": 0.45719,
-   "at": "2026-11-28T06:47:49+00:00",
+   "at": "2026-11-28T13:35:26+00:00",
    "bid": 0.45689,
    "currency_margin": "NZD",
    "currency_profit": "CHF",
@@ -2664,7 +2664,7 @@
   },
   "NZDJPY": {
    "ask": 87.234,
-   "at": "2026-11-28T06:45:57+00:00",
+   "at": "2026-11-28T13:35:27+00:00",
    "bid": 87.198,
    "currency_margin": "NZD",
    "currency_profit": "JPY",
@@ -2967,9 +2967,9 @@
    "why": "symbol not in this terminal's registry"
   },
   "SOLUSD": {
-   "ask": 71.46,
-   "at": "2026-11-28T06:45:59+00:00",
-   "bid": 71.43,
+   "ask": 70.68,
+   "at": "2026-11-28T13:34:42+00:00",
+   "bid": 70.65,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 2,
@@ -3342,7 +3342,7 @@
   },
   "USDCAD": {
    "ask": 1.4251,
-   "at": "2026-11-28T06:46:00+00:00",
+   "at": "2026-11-28T13:34:43+00:00",
    "bid": 1.42483,
    "currency_margin": "USD",
    "currency_profit": "CAD",
@@ -3365,7 +3365,7 @@
   },
   "USDCHF": {
    "ask": 0.83635,
-   "at": "2026-11-28T06:46:01+00:00",
+   "at": "2026-11-28T13:34:44+00:00",
    "bid": 0.8361,
    "currency_margin": "USD",
    "currency_profit": "CHF",
@@ -3388,7 +3388,7 @@
   },
   "USDCNH": {
    "ask": 6.65557,
-   "at": "2026-11-28T06:46:02+00:00",
+   "at": "2026-11-28T13:34:44+00:00",
    "bid": 6.65454,
    "currency_margin": "USD",
    "currency_profit": "CNH",
@@ -3411,7 +3411,7 @@
   },
   "USDCZK": {
    "ask": 22.3491,
-   "at": "2026-11-28T06:46:04+00:00",
+   "at": "2026-11-28T13:34:45+00:00",
    "bid": 22.3278,
    "currency_margin": "USD",
    "currency_profit": "CZK",
@@ -3438,7 +3438,7 @@
   },
   "USDHKD": {
    "ask": 7.83057,
-   "at": "2026-11-28T06:46:06+00:00",
+   "at": "2026-11-28T13:34:45+00:00",
    "bid": 7.8292,
    "currency_margin": "USD",
    "currency_profit": "HKD",
@@ -3461,7 +3461,7 @@
   },
   "USDHUF": {
    "ask": 338.342,
-   "at": "2026-11-28T06:46:07+00:00",
+   "at": "2026-11-28T13:34:46+00:00",
    "bid": 337.966,
    "currency_margin": "USD",
    "currency_profit": "HUF",
@@ -3488,7 +3488,7 @@
   },
   "USDILS": {
    "ask": 3.32865,
-   "at": "2026-11-28T06:46:08+00:00",
+   "at": "2026-11-28T13:34:47+00:00",
    "bid": 3.32205,
    "currency_margin": "USD",
    "currency_profit": "ILS",
@@ -3515,7 +3515,7 @@
   },
   "USDJPY": {
    "ask": 159.584,
-   "at": "2026-11-28T06:46:09+00:00",
+   "at": "2026-11-28T13:34:48+00:00",
    "bid": 159.563,
    "currency_margin": "USD",
    "currency_profit": "JPY",
@@ -3542,7 +3542,7 @@
   },
   "USDMXN": {
    "ask": 19.66682,
-   "at": "2026-11-28T06:46:10+00:00",
+   "at": "2026-11-28T13:34:49+00:00",
    "bid": 19.63751,
    "currency_margin": "USD",
    "currency_profit": "MXN",
@@ -3565,7 +3565,7 @@
   },
   "USDNOK": {
    "ask": 9.80838,
-   "at": "2026-11-28T06:46:11+00:00",
+   "at": "2026-11-28T13:34:52+00:00",
    "bid": 9.80048,
    "currency_margin": "USD",
    "currency_profit": "NOK",
@@ -3588,7 +3588,7 @@
   },
   "USDPLN": {
    "ask": 4.08677,
-   "at": "2026-11-28T06:46:12+00:00",
+   "at": "2026-11-28T13:34:53+00:00",
    "bid": 4.08407,
    "currency_margin": "USD",
    "currency_profit": "PLN",
@@ -3615,7 +3615,7 @@
   },
   "USDSEK": {
    "ask": 10.26863,
-   "at": "2026-11-28T06:46:14+00:00",
+   "at": "2026-11-28T13:34:54+00:00",
    "bid": 10.26153,
    "currency_margin": "USD",
    "currency_profit": "SEK",
@@ -3638,7 +3638,7 @@
   },
   "USDSGD": {
    "ask": 1.2910599999999999,
-   "at": "2026-11-28T06:46:15+00:00",
+   "at": "2026-11-28T13:34:55+00:00",
    "bid": 1.29009,
    "currency_margin": "USD",
    "currency_profit": "SGD",
@@ -3673,7 +3673,7 @@
   },
   "USDZAR": {
    "ask": 17.37738,
-   "at": "2026-11-28T06:46:16+00:00",
+   "at": "2026-11-28T13:34:56+00:00",
    "bid": 17.35676,
    "currency_margin": "USD",
    "currency_profit": "ZAR",
@@ -3869,7 +3869,7 @@
   },
   "XAGEUR": {
    "ask": 40.02,
-   "at": "2026-11-28T06:46:17+00:00",
+   "at": "2026-11-28T13:34:56+00:00",
    "bid": 39.975,
    "currency_margin": "EUR",
    "currency_profit": "EUR",
@@ -3892,7 +3892,7 @@
   },
   "XAGUSD": {
    "ask": 43.77,
-   "at": "2026-11-28T06:46:18+00:00",
+   "at": "2026-11-28T13:34:57+00:00",
    "bid": 43.717,
    "currency_margin": "USD",
    "currency_profit": "USD",
@@ -3919,7 +3919,7 @@
   },
   "XAUAUD": {
    "ask": 5498.14,
-   "at": "2026-11-28T06:46:20+00:00",
+   "at": "2026-11-28T13:34:57+00:00",
    "bid": 5497.34,
    "currency_margin": "AUD",
    "currency_profit": "AUD",
@@ -3942,7 +3942,7 @@
   },
   "XAUEUR": {
    "ask": 3341.83,
-   "at": "2026-11-28T06:46:21+00:00",
+   "at": "2026-11-28T13:34:58+00:00",
    "bid": 3341.19,
    "currency_margin": "EUR",
    "currency_profit": "EUR",
@@ -3965,7 +3965,7 @@
   },
   "XAUUSD": {
    "ask": 3654.61,
-   "at": "2026-11-28T06:46:23+00:00",
+   "at": "2026-11-28T13:34:58+00:00",
    "bid": 3654.14,
    "currency_margin": "USD",
    "currency_profit": "USD",
@@ -3992,7 +3992,7 @@
   },
   "XCUUSD": {
    "ask": 553.41,
-   "at": "2026-11-28T06:46:23+00:00",
+   "at": "2026-11-28T13:34:59+00:00",
    "bid": 552.81,
    "currency_margin": "USD",
    "currency_profit": "USD",
@@ -4014,9 +4014,9 @@
    "volume_step": 0.01
   },
   "XLMUSD": {
-   "ask": 0.1245,
-   "at": "2026-11-28T06:46:24+00:00",
-   "bid": 0.1244,
+   "ask": 0.1236,
+   "at": "2026-11-28T13:35:00+00:00",
+   "bid": 0.1235,
    "currency_margin": "USD",
    "currency_profit": "USD",
    "digits": 4,
@@ -4050,7 +4050,7 @@
   },
   "XPDUSD": {
    "ask": 898.08,
-   "at": "2026-11-28T06:46:25+00:00",
+   "at": "2026-11-28T13:35:00+00:00",
    "bid": 890.54,
    "currency_margin": "USD",
    "currency_profit": "USD",
@@ -4073,7 +4073,7 @@
   },
   "XPTUSD": {
    "ask": 1336.79,
-   "at": "2026-11-28T06:46:26+00:00",
+   "at": "2026-11-28T13:35:01+00:00",
    "bid": 1328.83,
    "currency_margin": "USD",
    "currency_profit": "USD",
