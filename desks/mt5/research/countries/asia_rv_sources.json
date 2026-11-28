@@ -1,0 +1,105 @@
+{
+ "note": "Source registry for the Hong Kong carry state and the Singapore band state (desks/mt5/research/countries/asia_rv_states.py). Rows, never code. A row is fetched ONLY when terms == OPEN and an adapter is named; TERMS_BLOCKED and BLOCKED_INPUT rows are reported every pass with their clause and never fetched. Terms were read by hand on terms_read; robots.txt is read live by the organ before every fetch with its own User-Agent and an unread policy is never a yes (the build container's proxy refused all six robots files on 2026-11-18, so robots is recorded as checked-at-fetch, not as read).",
+ "sources": [
+  {
+   "id": "hkma_interbank_liquidity",
+   "name": "HKMA Open API: daily figures of interbank liquidity (overnight HIBOR, HKAB 1M HIBOR fixing)",
+   "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
+   "adapter": "hkma_api",
+   "feeds": "hk_hibor_sofr_carry",
+   "terms": "OPEN",
+   "terms_url": "https://www.hkma.gov.hk/eng/other-information/terms-and-conditions.shtml",
+   "terms_read": "2026-11-18",
+   "terms_clause": "clause 17: 'You may use the APIs to develop, whether for commercial or non-commercial purposes, a software, application, website, system or service to search, display, analyse, retrieve, view and otherwise obtain such Information' on the clause 12(a)-(e) conditions (accurate reproduction, attribution to the HKMA, HKMA ownership acknowledged, destroy on request). Clause 12 alone (website pages) is non-commercial; this row uses the API only. Clause 14 carves out third-party copyright: HKD HIBOR is owned by HKAB; the TMA licensing notice (June 2024) states HKD HIBOR 'is not covered in the data licensing regime'.",
+   "redistribute": false,
+   "attribution": "Source: Hong Kong Monetary Authority (HIBOR: The Hong Kong Association of Banks)",
+   "robots": "read live by the organ before each fetch (fail closed)"
+  },
+  {
+   "id": "nyfed_sofr",
+   "name": "Federal Reserve Bank of New York Markets API: SOFR",
+   "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json",
+   "adapter": "nyfed_sofr",
+   "feeds": "hk_hibor_sofr_carry",
+   "terms": "OPEN",
+   "terms_url": "https://www.newyorkfed.org/privacy/termsofuse.html",
+   "terms_read": "2026-11-18",
+   "terms_clause": "licence 'to use, copy, and distribute Content for your personal or business purposes'; access 'manually or through an automated process or device, provided your access does not have the effect of disabling, damaging, or interfering with the function of the Website'. Reference Rates notice: 'The [NAME OF DATA] is subject to the Terms of Use posted at newyorkfed.org'; SOFR is calculated from data licensed by DTCC Solutions LLC. Last updated 2023-06-09.",
+   "redistribute": true,
+   "attribution": "SOFR is subject to the Terms of Use posted at newyorkfed.org",
+   "robots": "read live by the organ before each fetch (fail closed)"
+  },
+  {
+   "id": "fred_sofr",
+   "name": "FRED copy of SOFR",
+   "url": "https://fred.stlouisfed.org/series/SOFR",
+   "adapter": "none",
+   "feeds": "hk_hibor_sofr_carry",
+   "terms": "REFUSED",
+   "terms_url": "",
+   "terms_read": "2026-11-13",
+   "terms_clause": "FRED is refused for every automated fetch (desk ruling 2026-11-13); the NY Fed primary publisher is used instead.",
+   "redistribute": false
+  },
+  {
+   "id": "mas_website",
+   "name": "MAS website pages (Monetary Policy Statements, past decisions, release calendar)",
+   "url": "https://www.mas.gov.sg/monetary-policy/past-monetary-policy-decisions",
+   "adapter": "none",
+   "feeds": "mas_mps calendar and sg_neer_band (transcribed facts only)",
+   "terms": "TERMS_BLOCKED",
+   "terms_url": "https://www.mas.gov.sg/terms-of-use",
+   "terms_read": "2026-11-18",
+   "terms_clause": "no part of the Contents 'may be reproduced, republished, uploaded, posted, transmitted or distributed in any way' without MAS's prior written permission, 'except that you may download one copy ... onto a single computer for your own personal non-commercial use'. The organ never fetches these pages; the statement dates and slope adjectives were read once by hand and are held as code in countries/sg/band_state.py MPS_RECORD. Last updated 2026-08-27.",
+   "redistribute": false
+  },
+  {
+   "id": "mas_open_data",
+   "name": "MAS datasets under the Singapore Open Data Licence v1.0",
+   "url": "https://www.mas.gov.sg/statistics",
+   "adapter": "none",
+   "feeds": "nothing yet",
+   "terms": "OPEN",
+   "terms_url": "https://www.mas.gov.sg/Terms-of-Use/Open-Data-Licence.aspx",
+   "terms_read": "2026-11-18",
+   "terms_clause": "'MAS grants you a worldwide, perpetual, royalty-free, non-exclusive licence to Use the datasets ... whether commercially or non-commercially', with a conspicuous source notice and a link to the licence. No adapter: MAS publishes no S$NEER dataset, so the band state uses a synthetic NEER from broker bars and fetches nothing from MAS.",
+   "redistribute": true
+  },
+  {
+   "id": "broker_sgd_basket",
+   "name": "Broker H1 bars: USDSGD, USDCNH and the SGD crosses (or the USD majors they cross through)",
+   "url": "",
+   "adapter": "broker_bars",
+   "feeds": "sg_neer_band",
+   "terms": "OPEN",
+   "terms_url": "",
+   "terms_read": "2026-11-18",
+   "terms_clause": "the desk's own terminal tape under desks/mt5/data/universe/; no third-party fetch.",
+   "redistribute": false
+  },
+  {
+   "id": "hkex_securities_prices",
+   "name": "HKEX securities prices (H-share legs of the ADR/H-share basis)",
+   "url": "https://www.hkex.com.hk/Market-Data/Securities-Prices",
+   "adapter": "none",
+   "feeds": "hk_adr_h_basis",
+   "terms": "TERMS_BLOCKED",
+   "terms_url": "https://www.hkex.com.hk/Global/Exchange/Terms-of-Use",
+   "terms_read": "2026-11-18",
+   "terms_clause": "section 5: without express written permission one may not 'use any programmatic, scripted or other mechanical means to access this Website or any Information', nor do 'any text or data mining or web scraping'; personal use only. Real-time and delayed price data are sold under the HKEX Market Data End-User / Vendor licence agreements. Last updated 2025-08-19.",
+   "redistribute": false
+  },
+  {
+   "id": "hk_adr_h_basis",
+   "name": "ADR versus H-share basis aggregate for HK50 (Alibaba 9988/BABA, Baidu 9888/BIDU, NIO 9866/NIO, ...)",
+   "url": "",
+   "adapter": "none",
+   "feeds": "hk_adr_h_basis",
+   "terms": "BLOCKED_INPUT",
+   "terms_url": "",
+   "terms_read": "2026-11-18",
+   "terms_clause": "the ADR legs are on the broker (AlibabaGroup, Baidu, NIO share CFDs) but no free source of Hong Kong H-share closes was found whose terms allow automated commercial use: HKEX is TERMS_BLOCKED (row hkex_securities_prices) and the free aggregators (Yahoo, Google Finance) forbid it. Built when a terms-clean H-share close appears; until then the half is named here, not guessed.",
+   "redistribute": false
+  }
+ ]
+}

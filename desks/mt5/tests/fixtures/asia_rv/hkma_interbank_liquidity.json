@@ -1,0 +1,452 @@
+{
+ "header": {
+  "success": true,
+  "err_code": "0000",
+  "err_msg": "No error found"
+ },
+ "result": {
+  "datasize": 40,
+  "records": [
+   {
+    "end_of_date": "2026-07-09",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.39,
+    "hibor_fixing_1m": 2.89,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-08",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.38,
+    "hibor_fixing_1m": 2.88,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-07",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.37,
+    "hibor_fixing_1m": 2.87,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-06",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.36,
+    "hibor_fixing_1m": 2.86,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-03",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.35,
+    "hibor_fixing_1m": 2.85,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-02",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.34,
+    "hibor_fixing_1m": 2.84,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-07-01",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.33,
+    "hibor_fixing_1m": 2.83,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-30",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.32,
+    "hibor_fixing_1m": 2.82,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-29",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.31,
+    "hibor_fixing_1m": 2.81,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-26",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.3,
+    "hibor_fixing_1m": 2.8,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-25",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.29,
+    "hibor_fixing_1m": 2.79,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-24",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.28,
+    "hibor_fixing_1m": 2.78,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-23",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.27,
+    "hibor_fixing_1m": 2.77,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-22",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.26,
+    "hibor_fixing_1m": 2.76,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-19",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.25,
+    "hibor_fixing_1m": 2.75,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-18",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.24,
+    "hibor_fixing_1m": 2.74,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-17",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.23,
+    "hibor_fixing_1m": 2.73,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-16",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.22,
+    "hibor_fixing_1m": 2.72,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-15",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.21,
+    "hibor_fixing_1m": 2.71,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-12",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.2,
+    "hibor_fixing_1m": 2.7,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-11",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.19,
+    "hibor_fixing_1m": 2.69,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-10",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.18,
+    "hibor_fixing_1m": 2.68,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-09",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.17,
+    "hibor_fixing_1m": 2.67,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-08",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.16,
+    "hibor_fixing_1m": 2.66,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-05",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.15,
+    "hibor_fixing_1m": 2.65,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-04",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.14,
+    "hibor_fixing_1m": 2.64,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-03",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.13,
+    "hibor_fixing_1m": 2.63,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-02",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.12,
+    "hibor_fixing_1m": 2.62,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-06-01",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.11,
+    "hibor_fixing_1m": 2.61,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-29",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.1,
+    "hibor_fixing_1m": 2.6,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-28",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.09,
+    "hibor_fixing_1m": 2.59,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-27",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.08,
+    "hibor_fixing_1m": 2.58,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-26",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.07,
+    "hibor_fixing_1m": 2.57,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-25",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.06,
+    "hibor_fixing_1m": 2.56,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-22",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.05,
+    "hibor_fixing_1m": 2.55,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-21",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.04,
+    "hibor_fixing_1m": 2.54,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-20",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.03,
+    "hibor_fixing_1m": 2.53,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-19",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.02,
+    "hibor_fixing_1m": 2.52,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-18",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.01,
+    "hibor_fixing_1m": 2.51,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   },
+   {
+    "end_of_date": "2026-05-15",
+    "cu_weakside": 7.85,
+    "cu_strongside": 7.75,
+    "disc_win_base_rate": 4.5,
+    "hibor_overnight": 2.0,
+    "hibor_fixing_1m": 2.5,
+    "twi": 105.1,
+    "opening_balance": 54000,
+    "closing_balance": 54000
+   }
+  ]
+ }
+}

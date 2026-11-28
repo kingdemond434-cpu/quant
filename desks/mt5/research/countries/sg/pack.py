@@ -173,14 +173,14 @@ CENTRAL_BANK: dict[str, Any] = {
     ),
     "dates": {
         2024: ("2024-01-29", "2024-04-12", "2024-07-26", "2024-10-14"),
-        2025: ("2025-01-24", "2025-04-14", "2025-07-30"),
-        2026: (),
+        2025: ("2025-01-24", "2025-04-14", "2025-07-30", "2025-10-14"),
+        2026: ("2026-01-29", "2026-04-14", "2026-07-27", "2026-10-14"),
     },
-    "dates_status": "2024 is the first full quarterly year and is complete. The 2025 fourth "
-                    "statement and the whole 2026 calendar are UNMEASURED in this pack (L1.28a) "
-                    "and must be read from the MAS media-release calendar before any event study "
-                    "-- an invented date is worse than a missing one, because a missing one is "
-                    "visible",
+    "dates_status": "2024, 2025 and 2026 are complete, read 2026-11-18 from MAS's past "
+                    "monetary policy decisions page. The full record from 2016 (with the "
+                    "off-cycle flags) is countries/sg/band_state.py MPS_RECORD, which generates "
+                    "data/calendars/mas_mps.json for the event cells. 2027 is UNMEASURED: MAS's "
+                    "advance release calendar gives only 'not later than 29 Jan 2027'",
 }
 
 #: The announced band moves. This is Singapore's equivalent of a policy rate history, and it is
@@ -188,7 +188,7 @@ CENTRAL_BANK: dict[str, Any] = {
 #: the level of the target, a slope change is a change in its drift, and a cell that treats them
 #: as the same event is averaging a jump with a trend.
 BAND_STATE: tuple[dict[str, str], ...] = (
-    {"date": "2020-03-30", "action": "EASE", "slope": "reduced to zero",
+    {"date": "2020-03-30", "action": "EASE (OFF-CYCLE)", "slope": "reduced to zero",
      "centre": "re-centred DOWN to the prevailing level", "width": "unchanged",
      "note": "the pandemic easing: a simultaneous slope cut and downward re-centring, the only "
              "one of its kind in the sample"},
@@ -216,6 +216,12 @@ BAND_STATE: tuple[dict[str, str], ...] = (
              "cadence"},
     {"date": "2025-04-14", "action": "EASE", "slope": "reduced slightly", "centre": "unchanged",
      "width": "unchanged", "note": "a second consecutive slope reduction"},
+    {"date": "2026-04-14", "action": "TIGHTEN", "slope": "raised slightly", "centre": "unchanged",
+     "width": "unchanged", "note": "the first increase since the 2022 cycle"},
+    {"date": "2026-07-27", "action": "TIGHTEN", "slope": "raised very slightly",
+     "centre": "unchanged", "width": "unchanged",
+     "note": "a second, smaller increase; the band's estimated position is published as the "
+             "USDSGD state sg_neer_band (countries/sg/band_state.py)"},
 )
 
 # --------------------------------------------------------------------------- fixings, settlement
@@ -1265,7 +1271,15 @@ CUSTOM_MINERS: tuple[dict[str, Any], ...] = (
           entry="research.countries.sg.miners:mps_event_study", cadence_s=86400.0,
           steerable=False,
           notes="SPEC, NOT YET WIRED. Splits scheduled from off-cycle and slope changes from "
-                "re-centrings; refuses to pool them"),
+                "re-centrings; refuses to pool them. PREREGISTRATION AMENDMENT 2026-11-18 (PR "
+                "#1335), recorded before any run of this miner: BAND_STATE now marks "
+                "2020-03-30 OFF-CYCLE, as MAS's past-decisions table and domain SG-A ('the "
+                "three off-cycle statements of 2020 and 2022') always did. The off_cycle arm "
+                "therefore holds 2020-03-30, 2022-01-25 and 2022-07-14 (three events, was two); "
+                "recentre is unchanged (2020-03-30 stays in it). The same PR appended the "
+                "2026-04-14 and 2026-07-27 slope increases, so slope_only holds six events "
+                "(was four). The arms are defined by MAS's own classification, not chosen after "
+                "results"),
     miner("sg_band_edge", domain_ids=("SG-C",), kind="microstructure",
           entry="research.countries.sg.miners:band_edge", cadence_s=3600.0,
           notes="SPEC, NOT YET WIRED. Tests behaviour conditional on the estimated position "

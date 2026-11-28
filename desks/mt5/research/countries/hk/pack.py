@@ -307,9 +307,12 @@ EXECUTABLE_INSTRUMENTS: tuple[str, ...] = (
 ABSENT_INSTRUMENTS: tuple[dict[str, str], ...] = (
     {"instrument": "HIBOR, or any Hong Kong interest-rate instrument",
      "why": "no HKD rates future or FRA is in desks/mt5/data/universe/universe.json",
-     "carried_by": "UST10Y for the imported US rate leg, and USDHKD FORWARD POINTS as the only "
-                   "market-priced expression of the HIBOR-SOFR spread -- which this broker does "
-                   "not quote either, so the carry leg is UNMEASURED by name"},
+     "carried_by": "UST10Y for the imported US rate leg. The HIBOR-SOFR spread itself is not "
+                   "tradable here (no USDHKD forward points either), but it is now MEASURED as "
+                   "a USDHKD state: countries/hk/carry_state.py publishes "
+                   "data/lake/series/hk_hibor_sofr_carry.parquet from the HKMA Open API and the "
+                   "NY Fed SOFR API, read by the exogenous_conditioner recipe "
+                   "hk_hibor_sofr_carry_state"},
     {"instrument": "Hang Seng TECH index",
      "why": "absent from the broker registry",
      "carried_by": "HK50 with an explicit sector-composition caveat, and NAS100 for the global "
@@ -823,6 +826,11 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
      "why": "MT5 universe mandate (2026-08-18): no crypto-exchange ground is ever hunted again"},
     {"ground": "paywalled vendor terminal content and its redistribution",
      "why": "licence; the desk holds no redistribution right"},
+    {"ground": "HKEX securities prices (the H-share legs of an ADR/H-share basis for HK50)",
+     "why": "TERMS_BLOCKED: HKEX's website terms (section 5, read 2026-11-18) forbid programmatic "
+            "access and data mining without written permission, and no other free H-share "
+            "close was found whose terms allow it, so the ADR/H basis state is BLOCKED_INPUT "
+            "(countries/asia_rv_sources.json rows hkex_securities_prices, hk_adr_h_basis)"},
     {"ground": "single-name Hong Kong equity hypothesis mining",
      "why": "two-lane order (2026-09-06): single names are traded on news and never hunted for "
             "statistical hypotheses"},

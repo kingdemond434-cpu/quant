@@ -1,0 +1,39 @@
+{
+ "name": "mas_mps",
+ "tz": "Asia/Singapore",
+ "note": "MAS Monetary Policy Statement dates at MAS's own local time (08:00 SGT). SCHEDULED statements only: the off-cycle statements of 2020-03-30, 2022-01-25 and 2022-07-14 were not knowable in advance and are excluded so no cell trades into an hour nobody could have known was an event. Generated from desks/mt5/research/countries/sg/band_state.py MPS_RECORD; regenerate, never hand-edit (a test pins the two equal). Append each statement from MAS's past decisions page once it is published.",
+ "sources": [
+  "https://www.mas.gov.sg/monetary-policy/past-monetary-policy-decisions",
+  "https://www.mas.gov.sg/monetary-policy/advance-release-calendar"
+ ],
+ "verified_at": "2026-11-18",
+ "dates": {
+  "2016-04-14": "08:00",
+  "2016-10-14": "08:00",
+  "2017-04-13": "08:00",
+  "2017-10-13": "08:00",
+  "2018-04-13": "08:00",
+  "2018-10-12": "08:00",
+  "2019-04-12": "08:00",
+  "2019-10-14": "08:00",
+  "2020-10-14": "08:00",
+  "2021-04-14": "08:00",
+  "2021-10-14": "08:00",
+  "2022-04-14": "08:00",
+  "2022-10-14": "08:00",
+  "2023-04-14": "08:00",
+  "2023-10-13": "08:00",
+  "2024-01-29": "08:00",
+  "2024-04-12": "08:00",
+  "2024-07-26": "08:00",
+  "2024-10-14": "08:00",
+  "2025-01-24": "08:00",
+  "2025-04-14": "08:00",
+  "2025-07-30": "08:00",
+  "2025-10-14": "08:00",
+  "2026-01-29": "08:00",
+  "2026-04-14": "08:00",
+  "2026-07-27": "08:00",
+  "2026-10-14": "08:00"
+ }
+}
