@@ -1,0 +1,316 @@
+# The self-healer definitions replay-shadow pins (#1249 audit HOLD 4). ops/box_self_heal.py must
+# define each of these exactly once, at module level, AST-equal to this text (docstrings and
+# comments ignored), and bind none of their names anywhere else. Read from the BASE harness.
+
+DENY: tuple[tuple[str, str], ...] = (
+    ("terminal64", "the MT5 terminal"),
+    ("terminal.exe", "an MT5 terminal"),
+    ("metatrader", "an MT5 terminal"),
+    ("metaeditor", "the MT5 editor"),
+    ("gateway", "the gateway: it places and manages orders"),
+    ("executor", "an executor: it trades"),
+    ("deadman", "the Tier-3 deadman rail"),
+    ("\\prop\\", "the prop desk (E8/FTMO/Fusion): it trades"),
+    ("/prop/", "the prop desk (E8/FTMO/Fusion): it trades"),
+    ("e8_", "an E8 prop process"),
+    ("e8-", "an E8 prop task"),
+    ("ftmo", "an FTMO process"),
+    ("fusion", "the Fusion account"),
+    ("order_send", "places orders"),
+    ("allocator_trigger", "the resident allocator pulse that feeds the gateway"),
+    ("bridge", "the bridge"),
+    ("claude.exe", "Claude's Remote Control session"),
+    ("claude-code", "Claude's Remote Control session"),
+    ("remote-control", "Claude's Remote Control session"),
+    ("remote_control", "Claude's Remote Control session"),
+    ("miner", "a mining task"),
+    ("mining", "a mining task"),
+    ("moat", "the moat recorders and miners"),
+    ("recorder", "a tape recorder"),
+    ("box_self_heal", "this watchdog"),
+    # The research organs other owners run and keep alive (audit HOLD of 7a01c1b09): the
+    # promoter and certifier launcher mint and move capital state, the forward clocks are
+    # time-series that a kill corrupts, and the hourly cycle is the clock of everything else.
+    ("promoter", "the promoter: it moves sleeves between tiers"),
+    ("shadow_forward", "a forward clock: a kill tears its series"),
+    ("scalp_shadow", "a forward clock: a kill tears its series"),
+    ("certifier_launcher", "the certifier's launcher (#526 NEVER_STOP's lane)"),
+    ("hourly_cycle", "the hourly cycle: the clock every other organ runs on"),
+    # The paste's job-lock lines belong to job_lock_health (#526); see DEFERRED. Denied here so
+    # this file can never become a second killer racing the first.
+    ("merge_hypotheses", "deferred to job_lock's own wedged-owner stop (#526)"),
+    # check_job_locks.AUTO_STOP_JOBS (#526): its 2 h stop owns these research owners.
+    *((s, "a job_lock_health research owner (#526 AUTO_STOP_JOBS); its 2 h stop owns it")
+      for s in ("local_converter", "breadth_sweep", "session_chart_equivalents",
+                "miner_candidate_compiler", "style_novelty", "orthogonal_sweep",
+                "edge_search", "macro_desk", "falsifier_run", "backfill_coverage",
+                "warm_gauntlet_cache")),
+    # check_job_locks.NEVER_STOP (#526): the judge, the certifier, the terminal lane.
+    *((s, "never stopped automatically (#526 NEVER_STOP: judge, certifier, terminal lane)")
+      for s in ("external_gauntlet", "certification_lane", "fusion_terminal_research_lane",
+                "tape_features")),
+    ("pf_allocator", "reads the live terminal and feeds the gateway's sizing; never auto-stopped"),
+    # #1249 audit (replay-shadow pins this table): every word of the harness's SELF_HEAL_FORBIDDEN
+    # and MONEY_WORDS denies too, bare, so a money organ never needs its exact name listed above.
+    # Over-match is the safe side: a denied tree is left alone and reported, never stopped.
+    ("terminal", "an MT5 terminal or terminal lane"),
+    ("promot", "the promoter: it moves sleeves between tiers"),
+    ("order", "the order path"),
+    ("sizing", "the sizing path"),
+    ("alloc", "an allocator: it feeds the gateway's sizing"),
+    ("sleeve", "a sleeve: live capital state"),
+    ("prop", "the prop desk (E8/FTMO/Fusion): it trades"),
+    ("follower", "a follower: it copies trades"),
+    ("window_guard", "the window guard"),
+    ("windowguard", "the window guard"),
+    ("window-guard", "the window guard"),
+    ("window guard", "the window guard"),
+    ("adopt", "release adoption"),
+    ("release", "release adoption and sealing"),
+    ("seal", "release sealing"),
+    ("autotrading", "the terminal's AutoTrading switch"),
+    ("positions_get", "reads live positions"),
+    ("e8", "an E8 prop process"),
+)
+
+
+_KERNEL_PSEUDO: frozenset[tuple[int, str]] = frozenset({(0, "system idle process"),
+                                                        (4, "system")})
+
+
+@dataclass(frozen=True)
+class Proc:
+    pid: int
+    ppid: int
+    name: str
+    cmdline: str
+    create_time: float
+    cpu_s: float
+    #: The argv as the OS reports it (psutil). Empty: split from `cmdline`, Windows-style.
+    argv: tuple[str, ...] = ()
+    #: The account it runs as ("NT AUTHORITY\\SYSTEM", "HOST\\Administrator"); None if unreadable.
+    user: str | None = None
+
+
+def _fold(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").replace('"', " ").replace("'", " ")).strip().lower()
+
+
+def _image(p: Proc) -> str:
+    return ntpath.basename((p.name or "").lower())
+
+
+def _argv(p: Proc) -> list[str]:
+    if p.argv:
+        return [str(a) for a in p.argv]
+    try:
+        toks = shlex.split(p.cmdline or "", posix=False)
+    except ValueError:
+        # Unbalanced quotes: not parseable, so the whole line is ONE token. Nothing that needs
+        # an exact argument then matches it, and the deny list sees all of it.
+        return [(p.cmdline or "").strip()]
+    return [t.strip('"') for t in toks]
+
+
+def unreadable(p: Proc) -> str | None:
+    """Why `p` cannot be identified, or None. An empty image or command line is not "nothing to
+    match": it is a process this file cannot see, and what it cannot see it never touches."""
+    if (p.pid, _image(p)) in _KERNEL_PSEUDO:
+        return None
+    if not (p.name or "").strip():
+        return "its image name is unreadable"
+    if not (p.cmdline or "").strip() and not any(str(a).strip() for a in p.argv):
+        return "its command line is unreadable or empty"
+    return None
+
+
+_DATA_ARG_IMAGES = frozenset({"gh", "git", "git-credential-manager", "conhost"})
+
+
+_DATA_ARG_PREFIXES = ("git-remote-",)
+
+
+def _is_data_image(base: str) -> bool:
+    return base in _DATA_ARG_IMAGES or base.startswith(_DATA_ARG_PREFIXES)
+
+
+def _deny_haystack(p: Proc) -> str:
+    """What the deny list searches: the WHOLE folded command line, for every image except the
+    pure-data ones (git, gh, git-remote-*, git-credential-manager, conhost), whose arguments are
+    refs and paths, never code; those contribute their image and argv[0] only. No interpreter or
+    shell is parsed for "the code it runs": `run.py --role gateway`, `-Command Invoke-Desk -Name
+    gateway` and `sh -c "python gateway.py"` all carry the money organ in an ARGUMENT, so any
+    token anywhere on the line denies (over-match, never under-match)."""
+    img = _image(p)
+    whole = _fold(p.cmdline or " ".join(p.argv))
+    if _is_data_image(img.removesuffix(".exe")):
+        argv = _argv(p)
+        return _fold(" ".join(t for t in (img, *(argv[:1])) if t))
+    return _fold(f"{img} {whole}")
+
+
+def denied(p: Proc) -> str | None:
+    """Why `p` may never be touched, or None. Checked before any allowlist match."""
+    u = unreadable(p)
+    if u:
+        return f"unidentifiable: {u}"
+    text = _deny_haystack(p)
+    for needle, why in DENY:
+        if needle in text:
+            return f"{needle!r}: {why}"
+    return None
+
+
+def _live_proc(pr: Any, ppid: int | None = None) -> Proc:
+    """A psutil process re-read NOW. Raises on anything it cannot read."""
+    argv = tuple(str(a) for a in (pr.cmdline() or []))
+    name = str(pr.name() or "")
+    par = int(pr.ppid()) if ppid is None else ppid
+    try:
+        user: str | None = str(pr.username())
+    except Exception:
+        user = None
+    return Proc(int(pr.pid), par, name, " ".join(argv), float(pr.create_time()), 0.0, argv, user)
+
+
+def _kill_tree(target: Proc, procs: Sequence[Proc],
+               allowed_images: frozenset[str] | None = None,
+               verify: Verify | None = None, *,
+               clock: Callable[[], float] = time.monotonic) -> dict[str, Any]:
+    """RE-READ the target live, FREEZE the tree, then end it bottom-up -- or resume all of it.
+
+    The same pattern job_lock_health uses: a busy owner keeps spawning, so a tree enumerated once
+    and killed top-down leaves the children it started in between as orphans. The target is
+    re-read from the LIVE table first (pid, create time, image, command line, deny list and the
+    rule's own identity). Each round's new children are identified and deny-checked BEFORE they
+    are suspended; the tree is re-enumerated until no new member appears; then every member is
+    killed deepest-first, the target last.
+
+    THAW IS UNCONDITIONAL (audit HOLD of 7a01c1b09). Whatever ends this function -- a refusal, a
+    vanished child, AccessDenied, an OSError (WinError 299 from a half-read process), a
+    RuntimeError from cmdline() or name(), anything -- every process it suspended and did not
+    kill is resumed in `finally`. The freeze window is bounded by FREEZE_MAX_S.
+    """
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+    except ImportError:
+        return {"ok": False, "target_gone": False,
+                "why": "psutil absent: cannot verify identity, nothing stopped"}
+    frozen: list[Any] = []
+    killed: set[int] = set()
+    t0 = clock()
+
+    def refuse(why: str) -> dict[str, Any]:
+        # A REFUSAL AFTER THE FIRST KILL NAMES WHAT DIED (audit should-fix of 5b3504f50): an
+        # AccessDenied on the third member is not "nothing stopped" when two are already gone.
+        if killed:
+            return {"ok": False, "target_gone": not target_alive(), "killed": sorted(killed),
+                    "why": f"{why}; PARTIALLY stopped: killed {sorted(killed)}, every other "
+                           f"member resumed"}
+        return {"ok": False, "target_gone": False, "killed": [],
+                "why": f"{why}; tree resumed, nothing stopped"}
+
+    def tree_below(root: Any, root_ct: float) -> list[Any]:
+        """The live tree, LEVEL BY LEVEL (audit HOLD of 5b3504f50): each child is checked against
+        ITS OWN parent's create time. children(recursive=True) only compares every descendant with
+        the root, so a process that adopted a recycled pid deeper down came along."""
+        out: list[Any] = []
+        seen = {root.pid}
+        level = [(root, root_ct)]
+        while level:
+            nxt: list[tuple[Any, float]] = []
+            for par, pct in level:
+                try:
+                    kids = par.children(recursive=False)
+                except psutil.NoSuchProcess:
+                    continue
+                for k in kids:
+                    if k.pid in seen:
+                        continue
+                    try:
+                        kct = float(k.create_time())
+                    except psutil.NoSuchProcess:
+                        continue
+                    if kct < pct:
+                        continue                # older than this parent: a recycled ppid
+                    seen.add(k.pid)
+                    out.append(k)
+                    nxt.append((k, kct))
+            level = nxt
+        return out
+
+    def target_alive() -> bool:
+        try:
+            return abs(float(psutil.Process(target.pid).create_time())
+                       - target.create_time) <= 1.0
+        except psutil.NoSuchProcess:
+            return False
+        except Exception:
+            return True                     # cannot tell: never claim it is gone
+
+    def bad_member(k: Any) -> str | None:
+        kp = _live_proc(k, ppid=target.pid)
+        if kp.create_time < target.create_time:
+            return None                     # not a child (a recycled ppid); never frozen
+        return denied(kp) or (None if allowed_images is None or _image(kp) in allowed_images
+                              else f"image {_image(kp)!r} is not allowed in this tree")
+
+    try:
+        live = psutil.Process(target.pid)
+        tp = _live_proc(live)
+        if abs(tp.create_time - target.create_time) > 1.0:
+            return refuse("pid was reused since it was judged")
+        why = denied(tp) or (verify(tp) if verify is not None else None)
+        if why:
+            return refuse(f"the live target {target.pid} no longer qualifies ({why})")
+        frozen_pids: set[int] = set()
+        for k in tree_below(live, tp.create_time):     # deny-checked BEFORE the first freeze
+            bad = bad_member(k)
+            if bad:
+                return refuse(f"descendant {k.pid} may not be stopped ({bad})")
+        live.suspend()
+        frozen.append(live)
+        frozen_pids.add(live.pid)
+        for _round in range(5):
+            if clock() - t0 > FREEZE_MAX_S:
+                return refuse(f"the freeze took over {FREEZE_MAX_S:.0f}s")
+            fresh = [k for k in tree_below(live, tp.create_time) if k.pid not in frozen_pids]
+            if not fresh:
+                break
+            for k in fresh:                             # identified BEFORE it is suspended
+                bad = bad_member(k)
+                if bad:
+                    return refuse(f"descendant {k.pid} may not be stopped ({bad})")
+                with contextlib.suppress(psutil.NoSuchProcess):
+                    k.suspend()
+                    frozen.append(k)
+                    frozen_pids.add(k.pid)
+        else:
+            return refuse("the tree kept growing while frozen")
+        if clock() - t0 > FREEZE_MAX_S:
+            return refuse(f"the freeze took over {FREEZE_MAX_S:.0f}s")
+        for k in reversed(frozen):                 # deepest (latest found) first, target last
+            with contextlib.suppress(psutil.NoSuchProcess):
+                k.kill()
+            killed.add(k.pid)
+        gone, alive = psutil.wait_procs(frozen, timeout=10)
+        still = target_alive()
+        return {"ok": not alive and not still, "target_gone": not still,
+                "killed": sorted(p.pid for p in gone),
+                "survived": sorted(p.pid for p in alive), "frozen_first": True}
+    except psutil.NoSuchProcess:
+        still = target_alive()
+        if still:
+            return refuse(f"a member of {target.pid}'s tree vanished mid-stop while the target "
+                          f"is still alive")
+        return {"ok": True, "target_gone": True, "why": "already gone", "killed": []}
+    except psutil.AccessDenied:
+        return refuse("access denied (the task must run as SYSTEM)")
+    except Exception as exc:                       # WinError 299, RuntimeError, anything
+        return refuse(f"{type(exc).__name__}: {exc}"[:200])
+    finally:
+        for fp in reversed(frozen):
+            if fp.pid in killed:
+                continue
+            with contextlib.suppress(Exception):
+                fp.resume()
