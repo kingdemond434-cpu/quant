@@ -24,16 +24,26 @@ set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Healers.log"
 set "PY=C:\Program Files\Python314\python.exe"
 
+rem THE EXIT IS THE WORST STEP'S, NOT A CONSTANT (2026-10-14). This file ended `exit /b 0`, so the
+rem scheduler read success whatever its steps returned and process_health could never report it
+rem FAILING. Every step still runs; the task returns the first non-zero code.
+set "WORST=0"
 echo(>>"%LOG%"
 echo ==== healers %DATE% %TIME% ====>>"%LOG%"
 
 "%PY%" -u "C:\opt\quant\desks\mt5\scripts\heal_silent_demotions.py" --apply >>"%LOG%" 2>&1
-echo   silent_demotions rc=%ERRORLEVEL%>>"%LOG%"
+set "RC=%ERRORLEVEL%"
+echo   silent_demotions rc=%RC%>>"%LOG%"
+if not "%RC%"=="0" if "%WORST%"=="0" set "WORST=%RC%"
 
 "%PY%" -u "C:\opt\quant\desks\mt5\scripts\heal_orphaned_clocks.py" --apply >>"%LOG%" 2>&1
-echo   orphaned_clocks rc=%ERRORLEVEL%>>"%LOG%"
+set "RC=%ERRORLEVEL%"
+echo   orphaned_clocks rc=%RC%>>"%LOG%"
+if not "%RC%"=="0" if "%WORST%"=="0" set "WORST=%RC%"
 
 "%PY%" -u "C:\opt\quant\desks\mt5\scripts\heal_identity_broken_clocks.py" --apply >>"%LOG%" 2>&1
-echo   identity_broken_clocks rc=%ERRORLEVEL%>>"%LOG%"
+set "RC=%ERRORLEVEL%"
+echo   identity_broken_clocks rc=%RC%>>"%LOG%"
+if not "%RC%"=="0" if "%WORST%"=="0" set "WORST=%RC%"
 
-exit /b 0
+exit /b %WORST%

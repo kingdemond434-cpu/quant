@@ -36,14 +36,22 @@ set "DEEPSEEK_DEEP_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free"
 set "SSL_CERT_FILE=C:\Program Files\Python314\Lib\site-packages\certifi\cacert.pem"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-AuditLane.log"
 set "PY=C:\Program Files\Python314\python.exe"
+rem THE EXIT IS THE STEP'S, NOT A CONSTANT (2026-10-14). This file ended `exit /b 0`, so the scheduler
+rem read success whatever its steps returned and process_health could never report it FAILING.
+set "WORST=0"
 "%PY%" -u "C:\opt\quant\desks\mt5\research\audit_intake.py" >>"%LOG%" 2>&1
+if not "%ERRORLEVEL%"=="0" if "%WORST%"=="0" set "WORST=%ERRORLEVEL%"
 "%PY%" -u "C:\opt\quant\scripts\kimi_hunter.py" >>"%LOG%" 2>&1
+if not "%ERRORLEVEL%"=="0" if "%WORST%"=="0" set "WORST=%ERRORLEVEL%"
 "%PY%" -u "C:\opt\quant\scripts\run_deepseek_cycle.py" >>"%LOG%" 2>&1
+if not "%ERRORLEVEL%"=="0" if "%WORST%"=="0" set "WORST=%ERRORLEVEL%"
 "%PY%" -u "C:\opt\quant\scripts\hypothesis_generator.py" >>"%LOG%" 2>&1
+if not "%ERRORLEVEL%"=="0" if "%WORST%"=="0" set "WORST=%ERRORLEVEL%"
 rem THE RESEARCH TREE JOINS THE HOURLY LANE (F6, 2026-09-12), not the daily one. It reads
 rem JSON and writes JSON -- the cost is negligible -- and a persistent tree only reaches
 rem depth by being expanded, so its cadence IS its reach. A beam of 12 an hour grows the
 rem tree a level a day; the same beam once a day would take a fortnight to ask a
 rem cross-market question of a mechanism that certified this morning.
 "%PY%" -u "C:\opt\quant\desks\mt5\research\research_tree.py" --apply >>"%LOG%" 2>&1
-exit /b 0
+if not "%ERRORLEVEL%"=="0" if "%WORST%"=="0" set "WORST=%ERRORLEVEL%"
+exit /b %WORST%
