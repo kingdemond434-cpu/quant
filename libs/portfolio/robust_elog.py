@@ -1078,7 +1078,8 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
              warm_start: Mapping[str, float] | None = None,
              max_per_sleeve: float | Mapping[str, float] | None = None,
              iterations: int = 400, step: float = 0.02,
-             deadline: float | None = None) -> AllocationResult:
+             deadline: float | None = None,
+             corr_abs: np.ndarray | None = None) -> AllocationResult:
     """Solve for per-sleeve heat maximising the robust posterior E[log W].
 
     `hard_cap` is the ceiling total heat may never cross. `target`, when given, is the
@@ -1104,7 +1105,10 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
     if not ev:
         raise ValueError("no sleeves to allocate over")
     w_pop = worlds if worlds is not None else sample_worlds(ev, cfg)
-    corr_abs = _corr_abs(ev)
+    # A caller re-solving the SAME evidence many times passes the matrix once: it is a pure
+    # function of `ev`, and its O(n^2) pair loop is most of a solve's setup at a few hundred
+    # sleeves (marginal_admission, measured on the box 2026-11-10: ~5 s of an 8 s budget).
+    corr_abs = _corr_abs(ev) if corr_abs is None else corr_abs
     names = [e.name for e in ev]
     n = len(ev)
 
