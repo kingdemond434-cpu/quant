@@ -13,9 +13,19 @@
 # box generates and keeps in data\secrets (never printed), so versioned snapshots and the restore
 # drill start before an off-site destination exists. Its verdict stays LOCAL_ONLY until the
 # repository is pointed off-site; an existing config is never replaced.
-param([switch]$InstallRestic, [switch]$InitLocal)
+#
+# -IfMissing (2026-11-11): do nothing when the task already exists. That is the form
+# Adopt-And-Seal's ensure-task step calls, with -InstallRestic -InitLocal, so the backup starts on
+# the first adoption after it ships with no human step. offsite_backup.py refuses to write a local
+# repository that would leave the drive under its free-space floor (DISK_GUARD), so arming it
+# here can never fill the disk the live terminal runs on.
+param([switch]$InstallRestic, [switch]$InitLocal, [switch]$IfMissing)
 
 $ErrorActionPreference = 'Stop'
+if ($IfMissing -and (Get-ScheduledTask -TaskName 'MT5-OffsiteBackup' -ErrorAction SilentlyContinue)) {
+  Write-Output 'MT5-OffsiteBackup already registered; -IfMissing leaves it untouched'
+  exit 0
+}
 $repo = 'C:\opt\quant'
 $py = @((Join-Path $repo '.venv\Scripts\python.exe'),
         'C:\Program Files\Python314\python.exe',
