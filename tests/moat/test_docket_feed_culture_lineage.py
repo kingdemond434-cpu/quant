@@ -75,5 +75,8 @@ def test_a_registry_without_the_columns_still_feeds() -> None:
                  "content_hash text, judged_at text, status text)")
     conn.execute("insert into research_candidates(id,symbol,family,params_json) "
                  "values('c1','EURUSD','carry','{}')")
-    rows = list(DF.candidate_rows(conn))
+    try:
+        rows = list(DF.candidate_rows(conn))
+    finally:
+        conn.close()
     assert len(rows) == 1 and "lineage_json" not in rows[0] and "source_culture" not in rows[0]

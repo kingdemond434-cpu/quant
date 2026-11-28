@@ -176,7 +176,10 @@ def test_the_docket_feed_carries_the_registry_columns() -> None:
     conn.execute("insert into research_candidates(id,symbol,family,params_json,source_culture,"
                  "culture_derivation) values('c1','USDKRW','carry','{}','KR/ko',"
                  "'{\"source_culture\": \"declared\"}')")
-    rows = list(DF.candidate_rows(conn))
+    try:
+        rows = list(DF.candidate_rows(conn))
+    finally:
+        conn.close()
     assert rows[0]["source_culture"] == "KR/ko"
     assert rows[0]["culture_derivation"] == {"source_culture": "declared"}
 
