@@ -147,8 +147,8 @@ def test_broker_time_is_converted_through_the_server_anchor(wall: datetime,
     assert bs.broker_to_utc(wall) == utc
 
 
-def test_no_anchor_means_no_age_never_a_broker_stamp_read_as_utc(desk: dict[str, Path],
-                                                                  monkeypatch) -> None:
+def test_no_anchor_means_no_age_never_a_broker_stamp_read_as_utc(
+        desk: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bs, "ANCHOR", None)
     doc = bs.measure(**desk, now=NOW)
     m1 = {(r["symbol"], r["timeframe"]): r for r in doc["bars"]}[("XAUUSD", "M1")]
@@ -167,8 +167,8 @@ def test_footer_without_statistics_reads_only_the_last_row_group(tmp_path: Path)
     assert m["wall"] == datetime(2026, 10, 21, 10, 0) and m["row_count"] == 40
 
 
-def test_an_oversized_row_group_without_statistics_is_not_read(tmp_path: Path,
-                                                               monkeypatch) -> None:
+def test_an_oversized_row_group_without_statistics_is_not_read(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     p = tmp_path / "AUDUSD_M5.parquet"
     _bars(p, "2026-10-21 10:00", 40, "time", row_group=40, stats=False)
     monkeypatch.setattr(bs, "FALLBACK_MAX_ROWS", 10)
@@ -219,8 +219,8 @@ def test_unreadable_input_is_unmeasured_never_fresh(tmp_path: Path) -> None:
     assert gone["summary"]["verdict"] == "UNMEASURED" and gone["notes"]["bars_reason"]
 
 
-def test_a_bad_tape_state_entry_costs_its_own_row_only(desk: dict[str, Path], tmp_path: Path,
-                                                       monkeypatch) -> None:
+def test_a_bad_tape_state_entry_costs_its_own_row_only(
+        desk: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Audit: NaN raised ValueError and 1e20 OSError, and the whole report was not written."""
     state = json.loads(desk["tape_state"].read_text("utf-8"))
     state.update({"NANSYM": {"last_tick_ms": float("nan")},
@@ -245,8 +245,8 @@ def test_a_bad_tape_state_entry_costs_its_own_row_only(desk: dict[str, Path], tm
         assert "tape_state_last_tick" not in tape[sym]
 
 
-def test_account_like_names_and_keys_never_publish(desk: dict[str, Path], tmp_path: Path,
-                                                   monkeypatch) -> None:
+def test_account_like_names_and_keys_never_publish(
+        desk: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (desk["ticks"] / FAKE_ACCOUNT).mkdir()
     _ticks(desk["ticks"] / FAKE_ACCOUNT / "2026-10-21.parquet", _ms(datetime(2026, 10, 21, 9)))
     _ticks(desk["ticks"] / "XAUUSD" / "55512345.parquet", _ms(datetime(2026, 10, 21, 9)))
@@ -469,8 +469,8 @@ def test_v21_error_fields_carry_type_and_errno_never_a_path(tmp_path: Path) -> N
     assert "str(exc)[" not in src and ": {exc}" not in src
 
 
-def test_v21_unknown_market_state_never_gets_the_weekend_allowance(tmp_path: Path,
-                                                                   monkeypatch) -> None:
+def test_v21_unknown_market_state_never_gets_the_weekend_allowance(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(health, "_market_closed", lambda now: None)
     sunday = datetime(2026, 10, 25, 12, 0, tzinfo=UTC)
     f = _findings(_report(tmp_path, bar_age=40.0, tick_age=1.0, generated=sunday), sunday)
@@ -573,7 +573,8 @@ def test_v21_dst_check_agrees_with_the_anchor_and_catches_a_european_clock(tmp_p
     assert before["window_complete"] is False
 
 
-def test_v21_dst_check_cli_is_read_only(tmp_path: Path, capsys) -> None:
+def test_v21_dst_check_cli_is_read_only(tmp_path: Path,
+                                        capsys: pytest.CaptureFixture[str]) -> None:
     uni = tmp_path / "u"
     uni.mkdir()
     _h1_week(uni / "EURUSD_H1.parquet", "2026-03-16 00:00")
@@ -586,3 +587,50 @@ def test_v21_dst_check_cli_is_read_only(tmp_path: Path, capsys) -> None:
     assert rep["verdict"] == "AGREES" and rep["schema"] == "bars_state_dst_check/1"
     assert bs.main(["--dst-check", "2026-10-26", "2026-10-30", "--universe", str(tmp_path / "x"),
                     "--dst-symbols", "EURUSD"]) == 2, "nothing on disk is UNMEASURED, exit 2"
+
+
+# ------------------------------------------------------------------ v2.3
+def test_v23_iso_microseconds_survive_and_real_runs_do_not() -> None:
+    reason = ("future-dated stamp 2026-10-28T12:00:00.123456+00:00 "
+              "(now 2026-10-28T09:00:00.654321+00:00)")
+    assert bs._scrub({"reason": reason}) == {"reason": reason}
+    for raw, want in (("acct.5551234", f"acct.{bs.REDACTED}"),
+                      ("12345.678901", f"{bs.REDACTED}.{bs.REDACTED}"),
+                      ("x5551234y", f"x{bs.REDACTED}y"),
+                      ("12:00:00.123456 then 5551234", f"12:00:00.123456 then {bs.REDACTED}"),
+                      ("1234 and 99999", f"1234 and {bs.REDACTED}")):
+        assert bs._redact_digits(raw) == want, raw
+    # A whole run is one redaction: no lookbehind may split it and leak a prefix.
+    assert bs._redact_digits("55512345678") == bs.REDACTED
+    # The report's own sanity reason quotes microseconds; the fence leaves it intact.
+    now = datetime(2026, 10, 28, 9, 0, 0, 654321, tzinfo=UTC)
+    _, why = bs.sanity(datetime(2026, 10, 28, 15, 0, 0, 123456), now)
+    assert why and ".123456" in why and bs._scrub({"r": why}) == {"r": why}
+
+
+def test_v23_2026_10_28_is_pinned_literally() -> None:
+    """2026-10-28, the Wednesday of the October gap week: Europe is back on UTC+2 (10-25), New
+    York is on EDT until 11-01, so the server (NY + 7h) is UTC+3 -- an hour off a European
+    reading of the broker clock -- and e8_guard's server-day roll must agree with this file."""
+    from zoneinfo import ZoneInfo
+
+    from prop import e8_guard
+    day = datetime(2026, 10, 28).date()
+    assert day.isoformat() == "2026-10-28" and day.weekday() == 2
+    assert bs.ANCHOR is not None
+    assert bs._anchor_offset_h(day, bs.ANCHOR) == 3.0
+    athens = datetime(2026, 10, 28, 12, tzinfo=UTC).astimezone(ZoneInfo(bs.EURO_WALL_TZ))
+    assert athens.utcoffset() == timedelta(hours=2)
+    assert bs.broker_to_utc(datetime(2026, 10, 28, 12, 0)) == datetime(2026, 10, 28, 9, 0,
+                                                                      tzinfo=UTC)
+    assert bs.utc_to_broker(datetime(2026, 10, 28, 9, 0, tzinfo=UTC)) == datetime(2026, 10, 28,
+                                                                                 12, 0)
+    # Server midnight 2026-10-29 00:00 is 2026-10-28 21:00Z, where e8_guard rolls its day too.
+    roll = bs.broker_to_utc(datetime(2026, 10, 29, 0, 0))
+    assert roll == datetime(2026, 10, 28, 21, 0, tzinfo=UTC)
+    assert e8_guard.server_day(roll - timedelta(seconds=1)) == "2026-10-28"
+    assert e8_guard.server_day(roll) == "2026-10-29"
+    assert e8_guard.server_offset_hours(datetime(2026, 10, 28, 12, tzinfo=UTC)) == 3
+    assert health._market_closed(datetime(2026, 10, 28, 9, 0, tzinfo=UTC)) is False
+    wk = bs.fx_week_bounds(day - timedelta(days=day.weekday()), None)
+    assert wk == (datetime(2026, 10, 26, 0, 0), datetime(2026, 10, 31, 0, 0))

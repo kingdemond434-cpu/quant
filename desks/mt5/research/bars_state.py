@@ -103,9 +103,12 @@ BROKER_MAX_LEAD = timedelta(hours=3)
 #: A summary verdict reads MEASURED only when at least this share of its rows measured.
 MEASURED_SHARE = 0.8
 #: A run of this many digits or more, anywhere in a name, key or string, is treated as an account
-#: number and redacted.
+#: number and redacted. The run is matched WHOLE (`(?<!\d)`), and the one run that is never an
+#: account is exempt: the fractional seconds of an ISO time (`12:00:00.123456`), which the sanity
+#: reasons quote (v2.3). Only `:SS.` exempts it, so a dotted `acct.5551234` or `12345.678901`
+#: is still redacted (a bare `(?<![\d.])` would have let any dot shield an account number).
 ACCOUNT_LIKE_DIGITS = 5
-_DIGIT_RUN = re.compile(rf"\d{{{ACCOUNT_LIKE_DIGITS},}}")
+_DIGIT_RUN = re.compile(rf"(?<!\d)(?<!:\d\d\.)\d{{{ACCOUNT_LIKE_DIGITS},}}")
 REDACTED = "<redacted-numeric>"
 #: Numeric fields this organ emits as MEASUREMENTS; a number under any other key with
 #: ACCOUNT_LIKE_DIGITS or more integer digits is redacted like a string would be.
