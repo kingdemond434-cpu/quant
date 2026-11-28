@@ -884,3 +884,176 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_a_cancelled_run_on_a_cleared_head_is_rerun_whoever_cancelled_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """2026-11-17: #1214 and #1217 (CLEARed, approved) sat at "CI failed: cancelled" after a
+    cancel of a run with a started job; rule 4 only re-runs never-started runs. Rule 5 re-runs a
+    cancelled run on a CLEARed current head, once per attempt, below MAX_CLEARED_ATTEMPT."""
+    lf = _lf()
+    lf._NUMBERS.update({"c": 7, "u": 8})
+    heads = {"c": "abcdef1234", "u": "1234abcd"}
+
+    def run(rid: int, b: str, sha: str, attempt: int = 1, age: int = 30) -> dict[str, Any]:
+        return {"id": rid, "event": "pull_request", "status": "completed",
+                "conclusion": "cancelled", "head_branch": b, "head_sha": sha,
+                "run_attempt": attempt, "workflow_id": 1, "created_at": _iso(age)}  # fmt: skip
+
+    got = [run(1, "c", "abcdef1234"), run(2, "u", "1234abcd"), run(3, "c", "oldsha"),
+           run(4, "c", "abcdef1234", age=60)]  # fmt: skip
+    cands = lf.cleared_candidates(NOW, got, heads)
+    assert [r["id"] for r in cands] == [1, 2]  # 3 is a stale head; 4 is older, same workflow
+    assert lf.cleared_candidates(NOW, [run(1, "c", "abcdef1234", attempt=3)], heads) == []
+    assert lf.cleared_candidates(NOW, [run(1, "c", "abcdef1234", age=25 * 60)], heads) == []
+    assert [r["id"] for r in lf.cleared_candidates(NOW, got, heads, owned={1})] == [2]
+
+    note = {"body": "AUDIT CLEAR abcdef1", "author_association": "OWNER", "created_at": "t",
+            "updated_at": "t"}  # fmt: skip
+    posts: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        if method == "POST":
+            posts.append(path)
+            return None
+        if "/issues/7/" in path:
+            return [note]
+        if "/issues/8/" in path:
+            return []
+        if "?head_sha=" in path:
+            return {"workflow_runs": [got[0]]}
+        rid = int(path.rsplit("/", 1)[1])
+        return {"status": "completed", "conclusion": "cancelled", "id": rid}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf._rerun_cleared("o/r", NOW, heads, set(), lambda: False, got) == 1
+    assert posts == ["repos/o/r/actions/runs/1/rerun"]  # the uncleared head's run is left alone
+
+
+def test_rule_2c_a_live_run_waiting_on_its_promote_job_puts_pr_runs_behind_it() -> None:
+    """2026-11-17: 9ce7d3f27's promote job (the one that cuts the release) waited from 19:09Z
+    behind 281 queued runs while its run read in_progress, so rule 2 never saw it."""
+    lf = _lf()
+    live_sha = "9ce7d3f27" + "0" * 31
+    t = lambda m: (NOW - timedelta(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    running = [
+        {
+            "id": 7,
+            "event": "push",
+            "head_branch": lf.LIVE,
+            "head_sha": live_sha,
+            "status": "in_progress",
+            "run_started_at": t(200),
+        },
+        {"id": 8, "event": "pull_request", "head_branch": lf.LIVE, "head_sha": "x"},
+        {"id": 9, "event": "push", "head_branch": lf.LIVE, "head_sha": "y"},
+    ]
+    jobs = {
+        7: [
+            {"status": "completed", "created_at": t(200), "runner_name": "r1"},
+            {"status": "queued", "created_at": t(80), "runner_name": None},
+        ],
+        8: [{"status": "queued", "created_at": t(90)}],
+        9: [{"status": "in_progress", "created_at": t(10), "runner_name": "r2"}],
+    }
+    got = lf.live_waiting(running, lambda rid: jobs[rid])
+    assert [g["id"] for g in got] == [7] and got[0]["run_started_at"] == t(80)
+    before = {
+        "id": 2,
+        "event": "pull_request",
+        "head_branch": "claude/a",
+        "head_sha": "a",
+        "status": "queued",
+        "run_started_at": t(120),
+    }
+    after = {
+        "id": 3,
+        "event": "pull_request",
+        "head_branch": "claude/b",
+        "head_sha": "b",
+        "status": "queued",
+        "run_started_at": t(30),
+    }
+    heads = {"claude/a": "a", "claude/b": "b"}
+    assert lf.plan(NOW, [*got, before, after], heads) == ([], [2])
+    assert lf.plan(NOW, [before, after], heads) == ([], [])  # without 2c nothing moved
+
+
+def test_rule_2c_times_a_requeued_live_run_from_its_waiting_job_not_its_start() -> None:
+    lf = _lf()
+    t = lambda m: (NOW - timedelta(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    run = {
+        "id": 7,
+        "event": "push",
+        "head_branch": lf.LIVE,
+        "head_sha": "s",
+        "status": "queued",
+        "run_started_at": t(300),
+    }  # seal done; promote queued at t(80)
+    got = lf.live_waiting(
+        [run],
+        lambda rid: [
+            {"status": "completed", "created_at": t(300), "runner_name": "r"},
+            {"status": "queued", "created_at": t(80), "runner_name": ""},
+        ],
+    )
+    pr = {
+        "id": 2,
+        "event": "pull_request",
+        "head_branch": "claude/a",
+        "head_sha": "a",
+        "status": "queued",
+        "run_started_at": t(120),
+    }  # after the run started, before promote
+    assert lf.plan(NOW, [run, pr], {"claude/a": "a"}) == ([], [])  # rule 2 alone: missed
+    assert lf.plan(NOW, [run, *got, pr], {"claude/a": "a"}) == ([], [2])
+
+
+def test_a_cleared_pr_run_waiting_on_a_chained_job_goes_first() -> None:
+    """Rule 2d (21:39Z): #1244's coverage-floor waited behind PR runs while its run read
+    in_progress. A CLEARed PR's waiting job moves earlier PR runs behind it; the started run itself
+    is never cancelled, and an uncleared started run neither waits first nor is moved."""
+    lf = _lf()
+    now = datetime(2026, 11, 17, 21, 39, tzinfo=UTC)
+    fix = {
+        "id": 1,
+        "event": "pull_request",
+        "status": "in_progress",
+        "head_branch": "fix",
+        "head_sha": "f1",
+        "created_at": "2026-11-17T18:20:00Z",
+        "run_started_at": "2026-11-17T18:20:00Z",
+    }
+    other = {**fix, "id": 2, "head_branch": "other", "head_sha": "o1"}
+    jobs = {
+        1: [
+            {"status": "completed", "runner_name": "r1", "created_at": "2026-11-17T18:20:23Z"},
+            {"status": "queued", "runner_name": None, "created_at": "2026-11-17T21:09:50Z"},
+        ],
+        2: [
+            {"status": "queued", "runner_name": None, "created_at": "2026-11-17T20:00:00Z"},
+            {"status": "in_progress", "runner_name": "r2", "created_at": "2026-11-17T20:00:00Z"},
+        ],
+    }
+    waiting = lf.pr_waiting([fix, other], lambda rid: jobs[rid])
+    assert [(r["id"], r["run_started_at"]) for r in waiting] == [
+        (1, "2026-11-17T21:09:50Z"),
+        (2, "2026-11-17T20:00:00Z"),
+    ]
+    ahead_run = {
+        "id": 3,
+        "event": "pull_request",
+        "status": "queued",
+        "head_branch": "b",
+        "head_sha": "b1",
+        "created_at": "2026-11-17T20:40:00Z",
+        "run_started_at": "2026-11-17T20:40:00Z",
+    }
+    heads = {"fix": "f1", "other": "o1", "b": "b1"}
+    waste, ahead = lf.plan(now, [ahead_run, *waiting], heads, cleared=frozenset({"fix"}))
+    assert waste == [] and ahead == [3]
+    # without the CLEAR nothing waits first, and the started runs are never candidates
+    assert lf.plan(now, [ahead_run, *waiting], heads) == ([], [])
+    stale = {**waiting[1], "head_sha": "old"}
+    assert lf.plan(now, [stale], {**heads, "other": "o2"}) == ([], [])
