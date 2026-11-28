@@ -579,6 +579,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the 120,000-verdict measurement found (18% of the judge on a family banned from capital,
     # the three largest mined populations barely judged at all).
     ("check_judge_coverage.py", ("--require-state",)),
+    # the live half of the world causal graph: on the box the `causal_graph` leg runs hourly, so
+    # an absent or stale WORLD_CAUSAL_GRAPH.json means it stopped (it sat at 2026-09-08 for two
+    # months with nothing red), and a RED zero_admission block means it is being fed and admits
+    # nothing. The admission rule is not read here; red asks for a diagnosis, never a lower bar.
+    ("check_world_causal_graph.py", ("--require-state",)),
     # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
     # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
     # with a next run inside the hour, that HEAD descends from the branch tip it should have

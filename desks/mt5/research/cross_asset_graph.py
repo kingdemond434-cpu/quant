@@ -34,7 +34,13 @@ from research import proposer_common as pc  # noqa: E402
 
 SOURCE = "cross_asset_graph"
 GRAPH = _DESK / "reports" / "CROSS_ASSET_GRAPH.json"
-REPORT = _DESK / "reports" / "cross_asset_graph.json"
+#: THE PROPOSER'S OWN SUMMARY, UNDER ITS OWN NAME (2026-11-10). It was
+#: `reports/cross_asset_graph.json`, which differs from GRAPH above only by case. The trading box
+#: is Windows, where those are ONE file: the summary, written second, replaced the edge list on
+#: every pass, so every reader of CROSS_ASSET_GRAPH.json (world_causal_graph, macro_state_engine,
+#: drift_monitor, tier_s, tier1_scorecard, graph_edges) found `edges: <a count>` where it
+#: expected the edges -- which is why the world causal graph has had no cross-asset candidates.
+REPORT = _DESK / "reports" / "CROSS_ASSET_PROPOSER.json"
 ENTRY_Z = (1.5, 2.0)
 HOLDS = (4, 8)
 
