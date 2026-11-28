@@ -74,6 +74,12 @@ def main() -> int:
     parser.add_argument("--successor")
     parser.add_argument("--ttl-seconds", type=int, default=900)
     parser.add_argument("--note", default="")
+    parser.add_argument(
+        "--takeover-epoch",
+        type=int,
+        help="claim only: reclaim this controller's own unexpired lease at exactly this epoch "
+        "(the caller has proved its holder is dead)",
+    )
     args = parser.parse_args()
     try:
         if args.action == "status":
@@ -81,7 +87,11 @@ def main() -> int:
         elif args.action == "claim":
             if not args.controller:
                 raise ValueError("--controller is required to claim")
-            result = claim(args.controller, ttl_seconds=args.ttl_seconds)
+            result = claim(
+                args.controller,
+                ttl_seconds=args.ttl_seconds,
+                takeover_epoch=args.takeover_epoch,
+            )
         else:
             controller, epoch, token = _credentials(args)
             if args.action == "heartbeat":
