@@ -3,7 +3,8 @@
 A plain ``python -m http.server`` dies when the terminal closes (the "can't reach localhost" error).
 This is a threaded, no-cache static server bound to a fixed port, meant to run as a background /
 scheduled task so the dashboards (index/research/factory + the *.json the JS fetches) are available
-24/7 and always show fresh data. Read-only; serves the web/ directory only.
+24/7 and always show fresh data. Read-only; serves the web/ directory only. A request never runs anything: the page's data is
+rebuilt on the box's own clock (MT5-DeskState), not by whoever asks.
 
     python scripts/serve_dashboard.py --port 8080
 """
@@ -17,14 +18,13 @@ import secrets
 import socket
 import subprocess
 import sys
-import threading
-import time
 from contextlib import suppress
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from typing import BinaryIO
+from urllib.parse import parse_qs, unquote, urlsplit
 
 _WEB = Path(__file__).resolve().parent.parent / "web"
 #: The dashboard shows live equity, P&L and open positions. The moment this server is reachable
@@ -81,10 +81,51 @@ def _lan_ip() -> str:
         return "127.0.0.1"
 
 
+# ONLY THESE FILES ARE SERVED (Audit HOLD 2026-11-18). web/ on the box holds organ files that have
+# never been published; with no token, "everything under web/" is a leak, so the surface is an
+# allowlist: the pages and the two data files they fetch. Anything else, and every directory
+# listing, is a 404.
+PUBLIC_FILES = frozenset(
+    {
+        "index.html",
+        "desk.html",
+        "desk_pro.html",
+        "research.html",
+        "dashboard.html",
+        "desk_state.json",
+        "equity_history.jsonl",
+    }
+)
+
+
+def _public_name(raw_path: str) -> str | None:
+    """The allowlisted file name a request path maps to, or None. Never touches the disk."""
+    path = unquote(urlsplit(raw_path).path)
+    name = path.lstrip("/")
+    return name if name in PUBLIC_FILES else None
+
+
 class _Handler(SimpleHTTPRequestHandler):
-    _refresh_lock = threading.Lock()
-    _last_refresh = 0.0
     token = ""
+
+    def send_head(self) -> BinaryIO | None:
+        if unquote(urlsplit(self.path).path) == "/":
+            # The bare address opens the page: a redirect to an allowlisted name, nothing read.
+            self.send_response(302)
+            self.send_header("Location", "/desk.html")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return None
+        name = _public_name(self.path)
+        if name is None:
+            self.send_error(404, "Not found")
+            return None
+        self.path = "/" + name
+        return super().send_head()
+
+    def list_directory(self, path: str | os.PathLike[str]) -> BinaryIO | None:  # type: ignore[override]
+        self.send_error(404, "Not found")
+        return None
 
     require_token = False
 
@@ -102,7 +143,7 @@ class _Handler(SimpleHTTPRequestHandler):
         Compared with hmac.compare_digest -- a token check that leaks timing is not a check.
         """
         if not self.token:
-            return True                      # no token configured -> loopback-only deployments
+            return True  # no token configured -> loopback-only deployments
         # Loopback is the whole 127.0.0.0/8 block plus ::1 -- not just the one literal. A
         # hardcoded ["127.0.0.1"] both misses 127.0.1.1 (what this box's hostname resolves to)
         # and reads as stricter than it is.
@@ -141,23 +182,9 @@ class _Handler(SimpleHTTPRequestHandler):
         q = parse_qs(urlsplit(self.path).query)
         if (q.get("k") or [""])[0] and self.token:
             self._set_cookie = True
-        if self.path.split("?", 1)[0] == "/zentech_state.json":
-            # The browser polls every 15 seconds. Rebuild from canonical artifacts before each
-            # response (coalescing simultaneous tabs) so a polished view can never cache a stale
-            # account snapshot and call it live.
-            with self._refresh_lock:
-                now = time.monotonic()
-                if now - self._last_refresh >= 2.0:
-                    subprocess.run(
-                        [sys.executable, str(_WEB.parent / "scripts" /
-                                              "build_zentech_state.py")],
-                        cwd=str(_WEB.parent), check=False, timeout=10,
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    )
-                    type(self)._last_refresh = now
         super().do_GET()
 
-    def end_headers(self) -> None:                      # always serve fresh JSON, never stale cache
+    def end_headers(self) -> None:  # always serve fresh JSON, never stale cache
         self.send_header("Cache-Control", "no-store, max-age=0")
         # NOT "*" any more: with a token in play, a wildcard CORS header invites any page the
         # browser visits to read this desk's equity through an authenticated cookie.
@@ -169,12 +196,13 @@ class _Handler(SimpleHTTPRequestHandler):
         # keep crawlers from turning that obscurity into a search result.
         self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
         if getattr(self, "_set_cookie", False):
-            self.send_header("Set-Cookie",
-                             f"dk={self.token}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax")
+            self.send_header(
+                "Set-Cookie", f"dk={self.token}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax"
+            )
             self._set_cookie = False
         super().end_headers()
 
-    def log_message(self, *args: object) -> None:      # quiet
+    def log_message(self, *args: object) -> None:  # quiet
         return
 
 
@@ -182,25 +210,34 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8080)
     ap.add_argument("--host", default="0.0.0.0")  # noqa: S104 -- deliberate LAN bind; the TOKEN is the control, the firewall is the second one
-    ap.add_argument("--no-auth", action="store_true",
-                    help="serve without a token (loopback-only deployments)")
-    ap.add_argument("--require-token", action="store_true",
-                    help="require the token even from loopback -- MANDATORY behind a tunnel or "
-                         "proxy, whose requests reach this origin as 127.0.0.1")
+    ap.add_argument(
+        "--no-auth", action="store_true", help="serve without a token (loopback-only deployments)"
+    )
+    ap.add_argument(
+        "--require-token",
+        action="store_true",
+        help="require the token even from loopback -- MANDATORY behind a tunnel or "
+        "proxy, whose requests reach this origin as 127.0.0.1",
+    )
     args = ap.parse_args()
     _Handler.token = "" if args.no_auth else _token()
     _Handler.require_token = bool(args.require_token) and not args.no_auth
     _WEB.mkdir(parents=True, exist_ok=True)
     # Build once before serving so localhost never opens on a missing/stale state file. The daily
     # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.
-    subprocess.run([sys.executable, str(_WEB.parent / "scripts" / "build_zentech_state.py")],
-                   cwd=str(_WEB.parent), check=False)
+    subprocess.run(
+        [sys.executable, str(_WEB.parent / "scripts" / "build_zentech_state.py")],
+        cwd=str(_WEB.parent),
+        check=False,
+    )
     handler = partial(_Handler, directory=str(_WEB))
     httpd = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
-          f"  local   : http://127.0.0.1:{args.port}/desk.html\n"
-          f"  network : http://{_lan_ip()}:{args.port}/desk.html\n"
-          f"  auth    : {'DISABLED (--no-auth)' if args.no_auth else 'token required off-loopback; key in ' + str(_TOKEN_FILE)}")
+    print(
+        f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
+        f"  local   : http://127.0.0.1:{args.port}/desk.html\n"
+        f"  network : http://{_lan_ip()}:{args.port}/desk.html\n"
+        f"  auth    : {'DISABLED (--no-auth)' if args.no_auth else 'token required off-loopback; key in ' + str(_TOKEN_FILE)}"
+    )
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
