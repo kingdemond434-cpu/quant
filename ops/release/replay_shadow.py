@@ -423,6 +423,224 @@ def exempt_scripts(
     return scripts - money_scripts(trees, closure, listed)
 
 
+#: THE BOX'S PUBLISH ALLOWLIST, JUDGED STATICALLY (Governance ruling 2026-11-17 20:45Z, restated
+#: 2026-11-18 13:51Z). sync_shadow_to_git.ps1 is a money-path script the replay never runs, so a PR
+#: that only adds a report to the list the box publishes read UNMEASURED for ever (#1307, #1314,
+#: #1038). The script is MEASURED, with its own text as the evidence, only when the PR's change is
+#: nothing but literal path lines (and comments) added inside its `$reportPaths = @(...)` block:
+#: every byte outside the block identical, no base entry removed or reordered, and each new path
+#: plain ASCII, a JSON report under the base tree's STATE_PREFIXES, never GOVERNED_STATE, never a
+#: secret-shaped name, with its exact `!<path>` line in the PR's .gitignore, and no added line that
+#: carries a host, address, absolute path, account-sized number, money amount or key-shaped token.
+#: Anything else stays UNMEASURED (fail closed). The rules read the BASE tree's libs/ops/release.py,
+#: so a PR can never widen what it is judged against.
+SYNC_SCRIPT = "desks/mt5/scripts/sync_shadow_to_git.ps1"
+GITIGNORE = ".gitignore"
+RELEASE_PY = "libs/ops/release.py"
+_ALLOW_OPEN = "$reportPaths = @("
+_ALLOW_PATH = re.compile(r'^\s*"([A-Za-z0-9_][A-Za-z0-9_./-]*)"(,?)\s*$')
+#: A comment is `#` then whitespace (or nothing): `#Requires`, `#region` and every other directive
+#: have no space after the `#`, and `#Requires` works on any line (#1359 audit MF).
+_ALLOW_COMMENT = re.compile(r"^[ \t]*#(?:[ \t]|$)")
+#: A comment line may never open or close a block comment, nor be a directive however spaced.
+_ALLOW_COMMENT_BAD = re.compile(r"<#|#>|^[ \t]*#[ \t]*requires\b", re.IGNORECASE)
+#: Any control character but a tab (#1359 audit SF1: the static view and the parser must agree).
+_CONTROL = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")
+_ALLOW_EXTS = (".json", ".jsonl")
+_SECRET_NAME = re.compile(
+    r"secret|credential|passw|token|api.?key|private|login|account|cookie|session|auth|"
+    r"\.pem$|\.key$|\.pfx$|\.p12$|\.env",
+    re.IGNORECASE,
+)
+#: What a published line may never carry (the public repo rule: no hosts, paths or money).
+_PUBLIC_LEAK = re.compile(
+    r"\b\d{1,3}(?:\.\d{1,3}){3}\b"  # an IPv4 address
+    r"|[a-z][a-z0-9+.-]*://"  # a URL
+    r"|\b[A-Za-z]:[\\/]|\\\\|/home/|/root/|/Users/|C:\\"  # an absolute path
+    r"|\b[\w.+-]+@[\w-]+\.[\w.]+\b"  # an e-mail address
+    r"|\b[\w-]+\.(?:com|net|org|io|xyz|ai|dev|cloud|co|uk)\b"  # a host name
+    r"|\d{6,}"  # an account- or order-sized number
+    r"|[$\u00a3\u20ac]\s?\d"  # a money amount
+    r"|\b(?:ghp|gho|ghs|sk|pk|xox[abp]|AKIA)[-_][A-Za-z0-9]",  # a known key prefix
+    re.IGNORECASE,
+)
+#: A key- or token-shaped word: 20+ letters and digits with both in it (path words are split on
+#: `/ . _ -` first, so a long report name never reads as one).
+_TOKEN_WORD = re.compile(r"^(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9+=]{20,}$")
+
+
+def _leaks(line: str) -> bool:
+    """True when a line published to the public repo carries what it never may."""
+    return bool(_PUBLIC_LEAK.search(line)) or any(
+        _TOKEN_WORD.match(w) for w in re.split(r"[\s/._\-\"',;:()]+", line)
+    )
+
+
+def _raw_lines(tree: Path, path: str) -> list[str] | None:
+    """The file's lines exactly as committed: strict UTF-8, no normalising (so a look-alike
+    character can never pass for the ASCII it resembles), split on "\n" only with one trailing
+    "\r" dropped, as PowerShell splits them (#1359 audit SF1); None when absent or not UTF-8."""
+    if _is_git(tree):
+        p = subprocess.run(
+            ["git", "-C", str(tree), "show", f"HEAD:{path}"], capture_output=True, check=False
+        )
+        raw = p.stdout if p.returncode == 0 else None
+    else:
+        f = tree / path
+        raw = f.read_bytes() if f.is_file() else None
+    if raw is None:
+        return None
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in text.split("\n")]
+    return lines[:-1] if lines and lines[-1] == "" else lines
+
+
+def _release_rules(tree: Path) -> tuple[tuple[str, ...], set[str], tuple[str, ...]] | None:
+    """STATE_PREFIXES, GOVERNED_STATE_FILES and GOVERNED_STATE_GLOBS read by AST from the tree's
+    libs/ops/release.py (names bound to string literals at module level resolved); None when any
+    of the three is not a literal this can read."""
+    src = read(tree, RELEASE_PY)
+    if src is None:
+        return None
+    try:
+        mod = ast.parse(src)
+    except SyntaxError:
+        return None
+    consts: dict[str, str] = {}
+    nodes: dict[str, ast.expr] = {}
+    for n in mod.body:
+        tgt = val = None
+        if isinstance(n, ast.Assign) and len(n.targets) == 1:
+            tgt, val = n.targets[0], n.value
+        elif isinstance(n, ast.AnnAssign) and n.value is not None:
+            tgt, val = n.target, n.value
+        if isinstance(tgt, ast.Name) and val is not None:
+            nodes[tgt.id] = val
+            if isinstance(val, ast.Constant) and isinstance(val.value, str):
+                consts[tgt.id] = val.value
+
+    def strs(name: str) -> list[str] | None:
+        node = nodes.get(name)
+        if isinstance(node, ast.Call) and node.args and getattr(node.func, "id", "") in {
+            "frozenset", "set", "tuple",
+        }:  # fmt: skip
+            node = node.args[0]
+        if not isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+            return None
+        out = []
+        for e in node.elts:
+            if isinstance(e, ast.Constant) and isinstance(e.value, str):
+                out.append(e.value)
+            elif isinstance(e, ast.Name) and e.id in consts:
+                out.append(consts[e.id])
+            else:
+                return None
+        return out
+
+    prefixes, files, globs = (
+        strs("STATE_PREFIXES"), strs("GOVERNED_STATE_FILES"), strs("GOVERNED_STATE_GLOBS")
+    )  # fmt: skip
+    if not prefixes or files is None or globs is None:
+        return None
+    return tuple(prefixes), set(files), tuple(globs)
+
+
+def _allow_block(lines: list[str]) -> tuple[int, int] | None:
+    """(open, close) line indexes of the one `$reportPaths = @(` block, else None."""
+    opens = [i for i, ln in enumerate(lines) if ln.strip() == _ALLOW_OPEN]
+    if len(opens) != 1:
+        return None
+    for j in range(opens[0] + 1, len(lines)):
+        if lines[j].strip() == ")":
+            return opens[0], j
+    return None
+
+
+def _allow_entries(block: list[str]) -> tuple[list[str], list[str]] | None:
+    """(paths in order, their comma marks) for a block of only paths, comments and blanks."""
+    paths: list[str] = []
+    commas: list[str] = []
+    for ln in block:
+        if not ln.isascii() or _CONTROL.search(ln):
+            return None
+        if not ln.strip() or (_ALLOW_COMMENT.match(ln) and not _ALLOW_COMMENT_BAD.search(ln)):
+            continue
+        m = _ALLOW_PATH.match(ln)
+        if m is None:
+            return None
+        paths.append(m.group(1))
+        commas.append(m.group(2))
+    return paths, commas
+
+
+def allowlist_problems(base: Path, head: Path) -> list[str]:
+    """Why the PR's change to SYNC_SCRIPT is NOT only report paths added to its publish allowlist
+    (empty: it is, and the script is measured statically). Fails closed on anything unreadable."""
+    import fnmatch
+    from collections import Counter
+
+    b_lines, h_lines = _raw_lines(base, SYNC_SCRIPT), _raw_lines(head, SYNC_SCRIPT)
+    if b_lines is None or h_lines is None:
+        return ["the script is missing or not UTF-8 on one side"]
+    rules = _release_rules(base)
+    if rules is None:
+        return [f"the base {RELEASE_PY} state rules are unreadable"]
+    prefixes, governed, globs = rules
+    b_blk, h_blk = _allow_block(b_lines), _allow_block(h_lines)
+    if b_blk is None or h_blk is None:
+        return ["no single $reportPaths block on one side"]
+    out: list[str] = []
+    if (
+        b_lines[: b_blk[0] + 1] != h_lines[: h_blk[0] + 1]
+        or b_lines[b_blk[1] :] != h_lines[h_blk[1] :]
+    ):
+        out.append("a line outside the $reportPaths block changed")
+    b_in, h_in = b_lines[b_blk[0] + 1 : b_blk[1]], h_lines[h_blk[0] + 1 : h_blk[1]]
+    b_ent, h_ent = _allow_entries(b_in), _allow_entries(h_in)
+    if b_ent is None or h_ent is None:
+        return [*out, "a $reportPaths line is not a plain path, comment or blank"]
+    (b_paths, _), (h_paths, h_commas) = b_ent, h_ent
+    if len(set(h_paths)) != len(h_paths):
+        out.append("a path is listed twice")
+    if h_commas and (h_commas[-1] or not all(h_commas[:-1])):
+        out.append("the list's commas are not one after every entry but the last")
+    if [p for p in h_paths if p in set(b_paths)] != b_paths:
+        out.append("a base entry was removed or reordered")
+    added = [p for p in h_paths if p not in set(b_paths)]
+    if not added:
+        out.append("no path was added")
+    gi = _raw_lines(head, GITIGNORE) or []
+    gi_base = Counter(_raw_lines(base, GITIGNORE) or [])
+    for p in added:
+        if not p.startswith(prefixes) or ".." in p.split("/") or "//" in p:
+            out.append(f"{p}: not under a state prefix")
+        if p in governed or any(
+            fnmatch.fnmatchcase(p, g) and p.count("/") == g.count("/") for g in globs
+        ):
+            out.append(f"{p}: governed state")
+        if _SECRET_NAME.search(p) or "/secrets/" in f"/{p}":
+            out.append(f"{p}: a secret-shaped name")
+        if not p.endswith(_ALLOW_EXTS):
+            out.append(f"{p}: not a JSON report")
+        if f"!{p}" not in gi:
+            out.append(f"{p}: no exact !{p} line in {GITIGNORE}")
+    new_lines = list((Counter(h_in) - Counter(b_in)).elements())
+    gi_added = list((Counter(gi) - gi_base).elements())
+    new_lines += gi_added
+    # #1359 audit SF2: the .gitignore may only gain the added paths' own `!p` lines and comments
+    if any(ln.strip() for ln in (gi_base - Counter(gi)).elements()):  # a blank line is inert
+        out.append(f"a {GITIGNORE} line was removed")
+    wanted = {f"!{p}" for p in added}
+    if any(ln not in wanted and ln.strip() and not ln.lstrip().startswith("#") for ln in gi_added):
+        out.append(f"a {GITIGNORE} line was added that is not an added path's own !path line")
+    if any(_leaks(ln) for ln in new_lines):
+        out.append("an added line carries a host, path, address, number, amount or key")
+    return out
+
+
 #: The box's task table. A data file under MONEY_PATH, so any change to it is money path, unless
 #: every line it changes is a TASK row that names nothing money (manifest_is_money): the rows for
 #: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
@@ -1220,10 +1438,16 @@ def compare(
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
+    allow_why = (
+        allowlist_problems(base, head)
+        if SYNC_SCRIPT in changed and SYNC_SCRIPT not in exempt and SYNC_SCRIPT not in covered
+        else None
+    )
     uncovered = sorted(
         f for f in changed
         if is_money(f, closure, exempt=exempt) and f not in covered
         and not (f == MANIFEST and rows_only)
+        and not (f == SYNC_SCRIPT and allow_why == [])
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
     problems += [
@@ -1263,6 +1487,9 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # the publish allowlist changed only in added report paths (allowlist_problems), or why not
+        "allowlist_measured": allow_why == [],
+        "allowlist_unmeasured": allow_why or [],
     }
 
 
