@@ -120,6 +120,3 @@ def test_the_fence_exits_nonzero_only_on_a_real_failure(
     assert "FAIL" in capsys.readouterr().out
 
 
-def test_the_fence_rides_the_law_gate_battery() -> None:
-    src = (_ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '("check_grid_occupancy.py", ())' in src

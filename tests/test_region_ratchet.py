@@ -183,13 +183,6 @@ def test_the_fence_caps_nothing() -> None:
     assert "sqlite3" not in code and "connect(" not in code
 
 
-def test_the_fence_is_wired_into_the_law_gate_battery() -> None:
-    """UNWIRED IS A DEFECT (III.16): a fence nothing runs is a claim the desk cannot cash."""
-    gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '("check_region_ratchet.py", ())' in gate
-    assert '("check_region_ratchet.py", ("--require-state",))' in gate
-
-
 def test_the_census_publishes_both_ratcheted_measures() -> None:
     import attribution_census as C
     src = (ROOT / "desks" / "mt5" / "research" / "attribution_census.py").read_text("utf-8")

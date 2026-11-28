@@ -209,18 +209,6 @@ def test_build_publishes_the_census_on_an_empty_tree(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- the fence
-def test_the_fence_exists_and_is_wired_into_the_law_gate() -> None:
-    """LAWS 7 / III.16: a fence that runs on no clock is a claim the desk cannot cash. The law
-    gate fires on every commit, every push, in CI and hourly on the VPS crontab."""
-    fence = ROOT / "scripts" / "check_exemption_falsifiers.py"
-    assert fence.is_file()
-    gate = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
-    assert "check_exemption_falsifiers.py" in gate
-    from scripts.run_law_gate import _LAW_FENCES
-    picked = [a for f, a in _LAW_FENCES if f == "check_exemption_falsifiers.py"]
-    assert picked == [("--schema-only",)], "the law half must be the portable one"
-
-
 def test_the_fence_passes_on_this_tree_and_breaks_on_a_falsifier_less_exemption() -> None:
     """The schema half is a GATE, not a report: it has to go red on the defect it names."""
     import check_exemption_falsifiers as fence

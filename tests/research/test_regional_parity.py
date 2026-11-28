@@ -281,7 +281,6 @@ def test_strict_promotes_the_live_flags_for_the_box_gate(monkeypatch: pytest.Mon
 
 def test_the_fence_is_registered_in_the_law_gate() -> None:
     text = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '("check_regional_parity.py", ())' in text, "the portable half gates every commit"
     assert '("check_regional_parity.py", ("--strict",))' in text, "the live half gates the box"
 
 

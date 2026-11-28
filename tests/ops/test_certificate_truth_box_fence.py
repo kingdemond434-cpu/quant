@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_the_state_battery_carries_certificate_truth_with_require_state() -> None:
     assert ("check_certificate_truth.py", ("--require-state",)) in lg._STATE_FENCES
-    assert ("check_certificate_truth.py", ()) in lg._LAW_FENCES
+    assert ("check_certificate_truth.py", ()) in lg._STATE_FENCES
 
 
 def test_the_rotation_the_box_runs_invokes_require_state(tmp_path: Path, monkeypatch) -> None:

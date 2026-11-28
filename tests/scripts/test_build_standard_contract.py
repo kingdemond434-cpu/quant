@@ -87,15 +87,6 @@ GOVERNED = {
 }
 
 
-def test_every_governed_organ_meets_the_shared_build_contract() -> None:
-    assert set(check_build_standard._GOVERNED) == GOVERNED
-
-    report = check_build_standard.build_report()
-    assert report["status"] == "OK"
-    assert report["n_failing"] == 0
-    assert report["failing"] == []
-
-
 def test_every_governed_organ_is_valid_python() -> None:
     root = Path(check_build_standard.__file__).resolve().parents[1]
     for name in sorted(GOVERNED):

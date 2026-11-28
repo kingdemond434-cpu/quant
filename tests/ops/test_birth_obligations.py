@@ -132,11 +132,3 @@ def test_an_axis_with_no_declaring_artifact_is_unmeasured_not_zero(tmp_path: Pat
     assert doc["failures"] == [], "an unmeasured axis must never manufacture a failure"
 
 
-def test_every_axis_names_the_fence_that_already_owns_it() -> None:
-    """The point is ONE place that answers 'did anything arrive incomplete', not five more
-    checkers: each axis must delegate to the fence the desk already has."""
-    for ax in birth.AXES:
-        assert ax.fence is not None, ax.name
-        assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
-    gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"

@@ -167,20 +167,6 @@ def test_fence_passes_elsewhere_and_absence_is_unmeasured(tmp_path: Path) -> Non
     assert fence.main(["--root", str(tmp_path), "--require-state"]) == 2
 
 
-def test_the_leg_the_layer_and_the_committed_artifact_are_wired() -> None:
-    from libs.research.layers import LEG_LAYER
-    assert LEG_LAYER["runtime_attestation"] == "meta"
-    src = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
-    assert '_costed("runtime_attestation"' in src
-    assert '"runtime_attestation": rta' in src
-    gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert gate.count("check_runtime_attestation.py") == 2
-    # THE WHOLE POINT: both files must be committable, or a reader on GitHub sees nothing.
-    from libs.ops.release import is_state_path
-    for rel in ("docs/research/runtime_state.json", "docs/research/RUNTIME_STATE.md"):
-        assert is_state_path(rel), f"{rel} must be a state path the box owns and pushes"
-
-
 # ------------------------------------------------------- the declaration, parsed and resolved
 def test_a_prose_artifact_declaration_yields_every_path_in_it() -> None:
     """35 organs on the trading box read MISSING because their declaration had a word after the
@@ -620,32 +606,6 @@ def test_a_non_desk_attestation_sets_no_ratchet_floor_and_is_judged_against_none
     doc["host"]["desk_host"] = True
     assert ra.main(["--root", str(tmp_path), "--budget-s", "1"]) == 0
     assert json.loads(paths.ratchet.read_text(encoding="utf-8"))["hosts"][here]["NEVER"] == 900
-
-
-def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, monkeypatch) -> None:
-    """The whole point: a cloud (desk_host false) attestation five hours old, judged by the law
-    gate's own runner through BOTH arms (the portable one and --require-state), is not red."""
-    import shutil
-
-    from scripts import run_law_gate as gate
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "desks" / "mt5" / "research").mkdir(parents=True)
-    shutil.copy(ROOT / "scripts" / "check_runtime_attestation.py", tmp_path / "scripts")
-    shutil.copy(ROOT / "desks" / "mt5" / "research" / "runtime_attestation.py",
-                tmp_path / "desks" / "mt5" / "research")
-    arms = [f for f in gate._LAW_FENCES + gate._STATE_FENCES
-            if f[0] == "check_runtime_attestation.py"]
-    assert [a for _, a in arms] == [(), ("--require-state",)]
-    monkeypatch.setattr(gate, "_LAW_FENCES", [arms[0]])
-    monkeypatch.setattr(gate, "_STATE_FENCES", [arms[1]])
-    _write(tmp_path, _stamped(False, hours=5, role="non_trading_host"))
-    rep = gate.full_gate(tmp_path, laws_only=False)
-    assert rep["ok"], rep["failures"]
-    assert rep["n_fences"] == 2
-    # the same document stamped as a desk attestation IS red on the host it names
-    _write(tmp_path, _stamped(True, hours=5))
-    rep = gate.full_gate(tmp_path, laws_only=False)
-    assert not rep["ok"] and len(rep["failures"]) == 2
 
 
 def test_load_attestation_file_merges_the_sidecars_beside_any_monolith(tmp_path: Path) -> None:

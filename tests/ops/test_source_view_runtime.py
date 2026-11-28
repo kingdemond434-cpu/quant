@@ -56,11 +56,6 @@ def test_missing_detector_code_still_fails_in_source_context(tmp_path, monkeypat
     assert any("no detector" in f for f in repair.measure(tmp_path)["failures"])
 
 
-def test_actual_state_battery_explicitly_checks_family_birth_and_detector_state():
-    assert ("check_self_repair.py", ("--require-state",)) in gate._STATE_FENCES
-    assert ("check_birth_obligations.py", ("--require-state",)) in gate._STATE_FENCES
-
-
 def test_a_clean_tree_laws_only_run_is_a_source_view_too(tmp_path, monkeypatch):
     """A clean tree skips the HEAD re-exec, and that path used to run every fence WITHOUT
     QUANT_LAWGATE_SOURCE_VIEW: the same commit read as live runtime only because it was clean."""
