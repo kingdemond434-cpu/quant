@@ -116,3 +116,50 @@ def test_a_verdict_with_no_stage_detail_is_not_a_member(tmp_path, monkeypatch):
     _write(tmp_path, monkeypatch,
            [{"cell": cid, "sym": "USDJPY", "family": "carry", "stages": {}}], [row])
     assert wsc.power_deficient() == {}
+
+
+def test_members_survive_a_sweep_that_deferred_them(tmp_path, monkeypatch):
+    """Box 2026-11-03: the latest sweep was mostly deferred, the compiler found 0 members. A cell
+    whose failed gates an EARLIER sweep recorded (the weak-signal book's store) stays a member;
+    a validity failure in the store still excludes it."""
+    keep = _row("EURUSD", "pca_residual", {"rr": 2.0})
+    drop = _row("EURUSD", "pca_residual", {"rr": 3.0})
+    ck, cd = cell_id({**keep, "sym": "EURUSD"}), cell_id({**drop, "sym": "EURUSD"})
+    _write(tmp_path, monkeypatch, [{"cell": ck, "sym": "EURUSD", "family": "pca_residual",
+                                    "terminal_gate": "NOT_RUN_BUILD_BUDGET_DEFERRED"}],
+           [keep, drop])
+    store = tmp_path / "failed_gates.json"
+    store.write_text(json.dumps({ck: ["deflated_sharpe"], cd: ["deflated_sharpe", "pbo"]}),
+                     encoding="utf-8")
+    monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
+    pool = wsc.power_deficient()
+    assert [m["cell"] for m in pool["EURUSD"]] == [ck]
+    assert pool["EURUSD"][0]["params"] == {"rr": 2.0}
+
+
+@pytest.mark.parametrize("latest", [
+    {"deflated_sharpe": {"passed": False}, "pbo": {"passed": False}},   # validity failure now
+    {"deflated_sharpe": {"passed": True}, "pbo": {"passed": True}},     # passed outright now
+])
+def test_latest_sweep_reading_beats_an_older_power_only_store_entry(tmp_path, monkeypatch,
+                                                                     latest):
+    row = _row("EURUSD", "pca_residual", {"rr": 2.5})
+    c = cell_id({**row, "sym": "EURUSD"})
+    _write(tmp_path, monkeypatch,
+           [{"cell": c, "sym": "EURUSD", "family": "pca_residual", "stages": latest}], [row])
+    store = tmp_path / "failed_gates.json"
+    store.write_text(json.dumps({c: ["deflated_sharpe"]}), encoding="utf-8")
+    monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
+    assert wsc.power_deficient() == {}
+
+
+def test_a_deferred_row_with_empty_failed_gates_does_not_block_the_store(tmp_path, monkeypatch):
+    row = _row("EURUSD", "pca_residual", {"rr": 2.75})
+    c = cell_id({**row, "sym": "EURUSD"})
+    _write(tmp_path, monkeypatch, [{"cell": c, "sym": "EURUSD", "family": "pca_residual",
+                                    "terminal_gate": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+                                    "passed": False, "failed_gates": []}], [row])
+    store = tmp_path / "failed_gates.json"
+    store.write_text(json.dumps({c: ["deflated_sharpe"]}), encoding="utf-8")
+    monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
+    assert [m["cell"] for m in wsc.power_deficient()["EURUSD"]] == [c]
