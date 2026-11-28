@@ -34,6 +34,18 @@ PHYS_DIR = DATA_DIR / "broker_physics"
 PHYS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _attach(mt5: object, path: str | None) -> bool:
+    """attach_or_initialize, never a bare initialize(): a SYSTEM miner in Session 0 would
+    otherwise start a headless logged-out terminal beside the desk's own (2026-11-12, 11-16)."""
+    import sys
+    from pathlib import Path
+    desk = str(Path(__file__).resolve().parents[1])
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research.mt5_session import attach_or_initialize
+    return attach_or_initialize(mt5, path=path or None)
+
+
 @dataclass
 class BrokerMicrostructureState:
     """Complete microstructure snapshot for one symbol at one time."""
@@ -86,7 +98,7 @@ class BrokerPhysicsCollector:
         except ImportError:
             return None
 
-        if not mt5.initialize(path=self.mt5_path):
+        if not _attach(mt5, self.mt5_path):
             return None
 
         try:

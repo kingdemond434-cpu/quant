@@ -21,7 +21,6 @@ def test_terminal_boot_health_file_is_written_on_a_passed_probe_only() -> None:
     assert "Where-Object { $_.SessionId -eq $session }" in source
     assert "if ($terminals.Count -gt 1)" in source
     assert "refusing automatic termination of an unverified owner" in source
-    assert "Stop-Process" not in source
 
 
 def test_terminal_boot_never_kills_a_different_broker_terminal() -> None:
@@ -93,10 +92,29 @@ def _code(source: str) -> str:
     return "".join(out).lower()
 
 
-def test_terminal_boot_never_kills_a_terminal() -> None:
+def test_terminal_boot_ends_only_a_session_zero_or_a_hung_fusion_terminal() -> None:
+    """TWO kill sites, both narrow (2026-11-17). A headless Session 0 Fusion terminal started by a
+    bare initialize() after a reboot is closed, and the desk's own terminal is restarted only after
+    it stops answering under the conditions pinned below; nothing else may end."""
     source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
     hits = _KILL.findall(_code(source))
-    assert not hits, f"the watchdog can end a process: {hits}"
+    names = [h if isinstance(h, str) else next(x for x in h if x) for h in hits]
+    assert names == ["stop-process", "stop-process"], hits
+    kill = source.index("Stop-Process -Id $h.Id")
+    # only from an interactive session: the Session 0 exit comes first
+    assert source.index("if ($session -eq 0)") < kill
+    # only Fusion terminals (exact executable path), and only those in Session 0
+    assert "$headless = @($terminals | Where-Object { $_.SessionId -eq 0 })" in source
+    assert source.index("$headless = @($terminals") < kill
+    assert "foreach ($h in $headless)" in source[:kill]
+    # journalled to the log and the event log, then the census is re-read before any refusal
+    branch = source[kill:source.index("if ($terminals.Count -gt 0 -and $local.Count -eq 0)")]
+    assert "JOURNAL headless Session 0 Fusion terminal" in branch
+    assert "TERMINAL_SESSION0_CLOSED" in branch and "events.jsonl" in source
+    assert "$terminals = Get-FusionTerminals" in branch
+    # a terminal in another interactive session is still refused, never ended
+    assert "controlled recovery required" in source
+    assert "Get-Process terminal64 | Stop-Process" not in source
 
 
 def test_the_kill_pin_catches_every_spelling() -> None:
@@ -135,7 +153,7 @@ def test_terminal_boot_refuses_session_zero_and_probes_ipc_without_orders() -> N
     assert "refusing a headless launch" in source
     assert "if ($terminals.Count -gt 0 -and $local.Count -eq 0)" in source
     assert "probe_terminal.py" in source
-    assert "$probeCode -ne 0" in source
+    assert "$probeCode -ne 0" in source and "$probeCode -eq $HangCode" in source
     assert "allow_send=1" not in source
 
 
@@ -154,3 +172,72 @@ def test_an_unreadable_terminal_in_our_own_session_blocks_a_launch() -> None:
     branch = source[guard:source.index("refusing to launch a second terminal")]
     assert "Invoke-ReadOnlyProbe" in branch and "Write-BootHealth" in branch
     assert "exit 0" in branch
+
+
+def test_a_hung_terminal_is_restarted_only_under_its_conditions() -> None:
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    kill = source.index("Stop-Process -Id $old")
+    gate = source.rindex("if ($count -ge $HungProbes", 0, kill)
+    cond = source[gate:source.index("{", gate)]
+    for term in ("$count -ge $HungProbes", "$hungMin -ge $HungMinutes", "$safe", "$cooled",
+                 "$underCap", "$local.Count -eq 1"):
+        assert term in cond, term
+    # safe = flat book, paused gateway, or a hang long enough that nothing is being managed
+    assert ("$safe = ($positions -eq 0) -or $paused -or ($hungMin -ge $HungUnmanagedMinutes)"
+            in source)
+    # an unreadable or missing position count is never read as flat
+    assert "if ($null -ne $acct.open_positions)" in source
+    assert "$HungProbes = 3" in source and "$HungMinutes = 15" in source
+    assert "$RestartCooldownMinutes = 60" in source and "$MaxRestartsPerDay = 3" in source
+    # only the one interactive terminal the census already holds, after the Session 0 exit
+    assert source.index("if ($session -eq 0)") < kill
+    assert "$old = $local[0].Id" in source[gate:kill]
+    # journalled both ways, and health is written only on a passing re-probe
+    after = source[kill:]
+    assert "JOURNAL hung Fusion terminal" in after and "TERMINAL_HUNG_RESTARTED" in after
+    assert after.index("if ($after -eq 0)") < after.index("Write-BootHealth")
+
+
+def test_a_passing_probe_keeps_the_restart_cooldown() -> None:
+    """Auditor MF1 (2026-11-17): the cooldown lives in the probe-failure file, so the file is
+    never deleted; a pass -- after a restart or on its own -- resets the count and KEEPS
+    last_restart_at, or a terminal that answers once and hangs again restarts every 3 probes."""
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "Remove-Item -LiteralPath $hungPath" not in source
+    assert "first_fail_at = $null; count = 0;" in source
+    cleared = source[source.index("function Write-HungCleared"):]
+    cleared = cleared[:cleared.index("\n}\n")]
+    assert "$kept.last_restart_at" in cleared and "$kept.restarts_on_day" in cleared
+    restart_pass = source[source.index("if ($after -eq 0)"):]
+    assert restart_pass.index("Write-HungCleared ([pscustomobject]$state)") < restart_pass.index(
+        "Write-BootHealth")
+    # the restart stamps last_restart_at and the day's count before that write
+    write = source.index("Write-HungCleared ([pscustomobject]$state)")
+    assert source.index("$state.last_restart_at = $now.ToString('o')") < write
+    assert source.index("$state.restarts_on_day = $restartsToday + 1") < write
+    tail = source[source.rindex("Write-HungCleared (Read-Hung)"):]
+    assert "Write-BootHealth" in tail
+
+
+def test_only_the_hang_code_counts_toward_a_restart() -> None:
+    """Auditor MF2 (2026-11-17): rc 99 (no python / no probe) and rc 1 (import error,
+    traceback, account_info None) mean the PROBE is broken; they exit before the failure count
+    is read or written, so they can never reach Stop-Process."""
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "$HangCode = 2" in source
+    probe = (ROOT / "desks" / "mt5" / "research" / "probe_terminal.py").read_text(encoding="utf-8")
+    assert "if not ok:\n    sys.exit(2)" in probe
+    broken = source.index("if ($probeCode -ne 0 -and $probeCode -ne $HangCode) {")
+    hang = source.index("if ($probeCode -eq $HangCode) {")
+    assert broken < hang < source.index("Stop-Process -Id $old")
+    branch = source[broken:hang]
+    assert "exit 2" in branch
+    for forbidden in ("Read-Hung", "Set-Content", "$hungPath", "Stop-Process", "$count"):
+        assert forbidden not in branch, forbidden
+
+
+def test_restarts_are_capped_per_day_and_the_cap_is_journalled() -> None:
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "$underCap = $restartsToday -lt $MaxRestartsPerDay" in source
+    assert "$today = $now.ToString('yyyyMMdd')" in source
+    assert "JOURNAL RESTART_CAP" in source and "'RESTART_CAP held'" in source

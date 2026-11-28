@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
 from mt5desk.universe_registry import may_write_median_spread, merge
 
+from research.mt5_session import attach_or_initialize
 from research.parquet_publication import atomic_parquet
 
 #: What this collector's `median_spread_pts` IS: the median of the H1 spread column it just
@@ -280,7 +281,7 @@ def main(argv: list[str] | None = None) -> None:
         # bounded retry restores transient failures without reporting a false-success task.
         for attempt in range(2):
             mt5.shutdown()
-            if mt5.initialize(path=TERMINAL, timeout=60_000):
+            if attach_or_initialize(mt5, path=TERMINAL, timeout=60_000):
                 terminal = mt5.terminal_info()
                 if terminal is not None:
                     break

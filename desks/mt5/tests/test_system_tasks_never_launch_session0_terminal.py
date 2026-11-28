@@ -15,7 +15,13 @@ REPO = DESK.parents[1]
 #: Files run by SYSTEM scheduled tasks (MT5-MoatRecorder, MT5-DeskState, the spread tape) that
 #: once called initialize() bare.
 GUARDED = ("desks/mt5/moat/moat_recorder.py", "desks/mt5/research/fusion_spread_tape.py",
-           "scripts/build_zentech_state.py")
+           "scripts/build_zentech_state.py",
+           # the SYSTEM hourly and its miners (2026-11-17: a Session 0 copy reappeared at 15:20Z)
+           # refresh_tail.py is a money-path script that replay-shadow cannot measure, so its
+           # change rides on its own; MT5-TerminalBoot closes any Session 0 copy it starts.
+           "desks/mt5/research/fetch_universe.py",
+           "desks/mt5/side_channels/broker_physics_miner.py",
+           "desks/mt5/side_channels/swap_table_miner.py")
 
 _BARE = re.compile(r"\bmt5\.initialize\(")
 
