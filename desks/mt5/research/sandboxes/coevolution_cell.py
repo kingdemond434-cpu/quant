@@ -44,6 +44,30 @@ FAMILY_OF_OP: dict[str, str] = {
     "range_pos": "range_reversion", "vol_ratio": "vol_mean_reversion", "volume_z": "volume_spike",
     "ret": "momentum_volgate",
 }
+#: op param -> the TARGET FAMILY's own kwarg (2026-11-04). The recipe used to carry the grammar's
+#: names (`w`, `h`, `fast`) into families that read none of them, so every coevolved survivor was
+#: judged and run as the family's DEFAULT cell: `range_reversion {w: 48}` was `range_reversion {}`.
+#: Each entry is the family's own lookback for the same window; a grammar knob with no family
+#: counterpart (vol_ratio's short window) is not passed, and is recorded as untranslated.
+PARAM_OF_OP: dict[str, dict[str, str]] = {
+    "ret": {"h": "mom_n"},
+    "ema_diff": {"fast": "fast_ema", "slow": "slow_ema"},
+    "zscore": {"w": "bb_n"},
+    "rsi": {"w": "rsi_n"},
+    "range_pos": {"w": "range_n"},
+    "vol_ratio": {"w2": "lookback"},
+    "volume_z": {"w": "vol_lookback"},
+}
+
+
+def family_params(op: str, params: dict[str, int]) -> tuple[dict[str, int], dict[str, int]]:
+    """(the executable params for FAMILY_OF_OP[op], the grammar params with no counterpart)."""
+    names = PARAM_OF_OP.get(op, {})
+    out = {names[k]: v for k, v in params.items() if k in names}
+    rest = {k: v for k, v in params.items() if k not in names}
+    return out, rest
+
+
 GRAMMAR: tuple[tuple[str, dict[str, tuple[int, ...]]], ...] = (
     ("ret", {"h": (1, 4, 12, 24, 48)}),
     ("ema_diff", {"fast": (5, 8, 12, 20), "slow": (30, 50, 80, 120)}),
@@ -320,8 +344,9 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                      "representation": "no positive pairing is itself a state: the grammar "
                                        "finds nothing the base rate does not already say"})
         for s in res["survivors"][:3]:
-            op, params = _dominant(s["factors"])
+            op, raw = _dominant(s["factors"])
             family = FAMILY_OF_OP.get(op, "momentum_volgate")
+            params, untranslated = family_params(op, raw)
             cands.append(A.candidate(
                 family, [f.symbol],
                 f"{f.symbol} H1 {family}: coevolved pairing {s['factors']} with model "
@@ -329,7 +354,9 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                 f"the base rate walk-forward (n={s['n']}, generation {s.get('generation')}) "
                 f"-- a recipe for the ten gates, never a verdict",
                 horizon=bundle.horizons[-1], source=SYSTEM,
-                evidence={"parameters": params, "factors": s["factors"], "model": s["model"],
+                evidence={"parameters": params, "factor_parameters": raw,
+                          "untranslated": untranslated, "factors": s["factors"],
+                          "model": s["model"],
                           "net_gain_nats": s["net_gain_nats"], "n": s["n"],
                           "lineage": {"generation": s.get("generation"),
                                       "parents": s.get("parents", []), "cell": CELL}}))
