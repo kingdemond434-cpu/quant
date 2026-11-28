@@ -135,3 +135,30 @@ def test_blind_review_veto_matches_the_canon_prefixing_convention():
         == "external.XAUUSD.session_range_breakout.rr=1.5"
     assert promoter.blind_review_veto("EURUSD.carry", verdicts) is None
     assert promoter.blind_review_veto("GBPUSD.carry", {}) is None
+
+
+def test_the_ban_file_is_parsed_once_until_it_changes(tmp_path, monkeypatch) -> None:
+    """Idea 595: the plan asks per cell; the file is read again only when it is rewritten."""
+    import os as _os
+
+    f = tmp_path / "banned_families.json"
+    f.write_text(json.dumps({"banned": {"alpha": {"why": "x"}}}), encoding="utf-8")
+    reads = {"n": 0}
+    real = type(f).read_text
+
+    def counting(self, *a, **k):
+        if self == f:
+            reads["n"] += 1
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(type(f), "read_text", counting)
+    for _ in range(5):
+        assert fp.family_banned("alpha", f)
+    assert reads["n"] == 1
+    fp.banned_families(f)["alpha"]["why"] = "mutated by a caller"
+    assert fp.banned_families(f)["alpha"]["why"] == "x", "callers get copies"
+    f.write_text(json.dumps({"banned": {"beta": {"why": "y"}}}), encoding="utf-8")
+    st = f.stat()
+    _os.utime(f, ns=(st.st_atime_ns, st.st_mtime_ns + 10_000_000))
+    assert fp.family_banned("beta", f) and not fp.family_banned("alpha", f)
+    assert reads["n"] == 2
