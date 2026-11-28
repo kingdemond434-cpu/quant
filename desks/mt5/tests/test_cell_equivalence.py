@@ -84,7 +84,11 @@ def test_a_real_difference_is_never_collapsed() -> None:
 
 def test_unknown_family_and_rewritten_keys_are_never_touched() -> None:
     assert E.canonical_params("no_such_family", {"rr": 1.8}) is None
-    assert E.canonical_params("carry", {"input_symbol": "X"}) in (None, {"input_symbol": "X"})
+    assert E.canonical_params("relative_value", {"peer_symbol": "X"}) in (
+        None, {"peer_symbol": "X"})
+    # ... except a key the build provably DISCARDS for that family (IGNORED_INPUTS, pinned
+    # against build_cell in test_cell_identity.py): carry trades the cell's own symbol.
+    assert E.canonical_params("carry", {"input_symbol": "X"}) == {}
 
 
 def test_groups_account_for_every_input_exactly_once() -> None:
