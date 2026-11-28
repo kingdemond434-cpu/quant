@@ -201,6 +201,52 @@ SECRETS = ("data/secrets/*", "*/data/secrets/*")
 #: Removing carrier files (#941) still merges.
 SEAL_CARRIER_BRANCH = "claude/seal-carrier-"
 SEAL_CARRIERS = ("desks/mt5/data/seal_carriers/*",)
+#: THE BOX'S STATE, THROUGH THE GATE (Governance, 2026-11-14). The box published its state by a
+#: direct push to LIVE every 15 minutes, so any agent holding the box's credential could push CODE
+#: the same way -- and on 2026-11-14 13:12Z a CRO pass did, five commits with no PR. A GitHub rule
+#: that refuses direct pushes to LIVE closes that, once the state has another way in: a PR from a
+#: `box-state/` branch, OPENED BY THE BOX'S OWN APP (a session cannot open one as it), whose every
+#: file is box state (libs.ops.release, the base's copy) and none of it state that governs code,
+#: prose, the web tree or an executable. Such a PR merges at once: no CLEAR, no approval, no CI --
+#: exactly what a direct push of the same files did, minus the ability to carry anything else.
+#: An AUDIT HOLD on the PR still stops it. Governed state (pins, sign rows, the live manifest,
+#: switches) is never on this path.
+BOX_STATE_BRANCH = "box-state/"
+BOX_STATE_AUTHORS = ("quant-merger[bot]",)
+BOX_STATE_NEVER = ("docs/", "web/", "context/", ".github/")
+#: An ALLOWLIST of data extensions (#1218 audit MF2: a denylist of code extensions missed MQL5,
+#: .pyd, .zip and more). A file with no extension -- a switch such as GATEWAY_PAUSED -- is never
+#: on this path.
+BOX_STATE_DATA_EXTS = (
+    ".json",
+    ".jsonl",
+    ".ndjson",
+    ".csv",
+    ".tsv",
+    ".log",
+    ".txt",
+    ".gz",
+    ".parquet",
+)
+#: State that grants authority, by name (#1218 audit MF1): the clearance rows the adopt guard and
+#: the seal trust because they are on LIVE, the sealed release, arming switches and holds. These
+#: keep their own route; a box-state PR carrying one is refused.
+BOX_STATE_REFUSED = (
+    "*adopt_clears*",
+    "*seal_clears*",
+    "*clears.jsonl",
+    "*/release.json",
+    "*_armed*",
+    "*armed_*",
+    "*/hold_*",
+    "*live_sleeve_policy*",
+    "*sleeve_registry*",
+    "*approv*",
+    "*authority*",
+    "*adopt_*",
+    "*release_identity*",
+    "*gateway_loaded*",
+)
 #: The PROTECTED floor before 2026-10-29. These now merge with no comment, but always on the AUTO
 #: path (every AUTO job), never LOW (#532 audit MF1).
 FORMERLY_PROTECTED = (
@@ -1228,6 +1274,124 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     return True, f"up to date{lag}"
 
 
+def _state_classifier() -> tuple[Callable[[str], bool], Callable[[str], bool]] | None:
+    """(is_state_path, is_governed_state) from libs.ops.release in THIS checkout (the base's,
+    trusted code), loaded by path; None when it cannot be loaded."""
+    import importlib.util
+
+    src = Path(__file__).resolve().parents[2] / "libs" / "ops" / "release.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_gate_release_state", src)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        state, governed = mod.is_state_path, mod.is_governed_state
+    except Exception:
+        return None
+    if not (callable(state) and callable(governed)):
+        return None
+    return state, governed
+
+
+def box_state_only(files: list[Mapping[str, Any]], changed: int) -> tuple[bool, str]:
+    """(True, why) when EVERY file of the PR (both sides of a rename) is ungoverned box state that
+    may take the box-state path; otherwise (False, the first file that may not). Unsure is no."""
+    if not files or len(files) != changed or len(files) >= MAX_FILES:
+        return False, f"{len(files)} of {changed} changed files listed"
+    cls = _state_classifier()
+    if cls is None:
+        return False, "libs/ops/release.py's state classification is unreadable"
+    state, governed = cls
+    for f in files:
+        for name in (f.get("filename"), f.get("previous_filename")):
+            if not name:
+                continue
+            rel, low = str(name), str(name).lower()
+            if low.startswith(BOX_STATE_NEVER) or not low.endswith(BOX_STATE_DATA_EXTS):
+                return False, f"{rel} is never box state on this path"
+            if any(fnmatch.fnmatchcase(low, pat) for pat in BOX_STATE_REFUSED):
+                return False, f"{rel} grants authority; it keeps its own route"
+            if not state(rel):
+                return False, f"{rel} is code, not box state"
+            if governed(rel):
+                return False, f"{rel} is state that governs code (it takes the normal path)"
+    return True, f"{len(files)} box state file(s)"
+
+
+def box_state_commits(repo: str, pr: int) -> tuple[bool, str]:
+    """Every commit on the PR was made by the box's app AND signed by GitHub (#1218 audit: the
+    opener alone says nothing about who pushed to the branch since). A commit the app makes
+    through the API is GitHub-signed; a session can set any author email but cannot sign as
+    GitHub, so an unverified commit -- or one by anyone else -- refuses the PR."""
+    try:
+        commits = _flat(_gh(f"repos/{repo}/pulls/{pr}/commits?per_page=100", "--paginate",
+                            "--slurp"))  # fmt: skip
+    except RuntimeError as exc:
+        return False, f"its commits are unreadable: {exc}"
+    if not commits or len(commits) >= 250:
+        return False, f"{len(commits)} commits listed"
+    for c in commits:
+        sha = str(c.get("sha") or "")[:9]
+        # GitHub's signature vouches for the COMMITTER; the author is only a declared email
+        # (#1218 audit MF3). Both must be the app, and the signature must be GitHub's valid one.
+        login = str((c.get("author") or {}).get("login") or "")
+        committer = str((c.get("committer") or {}).get("login") or "")
+        ver = (c.get("commit") or {}).get("verification") or {}
+        signed = ver.get("verified") is True and ver.get("reason") == "valid"
+        if login not in BOX_STATE_AUTHORS or committer not in BOX_STATE_AUTHORS or not signed:
+            return False, (
+                f"commit {sha} is by {login or 'an unknown author'}, committed by "
+                f"{committer or 'an unknown committer'}" + ("" if signed else ", not GitHub-signed")
+            )
+    return True, f"{len(commits)} commit(s) by the box's app"
+
+
+def merge_box_state(
+    repo: str,
+    pr: int,
+    p: Mapping[str, Any],
+    head: str,
+    files: list[Mapping[str, Any]],
+    changed: int,
+    box: bool,
+) -> int:
+    """The box-state path (BOX_STATE_BRANCH): merge at once, or refuse and say why."""
+    author = str((p.get("user") or {}).get("login") or "")
+    ok, why = box_state_only(files, changed)
+    if author not in BOX_STATE_AUTHORS:
+        ok, why = False, f"opened by {author or 'nobody'}, not the box's app"
+    if ok:
+        ok, why2 = box_state_commits(repo, pr)
+        why = why if ok else why2
+    if not ok:
+        why = f"a {BOX_STATE_BRANCH} PR carries only the box's ungoverned state: {why}"
+        _summary(f"#{pr} @ {head[:9]}: not merged -- {why}")
+        if not box:
+            _status(repo, head, "failure", why)
+        return 1
+    found = verdicts(_flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
+                               "--slurp")))  # fmt: skip
+    if found and found[-1]["verdict"] != "CLEAR":
+        _summary(f"#{pr} @ {head[:9]}: not merged -- AUDIT HOLD {found[-1]['sha'][:9]} stands")
+        return 0
+    if p.get("draft"):
+        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
+    try:
+        _gh(
+            f"repos/{repo}/pulls/{pr}/merge",
+            "-X",
+            "PUT",
+            data={"sha": head, "merge_method": "merge",
+                  "commit_title": f"Merge #{pr} (box state, no review: {why})"[:250]},
+        )  # fmt: skip
+    except RuntimeError as exc:
+        _summary(f"#{pr} @ {head[:9]}: not merged -- {exc}")
+        return 1
+    _summary(f"#{pr} @ {head[:9]}: MERGED (box state: {why})")
+    return 0
+
+
 def _is_state_path() -> Callable[[str], bool] | None:
     """libs.ops.release.is_state_path from THIS checkout (the base's, trusted code), loaded by
     path so the gate needs no install; None (every path is code) when it cannot be loaded."""
@@ -1470,6 +1634,9 @@ def run(
         if not box:
             _status(repo, head, "failure", twhy)
         return 1
+
+    if str(p["head"].get("ref") or "").lower().startswith(BOX_STATE_BRANCH):
+        return merge_box_state(repo, pr, p2, head, files, int(p2.get("changed_files") or 0), box)
 
     def switches() -> tuple[bool, str]:
         board = _flat(
