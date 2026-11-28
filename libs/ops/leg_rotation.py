@@ -134,6 +134,9 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
     # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
     "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
+    # The cert book's door: a zero pin a journalled principal order released leaves the book
+    # within the hour (two small JSON reads, one write on a release).
+    "cert_book_door",
 })
 
 
