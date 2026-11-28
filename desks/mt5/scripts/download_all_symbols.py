@@ -384,6 +384,11 @@ for i, (sym_info, tf) in enumerate(jobs):
         "point": point,
         "digits": digits,
         "tick_size": point,
+        # A `symbol_info.spread` read, never the tape's observed zero. This row carries no
+        # `_provenance`; universe_registry.merge below REPLACES the field's provenance entry
+        # with this source, so a stub can never inherit an observed-zero stamp (pinned by
+        # test_a_collectors_stub_write_replaces_the_observed_zero_stamp). Same at the
+        # existing-series rebuild below.
         "median_spread_pts": spread_pts,
         "spread_price": round(spread_price, 6),
         "contract_size": contract_size,
