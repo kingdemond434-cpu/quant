@@ -117,6 +117,44 @@ def _hazard_path(daily: pd.Series, window: int, refit: int, horizon: int,
     return p_leave, age, move
 
 
+#: Hurst/DFA flip conditioner (C row 120). "off" is the unconditioned family; the others keep a
+#: signal only when a flip of that direction (or either, "any") was stamped before its entry.
+DFA_GATES = frozenset({"to_trending", "to_reverting", "any"})
+_DFA_MEMO = Memo()
+
+
+def _dfa_condition(df: pd.DataFrame, signals: list[Signal], gate: str,
+                   fresh_days: int) -> list[Signal]:
+    """Keep the signals entered within `fresh_days` after a DFA flip in the gated direction.
+
+    A REGIME_TRANSITION CONDITIONER, NOT A NEW TRIGGER. The hazard still decides every entry and
+    nothing about stop, target, TTL or size changes; this only removes signals. The flip events
+    come from `libs.regime.dfa_flip` on this frame's own daily closes, and each is stamped with
+    the last bar of the day that made it, so a flip may admit only an entry STRICTLY after that
+    stamp. An unknown gate refuses (no signals) rather than falling back to the ungated family.
+    """
+    if gate not in DFA_GATES or fresh_days <= 0 or not signals:
+        return []
+    from libs.regime.dfa_flip import flip_events_from_bars
+
+    d = _h1(df)
+    _, events = _DFA_MEMO.get_or_compute(
+        (frame_fingerprint(d["close"]), args_key("dfa_flip")),
+        lambda: flip_events_from_bars(d))
+    stamps = np.array(sorted(pd.Timestamp(e["asof"]).value for e in events
+                             if gate == "any" or e["direction"] == gate), dtype=np.int64)
+    if stamps.size == 0:
+        return []
+    fresh = pd.Timedelta(days=fresh_days).value
+    kept: list[Signal] = []
+    for s in signals:
+        t = pd.Timestamp(s.time).value
+        i = int(np.searchsorted(stamps, t, side="left")) - 1   # the last stamp strictly before t
+        if i >= 0 and t - int(stamps[i]) <= fresh:
+            kept.append(s)
+    return kept
+
+
 def family_regime_transition(
     df: pd.DataFrame,
     *,
@@ -130,13 +168,23 @@ def family_regime_transition(
     stop_atr: float = 2.0,
     rr: float = 1.5,
     ttl_bars: int = 48,
+    dfa_gate: str = "off",
+    dfa_fresh_days: int = 5,
 ) -> list[Signal]:
     """Enter on the first bar of a day whose regime is likely to end.
 
     `min_age` refuses a regime the model has only just entered: a two-day-old state with a high
     hazard is usually the classifier still making up its mind, and trading that is trading the
     estimator rather than the market.
+
+    `dfa_gate` (default "off": the cell is exactly the unconditioned family) keeps only the
+    signals entered within `dfa_fresh_days` after a Hurst/DFA regime flip -- see `_dfa_condition`.
     """
+    if dfa_gate != "off":
+        return _dfa_condition(df, family_regime_transition(
+            df, window=window, refit_days=refit_days, horizon_days=horizon_days,
+            entry_p_leave=entry_p_leave, min_age=min_age, side_mode=side_mode, atr_n=atr_n,
+            stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars), dfa_gate, dfa_fresh_days)
     if side_mode not in {"exhaustion", "expansion"}:
         return []
     d = _h1(df)

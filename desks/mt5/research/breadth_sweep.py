@@ -46,6 +46,11 @@ DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
 CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 
+#: `regime_transition`'s DFA conditioner axis (C row 120). "off" is the bare cell `{}`; these are
+#: the gated variants. One freshness value, deliberately.
+DFA_GATED_VARIANTS: tuple[str, ...] = ("to_trending", "to_reverting", "any")
+DFA_FRESH_DAYS: tuple[int, ...] = (5,)
+
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
 #: The grids are deliberately coarse. A wide grid is not a better search -- it is the same search
@@ -148,6 +153,19 @@ READY: dict[str, dict] = {
                         ("NAS100", ("US500", "UST10Y", "EURUSD"))),
         "grid": [{"lookback": lb, "entry_z": z, "rr": 1.5, "ttl_bars": 48}
                  for lb in (120, 240) for z in (2.0, 2.5)],
+    },
+    # HURST/DFA REGIME-FLIP CELLS (C row 120, audit of #1345). `regime_transition` used to reach
+    # this sweep only through `default_families` at its defaults; listing it here keeps that
+    # exact cell (`{}` IS dfa_gate "off" -- same params, same docket key, so it dedupes against
+    # the cells already held and is never charged twice) and adds the three gated variants. Each
+    # gated variant is a docket cell of its own, so the gauntlet's trial census counts it like
+    # any grid cell. `dfa_fresh_days` is held at ONE value on purpose: a second freshness value
+    # would double the gated trials for a knob no mechanism argument picks.
+    "regime_transition": {
+        "why": "the regime CHANGE itself, by hazard -- optionally only in the days after a "
+               "Hurst/DFA flip between mean-reverting and trending",
+        "grid": [{}] + [{"dfa_gate": g, "dfa_fresh_days": f}
+                        for g in DFA_GATED_VARIANTS for f in DFA_FRESH_DAYS],
     },
 }
 
