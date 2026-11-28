@@ -1938,8 +1938,9 @@ def gold_follow_state(day_key: str) -> tuple[str | None, str]:
         return None, f"gold direction state unreadable ({why})"
     if entry is None:
         return "waiting", f"gold OCO fallback: waiting for E8's first fill on {day_key}"
-    if entry.get("first_fill_lane") != _oco.LEADER:
-        return None, f"{day_key}'s direction was set by {entry.get('first_fill_lane')}, not E8"
+    if not _oco.leader_set(entry, date=day_key):
+        return None, (f"{day_key}'s direction was set by {entry.get('first_fill_lane')}, not "
+                      f"E8's bracket")
     # `claimed_at` is ALWAYS this box's wall clock (gold_oco.claim_fill writes it); a supplied
     # `first_fill_at` may come from a venue clock, so it is only the fallback.
     at = _iso_utc(entry.get("claimed_at")) or _iso_utc(entry.get("first_fill_at"))

@@ -33,6 +33,25 @@ THE RULE.
      resting gold leg (`cancel_plan`), and an account that cannot be named PAGES
      (`page_identity`), as well as placing nothing.
 
+  8. MIRROR MODE (GA1, 2026-11-11; the default for the FTMO lane, `MIRROR_DEFAULT_LANES`). A
+     follower that enters only after E8's fill can never enter a breakout at E8's level: by the
+     time it sees the fill the price is through the level, so its limit rests below the market
+     and fills only on the adverse pullback (2026-11-11: E8 long 0.23 @ 4052.62, +$216; FTMO's
+     buy_limit 0.12 @ 4052.62 never filled). A "mirror" lane rests E8's OWN bracket -- the same
+     two stop levels, stops and targets -- at the moment E8 places it. Before the day has a
+     direction, the gate lets a mirror lane rest a leg while the leader rests entries both ways,
+     and lets the leader (re)place a leg while a mirror lane rests E8's levels: identical levels
+     on two accounts add no opposite exposure beyond E8's own bracket, and the first fill on
+     either account sets the direction, after which rules 2 and 7 cancel every opposite leg and
+     flatten a whipsaw exactly as for E8's own twin. Open POSITIONS always block, and every
+     other lane's resting entries block as before. A mirror lane's first fill is E8's signal by
+     construction (it can only rest E8's levels), so a fallback lane follows it like E8's own
+     -- but only once E8's same-side leg has filled too (`leader_set`, audit #959 M2). A fill
+     anywhere cancels every opposite leg on E8 within the minute: E8's own pass runs every five,
+     so `prop/e8_oco_watch.py` (task MT5-E8-OcoWatch, every minute, cancel and flatten only, never
+     an entry) claims E8's fills and applies rules 2 and 7 to E8's book in between. Mirror is demoted to fallback while any lane runs another PROTOCOL, and a
+     lane's explicit "fallback" in the mode file switches it off.
+
 THE STALENESS BOUND, MAX_STATE_AGE_S = 600 s. The slowest lane is E8-Gold, one pass every five
 minutes (the gateway passes every minute). Two E8 passes tolerate one late or lock-skipped pass;
 a state two passes old means the lane is not running, and its account's positions are unknown.
@@ -47,6 +66,7 @@ SWITCHING THE MODE (box-local, gitignored `desks/mt5/data/GOLD_OCO_MODE.json`):
     {"lanes": ["e8", "fusion"], "modes": {"fusion": "fallback"}}     # the default, same as absent
     {"lanes": ["e8", "fusion"], "modes": {"fusion": "oco"}}          # full OCO for Fusion
     {"lanes": ["e8", "fusion", "ftmo"], "modes": {"fusion": "oco", "ftmo": "fallback"}}
+    {"lanes": ["e8", "fusion", "ftmo"], "modes": {"fusion": "fallback"}}  # ftmo: mirror (rule 8)
 A lane must be in "lanes" to place gold at all, and every listed lane must be publishing fresh
 state or NO lane places gold: declare FTMO only once its terminal lane runs.
 
@@ -78,6 +98,9 @@ DEFAULT_LANES = ("e8", "fusion")
 MAX_STATE_AGE_S = 600.0
 #: The mode switch (gitignored, box-local). Absent -> every non-E8 lane in fallback.
 MODE_FILE = _DESK / "data" / "GOLD_OCO_MODE.json"
+#: Lanes that MIRROR E8's bracket unless the mode file names another mode for them (rule 8).
+MIRROR_DEFAULT_LANES = ("ftmo",)
+MODES = ("oco", "mirror", "fallback")
 #: The rail every refusal is billed under (fusion_book_rails / the E8 intents journal).
 RAIL = "gold_oco_direction_lock"
 #: Which lane an MT5 gateway process is. Absent -> "fusion"; any other value must be a known
@@ -481,12 +504,50 @@ def declared_lanes(doc: dict[str, Any] | None = None) -> tuple[str, ...]:
 
 
 def configured_mode(lane: str, doc: dict[str, Any] | None = None) -> str:
-    """"leader" for E8; "oco" only when the mode file says so for this lane; else "fallback"."""
+    """"leader" for E8; "oco" or "mirror" when the mode file says so for this lane; "mirror" for
+    a `MIRROR_DEFAULT_LANES` lane the file names no mode for; else "fallback". An unreadable
+    mode file is "fallback" for every lane (the cautious mode)."""
     if lane == LEADER:
         return "leader"
     doc = _mode_doc()[0] if doc is None else doc
+    if doc.get("_unreadable"):
+        return "fallback"
     modes = doc.get("modes") if isinstance(doc.get("modes"), dict) else {}
-    return "oco" if str((modes or {}).get(lane, "")).strip().lower() == "oco" else "fallback"
+    said = str((modes or {}).get(lane, "")).strip().lower()
+    if said in ("oco", "mirror"):
+        return said
+    if said == "" and lane in MIRROR_DEFAULT_LANES:
+        return "mirror"
+    return "fallback"
+
+
+#: `leader_set`'s default: read the leader's published gold state itself.
+_READ_LEADER: Any = object()
+
+
+def leader_set(entry: dict[str, Any] | None, doc: dict[str, Any] | None = None,
+               leader: Any = _READ_LEADER, *, date: str | None = None) -> bool:
+    """Was the day's direction set by E8's bracket? What a fallback lane may follow.
+
+    E8's own first fill, yes. A MIRROR lane's first fill (it rests only E8's own levels, rule 8)
+    counts ONLY ONCE E8'S SAME-SIDE LEG HAS FILLED TOO -- the leader's published gold state holds
+    a position on the day's direction opened on `date` (audit #959 M2): a copy that filled on its
+    own quote while E8's leg never did is not E8's trade, and no fallback lane inherits it.
+    `leader` is E8's gold state (None: unreadable, so no); by default it is read here."""
+    first = str((entry or {}).get("first_fill_lane") or "")
+    if first == LEADER:
+        return True
+    if first not in KNOWN_LANES or configured_mode(first, doc) != "mirror":
+        return False
+    if leader is _READ_LEADER:
+        leader, _why = read_lane(LEADER)
+    if not isinstance(leader, dict):
+        return False
+    d = side_of((entry or {}).get("direction"))
+    day = str(date or (entry or {}).get("date") or "")
+    return d is not None and any(side_of(p.get("side")) == d
+                                 and str(p.get("opened_date") or "") == day
+                                 for p in leader.get("positions") or [])
 
 
 # ------------------------------------------------------------------ lane state
@@ -745,21 +806,28 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
             return Verdict(False, f"gold OCO: {jwhy}; fail closed")
         states[other] = st
     mode = configured_mode(lane, doc)
-    if mode == "oco" and any(int(st.get("protocol") or 0) != PROTOCOL for st in states.values()):
-        mode = "fallback"           # full OCO is not proven while any lane runs older code
+    current = all(int(st.get("protocol") or 0) == PROTOCOL for st in states.values())
+    if mode in ("oco", "mirror") and not current:
+        mode = "fallback"           # neither is proven while any lane runs older code
+    # RULE 8: E8's bracket and a mirror lane's copy of it rest the same levels. Before the day
+    # has a direction neither one's resting entries block the other; positions always block.
+    mirrors = {o for o in states if current and configured_mode(o, doc) == "mirror"}
     against = opposite(want)
     for other, st in states.items():
         if any(side_of(p.get("side")) == against for p in st.get("positions") or []):
             return Verdict(False, f"gold OCO: {other} holds an open gold {against}; a {want} "
                                   f"here would open against it", mode)
-        if any(side_of(o.get("side")) == against for o in st.get("orders") or []):
+        same_bracket = entry is None and ((mode == "mirror" and other == LEADER)
+                                          or (lane == LEADER and other in mirrors))
+        if not same_bracket and any(side_of(o.get("side")) == against
+                                    for o in st.get("orders") or []):
             return Verdict(False, f"gold OCO: {other} rests a gold {against} entry; a {want} "
                                   f"here could fill against it", mode)
     if entry is not None:
         d, first = side_of(entry.get("direction")), entry.get("first_fill_lane")
-        if mode == "fallback" and first != LEADER:
+        if mode == "fallback" and not leader_set(entry, doc, states.get(LEADER), date=date):
             return Verdict(False, f"gold OCO fallback: {date}'s direction was set by {first}, "
-                                  f"and fallback copies only E8's first fill", mode)
+                                  f"and fallback copies only a fill of E8's bracket", mode)
         if want != d:
             return Verdict(False, f"gold OCO: {date}'s direction is {d} (first fill on "
                                   f"{first}); no {want} gold leg on any account today", mode)
@@ -768,6 +836,9 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
         return Verdict(False, f"gold OCO fallback: no E8 fill yet on {date}; this lane places "
                               f"nothing until E8's first fill sets the direction ({mode_why})",
                        mode)
+    if mode == "mirror":
+        return Verdict(True, f"gold OCO: no direction yet on {date}; mirror mode (E8's own "
+                             f"bracket levels only)", mode)
     return Verdict(True, f"gold OCO: no direction yet on {date}; {mode} mode", mode)
 
 

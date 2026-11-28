@@ -81,7 +81,8 @@ class _MT5:
             self.orders.append(SimpleNamespace(ticket=ticket, symbol="XAUUSD", type=req["type"],
                                                magic=req["magic"], price_open=req["price"],
                                                sl=req["sl"], volume_current=req["volume"],
-                                               time_setup=self.tick))
+                                               time_setup=self.tick,
+                                               comment=req.get("comment", "")))
         if req["action"] == self.TRADE_ACTION_REMOVE:
             self.hist_orders += [o for o in self.orders if o.ticket == req["order"]]
             self.orders = [o for o in self.orders if o.ticket != req["order"]]
@@ -1193,3 +1194,320 @@ def test_the_clock_is_read_off_the_freshest_liquid_tick() -> None:
     # and still count; the freshest tick gives +3 and the same answer, with no hour's shift
     assert ff.day_start_balance(mt5, 98_000.0, midnight, NOW, server_epoch=stale) == \
         pytest.approx(100_000.0)
+
+
+# ======================================================================== the mirror bracket (GA1)
+
+from mt5desk import order_door as door  # noqa: E402
+
+E8_BUY, E8_SELL = 501, 502
+
+
+def _e8_sent(oid: int, side: str, *, at: datetime = NOW - timedelta(minutes=1),
+             price: float | None = None, sl: float = 4320.0, tp: float | None = None,
+             confirm: bool = True, status: str = "SENT") -> None:
+    """E8 sends one asia leg: its intents row and the order door's acknowledged place_stop."""
+    price = price if price is not None else (4340.0 if side == "buy_stop" else 4300.0)
+    tp = tp if tp is not None else (4380.0 if side == "buy_stop" else 4260.0)
+    with Path(ff.E8_INTENTS).open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"at": at.isoformat(timespec="seconds"), "window": "asia",
+                             "side": side, "price": price, "sl": sl, "tp": tp, "lot": 0.23,
+                             "status": status, "order_id": oid, "armed": True}) + "\n")
+    if confirm:
+        door.append_ledger({"at": at.isoformat(timespec="seconds"), "caller": "e8_gold",
+                            "venue": "tradelocker", "kind": "open", "action": "place_stop",
+                            "args": ["XAUUSD", "buy" if side == "buy_stop" else "sell", 0.23],
+                            "kwargs": {"price": price, "stop": sl, "take_profit": tp},
+                            "outcome": "acknowledged", "result": oid})
+
+
+def _e8_cancels(oid: int) -> None:
+    door.append_ledger({"at": NOW.isoformat(timespec="seconds"), "caller": "e8_gold",
+                        "venue": "tradelocker", "kind": "cancel", "action": "cancel",
+                        "args": [oid], "kwargs": {}, "outcome": "acknowledged", "result": True})
+
+
+@pytest.fixture
+def mirror(world, monkeypatch) -> SimpleNamespace:
+    """07:00 broker: E8 has just rested its asia bracket (buy stop 4340, sell stop 4300) and
+    nothing has filled; FTMO is declared with no mode named -- the mirror default."""
+    monkeypatch.setattr(ff, "E8_INTENTS", world.tmp / "e8_gold_intents.jsonl")
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback"}}))
+    oco.direction_path().unlink()
+    oco.publish_lane("e8", world.e8_key, positions=[],
+                     orders=[{"id": E8_BUY, "side": "buy"}, {"id": E8_SELL, "side": "sell"}],
+                     date=DAY)
+    world.report.write_text(json.dumps(_e8_report(position_id=None)), "utf-8")
+    _e8_sent(E8_BUY, "buy_stop")
+    _e8_sent(E8_SELL, "sell_stop")
+    return world
+
+
+def _removed(mt5: _MT5) -> list[int]:
+    return [r["order"] for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
+
+
+def _mirror_tickets(mt5: _MT5) -> dict[int, int]:
+    """{order type: ticket} of the resting mirror legs."""
+    return {o.type: o.ticket for o in mt5.orders if o.comment == ff.MIRROR_COMMENT}
+
+
+def test_the_mirror_rests_e8s_bracket_the_pass_e8_places_it(mirror) -> None:
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    reqs = _entries(mt5)
+    assert sorted((r["type"], r["price"], r["sl"], r["tp"]) for r in reqs) == [
+        (mt5.ORDER_TYPE_BUY_STOP, 4340.0, 4320.0, 4380.0),
+        (mt5.ORDER_TYPE_SELL_STOP, 4300.0, 4320.0, 4260.0)]       # E8's own levels, both ways
+    assert all(r["comment"] == ff.MIRROR_COMMENT and r["magic"] == ff.MAGIC for r in reqs)
+    assert all(r["volume"] == pytest.approx(0.45) for r in reqs)  # 0.009 x 100k / (20 x 100)
+    assert doc["follow"]["action"] == "wait" and doc["mirror"]["mode"] == "mirror"
+    sent = [r for r in _rows() if r.get("status") == "SENT"]
+    assert {r["e8_order_id"] for r in sent} == {str(E8_BUY), str(E8_SELL)}
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    _pass(mt5, now=NOW + timedelta(minutes=2))
+    assert len(_entries(mt5)) == 2 and _removed(mt5) == []       # once per E8 leg, kept
+
+
+def test_e8_cancelling_its_leg_cancels_the_copy_at_once_and_never_re_places_it(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    legs = _mirror_tickets(mt5)
+    _e8_cancels(E8_SELL)
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert _removed(mt5) == [legs[mt5.ORDER_TYPE_SELL_STOP]]
+    assert list(_mirror_tickets(mt5)) == [mt5.ORDER_TYPE_BUY_STOP]
+    _pass(mt5, now=NOW + timedelta(minutes=2))
+    assert len(_entries(mt5)) == 2                                # the copy is not re-placed
+    assert not [r for r in _rows() if r.get("reason") == "cancel_mirror_blind"]
+    # E8 re-places a leg under a new order id: that leg is mirrored.
+    _e8_sent(503, "sell_stop", at=NOW + timedelta(minutes=2))
+    _pass(mt5, now=NOW + timedelta(minutes=3))
+    assert len(_entries(mt5)) == 3 and mt5.ORDER_TYPE_SELL_STOP in _mirror_tickets(mt5)
+
+
+def test_a_stale_e8_report_never_cancels_the_mirror(mirror) -> None:
+    """2026-11-11: the five-minute E8 report read stale for four minutes and RAIL_BLOCKED the
+    follow. The mirror reads E8's legs at send time, so a late report touches nothing."""
+    mt5 = _MT5()
+    _pass(mt5)
+    mirror.report.write_text(json.dumps(_e8_report(at=NOW - timedelta(minutes=20),
+                                                   position_id=None)), "utf-8")
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert doc["follow"]["action"] == "e8_stale"
+    assert _removed(mt5) == [] and len(_mirror_tickets(mt5)) == 2
+    assert not [r for r in _rows() if str(r.get("reason", "")).startswith("cancel")]
+
+
+def test_the_first_fill_cancels_the_copy_against_it_and_places_no_follow(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    legs = _mirror_tickets(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}],
+                     orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")    # E8's report shows the fill
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert doc["follow"]["action"] == "follow"
+    assert _removed(mt5) == [legs[mt5.ORDER_TYPE_SELL_STOP]]       # against the direction
+    assert list(_mirror_tickets(mt5)) == [mt5.ORDER_TYPE_BUY_STOP]  # its own stop fills it
+    assert len(_entries(mt5)) == 2                                 # no late follow beside it
+
+
+def test_a_mirror_fill_against_the_direction_is_flattened(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mt5.orders = [o for o in mt5.orders if o.type != mt5.ORDER_TYPE_SELL_STOP]
+    mt5.positions.append(SimpleNamespace(ticket=9500, symbol="XAUUSD", type=1, magic=ff.MAGIC,
+                                         volume=0.45, time=TICK, price_open=4300.0, sl=4320.0,
+                                         tp=4260.0))
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    closes = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    assert [(r["position"], r["type"]) for r in closes] == [(9500, mt5.ORDER_TYPE_BUY)]
+
+
+def test_an_unreadable_door_ledger_cancels_every_copy_blind_and_bills_it(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    legs = _mirror_tickets(mt5)
+    ledger = door.ledger_path()
+    ledger.unlink()
+    ledger.mkdir()                                                 # unreadable: a directory
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert sorted(_removed(mt5)) == sorted(legs.values()) and not mt5.orders
+    billed = [r for r in _rows() if r.get("reason") == "cancel_mirror_blind"]
+    assert len(billed) == 1 and billed[0]["missed_growth_risk_usd"] > 0
+
+
+def test_a_leg_the_door_never_acknowledged_is_not_mirrored(mirror) -> None:
+    Path(ff.E8_INTENTS).unlink()
+    door.ledger_path().unlink()
+    _e8_sent(E8_BUY, "buy_stop")
+    _e8_sent(E8_SELL, "sell_stop", confirm=False)                 # journal says SENT, door not
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert [r["type"] for r in _entries(mt5)] == [mt5.ORDER_TYPE_BUY_STOP]
+    assert "no acknowledged send" in doc["mirror"]["why"]
+
+
+def test_a_crossed_level_places_no_mirror_and_the_late_follow_is_the_fallback(mirror) -> None:
+    mt5 = _MT5(bid=4340.8, ask=4341.0)                             # through E8's buy level
+    doc = _pass(mt5)
+    assert mt5.sent == [] and "crossed" in doc["mirror"]["placed"]
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}],
+                     orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    (req,) = mt5.sent
+    assert req["action"] == mt5.TRADE_ACTION_DEAL and req["type"] == mt5.ORDER_TYPE_BUY
+    assert req["comment"] == ff.COMMENT                            # the follow, not a mirror
+
+
+def test_the_loss_guard_holds_with_both_legs_filled(mirror) -> None:
+    acct = json.loads(mirror.acct.read_text("utf-8"))
+    acct["account_type"] = "1-step"      # 3,000: one leg's 1,986 fits, both legs' 3,972 do not
+    mirror.acct.write_text(json.dumps(acct), "utf-8")
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert mt5.sent == []
+    assert any(s["reason"] == "loss_guard" and "both legs" in s["why"] for s in doc["skipped"])
+
+
+def test_an_unfilled_mirror_leg_does_not_spend_the_day_but_its_fill_does(mirror) -> None:
+    mt5 = _MT5()
+    mt5.hist_orders.append(SimpleNamespace(ticket=9001, symbol="XAUUSD", magic=ff.MAGIC,
+                                           time_setup=TICK, comment=ff.MIRROR_COMMENT))
+    assert ff.history_spent(mt5, DAY, NOW)[0] is False
+    mt5.deals = (SimpleNamespace(ticket=1, symbol="XAUUSD", magic=ff.MAGIC, time=TICK),)
+    assert ff.history_spent(mt5, DAY, NOW)[0] is True
+
+
+def test_a_fallback_lane_never_mirrors(mirror) -> None:
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback", "ftmo": "fallback"}}))
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert mt5.sent == [] and doc["mirror"]["mode"] == "fallback"
+
+
+def test_standby_journals_the_mirror_once_and_sends_nothing(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5, armed=False)
+    _pass(mt5, armed=False, now=NOW + timedelta(minutes=1))
+    assert mt5.sent == []
+    would = [r for r in _rows() if r.get("status") == "WOULD_PLACE" and r.get("mirror")]
+    assert sorted(r["kind"] for r in would) == ["buy_stop", "sell_stop"]
+
+
+def test_e8_bracket_reads_only_confirmed_live_legs_inside_the_ttl() -> None:
+    at = NOW - timedelta(minutes=1)
+    row = {"at": at.isoformat(), "window": "asia", "price": 4340.0, "sl": 4320.0,
+           "tp": 4380.0, "status": "SENT"}
+    intents = [{**row, "side": "buy_stop", "order_id": 1},
+               {**row, "side": "sell_stop", "order_id": 2, "price": 4300.0, "tp": 4260.0},
+               {**row, "side": "buy_stop", "order_id": 3, "window": "london_am"},
+               {**row, "side": "buy_stop", "order_id": 4, "status": "WOULD_PLACE"},
+               {**row, "side": "sell_stop", "order_id": 5, "price": 4300.0, "tp": 4260.0,
+                "at": (NOW - timedelta(hours=7)).isoformat()}]
+    ack = {"caller": "e8_gold", "action": "place_stop", "outcome": "acknowledged"}
+    door_rows = [{**ack, "result": i} for i in (1, 2, 3, 4, 5)]
+    legs, _ = ff.e8_bracket(intents, door_rows, now=NOW)
+    assert {k: v["id"] for k, v in (legs or {}).items()} == {"long": "1", "short": "2"}
+    door_rows.append({"caller": "e8_gold", "action": "cancel", "outcome": "acknowledged",
+                      "args": [2]})
+    door_rows.append({"caller": "gateway", "action": "cancel", "outcome": "acknowledged",
+                      "args": [1]})                                # another caller's cancel
+    legs, _ = ff.e8_bracket(intents, door_rows, now=NOW)
+    assert list(legs or {}) == ["long"]
+    assert ff.e8_bracket(None, door_rows, now=NOW)[0] is None
+    assert ff.e8_bracket(intents, None, now=NOW)[0] is None
+
+
+def test_no_copy_rests_on_a_side_already_reached_on_ftmos_quote(mirror) -> None:
+    """Audit #959 M1: FTMO never rests a leg whose level its own quote has already reached."""
+    for bid, ask in ((4299.8, 4300.0), (4340.0, 4340.2)):     # at the sell level; at the buy
+        mt5 = _MT5(bid=bid, ask=ask)
+        doc = _pass(mt5)
+        assert mt5.sent == [] and "crossed" in doc["mirror"]["placed"]
+
+
+def test_a_copy_that_filled_first_is_not_followed_until_e8_fills_too(mirror) -> None:
+    """Audit #959 M2, on the follow path: FTMO's own copy setting the day is no E8 signal."""
+    assert oco.claim_fill("ftmo", oco.oco_account_key(FT_LOGIN, FT_SERVER), "buy",
+                          date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")     # E8 report: position 777
+    entry, _ = oco.day_entry(DAY)
+    e8_lane, why = oco.read_lane("e8")
+    action, _sig, fwhy = ff.follow_decision(json.loads(mirror.report.read_text("utf-8")), entry,
+                                            None, e8_lane, why, today=DAY, now=NOW)
+    assert action == "wait" and "direction" in fwhy               # E8's lane holds no fill
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    e8_lane, why = oco.read_lane("e8")
+    action, _sig, _ = ff.follow_decision(json.loads(mirror.report.read_text("utf-8")), entry,
+                                         None, e8_lane, why, today=DAY, now=NOW)
+    assert action == "follow"
+
+
+def _lag_rows() -> list[dict]:
+    return [r for r in _rows() if r.get("rail") == ff.MIRROR_LAG_RAIL]
+
+
+def test_a_copy_resting_after_e8_filled_bills_its_lag_unfilled(mirror) -> None:
+    """Audit #959 S1: the minutes a copy rests unfilled after E8's same-side fill are billed;
+    a copy that never fills bills its whole risk."""
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert list(doc["mirror"]["lag"].values()) == [(NOW + timedelta(minutes=1)).isoformat(
+        timespec="seconds")]
+    assert _lag_rows() == []                                       # still open: nothing yet
+    _e8_cancels(E8_BUY)                                            # E8 is done with its leg
+    _pass(mt5, now=NOW + timedelta(minutes=8))
+    (row,) = _lag_rows()
+    assert row["reason"] == "mirror_unfilled_after_e8_fill" and row["lag_minutes"] == 7.0
+    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == pytest.approx(
+        0.45 * 20 * 100)                                           # the copy's whole risk
+
+
+def test_a_copy_that_fills_late_bills_the_minutes_not_the_risk(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    (buy,) = [o for o in mt5.orders if o.type == mt5.ORDER_TYPE_BUY_STOP]
+    mt5.orders.remove(buy)
+    mt5.positions.append(SimpleNamespace(ticket=9600, symbol="XAUUSD", type=0, magic=ff.MAGIC,
+                                         volume=0.45, time=TICK, price_open=4340.0, sl=4320.0,
+                                         tp=4380.0))
+    _pass(mt5, now=NOW + timedelta(minutes=3))
+    (row,) = _lag_rows()
+    assert row["reason"] == "mirror_filled_late" and row["lag_minutes"] == 2.0
+    assert row["missed_growth_risk_usd"] == 0.0
+
+
+def test_missed_growth_publishes_the_mirror_lag_line(mirror, monkeypatch) -> None:
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "FTMO_INTENTS", Path(ff.INTENTS))
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    _e8_cancels(E8_BUY)
+    _pass(mt5, now=NOW + timedelta(minutes=4))
+    line = mg.published_ftmo_follower_lines()["rails"][ff.MIRROR_LAG_RAIL]
+    assert line["n"] == 1 and line["undeployed_risk_usd"] == pytest.approx(900.0)
