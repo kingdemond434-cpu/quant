@@ -117,7 +117,8 @@ def _fresh(hours_ago: float = 1.0, status: str = "FRESH") -> dict:
 def test_swap_per_lot_refuses_a_feed_it_cannot_show_is_live():
     """A rate is served only while the box's capture is FRESH or PARTIAL, re-aged on the
     reader's own clock: a report the box stopped rewriting goes STALE by itself."""
-    leg = {"X": {"long": {"side": "long", "swap_money_per_lot_night": 3.0}}}
+    leg = {"X": {"last_captured_at": _fresh()["last_capture_at"],
+                  "long": {"side": "long", "swap_money_per_lot_night": 3.0}}}
     assert carry_state.swap_per_lot({"feed": _fresh(), "symbols": leg}, "X", "long") == -3.0
     assert carry_state.swap_per_lot({"feed": _fresh(status="PARTIAL"), "symbols": leg},
                                     "X", "long") == -3.0
@@ -128,10 +129,34 @@ def test_swap_per_lot_refuses_a_feed_it_cannot_show_is_live():
     assert carry_state.swap_feed(path=Path("/no/such/file.json"))["status"] == "MISSING"
 
 
+_NOW = _fresh()["last_capture_at"]
+
+
+def test_a_partial_feed_vouches_only_for_the_symbols_it_captured():
+    """Each symbol is aged on its own last capture: one fresh symbol never lends its age to a
+    symbol the terminal stopped answering for."""
+    old = _fresh(40.0)["last_capture_at"]
+    syms = {"FRESH": {"last_captured_at": _NOW, "long": {"swap_money_per_lot_night": 1.0}},
+            "OLD": {"last_captured_at": old, "long": {"swap_money_per_lot_night": 1.0}},
+            "NEVER": {"long": {"swap_money_per_lot_night": 1.0}}}
+    state = {"feed": _fresh(status="PARTIAL"), "symbols": syms}
+    assert carry_state.swap_per_lot(state, "FRESH", "long") == -1.0
+    assert carry_state.swap_per_lot(state, "OLD", "long") is None
+    assert carry_state.swap_per_lot(state, "NEVER", "long") is None
+
+
+def test_a_corrupt_feed_report_is_missing_not_an_error(tmp_path):
+    bad = tmp_path / "f.json"
+    bad.write_text("[1, 2]")
+    assert carry_state.swap_feed(path=bad)["status"] == "MISSING"
+    assert carry_state.swap_per_lot({"feed": [1], "symbols": {}}, "X", "long") is None
+
+
 def test_swap_per_lot_keys_on_the_value_not_the_label():
     """A known rate must be served even when the state label could not be computed."""
     state = {"feed": _fresh(),
-             "symbols": {"USDJPY": {"long": {"side": "long", "state": "UNCLASSIFIED",
+             "symbols": {"USDJPY": {"last_captured_at": _NOW,
+                                    "long": {"side": "long", "state": "UNCLASSIFIED",
                                              "swap_money_per_lot_night": 3.843}}}}
     assert carry_state.swap_per_lot(state, "USDJPY", "long") == pytest.approx(-3.843)
 
@@ -139,13 +164,15 @@ def test_swap_per_lot_keys_on_the_value_not_the_label():
 def test_swap_per_lot_negates_into_the_cost_convention():
     """The artifact publishes CREDIT-positive (MT5's own sign); `financing.drag_r` wants a
     positive COST. A credit must come back negative, or a paid side is charged as a cost."""
-    state = {"feed": _fresh(), "symbols": {"X": {"short": {"side": "short", "state": "CARRY-PAID",
+    state = {"feed": _fresh(), "symbols": {"X": {"last_captured_at": _NOW,
+                                           "short": {"side": "short", "state": "CARRY-PAID",
                                          "swap_money_per_lot_night": 28.121}}}}
     assert carry_state.swap_per_lot(state, "X", "short") == pytest.approx(-28.121)
 
 
 def test_swap_per_lot_refuses_an_unmeasured_side():
-    state = {"feed": _fresh(), "symbols": {"X": {"long": {"side": "long", "state": "UNMEASURED",
+    state = {"feed": _fresh(), "symbols": {"X": {"last_captured_at": _NOW,
+                                           "long": {"side": "long", "state": "UNMEASURED",
                                         "swap_money_per_lot_night": None}}}}
     assert carry_state.swap_per_lot(state, "X", "long") is None
     assert carry_state.swap_per_lot(state, "MISSING", "long") is None
@@ -260,3 +287,29 @@ def test_artifact_shape_if_present():
             else:
                 assert leg["state"] != "UNMEASURED"
                 assert leg["unit"]
+
+
+def test_per_symbol_age_reads_only_evidenced_rows_as_instants(tmp_path):
+    cs = carry_state
+    panel = tmp_path / "broker_swaps"
+    panel.mkdir()
+    rows = [
+        # evidenced, stamped with an offset
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T09:00:00+00:00",
+         "last_evidence_at": "2026-10-06T08:59:00+00:00"},
+        # later, evidenced, written with a Z: a string compare would rank it below "+00:00"
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T11:00:00Z",
+         "last_evidence_at": "2026-10-06T10:59:00Z"},
+        # newest of all but copied with no evidence: vouches for nothing
+        {"kind": "swap_table", "symbols": ["EURUSD"], "swap_long": -7.0, "swap_short": 2.0,
+         "found_at": "2026-10-06T09:00:00+00:00", "observed_at": "2026-10-06T23:00:00+00:00"},
+        {"kind": "swap_table", "symbols": ["XAUUSD"], "swap_long": -40.0, "swap_short": 18.0,
+         "found_at": "2026-10-06T09:00:00", "observed_at": "2026-10-06T09:00:00"},
+    ]
+    (panel / "a.json").write_text(json.dumps(rows), "utf-8")
+    captured = {}
+    series = cs._load_panel(panel, captured)
+    assert captured == {"EURUSD": "2026-10-06T11:00:00+00:00"}
+    assert len(series["EURUSD"]) == 3 and series["XAUUSD"]
