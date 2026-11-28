@@ -469,6 +469,48 @@ def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
                     f"yet. No candidate was refused: the rail can only cost queue position.")}
 
 
+CONVICTION = BASE / "reports" / "CONVICTION_SHADOW.json"
+
+
+def published_conviction_lines() -> dict[str, Any]:
+    """Conviction scaling's DOWNWARD half, from its shadow leg's latest matured forward day.
+
+    value = sum over the sleeves it cut of (h_conv - h_base) x realised R: positive when the cut
+    sleeves lost (the cut earned), negative when they paid (the cut cost growth). A sample only
+    while the switch is LIVE -- in SHADOW the account carries none of it, so the line is
+    NOT_BINDING and the shadow number rides along for the reader. Published beside the rails
+    (`published_gate_lines`) because the rail register is sealed; the value is in the rails' unit
+    (log-wealth per day) so the register can adopt it unchanged once re-signed."""
+    doc = _json(CONVICTION)
+    if not doc:
+        return {"verdict": UNMEASURED, "why": "reports/CONVICTION_SHADOW.json absent"}
+    dh = doc.get("down_half") or {}
+    v = dh.get("value_logw_per_day")
+    if doc.get("mode") != "LIVE":
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "mode": "SHADOW",
+                "shadow_down_half_logw_per_day": v, "n": dh.get("n", 0)}
+    if not isinstance(v, (int, float)):
+        return {"verdict": UNMEASURED, "mode": "LIVE", "why": "no matured forward day yet"}
+    rd = str(dh.get("realised_day") or "")
+    try:
+        age = (datetime.now(tz=UTC).date() - datetime.fromisoformat(rd[:10]).date()).days
+    except ValueError:
+        age = 999
+    if age > 4:
+        # The same matured day must not be sampled again on every later day.
+        return {"verdict": UNMEASURED, "mode": "LIVE",
+                "why": f"latest matured day {rd or '?'} is {age} day(s) old"}
+    return {"sample": True, "value_logw_per_day": float(v), "mode": "LIVE",
+            "day": dh.get("day"), "realised_day": dh.get("realised_day")}
+
+
+def measure_conviction(_r: Any, _alloc: dict[str, Any], _fv: dict[str, Any]) -> dict[str, Any]:
+    """The same line in the rail measurement's signature, for the `conviction_scaling` rail the
+    re-seal of `libs/portfolio/rails.py` registers; until then it is reached only as a
+    published line."""
+    return published_conviction_lines()
+
+
 def measure_tier_s_block(r: Any, alloc: dict[str, Any],
                          _fv: dict[str, Any]) -> dict[str, Any]:
     """What the Tier S promotion door withheld, priced by the forward expectancy it carried.
@@ -1258,6 +1300,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
+                                    "conviction_scaling": published_conviction_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "ftmo_executor_rails": published_ftmo_executor_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),

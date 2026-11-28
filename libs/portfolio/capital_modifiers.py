@@ -119,6 +119,11 @@ REGISTRY: tuple[Modifier, ...] = (
              "(research/financing_lab.py) and data/roi_capital_evidence.json "
              "(research/research_roi.py), applied to SleeveEvidence.daily_r before the solve",
              "desks/mt5/reports/FINANCING_LAB.json"),
+    Modifier("conviction", 0.5, 2.0, "two_sided",
+             "libs.portfolio.conviction.conviction_factors -> "
+             "pf_allocator.apply_conviction_scaling (LIVE only; SHADOW leaves the evidence "
+             "byte-identical)",
+             "desks/mt5/reports/CONVICTION_SHADOW.json"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),

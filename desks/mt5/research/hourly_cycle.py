@@ -1476,7 +1476,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
-                     "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     "clock_liveness", "allocator_liveness", "allocator_trigger", "conviction_shadow",
                      "forward_calibration", "decay_verdicts", "cluster_judge"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
@@ -2346,6 +2346,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
     # one README read per new repository; stops itself at its 900 s budget.
     "asia_github": 1_000,
+    # Two robust E[log W] solves over the funded book plus 40 candidates at 128 worlds, plus a
+    # read of the forward ledgers; stops itself at --budget-s 240.
+    "conviction_shadow": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -5855,6 +5858,12 @@ def main() -> None:
     # solver the moment one moves, then publishes the event-to-allocation latency per trigger
     # kind. The hourly leg is the floor on how often it looks; the 24/7 resident
     # (`--resident`, desks/mt5/ops/box_tasks.manifest) is how it reacts in seconds.
+    # CONVICTION SCALING, SHADOW FIRST (Build C row 143). Reads the evidence the solve above just
+    # snapshotted, solves the book with and without the two-sided conviction modifier at the same
+    # heat, ledgers both once a day and scores them forward; flips CONVICTION_SCALING.json LIVE
+    # (or back) by `conviction.conviction_promotion`. Artifact: CONVICTION_SHADOW.json.
+    cvs = _costed("conviction_shadow", lambda: _producer(
+        "conviction_shadow", "research/conviction_shadow.py", "--once", "--budget-s", "240"))
     atg = _costed("allocator_trigger", lambda: _producer(
         "allocator_trigger", "research/allocator_trigger.py", "--once", "--budget-s", "300"))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
@@ -6781,7 +6790,7 @@ def main() -> None:
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
-                    "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "pf_allocator": pa, "allocator_liveness": alv, "conviction_shadow": cvs, "allocator_trigger": atg,
                     "promoter": pr, "policy_lift_reopen": plr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
