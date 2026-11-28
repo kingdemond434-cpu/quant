@@ -427,6 +427,19 @@ def test_the_proposer_mints_world_macro_state_cells_from_the_exposure(box, monke
         "world_macro_state"
     cur = json.loads((W.STORE / "proposer_cursor.json").read_text("utf-8"))
     assert "next" in cur
+    # the funnel accounts for every variant built: screened plus refused for too few trades
+    fun = rep["funnel"]
+    assert fun["screened"] == rep["tests_run"]
+    assert fun["variants_built"] == fun["screened"] + fun["screen_refused"]
+    assert fun["clears_cost_and_propose_bar"] <= fun["clears_cost"] <= fun["screened"]
+    assert fun["propose_t"] == pc.PROPOSE_T and fun["min_trades"] == pc.MIN_TRADES
+
+
+def test_the_funnel_of_an_empty_sweep_is_unmeasured_not_zero():
+    from research import world_macro_proposer as P
+    fun = P.funnel([], variants=0, refused=0)
+    assert fun["best_t_gross"] == P.UNMEASURED
+    assert fun["best_t_deflated_sweep_clearing_cost"] == P.UNMEASURED
 
 
 def test_the_proposer_reports_unmeasured_before_any_exposure(box, monkeypatch):
