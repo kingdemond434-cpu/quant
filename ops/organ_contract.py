@@ -412,6 +412,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # #521 audit MF-B (2026-10-29): the merge-pipeline watcher runs inside Quant-WorkflowGate, so
     # a task that stops firing would leave its report simply un-updated. This board runs on its
     # own clock; 45 min = the watcher's 25-min re-read plus two 10-min sweep runs.
+    # THE SWEEP ITSELF (Autonomy + Desk health, 2026-11-17 20:37Z). Quant-WorkflowGate read
+    # UNCONTRACTED while its runs were killed at the 30-min limit (0x41306), and a LIVE run sat
+    # queued 19:09Z on with no live-first cancel; nobody could tell without a Remote Control read.
+    # live_first_ci.py runs first in every sweep and stamps "at" on every non-dry pass, so the
+    # stamp (INTERNAL_STAMPS) is the sweep's pulse: 40 min = four 10-min triggers missed.
+    "Quant-WorkflowGate": (
+        "desks/mt5/reports/LIVE_FIRST_CI.json", 40,
+        "the box's merge sweep: live-first CI pre-emption (LIVE runs ahead of PR runs) and then "
+        "the audit-gate merges; age is live-first's own last pass"),
     "Quant-WorkflowGate (merge pipeline)": (
         "desks/mt5/reports/MERGE_PIPELINE.json", 45,
         "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
@@ -429,6 +438,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+    "desks/mt5/reports/LIVE_FIRST_CI.json": "at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.
