@@ -42,6 +42,7 @@ desks/mt5/mt5desk/family_learned_propagation.py
 desks/mt5/mt5desk/family_multi_speed_trend.py
 desks/mt5/mt5desk/family_regime_transition.py
 desks/mt5/mt5desk/family_spread_state.py
+desks/mt5/mt5desk/family_state_space.py
 desks/mt5/mt5desk/family_style_premia.py
 desks/mt5/mt5desk/family_triangle.py
 desks/mt5/mt5desk/family_world_macro.py

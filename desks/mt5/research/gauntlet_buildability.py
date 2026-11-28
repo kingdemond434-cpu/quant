@@ -64,7 +64,9 @@ DATA_INPUT_ARGS: frozenset[str] = frozenset({
 #: store (`mt5desk/families_specialist.py`, the class books' contract). A cell carries them by
 #: value, so the gauntlet can build the cell -- but a family reading one is NOT price-only, and
 #: until 2026-09-30 this module's verdict said it was ("supplies every data input it reads").
-CONDITIONING_ARGS: frozenset[str] = frozenset({"risk_symbol", "bond_symbol", "cond_symbol"})
+#: `pair_symbol` (2026-11-10): the second leg of `kalman_pair` / `copula_pair`, same contract.
+CONDITIONING_ARGS: frozenset[str] = frozenset({"risk_symbol", "bond_symbol", "cond_symbol",
+                                               "pair_symbol"})
 
 #: DATA inputs that are another instrument's BARS (conditioned); any other is exogenous.
 _BAR_INPUTS: frozenset[str] = frozenset({"driver", "peer", "peers", "factors", "leg_b", "leg_c"})
