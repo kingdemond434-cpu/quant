@@ -85,6 +85,9 @@ UNIVERSE = BASE / "data" / "universe"
 CALENDAR = BASE / "data" / "forced_flow_calendar.json"
 MACRO_LEDGER = BASE / "data" / "macro" / "event_ledger.jsonl"
 ROOT_EVENTS = ROOT / "data" / "events.jsonl"
+#: Surprise rows of five scheduled public releases (research/macro_event_states.py): a calendar
+#: of `events[]` rows with `at`, `kind`, `instruments`, `actual` and `consensus`.
+MACRO_STATES_CLOCK = BASE / "reports" / "MACRO_EVENT_STATES_CLOCK.json"
 COT = BASE / "data" / "axes" / "cot.json"
 REGIME_STATE = BASE / "data" / "regime_state.json"
 COST_SURFACE = BASE / "data" / "cost_surface.json"
@@ -268,7 +271,8 @@ def load_events(days: int, now: datetime) -> tuple[list[dict], dict[str, Any]]:
     events: list[dict] = []
     accounting: dict[str, Any] = {}
     for path, source in ((CALENDAR, "forced_flow_calendar"), (MACRO_LEDGER, "macro_event_ledger"),
-                         (ROOT_EVENTS, "root_events_jsonl")):
+                         (ROOT_EVENTS, "root_events_jsonl"),
+                         (MACRO_STATES_CLOCK, "macro_event_states")):
         raw, status = _rows_from(path, source)
         kept, unusable = 0, 0
         for row in raw:
