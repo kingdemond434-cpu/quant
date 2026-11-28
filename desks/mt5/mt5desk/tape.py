@@ -620,8 +620,32 @@ def merge_day(prev: pd.DataFrame | None, chunk: pd.DataFrame) -> pd.DataFrame:
         # nothing was filled, which is every row today.
         both = both.drop_duplicates(subset=subset)
     if "time_msc" in both.columns:
-        both["ts"] = pd.to_datetime(both["time_msc"], unit="ms", utc=True)
+        both["ts"] = ts_from_msc(both["time_msc"])
     return both.reset_index(drop=True)
+
+
+#: The span a time_msc may take and still get a ts: the epoch up to 2100-01-01, in ms. Epoch-0
+#: rows keep their (1970) ts as before -- readers already drop pre-2000 stamps -- so only a value
+#: that cannot be a clock at all (negative, non-finite, past 2100) loses its derived ts.
+_MSC_LO, _MSC_HI = 0, 4_102_444_800_000
+
+
+def ts_from_msc(msc: pd.Series) -> pd.Series:
+    """`ts` from time_msc WITHOUT trusting every value (2026-11-11, box read CF1).
+
+    MT5-HourlyCore's record_tape leg failed with `FloatingPointError: overflow encountered in
+    multiply` inside `pd.to_datetime(time_msc, unit="ms")`: the merged frame carried a
+    time_msc far outside any real clock (the reindex of two writers' shapes makes the column
+    float, and the hourly pass runs with numpy errors raised), so one bad value failed the
+    whole day's merge. A value outside 1970..2100 or not finite gets ts = NaT; its row is KEPT,
+    because the tape is evidence and is never edited here, only its derived column."""
+    num = pd.to_numeric(msc, errors="coerce")
+    ok = num.notna() & (num >= _MSC_LO) & (num < _MSC_HI)
+    out = pd.Series(pd.NaT, index=msc.index, dtype="datetime64[ms, UTC]")
+    if ok.any():
+        with np.errstate(all="ignore"):
+            out.loc[ok] = pd.to_datetime(num[ok].astype("int64"), unit="ms", utc=True)
+    return out
 
 
 def ticks_table(df: pd.DataFrame):
@@ -644,8 +668,13 @@ def ticks_table(df: pd.DataFrame):
         else:
             cols[c] = pa.array(arr)
     if "time_msc" in df.columns:
-        ms = pd.to_numeric(df["time_msc"], errors="coerce").fillna(0).to_numpy().astype("int64")
-        cols["ts"] = pa.array(ms, type=pa.timestamp("ms", tz="UTC"))
+        # The same guard as ts_from_msc: an out-of-range or missing time_msc is a null ts, never
+        # an int64 cast that overflows (and raises, under the hourly pass's numpy error mode).
+        num = pd.to_numeric(df["time_msc"], errors="coerce")
+        ok = (num.notna() & (num >= _MSC_LO) & (num < _MSC_HI)).to_numpy()
+        ms = np.zeros(len(num), dtype="int64")
+        ms[ok] = num.to_numpy()[ok].astype("int64")
+        cols["ts"] = pa.array(ms, type=pa.timestamp("ms", tz="UTC"), mask=~ok)
     return pa.table(cols)
 
 
