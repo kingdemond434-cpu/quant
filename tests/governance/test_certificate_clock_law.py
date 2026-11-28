@@ -75,7 +75,9 @@ def test_a_blocked_clock_is_a_breach_and_names_its_blocker() -> None:
                last_error="params changed after the clock froze")
     e = law.judge(_cert(), "K", row, [], 100.0, "why", NOW)
     assert e["breach"] is True and e["verdict"] == "BLOCKED"
-    assert "params changed" in e["blocker"]
+    # The status names the blocker; the engine's free text stays on the box (Auditor MF1).
+    assert "IDENTITY_BROKEN" in e["blocker"] and "last_error" in e["blocker"]
+    assert "params changed" not in e["blocker"]
 
 
 def test_a_late_clock_is_a_breach_because_immediate_is_the_word() -> None:
@@ -402,3 +404,66 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+# ----------------------------------------- the wire carries a summary the box sync will not skip
+def test_the_summary_is_written_beside_the_artifact_and_keeps_every_total(tmp_path) -> None:
+    """The box's full artifact reached 8.7 MB at 7,458 certificates; the sync skips reports over
+    4 MB, so origin kept the 11-07 copy for days. The summary must fit and never hide a count."""
+    certs = [{"certificate": f"c{i}", "family": "fam", "key": f"k{i}", "status": "", "n": 0,
+              "verdict": "NO_CLOCK", "breach": True, "why": "x" * 400} for i in range(5000)]
+    certs.append({"certificate": "ok", "family": "fam", "verdict": "ACCUMULATING",
+                  "breach": False})
+    doc = {"at": "t", "ok": False, "verdict": "BREACH", "counts": {"NO_CLOCK": 5000},
+           "n_certificates": 5001, "certificates": certs, "problems": ["p" * 400] * 5000,
+           "notes": ["n"], "collisions": {"a": ["x", "y"]}}
+    full = law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    summary = tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json"
+    assert full.exists() and summary.exists()
+    assert summary.stat().st_size < law.SUMMARY_BUDGET_BYTES
+    s = json.loads(summary.read_text())
+    assert s["counts"] == {"NO_CLOCK": 5000} and s["n_certificates"] == 5001
+    group = s["breaches"]["NO_CLOCK"]
+    assert group["n"] == 5000 and group["listed"] == len(group["rows"]) <= 5000
+    assert group["by_family"] == {"fam": 5000} and s["collisions"] == 1
+    assert "ok" not in {r["certificate"] for r in group["rows"]}
+
+
+def test_a_locked_summary_keeps_the_full_artifact_and_does_not_fail_the_leg(tmp_path,
+                                                                            monkeypatch) -> None:
+    """Windows refuses os.replace while the sync holds the summary open: the leg logs it,
+    keeps the full artifact it already wrote, and the next pass republishes the summary."""
+    def locked(src, dst):
+        raise PermissionError(13, "file in use", str(dst))
+
+    monkeypatch.setattr(law.os, "replace", locked)
+    doc = {"at": "t", "ok": True, "verdict": "OK", "counts": {}, "n_certificates": 0,
+           "certificates": []}
+    full = law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    assert json.loads(full.read_text())["verdict"] == "OK"
+    assert not (tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").exists()
+
+
+def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(law, "SUMMARY_BUDGET_BYTES", 100)
+    doc = {"at": "t", "ok": True, "verdict": "OK", "counts": {}, "n_certificates": 0,
+           "certificates": [], "notes": ["x" * 500]}
+    law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    s = json.loads((tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").read_text())
+    assert s["over_budget"]["budget"] == 100 and doc["summary_over_budget"] == s["over_budget"]
+
+
+def test_a_published_note_names_no_absolute_path(tmp_path) -> None:
+    """Auditor MF1 (2026-11-13): the law's notes are synced to a public branch."""
+    certs, notes = law.certificates(tmp_path / "secret_box_root" / "UNIVERSAL_SURVIVORS.json")
+    assert certs == [] and notes
+    assert all("secret_box_root" not in n and str(tmp_path) not in n for n in notes)
+    rows, rnotes = law.clock_rows(tmp_path / "secret_box_root")
+    assert rows == {} and all("secret_box_root" not in n for n in rnotes)
+
+
+def test_a_blocked_clock_publishes_its_status_never_the_engines_error_text() -> None:
+    row = _row(status="BLOCKED_X", last_error="FileNotFoundError: C:\\opt\\quant\\secret_box_root")
+    e = law.judge(_cert(), "K", row, [], 100.0, "why", NOW)
+    assert e["verdict"] == "BLOCKED"
+    assert "secret_box_root" not in json.dumps(e) and "BLOCKED_X" in e["blocker"]
