@@ -1777,6 +1777,30 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# THE TIER-1 IDEA ROWS (zuck, 2026-11-11): U1 intraday momentum, U2 the overnight/day tug of war,
+# U3 the GVZ/OVX premium over realised vol, U4 the weekend crypto move into the Monday session,
+# U5 share-CFD opening-gap breadth traded on the index, N1 the pre- and post-holiday sessions.
+# U1 and U2 need bars only; U4, U5 and N1 read their input themselves (the named crypto CFD's
+# bars, the US share panel, a rule-generated venue calendar), so every caller rebuilds the same
+# cell from the recipe. U3 has no terms-clean source: it fires only on a series handed to it.
+# Their search is charged once, by `research/tier1_idea_proposer.py` (see orthogonal_sweep.NOT_SOURCED_HERE).
+from mt5desk.family_tier1_ideas import TIER1_IDEA_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(TIER1_IDEA_FAMILIES)
+FAMILY_INPUTS["intraday_momentum"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["overnight_day_tug"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["implied_realised_gap"] = ("CBOE GVZ / OVX (implied_series on the recipe), handed "
+                                         "in by the caller: no terms-clean source, never fetched",
+                                         "none (BLOCKED_SOURCE_REFUSED)")
+FAMILY_INPUTS["weekend_crypto_gap"] = ("the named Fusion crypto CFD's bars (driver_symbol on the "
+                                       "recipe), read by the family on this chart",
+                                       "data/universe/*_<TF>.parquet")
+FAMILY_INPUTS["equity_gap_breadth"] = ("the US share-CFD class's bars on this chart, read by the "
+                                       "family itself", "data/universe/*_<TF>.parquet")
+FAMILY_INPUTS["holiday_drift"] = ("price only + the rule-generated venue holiday calendar "
+                                  "(calendar on the recipe)",
+                                  "data/calendars/holidays_<venue>.json")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
