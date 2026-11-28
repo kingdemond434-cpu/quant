@@ -1203,6 +1203,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # THE NEVER-RUN ORGANS, STARTED (build-check row 13): a few NO_CLOCK organs from this pass's
+    # dead_architecture report, once each, under a time cap, a memory guard and a write guard.
+    "organ_redteam",
     # Half-landed steps (a workflow or box task naming a file that is not in the tree) and the
     # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
     # network, two small reads; the cloud hourly pass runs the full GitHub half.
@@ -1534,7 +1537,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "six_event_trace",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
-                     "unknown_census"), "meta"),
+                     "unknown_census",
+                     # NO_CLOCK organs started once each, bounded: the machine testing its own
+                     # dark organs is meta.
+                     "organ_redteam"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -2115,6 +2121,9 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # Three organs at a 45 s hard cap each inside its own --budget-s 200, plus two git status
+    # reads per organ; the cap sits above the organ's own budget.
+    "organ_redteam": 300,
     # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
     # margin, when priced lower) and saves its state after every symbol turn.
     "tape_deepen": 420,
@@ -6473,6 +6482,10 @@ def main() -> None:
     # nobody could triage, and 71 of it was one failed scheduler read). Joins process_health and
     # the previous pass's sync_marker into a per-organ list and exits 2 -- a declared verdict --
     # when an organ went silent since the last reading.
+    # THE NEVER-RUN ORGANS, STARTED (build-check row 13). Reads the report the leg above just
+    # wrote and starts a few NO_CLOCK organs once each, rotating; report only.
+    orr = _costed("organ_redteam", lambda: _producer(
+        "organ_redteam", "research/organ_redteam.py"))
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
     # ARCHITECTURE HEALTH, box half (zuck 2026-11-13, Phase 6). A monitor, never a gate.
@@ -6744,7 +6757,8 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "dead_architecture": dac, "organ_redteam": orr,
+                    "silent_organs": sil, "halt_rail": hri,
                     "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,

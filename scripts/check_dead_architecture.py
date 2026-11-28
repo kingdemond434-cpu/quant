@@ -37,7 +37,7 @@ import argparse
 import ast
 import json
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -315,6 +315,17 @@ def scheduled(root: Path) -> dict[str, list[str]]:
     return {k: sorted(set(v)) for k, v in out.items()}
 
 
+def _redteam_outcomes(root: Path) -> dict[str, str]:
+    """organ -> its last red-team outcome, from ORGAN_REDTEAM.json; empty when it is absent."""
+    try:
+        doc = json.loads((root / "desks" / "mt5" / "reports" / "ORGAN_REDTEAM.json")
+                         .read_text("utf-8"))
+        rows = doc.get("organs") or {}
+        return {str(k): str((v or {}).get("outcome")) for k, v in rows.items()}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
 def census(root: Path = ROOT) -> dict[str, Any]:
     files = _prod_files(root)
     clocks = scheduled(root)
@@ -354,6 +365,12 @@ def census(root: Path = ROOT) -> dict[str, Any]:
                    NO_CLOCK if consumers else UNREACHED)
         organs[name] = {"planes": planes, "artifacts": arts, "consumers": consumers[:12],
                         "n_consumers": len(consumers), "verdict": verdict}
+    # THE RED-TEAM'S LAST WORD ON EACH NO_CLOCK ORGAN (build-check row 13): whether it lived when
+    # desks/mt5/research/organ_redteam.py last started it. Absent until that leg has run.
+    redteam = _redteam_outcomes(root)
+    for name, o in organs.items():
+        if o["verdict"] == NO_CLOCK and name in redteam:
+            o["redteam"] = redteam[name]
     contested = {a: sorted(w) for a, w in writers_of.items() if len(w) > 1}
     by_verdict: dict[str, list[str]] = defaultdict(list)
     for name, o in organs.items():
@@ -365,6 +382,8 @@ def census(root: Path = ROOT) -> dict[str, Any]:
         "no_clock": sorted(by_verdict[NO_CLOCK]), "unreached": sorted(by_verdict[UNREACHED]),
         "contested_artifacts": dict(sorted(contested.items())),
         "counts": {k: len(v) for k, v in sorted(by_verdict.items())},
+        "redteam_counts": dict(sorted(Counter(o["redteam"] for o in organs.values()
+                                              if "redteam" in o).items())),
         "burning_ratchet": MAX_BURNING,
         "burning_ratchet_ok": len(by_verdict[BURNING]) <= MAX_BURNING,
         "basis": ("CLOCK from check_scheduler_manifest's four planes; ARTIFACT and CONSUMER from "

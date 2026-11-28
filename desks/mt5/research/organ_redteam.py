@@ -1,0 +1,815 @@
+"""RED-TEAM THE NEVER-RUN ORGANS: run each NO_CLOCK organ once, bounded, and record what happened.
+
+    py -3 desks/mt5/research/organ_redteam.py                 # one pass: up to 3 organs
+    py -3 desks/mt5/research/organ_redteam.py --per-pass 5 --cap-s 60
+    py -3 desks/mt5/research/organ_redteam.py --plan-only     # classify the rotation, run nothing
+
+`scripts/check_dead_architecture.py` names every organ that SOMETHING READS and NOTHING RUNS
+(NO_CLOCK: 297 of 796 on 2026-11-18). Each is a claim the desk cannot cash: a reader trusts a file
+whose writer has not been started, perhaps for months, and nobody knows whether that writer still
+imports, still finds its inputs, or crashes on line one. Build-check row 13 ("red-team the 760
+never-run organs") asked for the cheapest possible answer: start each one, once, and write down
+whether it lived.
+
+ONE PASS, BOUNDED ON EVERY AXIS:
+  * a ROTATION. The cursor is the NAME of the next organ (not an index), so a census that gains or
+    loses organs between passes moves the cursor to the next name rather than skipping a stretch.
+  * a HARD TIME CAP per organ, enforced by killing the whole process tree (`libs.ops.proctree`
+    kill_tree -- L0373: `subprocess.run(timeout=)` kills only the child and leaks its pool).
+  * a MEMORY GUARD: the tree's RSS is polled and the tree killed above a cap DERIVED from the
+    machine's free memory (never a hard-coded figure: the two boxes differ twelve-fold), and the
+    pass stands down entirely when free memory cannot cover the cap twice.
+  * a DRY or READ-ONLY flag whenever the organ's own argparse declares one.
+  * a GUARD in the organ's own process (an audit hook): no network at all, loopback included;
+    no child process; no write anywhere but the sandbox, the system temp dir and untracked
+    reports/ -- see BOOTSTRAP. The organ inherits an ALLOWLISTED environment, never the parent's.
+  * no pass at all inside a gold or scalp PLACING WINDOW (read from decision_core.GOLD_WINDOWS
+    and the LIVE scalp rows of data/sleeves.json), or while stall_watch shows memory pressure.
+
+WHAT IS NEVER STARTED (the denylist, each reason pinned by a test):
+  * anything under desks/mt5/scripts/ (the box's own launchers);
+  * anything on the money path (ops/money_closure.txt), and the gateway package;
+  * anything whose source can place, close or cancel an order or talk to the terminal;
+  * anything that mutates git, the scheduler or a service (commit/push/checkout, schtasks,
+    systemctl ...) -- tracked state is changed by its own organ on its own clock, never here;
+  * orchestrators that would start the cycle again (hourly_cycle, controllers, residents);
+  * an organ whose named artifact is a TRACKED file, unless it declares a dry/read-only flag;
+  * an organ that, once run, left a tracked path changed that was clean before: it goes to the
+    QUARANTINE list in the report and is never started again by this organ (the change itself is
+    left for a person -- reverting here could destroy another writer's work).
+
+OUTCOMES (exactly these): ran_ok / crashed (exception TYPE only, never the message: a message can
+carry a path, a key fragment or an account number; SpawnRefused and WriteRefused when the guard
+stopped it) / no_output / timeout / skipped_denylisted / network_refused.
+Report only. Nothing is retired, scheduled or repaired by this file; it is the evidence a person
+or the clock-enrolment organ acts on.
+
+Writes desks/mt5/reports/ORGAN_REDTEAM.json.
+"""
+from __future__ import annotations
+
+import argparse
+import contextlib
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from collections import Counter
+from collections.abc import Iterable, Sequence
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+DESK = Path(__file__).resolve().parents[1]
+ROOT = DESK.parent.parent
+for _p in (str(ROOT), str(DESK)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+SOURCE = DESK / "reports" / "dead_architecture.json"
+OUT = DESK / "reports" / "ORGAN_REDTEAM.json"
+MONEY_CLOSURE = ROOT / "ops" / "money_closure.txt"
+SELF = "desks/mt5/research/organ_redteam.py"
+
+RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED = (
+    "ran_ok", "crashed", "no_output", "timeout", "skipped_denylisted")
+NETWORK_REFUSED, BROKER_REFUSED, NATIVE_REFUSED = (
+    "network_refused", "broker_refused", "native_refused")
+OUTCOMES = (RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED, BROKER_REFUSED,
+            NATIVE_REFUSED)
+#: The environment an organ inherits: these names, and anything starting PYTHON or QUANT_REDTEAM_
+#: (audit HOLD on #1334, SF1). Never dict(os.environ): a credential in the parent's environment
+#: has no business in an organ started blind. The temp names are pointed at the sandbox.
+ENV_ALLOW = ("PATH", "SYSTEMROOT", "TEMP", "TMP", "TMPDIR")
+ENV_PREFIXES = ("PYTHON", "QUANT_REDTEAM_")
+
+PER_PASS = 3
+CAP_S = 45.0
+BUDGET_S = 200.0
+#: The memory cap is a quarter of what is free right now, inside these bounds. The floor keeps a
+#: plain import-and-read organ runnable on the 8 GB build box; the ceiling keeps one stray organ
+#: from taking the trading box's headroom from the legs that matter.
+MEM_SHARE = 0.25
+MEM_FLOOR_MB = 256
+MEM_CEIL_MB = 2048
+
+#: PATH PREFIXES never started. desks/mt5/scripts/ is the box's launcher tree (order tools, task
+#: installers, the adopt-and-seal path); ops/ is release, push and unit plumbing; mt5desk/ is the
+#: gateway's own package; _retired/ is retired on purpose.
+DENY_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("desks/mt5/scripts/", "box_scripts_dir"),
+    ("desks/mt5/mt5desk/", "gateway_package"),
+    ("ops/", "ops_plumbing"),
+    ("scripts/_retired/", "retired"),
+)
+#: A `_retired` directory anywhere is retired on purpose: never started again.
+RETIRED_SEGMENT = "/_retired/"
+#: ORCHESTRATORS: starting one would start the cycle (or a resident) again from inside it.
+DENY_NAME = re.compile(r"(hourly_cycle|hourly_controller|nightly_catchup|department_resident|"
+                       r"supervisor|gateway|run_law_gate|adopt|release|deadman|organ_redteam)",
+                       re.IGNORECASE)
+#: SOURCE TOKENS that mean the organ can reach the broker or the terminal.
+DENY_BROKER = re.compile(r"(order_send|OrderSend|order_check|positions_close|close_position|"
+                         r"place_order|cancel_order|TRADE_ACTION_|MetaTrader5|"
+                         r"mt5\.initialize|mt5\.login|terminal_path|terminal64|Mt5TickSource|"
+                         r"recorders\.tick_source|mt5_session)")
+#: SOURCE TOKENS that mutate git, the scheduler or a service.
+DENY_MUTATE = re.compile(
+    r"""["']git["']\s*,\s*["'](?:commit|push|checkout|reset|stash|merge|rebase|add|rm|restore|"""
+    r"""apply|clean|pull|tag|switch|cherry-pick|revert|worktree|update-ref)["']|"""
+    r"""git\s+(?:commit|push|checkout|reset|stash|merge|rebase|restore|clean|pull)\b|"""
+    r"""schtasks|Register-ScheduledTask|Unregister-ScheduledTask|systemctl|Stop-Process|"""
+    r"""shutil\.rmtree\(\s*ROOT""")
+#: Flags an organ may declare that make it read-only or dry, in order of preference.
+DRY_FLAGS = ("--dry-run", "--read-only", "--readonly", "--no-write", "--dry", "--report-only",
+             "--check")
+_FLAG_DECL = re.compile(r"""add_argument\(\s*["'](--[\w-]+)["']""")
+_MAIN = re.compile(r"""^if\s+__name__\s*==\s*["']__main__["']\s*:""", re.MULTILINE)
+_EXC = re.compile(r"^([A-Za-z_][\w.]*"
+                  r"(?:Error|Exception|Exit|Interrupt|Fault|Warning|Refused))(?::|\s*$)")
+#: Where an organ's named artifact lands when it is not tracked (gitignored reports and data).
+ARTIFACT_DIRS = ("desks/mt5/reports", "desks/mt5/data", "reports", "data", "docs/research")
+
+
+#: THE GUARD, the prevention half (the git-status drift check is the detection half). The organ
+#: is started through this bootstrap, which installs a `sys.addaudithook` and then runs the organ
+#: as __main__. Audit hooks are per process and a child never inherits one, so the guard refuses
+#: everything that would leave its reach, and everything that would touch the box:
+#:
+#:   WRITES   (audit HOLD on #1334, MF3: the rule is INVERTED) the only writable places are the
+#:            sandbox, the system temp dir, os.devnull and an UNTRACKED path under a `reports/`
+#:            directory inside the repository. Every other path is refused, outside the
+#:            repository too: the tick tape, the terminal's directories, any other box state.
+#:            Covers open-for-write, rename/replace, remove, rmdir, mkdir, truncate, chmod,
+#:            utime, link, symlink, rmtree and sqlite3.connect.
+#:   NETWORK  (MF1) socket.connect, socket.getaddrinfo, socket.gethostbyname(_ex/addr) and
+#:            sendto, with NO loopback exception: the gateway and the terminal are local.
+#:   SPAWN    (MF2) subprocess.Popen, os.system, os.exec*, os.spawn*, os.posix_spawn,
+#:            os.startfile and _winapi.CreateProcess (Windows multiprocessing): a child would
+#:            run without the hook. POSIX multiprocessing forks through fork_exec, which raises
+#:            no event, so importing its start methods' popen_* modules is refused instead.
+#:   BROKER   (HOLD 2, MF1) importing MetaTrader5, at any depth (a helper that imports it counts):
+#:            the terminal is reached over C-level IPC that no socket or open event sees.
+#:            Outcome broker_refused.
+#:   NATIVE   (HOLD 2, SF a) ctypes.call_function always; ctypes.dlsym (a symbol lookup --
+#:            measured 2026-11-18: an ordinary foreign call such as CDLL(None).getpid() raises
+#:            NO call_function event, only dlopen and dlsym, so the lookup is where it is
+#:            stopped); and ctypes.dlopen of anything but the running process (ctypes' own
+#:            import) -- except a library inside the Python install or site-packages, whose
+#:            dlopen/dlsym is RECORDED as native_seen and allowed, because Windows wheels preload
+#:            their own DLLs with ctypes.WinDLL at import. Outcome native_refused. Measured the
+#:            same day on Linux: importing numpy, pandas and scipy.stats fires one
+#:            ctypes.dlopen(None), no dlsym and no call_function, so all three still import.
+#:
+#: Each refusal is appended to `_refused` in the sandbox as `kind<TAB>detail`, so an organ that
+#: swallows the PermissionError is still seen to have tried, and the outcome is classified from
+#: that file, not from the exit code. Measured 2026-11-18 on the first real pass: alpha_genome.py
+#: appended to the TRACKED data/preregistrations.jsonl through an imported donation helper -- no
+#: filename literal the static gate could see.
+BOOTSTRAP = r"""
+import os, sys, runpy
+def _install():
+    # EVERYTHING the guard holds lives in this closure (audit HOLD 2 on #1334, SF b): the organ
+    # runs in another namespace, but a flag at module scope is one `import __main__` from being
+    # flipped. An audit hook cannot be removed once added, and nothing here is reachable by name.
+    import site
+    def real(p):
+        return os.path.normcase(os.path.realpath(os.path.abspath(p)))
+    root = real(os.environ["QUANT_REDTEAM_ROOT"])
+    sandbox = os.environ["QUANT_REDTEAM_SANDBOX"]
+    refused_log = os.path.join(sandbox, "_refused")
+    allowed = tuple(real(p) for p in (sandbox, os.environ["QUANT_REDTEAM_SYSTEMP"]) if p)
+    devnull = real(os.devnull)
+    with open(os.environ["QUANT_REDTEAM_TRACKED"], encoding="utf-8") as f:
+        tracked = frozenset(ln.strip() for ln in f if ln.strip())
+    # The Python installation and its site-packages: a native library loaded from here is a
+    # package's own DLL (Windows wheels preload theirs with ctypes.WinDLL at import, delvewheel).
+    try:
+        sites = list(site.getsitepackages()) + [site.getusersitepackages()]
+    except Exception:
+        sites = []
+    py_dirs = tuple(real(p) for p in {sys.prefix, sys.base_prefix, sys.exec_prefix, *sites} if p)
+    wmask = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
+    busy = [False]
+    class WriteRefused(PermissionError):
+        pass
+    class NetworkRefused(PermissionError):
+        pass
+    class SpawnRefused(PermissionError):
+        pass
+    class NativeRefused(PermissionError):
+        pass
+    class BrokerRefused(ImportError):
+        pass
+    def norm(p):
+        if isinstance(p, bytes):
+            p = os.fsdecode(p)
+        if not isinstance(p, (str, os.PathLike)):
+            return None
+        return real(os.fspath(p))
+    def inside(n, base):
+        return n == base or n.startswith(base.rstrip(os.sep) + os.sep)
+    def write_ok(p):
+        n = norm(p)
+        if n is None:
+            return True  # an int fd: the open that produced it was already judged
+        if inside(n, root):  # judged first: a repository under the temp dir is still the repo
+            parts = n[len(root):].split(os.sep)
+            return "reports" in parts and n not in tracked
+        return n == devnull or any(inside(n, a) for a in allowed)
+    def record(kind, detail, exc=None):
+        busy[0] = True
+        try:
+            with open(refused_log, "a", encoding="utf-8") as f:
+                f.write(kind + "\t" + str(detail)[:200].replace("\n", " ") + "\n")
+        finally:
+            busy[0] = False
+        if exc is not None:
+            raise exc("organ_redteam: " + kind + " refused")
+    net = {"socket.connect", "socket.getaddrinfo", "socket.gethostbyname",
+           "socket.gethostbyaddr", "socket.sendto", "socket.sendmsg"}
+    spawn = ("subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn",
+             "os.startfile", "_winapi.CreateProcess")
+    # POSIX multiprocessing starts its children through _posixsubprocess.fork_exec (spawn,
+    # forkserver) or os.fork, and fork_exec raises no audit event: refuse the start methods'
+    # own modules, which Process.start() imports on first use.
+    mp_popen = {"multiprocessing.popen_spawn_posix", "multiprocessing.popen_forkserver",
+                "multiprocessing.popen_fork"}
+    write2 = {"os.rename", "os.link", "os.symlink"}
+    write1 = {"os.remove", "os.rmdir", "os.mkdir", "os.truncate", "os.chmod", "os.chown",
+              "os.utime", "shutil.rmtree", "sqlite3.connect"}
+    def hook(event, args):
+        if busy[0]:
+            return
+        if event == "import":
+            mod = str(args[0] or "")
+            if mod.split(".", 1)[0] == "MetaTrader5":
+                # The terminal is reached over C-level IPC: no socket or open event would fire.
+                record("broker", "import " + mod, BrokerRefused)
+            if mod in mp_popen:
+                record("spawn", "import " + mod, SpawnRefused)
+            return
+        if event in net:
+            tgt = args[1] if event in ("socket.connect", "socket.sendto") and len(args) > 1 else (
+                args[0] if args else "")
+            record("network", event + " " + repr(tgt), NetworkRefused)
+        if event.startswith(spawn):
+            record("spawn", event, SpawnRefused)
+        if event == "ctypes.call_function":
+            record("native", event, NativeRefused)
+        if event == "ctypes.dlsym":
+            # A plain foreign call (CDLL(None).system(...)) raises no call_function event: its
+            # only trace is this symbol lookup, so the lookup is where it is refused.
+            lib, sym = (args[0] if args else None), (args[1] if len(args) > 1 else "?")
+            lname = getattr(lib, "_name", None)
+            n = norm(lname) if isinstance(lname, str) else None
+            if n is not None and any(inside(n, d) for d in py_dirs):
+                record("native_seen", "ctypes.dlsym " + os.path.basename(n) + ":" + str(sym))
+                return
+            record("native", "ctypes.dlsym " + str(lname) + ":" + str(sym), NativeRefused)
+        if event == "ctypes.dlopen":
+            name = args[0] if args else None
+            if name is None:
+                return  # the running process itself (ctypes' own import: pythonapi)
+            n = norm(name)
+            if n is not None and any(inside(n, d) for d in py_dirs):
+                record("native_seen", "ctypes.dlopen " + os.path.basename(n))
+                return
+            record("native", "ctypes.dlopen " + str(name), NativeRefused)
+        paths = ()
+        if event == "open":
+            mode, flags = args[1], args[2]
+            w = (isinstance(mode, str) and any(c in mode for c in "wax+")) or (
+                mode is None and isinstance(flags, int) and bool(flags & wmask))
+            paths = (args[0],) if w else ()
+        elif event in write2:
+            paths = (args[0], args[1])
+        elif event in write1:
+            paths = (args[0],)
+        for p in paths:
+            if not write_ok(p):
+                n = norm(p) or "?"
+                shown = os.path.relpath(n, root) if inside(n, root) else n
+                record("write", shown, WriteRefused)
+    return hook
+sys.addaudithook(_install())
+del _install
+_organ = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path[0] = os.path.dirname(os.path.abspath(_organ))
+runpy.run_path(_organ, run_name="__main__")
+"""
+
+
+def _now() -> str:
+    return datetime.now(tz=UTC).isoformat(timespec="seconds")
+
+
+def _read_json(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def money_closure(path: Path = MONEY_CLOSURE) -> frozenset[str]:
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return frozenset()
+    return frozenset(ln.strip() for ln in lines if ln.strip() and not ln.startswith("#"))
+
+
+def tracked_files(root: Path = ROOT) -> list[str] | None:
+    """Every tracked path (repo-relative), or None when git cannot answer."""
+    try:
+        cp = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True,
+                            timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cp.returncode != 0:
+        return None
+    return [p for p in cp.stdout.decode("utf-8", "replace").split("\0") if p]
+
+
+def tracked_basenames(files: Sequence[str] | None) -> frozenset[str] | None:
+    """Basenames of every tracked file; None when git cannot answer (then ALL count as tracked)."""
+    return None if files is None else frozenset(p.rsplit("/", 1)[-1] for p in files)
+
+
+def tracked_dirty(root: Path = ROOT) -> frozenset[str] | None:
+    """Tracked paths modified, and NEW files git would see, right now; None when git cannot answer.
+
+    Untracked-but-not-ignored files count: a new file under a box state path is committed by the
+    box's next sync, so it is tracked state in all but name.
+    """
+    try:
+        cp = subprocess.run(["git", "status", "--porcelain", "--untracked-files=normal", "-z"],
+                            cwd=root, capture_output=True, timeout=120, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cp.returncode != 0:
+        return None
+    return frozenset(e[3:] for e in cp.stdout.decode("utf-8", "replace").split("\0") if len(e) > 3)
+
+
+def classify(organ: str, source: str | None, artifacts: Sequence[str], *,
+             money: frozenset[str], tracked: frozenset[str] | None,
+             quarantine: Iterable[str] = ()) -> dict[str, Any]:
+    """Decide whether `organ` may be started, and how. Pure: every input is passed in.
+
+    Returns {"run": bool, "reason": str, "args": [...], "mode": str}. `run` is False with a reason
+    for every denylist hit; True with the dry flag (if any) it will be started under.
+    """
+    def deny(reason: str) -> dict[str, Any]:
+        return {"run": False, "reason": reason, "args": [], "mode": "none"}
+
+    rel = organ.replace("\\", "/").lstrip("./")
+    for prefix, reason in DENY_PREFIXES:
+        if rel.startswith(prefix):
+            return deny(reason)
+    if RETIRED_SEGMENT in f"/{rel}":
+        return deny("retired")
+    if rel in money:
+        return deny("money_path")
+    if rel in set(quarantine):
+        return deny("quarantined_tracked_drift")
+    if DENY_NAME.search(rel.rsplit("/", 1)[-1]):
+        return deny("orchestrator_or_release")
+    if source is None:
+        return deny("source_unreadable")
+    if DENY_BROKER.search(source):
+        return deny("broker_or_orders")
+    if DENY_MUTATE.search(source):
+        return deny("mutates_git_or_scheduler")
+    if not _MAIN.search(source):
+        return deny("no_entrypoint")
+    declared = set(_FLAG_DECL.findall(source))
+    dry = next((f for f in DRY_FLAGS if f in declared), None)
+    writes_tracked = (tracked is None and bool(artifacts)) or any(
+        a in (tracked or ()) for a in artifacts)
+    if writes_tracked and dry is None:
+        return deny("writes_tracked_state" if tracked is not None else "tracked_state_unknowable")
+    return {"run": True, "reason": "", "args": [dry] if dry else [],
+            "mode": dry.lstrip("-") if dry else "plain"}
+
+
+def memory_cap_mb() -> tuple[int, float | None]:
+    """(cap, available) in MB, the cap derived from MEASURED free memory on this machine."""
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        avail = float(psutil.virtual_memory().available) / 1024 ** 2
+    except Exception:
+        return MEM_FLOOR_MB, None
+    return int(min(MEM_CEIL_MB, max(MEM_FLOOR_MB, avail * MEM_SHARE))), avail
+
+
+def _tree_rss_mb(pid: int) -> float:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        root = psutil.Process(pid)
+        procs = [root, *root.children(recursive=True)]
+    except Exception:
+        return 0.0
+    total = 0
+    for p in procs:
+        try:
+            total += p.memory_info().rss
+        except Exception:
+            continue
+    return total / 1024 ** 2
+
+
+def _kill(pid: int) -> None:
+    try:
+        from libs.ops.proctree import kill_tree
+        kill_tree(pid)
+    except Exception:
+        with contextlib.suppress(OSError):
+            os.kill(pid, 9)
+
+
+def exception_type(stderr: str) -> str | None:
+    """The LAST exception type in a traceback tail -- the type only, never its message."""
+    found = None
+    for line in stderr.splitlines():
+        m = _EXC.match(line.strip())
+        if m:
+            found = m.group(1).rsplit(".", 1)[-1]
+    return found
+
+
+def _artifact_touched(artifacts: Sequence[str], since: float, root: Path) -> bool:
+    for a in artifacts:
+        for d in ARTIFACT_DIRS:
+            p = root / d / a
+            try:
+                if p.stat().st_mtime >= since:
+                    return True
+            except OSError:
+                continue
+    return False
+
+
+def organ_env(sandbox: str, root: Path, base: dict[str, str] | None = None) -> dict[str, str]:
+    """The ALLOWLISTED environment an organ is started with (SF1)."""
+    src = dict(os.environ if base is None else base)
+    env = {k: v for k, v in src.items()
+           if k.upper() in ENV_ALLOW or k.upper().startswith(ENV_PREFIXES)}
+    env.update({"PYTHONPATH": os.pathsep.join([str(root), str(root / "desks" / "mt5")]),
+                "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8",
+                "TEMP": sandbox, "TMP": sandbox, "TMPDIR": sandbox,
+                "QUANT_REDTEAM_ACTIVE": "1"})
+    return env
+
+
+def _refusals(path: Path) -> list[tuple[str, str]]:
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for ln in lines:
+        kind, _, detail = ln.partition("\t")
+        out.append((kind, detail))
+    return sorted(set(out))
+
+
+def run_one(organ: str, args: Sequence[str], artifacts: Sequence[str], *, cap_s: float,
+            mem_mb: int, root: Path = ROOT,
+            tracked_reports: Sequence[str] = (),
+            systemp: str | None = None) -> dict[str, Any]:
+    """Start one organ in a scratch cwd under a time cap, a memory guard and the bootstrap guard.
+
+    Classification, in order: timeout; memory; NETWORK refused (network_refused); a SPAWN or a
+    WRITE refused (crashed / SpawnRefused or WriteRefused, whatever the exit code -- an organ that
+    swallowed the refusal did not run as itself); exit code; output.
+    """
+    started = time.time()
+    systemp = tempfile.gettempdir() if systemp is None else systemp
+    with tempfile.TemporaryDirectory(prefix="organ_redteam_") as sandbox:
+        out_p, err_p = Path(sandbox) / "_stdout", Path(sandbox) / "_stderr"
+        tracked_p = Path(sandbox) / "_tracked"
+        tracked_p.write_text("\n".join(os.path.normcase(os.path.realpath(root / t))
+                                       for t in tracked_reports), "utf-8")
+        env = organ_env(sandbox, root)
+        env.update({"QUANT_REDTEAM_ROOT": str(root), "QUANT_REDTEAM_SANDBOX": sandbox,
+                    "QUANT_REDTEAM_SYSTEMP": systemp, "QUANT_REDTEAM_TRACKED": str(tracked_p)})
+        killed = None
+        peak = 0.0
+        with out_p.open("wb") as fo, err_p.open("wb") as fe:
+            try:
+                proc = subprocess.Popen([sys.executable, "-c", BOOTSTRAP, str(root / organ),
+                                         *args], cwd=sandbox, env=env,
+                                        stdin=subprocess.DEVNULL, stdout=fo, stderr=fe)
+            except OSError as exc:
+                return {"outcome": CRASHED, "exception": type(exc).__name__, "rc": None,
+                        "elapsed_s": 0.0}
+            while proc.poll() is None:
+                if time.time() - started > cap_s:
+                    killed = TIMEOUT
+                elif (rss := _tree_rss_mb(proc.pid)) > mem_mb:
+                    killed = "memory"
+                    peak = max(peak, rss)
+                else:
+                    peak = max(peak, rss)
+                if killed:
+                    _kill(proc.pid)
+                    with contextlib.suppress(subprocess.TimeoutExpired):
+                        proc.wait(timeout=10)
+                    break
+                time.sleep(0.25)
+        rc = proc.returncode
+        elapsed = round(time.time() - started, 2)
+        stdout_n = out_p.stat().st_size if out_p.exists() else 0
+        stderr = err_p.read_bytes()[-8192:].decode("utf-8", "replace") if err_p.exists() else ""
+        refused = _refusals(Path(sandbox) / "_refused")
+        wrote_sandbox = any(p.name not in ("_stdout", "_stderr", "_tracked", "_refused")
+                            for p in Path(sandbox).iterdir())
+    base: dict[str, Any] = {"rc": rc, "elapsed_s": elapsed, "peak_rss_mb": round(peak, 1)}
+    kinds = {k for k, _ in refused}
+    if refused:
+        base["refused"] = [f"{k}: {d}" for k, d in refused][:20]
+    if killed == TIMEOUT:
+        return {"outcome": TIMEOUT, **base}
+    if killed == "memory":
+        return {"outcome": CRASHED, "exception": "MemoryGuard", **base}
+    if "broker" in kinds:
+        return {"outcome": BROKER_REFUSED, "exception": "BrokerRefused", **base}
+    if "network" in kinds:
+        return {"outcome": NETWORK_REFUSED, "exception": "NetworkRefused", **base}
+    if "native" in kinds:
+        return {"outcome": NATIVE_REFUSED, "exception": "NativeRefused", **base}
+    if "spawn" in kinds:
+        return {"outcome": CRASHED, "exception": "SpawnRefused", **base}
+    if "write" in kinds:
+        return {"outcome": CRASHED, "exception": "WriteRefused", **base}
+    if rc != 0:
+        return {"outcome": CRASHED, "exception": exception_type(stderr) or f"exit_{rc}", **base}
+    if stdout_n or wrote_sandbox or _artifact_touched(artifacts, started, root):
+        return {"outcome": RAN_OK, **base}
+    return {"outcome": NO_OUTPUT, **base}
+
+
+#: WHERE THE PLACING WINDOWS ARE READ FROM (audit HOLD on #1334, SF2), never typed here: the gold
+#: windows are `decision_core.GOLD_WINDOWS` (signal hours on the BROKER clock), read from source
+#: so this file imports nothing on the money path; the scalp lane is every LIVE row of
+#: data/sleeves.json that names a session, its hours read from `family_generic._CONTEXTS` (broker
+#: hours, the masks the scalp families trade in). The broker clock is
+#: `libs.regime.session_clock.utc_offset_h` (3 in US summer, 2 otherwise).
+DECISION_CORE = DESK / "mt5desk" / "decision_core.py"
+FAMILY_GENERIC = DESK / "mt5desk" / "family_generic.py"
+SLEEVES = DESK / "data" / "sleeves.json"
+STALL_WATCH = (DESK / "data" / "stall_watch.json", ROOT / "data" / "stall_watch.json")
+#: Minutes each side of a gold placement that the followers trail inside (libs/ops/adopt_guard's
+#: blackout uses the same thirty).
+WINDOW_MARGIN_MIN = 30
+#: Free physical memory under this share of total is a binding limit (limits_census's floor).
+STALL_FREE_SHARE = 0.10
+STALL_MAX_AGE_S = 2 * 3600
+_CONTEXT_HOURS = re.compile(r"""["'](\w+)["']\s*:\s*lambda\s+d\s*:\s*"""
+                            r"""\(d\.index\.hour\s*>=\s*(\d+)\)"""
+                            r"""\s*&\s*\(d\.index\.hour\s*<\s*(\d+)\)""")
+
+
+def gold_signal_hours(path: Path = DECISION_CORE) -> list[tuple[str, int]] | None:
+    """[(label, broker signal hour)] from decision_core.GOLD_WINDOWS; None when unreadable."""
+    import ast
+    try:
+        tree = ast.parse(path.read_text("utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "GOLD_WINDOWS"
+                                                 for t in node.targets)):
+            try:
+                rows = ast.literal_eval(node.value)
+                return [(str(r[0]), int(r[1])) for r in rows]
+            except (ValueError, TypeError, IndexError):
+                return None
+    return None
+
+
+def scalp_windows(sleeves: Path = SLEEVES,
+                  generic: Path = FAMILY_GENERIC) -> list[tuple[str, int, int]] | None:
+    """[(sleeve, start, end)] broker hours of every LIVE scalp-lane row; None when unreadable.
+
+    A LIVE row whose session cannot be resolved to hours (`all`, missing, unknown) counts as
+    placing all day (0, 24): fail closed."""
+    doc = _read_json(sleeves)
+    if doc is None:
+        return None
+    try:
+        hours = {m.group(1): (int(m.group(2)), int(m.group(3)))
+                 for m in _CONTEXT_HOURS.finditer(generic.read_text("utf-8"))}
+    except OSError:
+        hours = {}
+    out = []
+    for row in doc.get("sleeves") or []:
+        if not isinstance(row, dict) or str(row.get("status")) != "LIVE" or not row.get("session"):
+            continue
+        a, b = hours.get(str(row["session"]), (0, 24))
+        out.append((str(row.get("name")), a, b))
+    return out
+
+
+def placing_window(now: datetime, *, lead_min: int, offset_h: Any = None,
+                   gold: list[tuple[str, int]] | None = None,
+                   scalp: list[tuple[str, int, int]] | None = None,
+                   read: bool = True) -> str | None:
+    """Why `now` (or the next `lead_min` minutes) is inside a gold or scalp placing window; else
+    None. Unreadable windows or broker clock are a reason too: never run blind."""
+    if read:
+        gold = gold_signal_hours() if gold is None else gold
+        scalp = scalp_windows() if scalp is None else scalp
+    if gold is None:
+        return "gold windows unreadable (decision_core.GOLD_WINDOWS)"
+    if scalp is None:
+        return "scalp lane unreadable (data/sleeves.json)"
+    try:
+        if offset_h is None:
+            from libs.regime.session_clock import utc_offset_h
+            offset_h = utc_offset_h
+        off = int(offset_h(now))
+    except Exception as exc:
+        return f"broker clock unreadable ({type(exc).__name__})"
+    b = now.astimezone(UTC) + timedelta(hours=off)
+    m = b.hour * 60 + b.minute
+
+    def inside(start: int, end: int) -> bool:
+        span = (end - start) % 1440 or 1440
+        return (m - start) % 1440 < span
+
+    for label, hour in gold:
+        if inside(hour * 60 - WINDOW_MARGIN_MIN - lead_min, hour * 60 + WINDOW_MARGIN_MIN):
+            return f"gold {label} placing window (signal {hour:02d}:00 broker, now {b:%H:%M})"
+    for name, a, e in scalp:
+        if e - a >= 24 or inside(a * 60 - lead_min, e * 60):
+            return f"scalp {name} placing window ({a:02d}-{e:02d} broker, now {b:%H:%M})"
+    return None
+
+
+def stall_pressure(mem_mb: int, *, now: datetime | None = None,
+                   paths: Sequence[Path] = STALL_WATCH) -> str | None:
+    """Why the box's own stall_watch says it is under memory pressure; None when it does not, or
+    when no fresh stall_watch exists (psutil's reading then stands alone)."""
+    now = now or datetime.now(tz=UTC)
+    best: tuple[datetime, dict[str, Any]] | None = None
+    for p in paths:
+        doc = _read_json(p)
+        if not doc:
+            continue
+        try:
+            at = datetime.fromisoformat(str(doc.get("checked_at")).replace("Z", "+00:00"))
+            at = at if at.tzinfo else at.replace(tzinfo=UTC)
+        except ValueError:
+            continue
+        if best is None or at > best[0]:
+            best = (at, doc)
+    if best is None or (now - best[0]).total_seconds() > STALL_MAX_AGE_S:
+        return None
+    mem = best[1].get("memory") or {}
+    try:
+        free, total = float(mem["free_phys_mb"]), float(mem.get("total_phys_mb") or 0)
+    except (KeyError, TypeError, ValueError):
+        return None
+    floor = max(2.0 * mem_mb, STALL_FREE_SHARE * total)
+    if free < floor:
+        return f"stall_watch free_phys_mb {free:.0f} < {floor:.0f}"
+    return None
+
+
+def next_names(names: Sequence[str], cursor: str | None) -> list[str]:
+    """The rotation from `cursor` (a NAME; the first name >= it), wrapping once."""
+    ordered = sorted(names)
+    if not ordered:
+        return []
+    start = 0
+    if cursor:
+        start = next((i for i, n in enumerate(ordered) if n >= cursor), 0)
+    return ordered[start:] + ordered[:start]
+
+
+def run_pass(*, per_pass: int = PER_PASS, cap_s: float = CAP_S, budget_s: float = BUDGET_S,
+             plan_only: bool = False, source: Path = SOURCE, out: Path = OUT,
+             root: Path = ROOT, runner: Any = None,
+             hold: Any = None) -> dict[str, Any]:
+    runner = runner or run_one
+    prev = _read_json(out) or {}
+    census = _read_json(source)
+    doc: dict[str, Any] = {
+        "at": _now(), "source": str(source.relative_to(root)) if source.is_relative_to(root)
+        else str(source), "per_pass": per_pass, "time_cap_s": cap_s,
+        "outcomes": list(OUTCOMES), "organs": dict(prev.get("organs") or {}),
+        "quarantine": sorted(set(prev.get("quarantine") or [])),
+        "cursor": prev.get("cursor"), "this_pass": [],
+    }
+    if not census or not isinstance(census.get("no_clock"), list):
+        doc.update(status="UNMEASURED",
+                   why=f"{source.name} is absent or carries no no_clock list; nothing was run")
+        return doc
+    no_clock = [str(n) for n in census["no_clock"]]
+    organs_meta = census.get("organs") or {}
+    doc["source_at"] = census.get("at")
+    doc["n_no_clock"] = len(no_clock)
+    money = money_closure(root / "ops" / "money_closure.txt")
+    files = tracked_files(root)
+    tracked = tracked_basenames(files)
+    tracked_reports = [f for f in files or () if "reports" in f.split("/")]
+    mem_mb, avail = memory_cap_mb()
+    doc["memory_cap_mb"], doc["memory_available_mb"] = mem_mb, (
+        round(avail) if avail is not None else None)
+    if hold is None:
+        now = datetime.now(tz=UTC)
+        why = (placing_window(now, lead_min=int(budget_s // 60) + 1)
+               or stall_pressure(mem_mb, now=now))
+    else:
+        why = hold(mem_mb)
+    if why is None and avail is not None and avail < 2 * mem_mb:
+        why = f"psutil available {avail:.0f} MB < twice the {mem_mb} MB cap"
+    stand_down = why is not None
+    if why:
+        doc["stood_down_because"] = why
+    t0 = time.time()
+    ran = 0
+    rotation = next_names(no_clock, doc["cursor"])
+    cursor: str | None = None
+    for name in rotation:
+        if ran >= per_pass or time.time() - t0 + cap_s > budget_s:
+            cursor = name
+            break
+        arts = list((organs_meta.get(name) or {}).get("artifacts") or [])
+        try:
+            src: str | None = (root / name).read_text("utf-8", "replace")
+        except OSError:
+            src = None
+        c = classify(name, src, arts, money=money, tracked=tracked, quarantine=doc["quarantine"])
+        row: dict[str, Any] = {"organ": name, "at": _now(), "mode": c["mode"]}
+        if not c["run"]:
+            row.update(outcome=SKIPPED, reason=c["reason"])
+        elif plan_only or stand_down:
+            row.update(outcome=None, reason="plan_only" if plan_only else "stand_down")
+            doc["this_pass"].append(row)
+            if stand_down:
+                cursor = name
+                break
+            continue
+        else:
+            before = tracked_dirty(root)
+            row.update(runner(name, c["args"], arts, cap_s=cap_s, mem_mb=mem_mb, root=root,
+                              tracked_reports=tracked_reports))
+            after = tracked_dirty(root)
+            drift = sorted(after - before) if before is not None and after is not None else []
+            if drift:
+                # Another writer may share the window, so this is a suspicion, recorded as one;
+                # the organ is never started here again either way.
+                row["tracked_drift"] = drift[:20]
+                doc["quarantine"] = sorted({*doc["quarantine"], name})
+            ran += 1
+        doc["this_pass"].append(row)
+        doc["organs"][name] = {k: v for k, v in row.items() if k != "organ"}
+    else:
+        # The whole list was walked: the next pass starts where this one did.
+        cursor = rotation[0] if rotation else None
+    doc["cursor"] = cursor
+    live = set(no_clock)
+    doc["organs"] = {k: v for k, v in sorted(doc["organs"].items()) if k in live}
+    counts = Counter(str(v.get("outcome")) for v in doc["organs"].values())
+    doc["counts"] = dict(sorted(counts.items()))
+    doc["n_ran_this_pass"] = ran
+    doc["n_classified"] = len(doc["organs"])
+    doc["coverage"] = round(len(doc["organs"]) / len(no_clock), 4) if no_clock else None
+    doc["status"] = "STOOD_DOWN" if stand_down else ("PLAN_ONLY" if plan_only else "OK")
+    doc["why"] = ("NO_CLOCK organs are read by something and started by nothing; each pass "
+                  "starts a few of them once, bounded, and records whether they lived. "
+                  "Report only: nothing is scheduled, retired or repaired here")
+    return doc
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--per-pass", type=int, default=PER_PASS)
+    ap.add_argument("--cap-s", type=float, default=CAP_S)
+    ap.add_argument("--budget-s", type=float, default=BUDGET_S)
+    ap.add_argument("--plan-only", action="store_true", help="classify the rotation, run nothing")
+    ap.add_argument("--source", type=Path, default=SOURCE)
+    ap.add_argument("--out", type=Path, default=OUT)
+    a = ap.parse_args(argv)
+    doc = run_pass(per_pass=a.per_pass, cap_s=a.cap_s, budget_s=a.budget_s,
+                   plan_only=a.plan_only, source=a.source, out=a.out)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = a.out.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    os.replace(tmp, a.out)
+    print(f"organ_redteam: {doc.get('status')}; ran {doc.get('n_ran_this_pass', 0)} this pass; "
+          f"{doc.get('n_classified', 0)}/{doc.get('n_no_clock', 0)} NO_CLOCK organs classified; "
+          f"{doc.get('counts', {})}; next {doc.get('cursor')}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
