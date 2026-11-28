@@ -57,6 +57,27 @@ def test_allocator_proof_rotation_rejects_any_other_bytes(
     assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
 
 
+def test_state_admission_rotation_rejects_any_other_bytes(
+        monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """The new rotation authorizes exactly its "to" bytes: point it at other bytes AND move
+    the file's observed hash, and QB-002 reads REGRESSED."""
+    old = qb.STATE_ADMISSION_SEAL_ROTATION
+    monkeypatch.setattr(qb, "STATE_ADMISSION_SEAL_ROTATION", {**old, "to": "0" * 64})
+    real = qb._sha
+    monkeypatch.setattr(qb, "_sha", lambda p: ("f" * 64 if str(p).endswith("state_admission.py")
+                                              else real(p)))
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
+
+
+def test_state_admission_rotation_holds_qb002_as_it_was() -> None:
+    """from == to today: adding the constant changes no verdict until the train repins it."""
+    rot = qb.STATE_ADMISSION_SEAL_ROTATION
+    assert rot["path"] in qb.SEALED and rot["from"] == rot["to"]
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert case["expect"]["sha256"][rot["path"]] == rot["from"]
+
+
 def test_gauntlet_rotation_rejects_any_other_bytes(monkeypatch) -> None:
     old = qb.GAUNTLET_SEAL_ROTATION
     monkeypatch.setattr(qb, "GAUNTLET_SEAL_ROTATION", {**old, "to": "0" * 64})

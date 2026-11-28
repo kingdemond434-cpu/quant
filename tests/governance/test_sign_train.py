@@ -186,3 +186,16 @@ def test_the_audit_signs_only_cleared_bytes() -> None:
     assert expect == {"x.py": a}
     assert st.binding_problems({"x.py": a, "y.py": b}, expect) != []
     assert st.binding_problems({"x.py": a}, expect) == []
+
+
+def test_every_sealed_file_can_be_signed_by_the_audit() -> None:
+    """zuck, 2026-11-11 01:30Z: "This shouldn't need me". No sealed file is left without a
+    rotation constant, so none falls back to the principal's typed sign."""
+    spec = importlib.util.spec_from_file_location(
+        "qb", ROOT / "desks" / "mt5" / "research" / "quantbench.py"
+    )
+    assert spec and spec.loader
+    qb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(qb)
+    assert st.NO_ROTATION == ()
+    assert set(qb.SEALED) == set(st.ROTATIONS)

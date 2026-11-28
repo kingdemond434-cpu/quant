@@ -83,6 +83,18 @@ GAUNTLET_SEAL_ROTATION = {
 }
 
 
+# The fourth sealed file gets the same audited rotation as the other three (2026-11-11), so a
+# change to it is re-sealed by the sign train on an Auditor CLEAR row in SEAL_CLEARS.jsonl
+# (D-20261027-003) instead of waiting on the principal's typed sign: zuck, 01:30Z, "This
+# shouldn't need me". "from" is QB-002's original pin and "to" the bytes signed today, so this
+# reads exactly as before until the train repins "to"; any other bytes still read REGRESSED.
+STATE_ADMISSION_SEAL_ROTATION = {
+    "path": "libs/regime/state_admission.py",
+    "from": "1fc3e4878041db7a146cf228a6bc72d51b7a393c302769f30ff88f26610b730a",
+    "to": "1fc3e4878041db7a146cf228a6bc72d51b7a393c302769f30ff88f26610b730a",
+    "signed_by": "Codex, principal-authorized repair",
+}
+
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
     # with different bytes, and the pin read REGRESSED on whichever host it was not written on.
@@ -135,7 +147,7 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
     except (OSError, ValueError):
         manifest = {}
     for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION,
-                     GAUNTLET_SEAL_ROTATION):
+                     GAUNTLET_SEAL_ROTATION, STATE_ADMISSION_SEAL_ROTATION):
         path = rotation["path"]
         if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
             continue
