@@ -55,14 +55,29 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # ONE GROUP PER PUSHED COMMIT. GitHub keeps one pending run per group and cancels the older
-  # pending one whatever cancel-in-progress says, so with a per-branch group every live push
-  # still cancelled the last (20 runs cancelled on 2026-09-30) and live never finished a run.
-  # A workflow_dispatch on LIVE is the audit gate's merge (a merge made with the workflow token
-  # starts no push run): it is a push run in every respect, its own group included.
-  group: ci-${{ github.ref }}-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.sha || 'pr' }}
-  # A push run on a shared branch always finishes: every live run 11:42-12:54Z on 2026-09-30
-  # was cancelled by the next push, so live never produced a base set. PR runs still supersede.
+  # ONE GROUP PER SHARED BRANCH, NEWEST CODE TIP WINS THE WAIT (2026-11-10, Autonomy).
+  # GitHub keeps one RUNNING and one PENDING run per group and cancels the older PENDING one when a
+  # newer run joins, whatever cancel-in-progress says. A run that has started is never cancelled
+  # (cancel-in-progress is false for push and dispatch), so every LIVE run that starts finishes.
+  #
+  # HISTORY. Until 11-10 the group was one per pushed commit (`&& github.sha`), because on
+  # 2026-09-30 the box's 15-min state publishes were LIVE pushes too: each one replaced the pending
+  # code run and LIVE never finished a run (20 cancelled). The `paths` filter above (10-29) ended
+  # that: a state-only publish starts no run, so only a newer CODE push can replace a pending run,
+  # and that newer commit contains every older one. The per-commit group then had the opposite
+  # cost. MEASURED 2026-11-10 19:30Z: 305 runs queued repo-wide; LIVE's newest code tip 49814d8bf
+  # (run 42871523193) had waited 85 min behind eight queued LIVE runs of older tips (16:41-17:00Z)
+  # that no release needs, and the box adopted nothing after 16:24Z ("waiting for CI").
+  #
+  # WHAT THIS COSTS, stated plainly: a LIVE commit whose run was replaced while still pending has
+  # no ci verdict of its own. The release gate is unaffected (it reads code paths, and the newer
+  # tip's green run covers them). AUTO-REVERT (audit_gate.to_revert) needs a completed run on the
+  # merge AND on its first parent, so in a burst of merges a red merge whose parent's run was
+  # replaced is not auto-reverted; LIVE then stays red, nothing is released or adopted (fails
+  # closed), and the red run names the merge. A dispatched run (the gate's merge) is a push run in
+  # every respect, this group included.
+  group: ci-${{ github.ref }}-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'shared' || 'pr' }}
+  # A push run on a shared branch always finishes once started; PR runs still supersede.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

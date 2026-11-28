@@ -542,7 +542,7 @@ def test_a_dispatched_ci_run_on_live_seals_and_promotes_like_a_push() -> None:
     for job in ("seal", "promote"):
         start = ci.index(f"\n  {job}:\n")
         assert both in ci[start : start + 400], job
-    assert f"{both} && github.sha || 'pr'" in ci
+    assert f"{both} && 'shared' || 'pr'" in ci
 
 
 # ------------------------------------------------------------- zuck's daily approval (#453)
