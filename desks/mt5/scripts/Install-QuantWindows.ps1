@@ -586,9 +586,9 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         # DAILY at :12 repeating hourly for one day -- never -Once with a long duration: the
         # scheduler folded that into P9DT2H40M on the trading box and the repetition EXPIRED on
         # 2026-09-21, after which nothing shipped was adopted (install_adopt_release_task.ps1).
-        $adoptTrigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))
-        $adoptTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
-            -RepetitionInterval (New-TimeSpan -Hours 1) `
+        $adoptTrigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(2))
+        $adoptTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(2)) `
+            -RepetitionInterval (New-TimeSpan -Minutes 5) `
             -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
@@ -606,7 +606,7 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         Register-ScheduledTask -TaskName "MT5-AdoptRelease" -Action $adoptAction `
             -Trigger $adoptTrigger -Settings $adoptSettings -Principal $adoptPrincipal `
             -Description "Adopt the branch's code in place, re-seal the release, restart the gateway on the new seal." | Out-Null
-        Write-Host "  [OK  ] MT5-AdoptRelease registered (hourly at :12)"
+        Write-Host "  [OK  ] MT5-AdoptRelease registered (every 5 minutes)"
     } catch {
         Write-Host ("  [FAIL] MT5-AdoptRelease {0}" -f $_.Exception.Message)
     }

@@ -7,7 +7,13 @@
 # origin and the gateway that runs them, so it gets the same single-task installer the moat
 # miner and the contract terms got: idempotent, one file, no other task touched.
 #
-# WHAT IT DOES. Registers MT5-AdoptRelease -- hourly at :12, between the :05 and :20 ShadowSync
+# EVERY FIVE MINUTES (2026-11-14, zuck: "always immediate new code adoptions 24 7"). The task
+# fires at :02 and every five minutes after; Adopt-And-Seal.ps1 section -1 makes a tick where
+# origin has not moved a single read-only `git ls-remote`, and still runs the full path at least
+# once an hour. The text below records why it was first placed at :12; Adopt-And-Seal waits out a
+# running ShadowSync itself, so a tick that lands on a sync slot is safe.
+#
+# WHAT IT DID. Registered MT5-AdoptRelease -- hourly at :12, between the :05 and :20 ShadowSync
 # slots (that task repeats every FIFTEEN minutes from :05 -- :05, :20, :35, :50 -- so the :20 this
 # was first registered at was a sync slot, not a gap after one: two git writers in one repository
 # in the same second, MEASURED 2026-09-08 from the two installers) and before the research legs
@@ -40,9 +46,9 @@ $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
 # had folded the long duration into nine days -- so the repetition EXPIRED on 2026-09-21 02:52,
 # `Next Run Time: N/A`, and nothing shipped after that ever reached the box. Daily-at-:12 with a
 # one-day hourly repetition re-arms itself every midnight and has no end to expire.
-$trigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))
-$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
-    -RepetitionInterval (New-TimeSpan -Hours 1) `
+$trigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(2))
+$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(2)) `
+    -RepetitionInterval (New-TimeSpan -Minutes 5) `
     -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
 
 # StartWhenAvailable so an hour missed to a reboot is caught up rather than silently skipped;
@@ -110,7 +116,7 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
 $t = Get-ScheduledTask -TaskName $TaskName
 "installed {0}: state={1} interval={2}" -f $t.TaskName, $t.State, $t.Triggers[0].Repetition.Interval
 
-# THE FIRST ADOPTION IS NOW. Waiting for :12 is another hour of the gateway on the old tree.
+# THE FIRST ADOPTION IS NOW, not at the next five-minute tick.
 # (Adopt-And-Seal itself waits out a ShadowSync pass that is still running, so starting inside
 # one is safe.)
 Start-ScheduledTask -TaskName $TaskName
