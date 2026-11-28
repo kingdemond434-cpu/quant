@@ -2916,6 +2916,24 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     return last_bar if last_bar.minute == 0 else None
 
 
+def frame_is_current(forming_open: object, *, now: object, bar_minutes: int = 60) -> bool:
+    """True when the frame's FORMING row is the bar in progress now: `now` is less than one bar
+    past its open (#926 audit MF, superseding #111's two-bars-after-the-last-CLOSED-bar test).
+
+    WHY THE FORMING ROW. Judging the last closed bar refused every legitimate first decision after
+    a gap -- a Friday 23:00 bar acted on at Monday's open is ~49 h old, a 22:00 bar acted on after
+    the daily break at 01:05 is three hours old -- while the replay acts on exactly those bars at
+    the next open, so live would drop real trades and leave the certified spec. After a gap the
+    venue prints a NEW forming bar at the open, so it is current; only a feed that stopped
+    printing leaves the forming row behind the clock. `now` must be in the bars' own clock (the
+    gateway passes the broker wall clock); a `now` before the open (clock skew) is current."""
+    t = pd.Timestamp(now)  # type: ignore[arg-type]
+    fo = pd.Timestamp(forming_open)  # type: ignore[arg-type]
+    if (t.tzinfo is None) != (fo.tzinfo is None):
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC").tz_localize(None)
+    return bool(t - fo < pd.Timedelta(minutes=int(bar_minutes)))
+
+
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
                        day_states_fn: Any, call_params: dict | None = None,
