@@ -1,0 +1,2025 @@
+From f3c0bfb070f3cd1a357a4a5461b6bebae83cb421 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 01:22:57 +0000
+Subject: [PATCH] Judge sealed batch v2: v1's four gauntlet changes plus the
+ observed-zero spread basis
+
+One sealed head on LIVE carrying everything v1 (5446c2dd) carried -- fill-minute,
+the BR1 duplicate-cert refusal, pre-warm I/O and the elog blend -- plus the two sealed
+halves of zero spread v2.1.2, which the principal approved 2026-11-14 ("yes" to charging
+Fusion Zero's true 0-spread pairs commission only; non-zero spreads stay charged in full):
+
+- external_gauntlet.py: ZERO_SPREAD_SOURCES = {"fusion_zero_m1_tape"} and
+  _zero_spread_stamp(row). A registry 0.0 median spread is a measured zero only when the
+  M1 tape stamped it as observed and tick_value/tick_size/contract_size are all > 0;
+  anything else stays UNMEASURED and fails closed.
+- promoter.py: _ZERO_SPREAD_SOURCES and _observed_zero(meta), the same test on the
+  promoter's cost-basis read.
+
+No T8 change: the DSR trial count is untouched (principal: keep held). Supersedes 5446c2dd.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TM3tMw4CNWqYHM8JZbUkSh
+
+diff --git a/desks/mt5/research/judge_docket_order.py b/desks/mt5/research/judge_docket_order.py
+index 2f6c95e35eff85cfabac17457075a6299a44eda9..cbab96be9b515d8ecba51c56a644e4925c58c0c9 100644
+--- a/desks/mt5/research/judge_docket_order.py
++++ b/desks/mt5/research/judge_docket_order.py
+@@ -367,7 +367,8 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
+     for sp in specs:
+         by_fam.setdefault(str(sp.get("family") or "?"), []).append(sp)
+     prior = (sum(yields.values()) / len(yields)) if yields else 0.0
+-    raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
++    elog_m, _status = G._elog_multipliers(list(by_fam))
++    raw = {f: max(yields.get(f, prior), 1e-9) * elog_m.get(f, 1.0) for f in by_fam}
+     tot = sum(raw.values()) or 1.0
+     n_fam = len(by_fam)
+     keep: list[dict] = []
+diff --git a/desks/mt5/research/promoter.py b/desks/mt5/research/promoter.py
+index e3e326019ba2c4305014fbb100574b1d5cd05884..6b649011dc60ec02c606d705926b860e72d5ae41 100644
+--- a/desks/mt5/research/promoter.py
++++ b/desks/mt5/research/promoter.py
+@@ -292,6 +292,22 @@ UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
+ #: Registry fields the engine prices a symbol's round trip and financing from.
+ _COST_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
+                 "swap_long", "swap_short")
++#: The one source whose ZERO median spread is a reading -- the sealed judge's own
++#: `external_gauntlet.ZERO_SPREAD_SOURCES`, mirrored (a test fails if they differ).
++_ZERO_SPREAD_SOURCES = frozenset({"fusion_zero_m1_tape"})
++
++
++def _observed_zero(meta: dict) -> bool:
++    """The registry's 0.0 spread carries the tape's observed-zero stamp (2026-10-21).
++
++    The same positive evidence the sealed swap_cost gate requires (`_zero_spread_stamp`): a
++    `_provenance.median_spread_pts` MAP from the tape with `zero_spread` True. Anything else --
++    unstamped (possibly a no-tick `symbol_info` stub), another source, a provenance that is not
++    a map -- is not a measured zero, and is never indexed as one."""
++    prov = meta.get("_provenance")
++    entry = prov.get("median_spread_pts") if isinstance(prov, dict) else None
++    return bool(isinstance(entry, dict) and str(entry.get("source")) in _ZERO_SPREAD_SOURCES
++                and entry.get("zero_spread") is True)
+ 
+ 
+ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, str]:
+@@ -320,9 +336,13 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None,
+     meta = (universe or {}).get(sym) if isinstance(universe, dict) else None
+     if isinstance(meta, dict):
+         vals = [meta.get(f) for f in _COST_FIELDS]
++        # A MEASURED ZERO SPREAD IS A BASIS (2026-10-21): commission-only on Fusion ZERO, and
++        # coherent with the gate that certified the cell -- which takes a zero only with the
++        # tape's observed-zero stamp, so this takes exactly that zero and no other.
+         ok = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals) and all(
+-            float(meta[f]) > 0 for f in ("median_spread_pts", "tick_size", "tick_value",
+-                                         "contract_size"))
++            float(meta[f]) > 0 for f in ("tick_size", "tick_value", "contract_size")) and (
++            float(meta["median_spread_pts"]) > 0
++            or (float(meta["median_spread_pts"]) == 0 and _observed_zero(meta)))
+         if ok:
+             import hashlib
+             blob = json.dumps({f: meta[f] for f in _COST_FIELDS}, sort_keys=True).encode()
+diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
+index d44204ad9de4f06a599395ed476a682507104d43..503336d70f76538afe108868afc8703a6f41a8f1 100644
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -774,6 +774,29 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
+             spread_at_hour = None
+         if spread_at_hour is not None:
+             cost_basis = f"fill_hour_{hour:02d}_spread"
++    # THE FILL MINUTE, NOT ONLY THE FILL HOUR (2026-11-11). An hour's median hides a minute that
++    # costs thirty times more: EURCHF quotes 62 pts p50 in the first minute after the broker
++    # 01:00 open and ~2 for the rest of the hour, and formula p=494964b2 was certified on 19
++    # symbols for an edge that lives entirely in that minute on bid-only bars and loses at the
++    # real ask from one minute later. Every fill on a published spike minute now pays that
++    # minute's tick median, fill-weighted; elsewhere the charge above stands, so this can only
++    # RAISE a cost. The basis names the share, so a repriced cell is visible as one.
++    fill_minute = None
++    if surf is not None:
++        try:
++            from research.cost_surface import fill_minutes as _fm
++            from research.cost_surface import fill_spread_pts as _fsp
++
++            _base = (spread_at_hour if spread_at_hour is not None
++                     else float((meta.get(sym) or {}).get("median_spread_pts") or 0.0) or None)
++            fill_minute = _fsp(surf, sym, _fm(sigs, timeframe, h1.index), _base)
++        except Exception as exc:
++            fill_minute = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:160]}
++        if (fill_minute and fill_minute.get("spike_share")
++                and fill_minute.get("spread_pts") is not None):
++            spread_at_hour = float(fill_minute["spread_pts"])
++            cost_basis = (f"fill_minute_spike_{float(fill_minute['spike_share']):.0%}"
++                          f"_{','.join(fill_minute.get('minutes') or {})}")
+     # `meta.get(sym, {})`, NOT `meta`. THE WHOLE UNIVERSE DICT WAS BEING PASSED HERE and
+     # `from_symbol` reads `contract_size`, `tick_size`, `tick_value` and `median_spread_pts` off
+     # the mapping it is given -- a 251-symbol registry has none of those at the top level, so
+@@ -800,7 +823,8 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
+     # `authorized_runs`) would otherwise lose the chart between here and its own verdict lookup.
+     return {"sym": sym, "family": family, "params": params, "timeframe": timeframe,
+             "df": h1, "sigs": sigs,
+-            "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
++            "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour,
++            "_fill_minute": fill_minute}
+ 
+ 
+ def canonical_symbol(sym: str, meta: dict) -> str:
+@@ -1064,6 +1088,64 @@ YIELD_MAX_SHARE = 0.45
+ #: yield can never update, so a single bad epoch would condemn it permanently.
+ YIELD_MIN_SHARE = 0.15
+ 
++#: THE E[log W]-PER-CPU-SECOND BLEND (idea 617, 2026-11-11). The forward department publishes
++#: `reports/DOCKET_ELOG_PRIORITY.json` (`research/docket_elog_priority.py`): per family, the median
++#: of prior ΔE[log W] per day over estimated CPU seconds per cell. A family whose CPU cost is
++#: MEASURED (the prewarm meter) and whose ΔE[log W] has a PRIOR or MEASURED basis, with at least
++#: `ELOG_MIN_CELLS` SCORED cells (`n_scored`: the median's own sample), gets its yield weight multiplied by m = 1 + K*(2r - 1), r its rank in
++#: [0, 1] among such families; every other family gets m = 1. It RESHARES the build budget; it
++#: never drops a cell, and the floor, ceiling, exploration and orthogonality add-backs run after it
++#: unchanged. No trial count, gate or threshold is read or written. Bounded at K so a prior never
++#: overrules measured survivor yield by more than a factor of three between the extremes.
++ELOG_PRIORITY = REPORTS / "DOCKET_ELOG_PRIORITY.json"
++ELOG_BLEND_K = 0.5
++ELOG_MIN_CELLS = 30
++#: An older file is read as absent: a stale ranking steering this hour's budget is worse than none.
++ELOG_MAX_AGE_S = 6 * 3600
++
++
++def _elog_multipliers(families: list[str], path: Path | None = None,
++                      now: float | None = None) -> tuple[dict[str, float], dict]:
++    """Per-family budget multiplier from the E[log W]-per-CPU file; 1.0 wherever unmeasured."""
++    ones = {f: 1.0 for f in families}
++    src = path or ELOG_PRIORITY
++    try:
++        doc = json.loads(src.read_text("utf-8"))
++        fams = doc["families"]
++        at = datetime.fromisoformat(str(doc["at"]).replace("Z", "+00:00")).timestamp()
++    except (OSError, ValueError, TypeError, KeyError):
++        return ones, {"status": "UNMEASURED", "why": f"{src.name} absent or unreadable"}
++    age = (time.time() if now is None else now) - at
++    if not isinstance(fams, dict) or age > ELOG_MAX_AGE_S or age < -600:
++        return ones, {"status": "UNMEASURED", "why": f"{src.name} stale or malformed",
++                      "age_s": round(age)}
++    scored: dict[str, float] = {}
++    for f in families:
++        row = fams.get(f)
++        if not isinstance(row, dict):
++            continue
++        try:
++            v = float(row.get("score_median"))
++            n = int(row.get("n_scored") or 0)
++        except (TypeError, ValueError):
++            continue
++        if (row.get("basis_cpu") == "MEASURED"
++                and row.get("basis_d_elog") in ("PRIOR", "MEASURED")
++                and n >= ELOG_MIN_CELLS and math.isfinite(v)):
++            scored[f] = v
++    if len(scored) < 2:
++        return ones, {"status": "UNMEASURED", "why": f"{len(scored)} family(ies) scored; need 2",
++                      "n_scored": len(scored)}
++    vals = sorted(scored.values())
++    hi = len(vals) - 1
++    out = dict(ones)
++    for f, v in scored.items():
++        lo_i = vals.index(v)
++        hi_i = hi - vals[::-1].index(v)
++        r = ((lo_i + hi_i) / 2.0) / hi
++        out[f] = 1.0 + ELOG_BLEND_K * (2.0 * r - 1.0)
++    return out, {"status": "MEASURED", "n_scored": len(scored), "k": ELOG_BLEND_K}
++
+ 
+ #: Gate failures that mean UNDER-POWERED rather than REFUTED. A cell failing only these cleared
+ #: pbo, cpcv, walk_forward, lockbox, reality_check_spa and stress_costs -- it is a real effect
+@@ -1544,7 +1626,8 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+     # in the same breath. Crediting it with zero would starve every new family at birth; crediting
+     # it with the best family's rate would let an untested one displace a proven one.
+     prior = _house_yield()
+-    raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
++    elog_m, elog_status = _elog_multipliers(list(by_fam))
++    raw = {f: max(yields.get(f, prior), 1e-9) * elog_m.get(f, 1.0) for f in by_fam}
+     tot = sum(raw.values()) or 1.0
+     n_fam = len(by_fam)
+     keep: list[dict] = []
+@@ -1559,8 +1642,9 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+         take = rows[:want]
+         keep.extend(take)
+         report[fam] = {"docket": len(rows), "built_this_sweep": len(take),
+-                       "yield_per_1k_ruled": round(raw[fam] * 1000, 2),
++                       "yield_per_1k_ruled": round(raw[fam] / elog_m.get(fam, 1.0) * 1000, 2),
+                        "share_of_budget": round(share, 4),
++                       "elog_multiplier": round(elog_m.get(fam, 1.0), 4),
+                        "capped_by_ceiling": bool(share >= YIELD_MAX_SHARE),
+                        "held_by_floor": bool(len(take) <= int(YIELD_MIN_SHARE * len(rows)))}
+     # THE EXPLORATION FLOOR, APPLIED AFTER THE TRIM AND TAKING FROM NOBODY. The family split above
+@@ -1591,6 +1675,7 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+             "floor_share": YIELD_MIN_SHARE, "ceiling_share": YIELD_MAX_SHARE,
+             "prior_strength_cells": YIELD_PRIOR_STRENGTH,
+             "docket_total": len(specs), "built_this_sweep": len(keep),
++            "elog_blend": elog_status,
+             "by_family": report,
+             # THE MISSED-GROWTH LINE, INVERTED: what exploitation alone would NOT have built.
+             "exploration": {
+@@ -1911,6 +1996,46 @@ def _series_trim_partial(ds, last_day):
+         return ds
+ 
+ 
++def _prune_cache() -> dict:
++    """Delete cache files older than three days. Returns {scanned, removed, seconds}.
++
++    MEASURED 2026-11-11 (hourly pass idea 594): the old `glob` + `Path.stat()` + `unlink` loop
++    took 661 s of a 1,065 s sweep plan, all of it on the plan's critical path. `os.scandir`
++    hands back the directory listing's own stat on Windows (no extra call per file), and this
++    now runs on a background thread. The rule is the same > 3 days by mtime that
++    `stall_watch`'s gauntlet_cache tier mirrors. A file removed under a reader is a cache miss,
++    which `cache_load` already treats as a recompute.
++    """
++    import time as _t
++
++    t0 = _t.time()
++    out = {"scanned": 0, "removed": 0, "seconds": 0.0}
++    try:
++        with os.scandir(CACHE_DIR) as it:
++            for _e in it:
++                if not _e.name.endswith(".npz"):
++                    continue
++                out["scanned"] += 1
++                try:
++                    if _t.time() - _e.stat().st_mtime > 3 * 86400:
++                        Path(_e.path).unlink(missing_ok=True)
++                        out["removed"] += 1
++                except OSError:
++                    continue
++    except OSError:
++        pass
++    out["seconds"] = round(_t.time() - t0, 1)
++    return out
++
++
++def _prune_cache_in_background() -> None:
++    """Run `_prune_cache` on a daemon thread so the sweep plan never waits for it. A sweep that
++    exits first just leaves the rest for the next sweep's prune."""
++    import threading
++
++    threading.Thread(target=_prune_cache, name="gauntlet-cache-prune", daemon=True).start()
++
++
+ def cache_load(key: str):
+     f = CACHE_DIR / f"{key}.npz"
+     if not f.exists():
+@@ -1930,6 +2055,31 @@ def cache_load(key: str):
+ 
+ _CACHE_SAVE_WARNED = [False]
+ 
++#: The members every cache entry carries; `cache_present` checks the zip directory lists them.
++_CACHE_MEMBERS = ("dates.npy", "v1.npy", "v3.npy")
++
++
++def cache_present(key: str) -> int:
++    """The entry's size in bytes when its zip directory lists every member, else 0. I/O-light.
++
++    THE PRE-WARM'S HIT TEST (idea 600, 2026-11-11). `_warm_one` used `cache_load` to ask "is this
++    cell already cached?", which decompresses both series and builds two pandas Series only to
++    throw them away; the main loop then loads the same file again to use it. This reads the zip's
++    central directory (a few hundred bytes at the end of the file) and decompresses nothing.
++    Entries are written atomically (`os.replace`), so a listed entry is a whole one; should a
++    member still fail to decompress, the main loop's own `cache_load` returns None and the cell
++    takes the fresh branch it has always taken for an uncached cell. No verdict reads this."""
++    import zipfile
++    f = CACHE_DIR / f"{key}.npz"
++    try:
++        with zipfile.ZipFile(f) as z:
++            names = set(z.namelist())
++        if all(m in names for m in _CACHE_MEMBERS):
++            return f.stat().st_size
++    except (OSError, ValueError, zipfile.BadZipFile):
++        return 0
++    return 0
++
+ 
+ def _cache_series_metadata(series) -> dict:
+     """Bounded receipts with total count and full digest; raw replay remains reproducible."""
+@@ -1945,9 +2095,15 @@ def _cache_series_metadata(series) -> dict:
+             "geometry_rejections": rejected[:3]}
+ 
+ 
+-def cache_save(key: str, ds1, ds3) -> None:
++def cache_save(key: str, ds1, ds3) -> int:
+     """Persist one cell's series pair. A save failure is REPORTED once, never swallowed.
+ 
++    RETURNS THE ENTRY'S SIZE IN BYTES, 0 ON FAILURE (idea 600), so the pre-warm can trust its
++    own write instead of re-loading the file it just wrote. It ALWAYS writes: the main loop calls
++    this only after `cache_load` returned None, and an entry that failed to load must be replaced,
++    never kept because its name is present. (The pre-warm skips identical entries at its HIT
++    test, before it builds anything.)
++
+     The first deployment produced ZERO files on the desk box and nobody knew: every save failed
+     inside a bare `except: pass`, the warm sweep ran exactly as slow as the cold one (12.2 vs
+     12.4 min), and the only symptom was a missing speedup -- which reads as "the box is slow",
+@@ -1976,11 +2132,21 @@ def cache_save(key: str, ds1, ds3) -> None:
+                                  attrs3=_np.array(json.dumps(_cache_series_metadata(ds3),
+                                                            default=str)))
+         os.replace(tmp, final)
++        return final.stat().st_size
+     except Exception as exc:
+         if not _CACHE_SAVE_WARNED[0]:
+             _CACHE_SAVE_WARNED[0] = True
+             print(f"  CACHE SAVE FAILING ({type(exc).__name__}: {exc}) -- sweeps will run at "
+                   f"cold speed until this is fixed; reporting once, not per cell")
++        return 0
++
++def _warm_one_timed(spec: dict, meta: dict) -> dict:
++    """`_warm_one`, with the worker's own seconds on the result (see `_cost`). Report-only."""
++    t0 = time.time()
++    out = _warm_one(spec, meta)
++    out["seconds"] = round(time.time() - t0, 3)
++    return out
++
+ 
+ def _warm_one(spec: dict, meta: dict) -> dict:
+     """Build ONE cell's series pair into the on-disk cache. Runs in a worker process.
+@@ -2008,8 +2174,11 @@ def _warm_one(spec: dict, meta: dict) -> dict:
+         last_day = frame.index[-1].normalize()
+         ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
+         out["ckey"] = ckey
+-        if cache_load(ckey) is not None:
++        present = cache_present(ckey)
++        if present:
+             out["status"] = "HIT"
++            # The bytes `cache_load` used to decompress here only to discard them (idea 600).
++            out["bytes_not_decompressed"] = present
+             return out
+         obj = build_cell(sym, family, params, meta)
+         if not obj:
+@@ -2024,14 +2193,73 @@ def _warm_one(spec: dict, meta: dict) -> dict:
+         except Exception as exc3:
+             out["status"], out["why"] = "FAIL_3X", f"{type(exc3).__name__}: {exc3}"
+             return out
+-        cache_save(ckey, ds1, ds3)
+-        out["status"] = "WARMED" if cache_load(ckey) is not None else "SAVE_FAILED"
++        # The save's own return replaces a full re-load of the file just written (idea 600):
++        # the write is atomic, so a returned size is a whole entry, and a failure returns 0.
++        written = cache_save(ckey, ds1, ds3)
++        out["status"] = "WARMED" if written else "SAVE_FAILED"
++        out["bytes_written"] = written
+         return out
+     except Exception as exc:
+         out["status"], out["why"] = "ERROR", f"{type(exc).__name__}: {exc}"
+         return out
+ 
+ 
++#: WHERE THE BUILD BUDGET GOES, PER FAMILY (2026-11-11). REPORT-ONLY. The pre-warm is most of a
++#: sweep's wall (10,797 s of the 11-10 21:02 sweep) and its rate fell 5.3 -> 3.7 -> 2.2 cells/s
++#: over three sweeps with 190k-288k cells unreached each time, yet nothing said which families
++#: spend the seconds. Each worker now times its own cell and the pool sums worker-seconds per
++#: status and per family (n, total, max), published under `result["prewarm"]`. Nothing reads it
++#: to decide anything: the order, the deadline and every verdict are unchanged.
++PREWARM_COST_TOP = 40
++
++
++def _cost(summary: dict, spec: dict, status: str, seconds: object) -> None:
++    try:
++        sec = float(seconds)  # type: ignore[arg-type]
++    except (TypeError, ValueError):
++        return
++    ws = summary["worker_seconds"]
++    ws[status] = round(ws.get(status, 0.0) + sec, 3)
++    fam = str(spec.get("family") or "")
++    row = summary["by_family"].setdefault(fam, {"n": 0, "s": 0.0, "max_s": 0.0, "warmed": 0})
++    row["n"] += 1
++    row["s"] = round(row["s"] + sec, 3)
++    row["max_s"] = max(row["max_s"], round(sec, 3))
++    if status == "WARMED":
++        row["warmed"] += 1
++
++
++def _top_families(by_family: dict, k: int = PREWARM_COST_TOP) -> dict:
++    """The `k` families spending the most worker-seconds, plus one `_rest` row for the others."""
++    ranked = sorted(by_family.items(), key=lambda kv: -kv[1]["s"])
++    out = {f: dict(r, mean_s=round(r["s"] / r["n"], 3) if r["n"] else None)
++           for f, r in ranked[:k]}
++    rest = ranked[k:]
++    if rest:
++        out["_rest"] = {"families": len(rest), "n": sum(r["n"] for _, r in rest),
++                        "s": round(sum(r["s"] for _, r in rest), 3)}
++    return out
++
++
++#: The sweep's meta, handed to each pre-warm worker ONCE by the pool's initializer.
++#: MEASURED 2026-11-11 (judge_wall_profile): passing it with every task pickled ~615 KB per submit,
++#: 57 GB of pipe writes per sweep against a parent that mostly waits. The bytes each cell sees are
++#: the same object the old per-task argument carried; only the number of copies changes.
++_WORKER_META: dict | None = None
++
++
++def _init_prewarm_worker(meta: dict) -> None:
++    global _WORKER_META
++    _WORKER_META = meta
++
++
++def _warm_one_pooled(spec: dict) -> dict:
++    """`_warm_one_timed` on the meta this worker received at start-up."""
++    if _WORKER_META is None:
++        return {"status": "ERROR", "why": "pre-warm worker started without its meta"}
++    return _warm_one_timed(spec, _WORKER_META)
++
++
+ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
+ 
+@@ -2060,19 +2288,25 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     # problem: the pool built in the right order and nothing recorded that it had.
+     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
+                "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
+-               "built_symbols": set()}
++               "built_symbols": set(), "worker_seconds": {}, "by_family": {},
++               "drain_seconds": None,
++               # Cache I/O per sweep (idea 600), report-only: bytes the warmed cells wrote, and
++               # the bytes the HIT test and the post-save check no longer decompress.
++               "io": {"bytes_written": 0, "verify_bytes_not_reloaded": 0,
++                      "hit_bytes_not_decompressed": 0, "bytes_per_warmed_cell": None}}
+     t0 = time.time()
+     it = iter(specs)
+     pending: dict = {}
+     #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
+     #: symbol it just built. `pending` is popped before the result is read.
+     pending_spec: dict = {}
+-    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
++    with ProcessPoolExecutor(max_workers=WORKERS, initializer=_init_prewarm_worker,
++                             initargs=(meta,)) as pool:
+         def _submit_next() -> bool:
+             sp = next(it, None)
+             if sp is None:
+                 return False
+-            _fut = pool.submit(_warm_one, sp, meta)
++            _fut = pool.submit(_warm_one_pooled, sp)
+             pending[_fut] = sp
+             pending_spec[_fut] = sp
+             summary["submitted"] += 1
+@@ -2098,6 +2332,16 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+                 except Exception as exc:
+                     r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
+                 st = str(r.get("status") or "ERROR")
++                _cost(summary, pending_spec.get(f) or {}, st, r.get("seconds"))
++                _io = summary["io"]
++                try:
++                    _w = int(r.get("bytes_written") or 0)
++                    _h = int(r.get("bytes_not_decompressed") or 0)
++                except (TypeError, ValueError):
++                    _w = _h = 0
++                _io["bytes_written"] += _w
++                _io["verify_bytes_not_reloaded"] += _w
++                _io["hit_bytes_not_decompressed"] += _h
+                 if st == "WARMED":
+                     summary["warmed"] += 1
+                     # WARMED only, never HIT: the cursor records when a symbol's cells were last
+@@ -2117,6 +2361,10 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+                     reasons[reason] = reasons.get(reason, 0) + 1
+                 if time.time() <= deadline:
+                     _submit_next()
++    summary["drain_seconds"] = round(max(0.0, time.time() - deadline), 1)
++    if summary["warmed"]:
++        summary["io"]["bytes_per_warmed_cell"] = round(
++            summary["io"]["bytes_written"] / summary["warmed"])
+     summary["unreached"] += sum(1 for _ in it)
+     summary["seconds"] = round(time.time() - t0, 1)
+     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
+@@ -2125,6 +2373,10 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+     if summary["failure_reasons"]:
+         print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)
++    summary["by_family"] = _top_families(summary["by_family"])
++    print(f"PRE-WARM cost: worker-seconds by status {summary['worker_seconds']}; drain after "
++          f"the deadline {summary['drain_seconds']}s; top families "
++          f"{ {f: r['s'] for f, r in list(summary['by_family'].items())[:10]} }", flush=True)
+     return summary
+ 
+ 
+@@ -2727,6 +2979,45 @@ def certificate_annotations(v: dict, cell: dict | None, meta: dict, *, priors: d
+ COST_BASIS_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
+                      "swap_long", "swap_short")
+ 
++#: The one source whose ZERO median spread is a reading: the M1 tape
++#: (`research/fusion_spread_tape.SOURCE`), source of record since 2026-09-24.
++ZERO_SPREAD_SOURCES = frozenset({"fusion_zero_m1_tape"})
++
++
++def _zero_spread_stamp(row: dict) -> tuple[bool, str]:
++    """(measured, why): is this registry row's 0.0 median spread a MEASURED zero?
++
++    A ZERO IS ACCEPTED ON POSITIVE EVIDENCE ONLY (2026-10-21). On Fusion ZERO the spread leg is
++    genuinely 0 and the instrument is costed through commission (principal 2026-08-29,
++    `mt5desk/universe.py` `usable`), but an UNSTAMPED registry zero cannot be told from a
++    `symbol_info.spread` read before any tick arrived -- a stub, a read artifact. So a zero is
++    measured only when the tape stamped it as one it OBSERVED: `_provenance.median_spread_pts`
++    is a map whose `source` is the tape and whose `zero_spread` is True (`fusion_spread_tape.
++    observed_zero`: ticked bars, a family-wise day vote, no contradicting long window). And only
++    where the commission can be charged: tick_value, tick_size and contract_size all > 0.
++
++    FAILS CLOSED, NEVER RAISES: a `_provenance` or entry that is not a map (a list, a string) is
++    no stamp, so the zero stays UNMEASURED and the reason says why."""
++    try:
++        if not all(float(row.get(f)) > 0 for f in ("tick_value", "tick_size", "contract_size")):
++            return False, "a zero spread is costed only through commission, which needs tick_value"
++    except (TypeError, ValueError):
++        return False, "a zero spread is costed only through commission, which needs tick_value"
++    prov_all = row.get("_provenance")
++    if prov_all is not None and not isinstance(prov_all, dict):
++        return False, (f"an unstamped zero: _provenance is a {type(prov_all).__name__}, not a "
++                       "map, so no observed-zero stamp can be read")
++    prov = (prov_all or {}).get("median_spread_pts")
++    if not isinstance(prov, dict):
++        return False, ("an unstamped zero, which may be a symbol_info stub read before any tick "
++                       "arrived; only the tape's observed-zero stamp makes it a reading")
++    src = prov.get("source")
++    if str(src) not in ZERO_SPREAD_SOURCES:
++        return False, f"a zero stamped by {src!r}, which is not the tape"
++    if prov.get("zero_spread") is not True:
++        return False, "the tape's stamp does not record an observed zero (zero_spread is not True)"
++    return True, ""
++
+ 
+ def registry_cost_basis(sym: str, meta: dict) -> dict:
+     """Whether the engine priced `sym` from measured registry numbers. UNMEASURED otherwise.
+@@ -2747,12 +3038,21 @@ def registry_cost_basis(sym: str, meta: dict) -> dict:
+         except (TypeError, ValueError):
+             missing.append(f)
+             continue
++        if f == "median_spread_pts" and fv == 0 and _zero_spread_stamp(row)[0]:
++            continue                      # an observed zero: commission-only, charged in full
+         if f in ("median_spread_pts", "tick_size", "tick_value", "contract_size") and not fv > 0:
+             missing.append(f)
+     if not row:
+         return {"measured": False, "why": f"{sym or '?'} is absent from the universe registry"}
+     if missing:
+-        return {"measured": False, "why": f"{sym} registry lacks {', '.join(missing)}"}
++        _zw = ""
++        if "median_spread_pts" in missing and _num(row.get("median_spread_pts")) == 0:
++            _zw = f" ({_zero_spread_stamp(row)[1]})"
++        return {"measured": False, "why": f"{sym} registry lacks {', '.join(missing)}{_zw}"}
++    if _num(row.get("median_spread_pts")) == 0:
++        return {"measured": True, "zero_spread": True,
++                "why": ("commission-only: the tape's observed 0.0 spread, two commissions and "
++                        "swap from the registry")}
+     return {"measured": True, "why": "spread, commission conversion and swap from the registry"}
+ 
+ 
+@@ -3607,13 +3907,7 @@ def main():
+     blocked_build: list[dict] = list(_modifier_blocked)
+     _build_t0 = time.time()
+     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
+-    try:
+-        import time as _t
+-        for _f in CACHE_DIR.glob("*.npz"):
+-            if _t.time() - _f.stat().st_mtime > 3 * 86400:
+-                _f.unlink(missing_ok=True)
+-    except OSError:
+-        pass
++    _prune_cache_in_background()
+     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
+     # rebuilds residuals and rolling correlations against EVERY other registry instrument, and it
+     # is memoised only two entries deep because the full universe for one symbol is hundreds of
+@@ -4098,6 +4392,67 @@ def main():
+ 
+     _params_by_cell = {cell_id(c): dict(c.get("params") or {}) for c in cell_objs}
+     _remint_fresh: set[str] = set()
++
++    # ONE RULE, ONE CERTIFICATE (BR1, 2026-11-11). Two param hashes can name one executable rule
++    # -- `{"timeframe": "M30"}` and `{"input_symbol": "CHFNOK", "timeframe": "M30"}` for carry,
++    # which reads its swap from its own symbol by default -- and both were certified, so the
++    # survivor count, the breadth and the forward roster saw two edges where there is one.
++    # `cert_duplicates.executable_identity` reduces a cell to what decides its trades; the
++    # earliest-gated certificate holding an identity OWNS it, and a different key with the same
++    # identity is refused here, by name. A re-mint of the owner is a refresh, never a duplicate.
++    # The verdict, its gates and its trial charge are untouched: only the certificate is withheld.
++    # An identity that cannot be computed refuses nothing and says so once.
++    _dup_refused: dict[str, str] = {}
++    _ident_owner: dict[str, tuple[str, str]] = {}
++    try:
++        from research.cert_duplicates import executable_identity as _exec_identity
++    except ImportError as _exc:
++        _exec_identity = None
++        print(f"  duplicate-certificate rule INACTIVE ({_exc}); no certificate is refused as a "
++              f"duplicate this sweep")
++
++    def _identity_of(row: dict) -> str | None:
++        sp = row.get("shadow_spec") if isinstance(row, dict) else None
++        if _exec_identity is None or not isinstance(sp, dict) \
++                or not isinstance(sp.get("params"), dict):
++            return None
++        try:
++            return _exec_identity(str(sp.get("symbol") or row.get("sym") or ""),
++                                  str(sp.get("family") or ""), sp.get("params"),
++                                  side=sp.get("side"))
++        except Exception as _exc:
++            print(f"  duplicate-certificate identity UNMEASURED for {row.get('cell')}: "
++                  f"{type(_exc).__name__}: {_exc}")
++            return None
++
++    def _owner_stands(row: dict) -> bool:
++        # A retired, voided or revoked certificate owns nothing: a re-proven rule must be able to
++        # earn its certificate again, never be refused for ever by a record that no longer stands.
++        if not isinstance(row, dict):
++            return False
++        if any(row.get(k) for k in ("retired_at", "voided_at", "revoked_at")):
++            return False
++        return str(row.get("status") or "").upper() not in {"RETIRED", "VOIDED", "REVOKED"}
++
++    for _k, _r in survivors_all.items():
++        if not _owner_stands(_r):
++            continue
++        _i = _identity_of(_r)
++        if _i is None:
++            continue
++        _g = str(_r.get("gated_at") or "")
++        if _i not in _ident_owner or (_g, _k) < _ident_owner[_i]:
++            _ident_owner[_i] = (_g, _k)
++
++    def _duplicate_of(key: str, row: dict) -> str | None:
++        ident = _identity_of(row)
++        if ident is None:
++            return None
++        owner = _ident_owner.get(ident)
++        if owner is None:
++            _ident_owner[ident] = (str(row.get("gated_at") or ""), key)
++            return None
++        return None if owner[1] == key else owner[1]
+     # ANNOTATION INPUTS, READ ONCE PER SWEEP (see the certificate-annotations section): the
+     # funnel posteriors (V19) and the release record (A8) are the same for every certificate
+     # this sweep writes, and the rebuild budget is shared across them.
+@@ -4149,6 +4504,11 @@ def main():
+         if _why:
+             print(f"  REFUSED-UNRUNNABLE {key}: {_why}")
+             continue
++        _dup = _duplicate_of(key, row)
++        if _dup:
++            print(f"  REFUSED-DUPLICATE {key}: trades the same rule as certificate {_dup}")
++            _dup_refused[key] = _dup
++            continue
+         # MEASUREMENT BESIDE THE VERDICT (V5 replay2, V13 complexity, V15 baselines, V19
+         # p_forward_success, A8 release stamp). `gates` above is the verdict and is untouched;
+         # every key added here is recorded, never gating, and a failure inside any one of them
+@@ -4368,6 +4728,19 @@ def main():
+     surv_path.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
+     print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total "
+           f"({len(survivors_all) - n_before:+d})")
++    # The certificates withheld as duplicates this sweep, each with the certificate it repeats.
++    # Written every sweep (an empty map is the measurement), never read by any gate.
++    try:
++        (REPORTS / "CERT_DUPLICATES_REFUSED.json").write_text(json.dumps({
++            "swept_at": datetime.now(UTC).isoformat(),
++            "active": _exec_identity is not None,
++            "n": len(_dup_refused), "refused": _dup_refused,
++            "rule": ("a passing cell whose executable identity (research/cert_duplicates) "
++                     "matches an earlier-gated certificate under a different key is not "
++                     "certified; its verdict and trial charge stand")},
++            indent=1), encoding="utf-8")
++    except OSError as _exc:
++        print(f"  CERT_DUPLICATES_REFUSED.json not written ({_exc})")
+ 
+     # FILE THE CLAIM. Every other certified producer writes SURVIVORS_LEDGER.json alongside the
+     # survivor file (universal_gate, survivor_publication, ug_remote); this one never did, and it
+diff --git a/desks/mt5/tests/fixtures/docket_elog_priority_build_47302cd89.json b/desks/mt5/tests/fixtures/docket_elog_priority_build_47302cd89.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e661512575f2781b8ac04c783fee9a4495d1192
+--- /dev/null
++++ b/desks/mt5/tests/fixtures/docket_elog_priority_build_47302cd89.json
+@@ -0,0 +1,809 @@
++{
++ "at": "2026-11-11T09:16:06+00:00",
++ "report_only": true,
++ "consumer": null,
++ "intended_consumer": "external_gauntlet.allocate_by_yield (Judge sealed patch)",
++ "key": "cell_id({sym, family, params}) == gate_verdict_ledger.jsonl `cell`",
++ "rule": "score = d_elog_per_day / cpu_s_est when basis_cpu is MEASURED and basis_d_elog is MEASURED or PRIOR, else null; score_basis is MEASURED only when both are",
++ "prior_inputs": {
++  "survival_rate": [
++   "reports/universal_gates_external.json",
++   "reports/UNIVERSAL_SURVIVORS.json"
++  ],
++  "posterior_edge": [
++   "reports/POSTERIOR_ALPHA.json"
++  ],
++  "rho_to_live_book": [
++   "data/pf_allocator_cache/worlds.npz",
++   "data/sleeves.json"
++  ]
++ },
++ "missing_inputs": [
++  "posterior_edge (POSTERIOR_ALPHA.json)",
++  "survival_rate (universal_gates_external.json+UNIVERSAL_SURVIVORS.json)"
++ ],
++ "step_heat": 0.001,
++ "prior_formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|)",
++ "inputs": {
++  "docket.json": true,
++  "worlds.npz": true,
++  "no_pf_allocation.json": false,
++  "posterior.json": true,
++  "warm.json": true,
++  "no_sleeves.json": false
++ },
++ "n_total": 64,
++ "n_rows": 64,
++ "max_rows": 5000,
++ "capped": false,
++ "basis_counts": {
++  "basis_d_elog": {
++   "MEASURED": 0,
++   "PRIOR": 64,
++   "UNMEASURED": 0
++  },
++  "basis_cpu": {
++   "MEASURED": 64,
++   "PRIOR": 0,
++   "UNMEASURED": 0
++  },
++  "score_non_null": 64,
++  "score_basis": {
++   "MEASURED": 0,
++   "PRIOR": 64
++  }
++ },
++ "families": {
++  "overnight_gap_decay": {
++   "n_cells": 32,
++   "n_scored": 32,
++   "score_median": 0.000570768079,
++   "n_measured": 0,
++   "basis_counts": {
++    "basis_d_elog": {
++     "MEASURED": 0,
++     "PRIOR": 32,
++     "UNMEASURED": 0
++    },
++    "basis_cpu": {
++     "MEASURED": 32,
++     "PRIOR": 0,
++     "UNMEASURED": 0
++    }
++   },
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED"
++  },
++  "session_range_breakout": {
++   "n_cells": 32,
++   "n_scored": 32,
++   "score_median": 0.001276885253,
++   "n_measured": 0,
++   "basis_counts": {
++    "basis_d_elog": {
++     "MEASURED": 0,
++     "PRIOR": 32,
++     "UNMEASURED": 0
++    },
++    "basis_cpu": {
++     "MEASURED": 32,
++     "PRIOR": 0,
++     "UNMEASURED": 0
++    }
++   },
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED"
++  }
++ },
++ "rows": {
++  "SYM00.session_range_breakout.p=62c60af90f768583": {
++   "family": "session_range_breakout",
++   "sym": "SYM00",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM01.session_range_breakout.p=3e5e713bea0925da": {
++   "family": "session_range_breakout",
++   "sym": "SYM01",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM02.session_range_breakout.p=ee7c747f542b50c1": {
++   "family": "session_range_breakout",
++   "sym": "SYM02",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM03.session_range_breakout.p=dfc746cd6a2c4320": {
++   "family": "session_range_breakout",
++   "sym": "SYM03",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM04.session_range_breakout.p=d1a17558310c7e9e": {
++   "family": "session_range_breakout",
++   "sym": "SYM04",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM05.session_range_breakout.p=66f0cb494bc3b00e": {
++   "family": "session_range_breakout",
++   "sym": "SYM05",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM06.session_range_breakout.p=c374145cbac2a3a6": {
++   "family": "session_range_breakout",
++   "sym": "SYM06",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM07.session_range_breakout.p=ccf1faf4ff17b2bb": {
++   "family": "session_range_breakout",
++   "sym": "SYM07",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM08.session_range_breakout.p=4e54556de6327c93": {
++   "family": "session_range_breakout",
++   "sym": "SYM08",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM09.session_range_breakout.p=8f70d25fff3c34ca": {
++   "family": "session_range_breakout",
++   "sym": "SYM09",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM10.session_range_breakout.p=3b449e9e3e310b2b": {
++   "family": "session_range_breakout",
++   "sym": "SYM10",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM11.session_range_breakout.p=adcf039d31b1c628": {
++   "family": "session_range_breakout",
++   "sym": "SYM11",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM12.session_range_breakout.p=8e78148866c6ea98": {
++   "family": "session_range_breakout",
++   "sym": "SYM12",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM13.session_range_breakout.p=73f711e651284b60": {
++   "family": "session_range_breakout",
++   "sym": "SYM13",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM14.session_range_breakout.p=facacd3755216df5": {
++   "family": "session_range_breakout",
++   "sym": "SYM14",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM15.session_range_breakout.p=a3df32e4f2fd0d5e": {
++   "family": "session_range_breakout",
++   "sym": "SYM15",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM16.session_range_breakout.p=398a23beb41e10b5": {
++   "family": "session_range_breakout",
++   "sym": "SYM16",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM17.session_range_breakout.p=afc7d4fc20ddb7e3": {
++   "family": "session_range_breakout",
++   "sym": "SYM17",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM18.session_range_breakout.p=fd1e00432608af1f": {
++   "family": "session_range_breakout",
++   "sym": "SYM18",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM19.session_range_breakout.p=a53407eb59f528eb": {
++   "family": "session_range_breakout",
++   "sym": "SYM19",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM20.session_range_breakout.p=9052c8e752f6a22c": {
++   "family": "session_range_breakout",
++   "sym": "SYM20",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM21.session_range_breakout.p=f3c2ebb7c45eff8b": {
++   "family": "session_range_breakout",
++   "sym": "SYM21",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM22.session_range_breakout.p=b48d6bda404e1277": {
++   "family": "session_range_breakout",
++   "sym": "SYM22",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM23.session_range_breakout.p=ca7c45d11af298c4": {
++   "family": "session_range_breakout",
++   "sym": "SYM23",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM24.session_range_breakout.p=b0327881dfb0902f": {
++   "family": "session_range_breakout",
++   "sym": "SYM24",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM25.session_range_breakout.p=0dc10234872fa61e": {
++   "family": "session_range_breakout",
++   "sym": "SYM25",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM26.session_range_breakout.p=30ea9423a9da1621": {
++   "family": "session_range_breakout",
++   "sym": "SYM26",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM27.session_range_breakout.p=8f9b898cba68fc17": {
++   "family": "session_range_breakout",
++   "sym": "SYM27",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM28.session_range_breakout.p=807d6c4648de8280": {
++   "family": "session_range_breakout",
++   "sym": "SYM28",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM29.session_range_breakout.p=ebeafc84f279f494": {
++   "family": "session_range_breakout",
++   "sym": "SYM29",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM30.session_range_breakout.p=c41873ac501789ca": {
++   "family": "session_range_breakout",
++   "sym": "SYM30",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM31.session_range_breakout.p=493f50a8748e98db": {
++   "family": "session_range_breakout",
++   "sym": "SYM31",
++   "d_elog_per_day": 0.0038306558,
++   "cpu_s_est": 3.0,
++   "score": 0.001276885253,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.1 x 0.04 x (1 - 0.0423)"
++  },
++  "SYM00.overnight_gap_decay.p=62c60af90f768583": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM00",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM01.overnight_gap_decay.p=3e5e713bea0925da": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM01",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM02.overnight_gap_decay.p=ee7c747f542b50c1": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM02",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM03.overnight_gap_decay.p=dfc746cd6a2c4320": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM03",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM04.overnight_gap_decay.p=d1a17558310c7e9e": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM04",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM05.overnight_gap_decay.p=66f0cb494bc3b00e": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM05",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM06.overnight_gap_decay.p=c374145cbac2a3a6": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM06",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM07.overnight_gap_decay.p=ccf1faf4ff17b2bb": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM07",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM08.overnight_gap_decay.p=4e54556de6327c93": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM08",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM09.overnight_gap_decay.p=8f70d25fff3c34ca": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM09",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM10.overnight_gap_decay.p=3b449e9e3e310b2b": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM10",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM11.overnight_gap_decay.p=adcf039d31b1c628": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM11",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM12.overnight_gap_decay.p=8e78148866c6ea98": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM12",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM13.overnight_gap_decay.p=73f711e651284b60": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM13",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM14.overnight_gap_decay.p=facacd3755216df5": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM14",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM15.overnight_gap_decay.p=a3df32e4f2fd0d5e": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM15",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM16.overnight_gap_decay.p=398a23beb41e10b5": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM16",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM17.overnight_gap_decay.p=afc7d4fc20ddb7e3": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM17",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM18.overnight_gap_decay.p=fd1e00432608af1f": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM18",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM19.overnight_gap_decay.p=a53407eb59f528eb": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM19",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM20.overnight_gap_decay.p=9052c8e752f6a22c": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM20",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM21.overnight_gap_decay.p=f3c2ebb7c45eff8b": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM21",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM22.overnight_gap_decay.p=b48d6bda404e1277": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM22",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM23.overnight_gap_decay.p=ca7c45d11af298c4": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM23",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM24.overnight_gap_decay.p=b0327881dfb0902f": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM24",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM25.overnight_gap_decay.p=0dc10234872fa61e": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM25",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM26.overnight_gap_decay.p=30ea9423a9da1621": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM26",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM27.overnight_gap_decay.p=8f9b898cba68fc17": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM27",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM28.overnight_gap_decay.p=807d6c4648de8280": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM28",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM29.overnight_gap_decay.p=ebeafc84f279f494": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM29",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM30.overnight_gap_decay.p=c41873ac501789ca": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM30",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  },
++  "SYM31.overnight_gap_decay.p=493f50a8748e98db": {
++   "family": "overnight_gap_decay",
++   "sym": "SYM31",
++   "d_elog_per_day": 0.0011415362,
++   "cpu_s_est": 2.0,
++   "score": 0.000570768079,
++   "score_basis": "PRIOR",
++   "basis_d_elog": "PRIOR",
++   "basis_cpu": "MEASURED",
++   "formula": "family_survival_rate x posterior_edge_R_per_day x (1 - |rho_to_live_book|) = 0.06 x 0.02 x (1 - 0.0487)"
++  }
++ },
++ "memory": {
++  "rss_mb_start": 38.3,
++  "rss_mb_end": 221.3,
++  "total_phys_mb": 16867.4
++ }
++}
+\ No newline at end of file
+diff --git a/desks/mt5/tests/test_gauntlet_elog_blend.py b/desks/mt5/tests/test_gauntlet_elog_blend.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..699aefba389726d8ef84fbae3fa4281052e9b1ec
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_elog_blend.py
+@@ -0,0 +1,105 @@
++"""The E[log W]-per-CPU blend in the sealed `allocate_by_yield` (idea 617).
++
++It reshares the build budget between families and never drops a cell; every unmeasured,
++stale or thin input leaves the multiplier at exactly 1.0, so the sweep is unchanged today.
++"""
++from __future__ import annotations
++
++import json
++import sys
++import time
++from datetime import UTC, datetime
++from pathlib import Path
++
++DESK = Path(__file__).resolve().parents[1]
++for p in (DESK / "scripts", DESK):
++    if str(p) not in sys.path:
++        sys.path.insert(0, str(p))
++
++import external_gauntlet as G  # noqa: E402
++
++
++def _write(path: Path, fams: dict, *, at: float | None = None) -> Path:
++    ts = datetime.fromtimestamp(time.time() if at is None else at, tz=UTC).isoformat()
++    path.write_text(json.dumps({"at": ts, "families": fams}), "utf-8")
++    return path
++
++
++def _row(score, *, cpu="MEASURED", elog="PRIOR", n=100):
++    return {"score_median": score, "basis_cpu": cpu, "basis_d_elog": elog, "n_scored": n,
++            "n_cells": n + 50}
++
++
++def test_absent_file_is_all_ones(tmp_path):
++    m, st = G._elog_multipliers(["a", "b"], path=tmp_path / "none.json")
++    assert m == {"a": 1.0, "b": 1.0} and st["status"] == "UNMEASURED"
++
++
++def test_stale_file_is_all_ones(tmp_path):
++    p = _write(tmp_path / "f.json", {"a": _row(1.0), "b": _row(2.0)},
++               at=time.time() - G.ELOG_MAX_AGE_S - 60)
++    m, st = G._elog_multipliers(["a", "b"], path=p)
++    assert m == {"a": 1.0, "b": 1.0} and st["status"] == "UNMEASURED"
++
++
++def test_unmeasured_cpu_thin_or_null_rows_stay_at_one(tmp_path):
++    p = _write(tmp_path / "f.json", {
++        "a": _row(1.0), "b": _row(3.0),
++        "c": _row(9.0, cpu="PRIOR"), "d": _row(9.0, elog="UNMEASURED"),
++        "e": _row(9.0, n=G.ELOG_MIN_CELLS - 1), "f": _row(None)})
++    m, st = G._elog_multipliers(list("abcdef"), path=p)
++    assert st["status"] == "MEASURED" and st["n_scored"] == 2
++    assert m["a"] == 1.0 - G.ELOG_BLEND_K and m["b"] == 1.0 + G.ELOG_BLEND_K
++    assert all(m[f] == 1.0 for f in "cdef")
++
++
++def test_one_scored_family_moves_nothing(tmp_path):
++    p = _write(tmp_path / "f.json", {"a": _row(1.0)})
++    m, _ = G._elog_multipliers(["a", "b"], path=p)
++    assert m == {"a": 1.0, "b": 1.0}
++
++
++def test_multipliers_are_bounded_and_ties_share_a_rank(tmp_path):
++    p = _write(tmp_path / "f.json", {"a": _row(1.0), "b": _row(1.0), "c": _row(5.0)})
++    m, _ = G._elog_multipliers(["a", "b", "c"], path=p)
++    assert m["a"] == m["b"]
++    assert all(1.0 - G.ELOG_BLEND_K <= v <= 1.0 + G.ELOG_BLEND_K for v in m.values())
++
++
++def test_the_blend_reshares_and_never_drops_a_cell(tmp_path, monkeypatch):
++    p = _write(tmp_path / "f.json", {"a": _row(1.0), "b": _row(9.0)})
++    monkeypatch.setattr(G, "ELOG_PRIORITY", p)
++    monkeypatch.setattr(G, "REPORTS", tmp_path)
++    monkeypatch.setattr(G, "_family_yield", lambda root=None: {})
++    monkeypatch.setattr(G, "_house_yield", lambda: 0.01)
++    monkeypatch.setattr(G, "_explore_unmeasured_axes", lambda specs, keep: ([], {}))
++    monkeypatch.setattr(G, "_orthogonality_floor", lambda specs, keep: ([], {}))
++    specs = ([{"family": "a", "sym": f"A{i}"} for i in range(400)]
++             + [{"family": "b", "sym": f"B{i}"} for i in range(400)])
++    keep, report = G.allocate_by_yield(specs)
++    n_a = sum(1 for s in keep if s["family"] == "a")
++    n_b = sum(1 for s in keep if s["family"] == "b")
++    assert n_b > n_a >= int(G.YIELD_MIN_SHARE * 400)
++    assert report["a"]["elog_multiplier"] < 1.0 < report["b"]["elog_multiplier"]
++    assert report["a"]["yield_per_1k_ruled"] == report["b"]["yield_per_1k_ruled"]
++    doc = json.loads((tmp_path / "RESEARCH_ALLOCATION.json").read_text("utf-8"))
++    assert doc["elog_blend"]["status"] == "MEASURED"
++
++
++def test_contract_the_publishers_real_build_output_moves_the_blend(tmp_path):
++    """Auditor M1: run the reader over a file `docket_elog_priority.build()` actually wrote.
++
++    The fixture is #979's real output at 47302cd89 (two families, cpu MEASURED, d_elog PRIOR,
++    32 scored cells each), copied verbatim; only `at` is refreshed so the age check admits it.
++    """
++    src = DESK / "tests" / "fixtures" / "docket_elog_priority_build_47302cd89.json"
++    doc = json.loads(src.read_text("utf-8"))
++    doc["at"] = datetime.now(tz=UTC).isoformat()
++    p = tmp_path / "DOCKET_ELOG_PRIORITY.json"
++    p.write_text(json.dumps(doc), "utf-8")
++    fams = sorted(doc["families"])
++    m, st = G._elog_multipliers(fams + ["unlisted"], path=p)
++    assert st["status"] == "MEASURED" and st["n_scored"] == 2
++    assert m["session_range_breakout"] == 1.0 + G.ELOG_BLEND_K
++    assert m["overnight_gap_decay"] == 1.0 - G.ELOG_BLEND_K
++    assert m["unlisted"] == 1.0
+diff --git a/desks/mt5/tests/test_gauntlet_fill_minute.py b/desks/mt5/tests/test_gauntlet_fill_minute.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9988a46dff1a9c800a868bba459dc3faaac34e4
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_fill_minute.py
+@@ -0,0 +1,78 @@
++"""The judge charges a fill its MINUTE's measured spread, not only its hour's (2026-11-11).
++
++EURCHF formula p=494964b2 was certified on 19 symbols for an edge that lives in the first minute
++after the broker 01:00 open, where the tick spread is 62 pts p50 against ~2 for the rest of the
++hour; at the real ask it loses from one minute late. Pinned: a cell whose fills land on a
++published spike minute is charged that minute's spread and its basis says so; a cell that never
++fills there keeps the charge it had; nothing here can lower a charge.
++"""
++from __future__ import annotations
++
++import numpy as np
++import pandas as pd
++import pytest
++from desks.mt5.scripts import external_gauntlet as gauntlet
++from mt5desk import families
++from mt5desk.engine import Signal
++
++SYM = "TESTFX"
++META = {SYM: {"symbol": SYM, "asset_class": "Forex", "tick_size": 1e-05, "tick_value": 1.0,
++              "contract_size": 100000.0, "median_spread_pts": 7.0}}
++
++
++def _bars() -> pd.DataFrame:
++    idx = pd.date_range("2026-01-01", periods=24 * 60, freq="h", tz="UTC", name="time")
++    close = 1.0 + np.cumsum(np.full(len(idx), 1e-6))
++    return pd.DataFrame({"open": close, "high": close + 1e-4, "low": close - 1e-4,
++                         "close": close, "tick_volume": np.ones(len(idx), dtype="int64"),
++                         "spread": np.full(len(idx), 7, dtype="int32")}, index=idx)
++
++
++def _family_rollover_probe(df: pd.DataFrame, side: int = 1, **_: object) -> list[Signal]:
++    """Signal on every 00:00 bar; wait_bars=1 fills it at 01:00, minute 0."""
++    return [Signal(time=t, side=int(side), stop=float(df["close"].iloc[i]) - 0.003,
++                   target=float(df["close"].iloc[i]) + 0.006, ttl_bars=24, tag="probe")
++            for i, t in enumerate(df.index) if t.hour == 0]
++
++
++@pytest.fixture
++def judge(monkeypatch: pytest.MonkeyPatch):
++    monkeypatch.setattr(families, "family_rollover_probe", _family_rollover_probe, raising=False)
++    monkeypatch.setattr(gauntlet, "_SURFACE_TRIED", True)
++
++    def surface(minutes: dict) -> None:
++        monkeypatch.setattr(gauntlet, "_COST_SURFACE", {"symbols": {SYM: {
++            "hours": {"1": {"status": "MEASURED", "p50": 2.0}},
++            "tick_hours": {"spike_minutes": minutes}}}})
++    return surface
++
++
++def _cell():
++    return gauntlet.build_cell(SYM, "rollover_probe", {}, META, h1_override=_bars())
++
++
++def test_a_fill_on_the_post_rollover_minute_pays_that_minutes_spread(judge) -> None:
++    judge({"01:00": {"p50": 62.0}})
++    cell = _cell()
++    assert cell is not None, gauntlet.LAST_BUILD_FAILURE
++    assert cell["_fill_hour"] == 1
++    assert cell["_fill_minute"]["spike_share"] == 1.0
++    assert cell["_cost_basis"].startswith("fill_minute_spike_100%_01:00")
++    hour_only = gauntlet.Costs.from_symbol(META[SYM], spread_pts=2.0)
++    assert cell["costs"].per_oz_roundtrip() > hour_only.per_oz_roundtrip()
++
++
++def test_a_cell_that_never_fills_on_a_spike_minute_keeps_its_hour_charge(judge) -> None:
++    judge({"05:00": {"p50": 62.0}})
++    cell = _cell()
++    assert cell is not None, gauntlet.LAST_BUILD_FAILURE
++    assert cell["_cost_basis"] == "fill_hour_01_spread"
++    assert cell["_fill_minute"]["spike_share"] == 0.0
++    same = gauntlet.Costs.from_symbol(META[SYM], spread_pts=2.0)
++    assert cell["costs"].per_oz_roundtrip() == pytest.approx(same.per_oz_roundtrip())
++
++
++def test_a_spike_cheaper_than_the_hour_lowers_nothing(judge) -> None:
++    judge({"01:00": {"p50": 1.0}})
++    cell = _cell()
++    assert cell is not None and cell["_cost_basis"] == "fill_hour_01_spread"
+diff --git a/desks/mt5/tests/test_gauntlet_refuses_duplicate_certs.py b/desks/mt5/tests/test_gauntlet_refuses_duplicate_certs.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..ce982848941d74912c088d41ef2d493019c90b60
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_refuses_duplicate_certs.py
+@@ -0,0 +1,69 @@
++"""The judge refuses to mint a second certificate for an executable rule it already certified.
++
++BR1 (box 2026-11-11): `{"timeframe": "M30"}` and `{"input_symbol": "CHFNOK", "timeframe": "M30"}`
++are two cell hashes for one carry rule, and both held a certificate. A duplicate counts the same
++evidence twice in the survivor count, the allocator's breadth and the forward roster. These pin
++that the publishing loop asks `_duplicate_of` after the unrunnable refusal and before the row is
++stored, that the identity comes from `research.cert_duplicates.executable_identity`, and that
++the sweep reports what it refused.
++"""
++from __future__ import annotations
++
++from pathlib import Path
++
++SRC = (Path(__file__).resolve().parents[1] / "scripts" / "external_gauntlet.py").read_text(
++    encoding="utf-8")
++
++
++def _at(needle: str, start: int = 0) -> int:
++    i = SRC.find(needle, start)
++    assert i >= 0, f"{needle!r} missing from external_gauntlet.py"
++    return i
++
++
++def test_duplicate_check_sits_between_the_unrunnable_refusal_and_the_store() -> None:
++    refusal = _at("_why = _certificate_refusal(row)")
++    dup = _at("_dup = _duplicate_of(key, row)", refusal)
++    store = _at("survivors_all[key] = row", dup)
++    assert refusal < dup < store
++    between = SRC[dup:store]
++    assert "REFUSED-DUPLICATE" in between and "continue" in between
++
++
++def test_identity_is_the_shared_reduction_not_a_local_copy() -> None:
++    assert "from research.cert_duplicates import executable_identity" in SRC
++
++
++def test_the_sweep_reports_its_refusals() -> None:
++    assert "CERT_DUPLICATES_REFUSED.json" in SRC
++
++
++def test_identity_reduction_names_the_br1_pair_as_one_rule() -> None:
++    import sys
++    desk = Path(__file__).resolve().parents[1]
++    for p in (str(desk), str(desk.parent.parent)):
++        if p not in sys.path:
++            sys.path.insert(0, p)
++    try:
++        from research.cert_duplicates import executable_identity
++    except ImportError:                       # lands with the cert_duplicates leg
++        import pytest
++        pytest.skip("research.cert_duplicates not on this tree yet")
++
++    def carry(symbol: str = "", lookback: int = 20) -> None:
++        return None
++
++    a = executable_identity("CHFNOK", "carry", {"timeframe": "M30"}, fn=carry)
++    b = executable_identity("CHFNOK", "carry", {"input_symbol": "CHFNOK", "timeframe": "M30"},
++                            fn=carry)
++    c = executable_identity("CHFNOK", "carry", {"timeframe": "M30", "session": "ny"}, fn=carry)
++    assert a == b != c
++
++
++def test_a_retired_or_voided_certificate_owns_no_identity() -> None:
++    owners = _at("def _owner_stands(row: dict) -> bool:")
++    loop = _at("for _k, _r in survivors_all.items():", owners)
++    body = SRC[owners:loop + 200]
++    for k in ("retired_at", "voided_at", "revoked_at", "RETIRED", "VOIDED", "REVOKED"):
++        assert k in body
++    assert "if not _owner_stands(_r):" in SRC[loop:loop + 200]
+diff --git a/desks/mt5/tests/test_judge_docket_order.py b/desks/mt5/tests/test_judge_docket_order.py
+index 0f33806ff0252cb1deb13fc755f8405e44f168ae..84d8548b2b10f0720be255ae8fb9a4cde9b9a4f9 100644
+--- a/desks/mt5/tests/test_judge_docket_order.py
++++ b/desks/mt5/tests/test_judge_docket_order.py
+@@ -133,6 +133,7 @@ def test_sealed_keep_puts_every_kept_cell_in_the_docket_once(tmp_path: Path,
+     monkeypatch.setattr(G, "REPORTS", reports)
+     fg = _fake_G(tmp_path, seen={})
+     for name in ("_family_yield", "_explore_unmeasured_axes", "_orthogonality_floor",
++                 "_elog_multipliers",
+                  "YIELD_ALLOCATION_STRENGTH", "YIELD_MAX_SHARE", "YIELD_MIN_SHARE"):
+         setattr(fg, name, getattr(G, name))
+     docket = _docket()
+diff --git a/desks/mt5/tests/test_prewarm_cache_io.py b/desks/mt5/tests/test_prewarm_cache_io.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad22efd7a23545bfa3581c7a0b9068a484c9e050
+--- /dev/null
++++ b/desks/mt5/tests/test_prewarm_cache_io.py
+@@ -0,0 +1,136 @@
++"""The pre-warm's cache I/O (idea 600): a HIT decompresses nothing, a WARM is not re-loaded.
++
++Before: `_warm_one` asked "is this cached?" with `cache_load` (both series decompressed and built
++as pandas objects, then thrown away), and after every save it loaded the file it had just written
++to check it. The main loop loads each entry again to use it. These pin that the HIT test reads
++only the zip directory, the save's own return replaces the re-load, the main loop still replaces
++an entry that failed to load, and the sweep reports its cache bytes.
++"""
++from __future__ import annotations
++
++import sys
++import time
++import zipfile
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++_ROOT = _DESK.parent.parent
++for _p in (str(_DESK / "scripts"), str(_DESK), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++from desks.mt5.scripts import external_gauntlet as G  # noqa: E402
++
++
++def _series(n: int = 30, scale: float = 1.0) -> pd.Series:
++    idx = pd.date_range("2026-01-01", periods=n, freq="D")
++    return pd.Series(np.arange(n, dtype=float) * scale, index=idx)
++
++
++def test_save_returns_the_entry_size_and_present_agrees(tmp_path, monkeypatch) -> None:
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path)
++    s = _series()
++    n = G.cache_save("k", s, s)
++    f = tmp_path / "k.npz"
++    assert n == f.stat().st_size > 0
++    assert G.cache_present("k") == n
++    got = G.cache_load("k")
++    assert got is not None and np.array_equal(got[0].to_numpy(), s.to_numpy())
++    assert not list(tmp_path.glob("*.tmp"))
++
++
++def test_present_is_zero_for_absent_garbage_and_incomplete_entries(tmp_path,
++                                                                   monkeypatch) -> None:
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path)
++    assert G.cache_present("absent") == 0
++    (tmp_path / "garbage.npz").write_bytes(b"not a zip at all")
++    assert G.cache_present("garbage") == 0
++    with zipfile.ZipFile(tmp_path / "half.npz", "w") as z:
++        z.writestr("dates.npy", b"x")
++        z.writestr("v1.npy", b"x")
++    assert G.cache_present("half") == 0
++
++
++def test_save_failure_returns_zero(tmp_path, monkeypatch) -> None:
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path / "file")
++    (tmp_path / "file").write_text("a file where the directory should be")
++    s = _series()
++    assert G.cache_save("k", s, s) == 0
++
++
++def test_save_always_replaces_an_entry_the_main_loop_could_not_load(tmp_path,
++                                                                    monkeypatch) -> None:
++    """The main loop saves only after `cache_load` returned None; a listed-but-unreadable entry
++    must be overwritten, never kept because its name is there."""
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path)
++    with zipfile.ZipFile(tmp_path / "k.npz", "w") as z:
++        for m in ("dates.npy", "v1.npy", "v3.npy"):
++            z.writestr(m, b"torn")
++    assert G.cache_present("k") > 0 and G.cache_load("k") is None
++    s = _series(scale=2.0)
++    assert G.cache_save("k", s, s) > 0
++    got = G.cache_load("k")
++    assert got is not None and np.array_equal(got[1].to_numpy(), s.to_numpy())
++
++
++def _warm_fixture(tmp_path, monkeypatch):
++    monkeypatch.setattr(G, "CACHE_DIR", tmp_path)
++    idx = pd.date_range("2025-01-01", periods=24 * 60, freq="h", tz="UTC")
++    frame = pd.DataFrame({"open": 1.0, "high": 1.1, "low": 0.9, "close": 1.0}, index=idx)
++    monkeypatch.setattr(G, "_bars_for", lambda sym, tf: frame)
++    monkeypatch.setattr(G, "build_cell",
++                        lambda sym, fam, params, meta: {"df": frame, "sigs": [], "costs": None})
++    monkeypatch.setattr(G, "daily_series", lambda df, sigs, costs: _series())
++    monkeypatch.setattr(G, "costs_for", lambda sym, meta, mult=1.0: None)
++    monkeypatch.setattr(G, "_series_trim_partial", lambda s, last_day: s)
++
++
++def test_warm_trusts_its_save_and_hit_decompresses_nothing(tmp_path, monkeypatch) -> None:
++    _warm_fixture(tmp_path, monkeypatch)
++
++    def _no_load(key):
++        raise AssertionError("the pre-warm must not decompress a cache entry")
++
++    monkeypatch.setattr(G, "cache_load", _no_load)
++    spec = {"sym": "EURUSD", "family": "fam", "params": {"timeframe": "H1"}}
++    first = G._warm_one(spec, {})
++    assert first["status"] == "WARMED", first
++    size = (tmp_path / f"{first['ckey']}.npz").stat().st_size
++    assert first["bytes_written"] == size
++    again = G._warm_one(spec, {})
++    assert again["status"] == "HIT"
++    assert again["bytes_not_decompressed"] == size
++
++
++def test_a_failed_save_is_save_failed(tmp_path, monkeypatch) -> None:
++    _warm_fixture(tmp_path, monkeypatch)
++    monkeypatch.setattr(G, "cache_save", lambda key, a, b: 0)
++    out = G._warm_one({"sym": "EURUSD", "family": "fam", "params": {"timeframe": "H1"}}, {})
++    assert out["status"] == "SAVE_FAILED"
++
++
++def _fake_warm(spec, meta):                          # module level: picklable for the pool
++    k = spec["params"]["k"]
++    if k.startswith("w"):
++        return {"status": "WARMED", "bytes_written": 1000}
++    return {"status": "HIT", "bytes_not_decompressed": 400}
++
++
++def test_the_sweep_reports_its_cache_bytes(monkeypatch) -> None:
++    import multiprocessing as mp
++    if mp.get_start_method(allow_none=True) not in (None, "fork") or sys.platform == "win32":
++        pytest.skip("the fake worker is installed by fork")
++    monkeypatch.setattr(G, "_warm_one", _fake_warm)
++    monkeypatch.setattr(G, "WORKERS", 2)
++    specs = [{"sym": "S", "family": "f", "params": {"k": f"{c}{i}"}}
++             for i, c in enumerate("wwwhh")]
++    out = G._prewarm_cache(specs, {}, time.time() + 600)
++    io = out["io"]
++    assert (out["warmed"], out["hit"]) == (3, 2)
++    assert io["bytes_written"] == 3000 == io["verify_bytes_not_reloaded"]
++    assert io["hit_bytes_not_decompressed"] == 800
++    assert io["bytes_per_warmed_cell"] == 1000
+diff --git a/desks/mt5/tests/test_prewarm_cost.py b/desks/mt5/tests/test_prewarm_cost.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..7bae7c2535c44d7630e24f0c25eb00eb253428e9
+--- /dev/null
++++ b/desks/mt5/tests/test_prewarm_cost.py
+@@ -0,0 +1,102 @@
++"""The pre-warm's per-family cost record: report-only, and it never needs a worker's help."""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++DESK = Path(__file__).resolve().parents[1]
++for p in (str(DESK), str(DESK / "scripts"), str(DESK.parent.parent)):
++    if p not in sys.path:
++        sys.path.insert(0, p)
++
++import external_gauntlet as eg  # noqa: E402
++
++
++def _summary() -> dict:
++    return {"worker_seconds": {}, "by_family": {}}
++
++
++def test_seconds_are_summed_per_status_and_family() -> None:
++    s = _summary()
++    eg._cost(s, {"family": "a"}, "WARMED", 2.0)
++    eg._cost(s, {"family": "a"}, "HIT", 0.5)
++    eg._cost(s, {"family": "b"}, "WARMED", 7.25)
++    assert s["worker_seconds"] == {"WARMED": 9.25, "HIT": 0.5}
++    assert s["by_family"]["a"] == {"n": 2, "s": 2.5, "max_s": 2.0, "warmed": 1}
++    assert s["by_family"]["b"]["max_s"] == 7.25
++
++
++def test_a_result_without_seconds_is_not_counted() -> None:
++    s = _summary()
++    eg._cost(s, {"family": "a"}, "WARMED", None)
++    assert s == _summary()
++
++
++def test_the_published_table_keeps_the_costliest_and_folds_the_rest() -> None:
++    s = _summary()
++    for i in range(eg.PREWARM_COST_TOP + 3):
++        eg._cost(s, {"family": f"f{i}"}, "WARMED", float(i + 1))
++    top = eg._top_families(s["by_family"])
++    assert list(top)[0] == f"f{eg.PREWARM_COST_TOP + 2}"
++    assert top["_rest"] == {"families": 3, "n": 3, "s": 6.0}
++
++
++def test_warm_one_reports_its_own_seconds(monkeypatch) -> None:
++    monkeypatch.setattr(eg, "_bars_for", lambda sym, tf: None)
++    out = eg._warm_one_timed({"sym": "EURUSD", "family": "x", "params": {}}, {})
++    assert out["status"] == "NOT_RUN_DATA_MISSING" and out["seconds"] >= 0.0
++
++
++def test_the_pool_gets_meta_once_at_start_up_never_per_task() -> None:
++    """Meta crosses to each worker once (initializer); a task carries only its spec."""
++    import inspect
++
++    src = inspect.getsource(eg._prewarm_cache)
++    assert "initializer=_init_prewarm_worker" in src and "initargs=(meta,)" in src
++    assert "pool.submit(_warm_one_pooled, sp)" in src
++    assert "pool.submit(_warm_one_timed, sp, meta)" not in src
++
++
++def test_a_pooled_worker_uses_the_meta_it_was_started_with(monkeypatch) -> None:
++    seen = {}
++
++    def fake(spec, meta):
++        seen["meta"] = meta
++        return {"status": "HIT", "seconds": 0.0}
++
++    monkeypatch.setattr(eg, "_warm_one_timed", fake)
++    monkeypatch.setattr(eg, "_WORKER_META", None)
++    assert eg._warm_one_pooled({"sym": "X"})["status"] == "ERROR"
++    meta = {"costs": 1}
++    eg._init_prewarm_worker(meta)
++    try:
++        assert eg._warm_one_pooled({"sym": "X"})["status"] == "HIT"
++        assert seen["meta"] is meta
++    finally:
++        eg._WORKER_META = None
++
++
++def test_the_cache_prune_removes_only_files_past_three_days(tmp_path, monkeypatch) -> None:
++    import os
++    import time
++
++    monkeypatch.setattr(eg, "CACHE_DIR", tmp_path)
++    old, new, other = tmp_path / "a.npz", tmp_path / "b.npz", tmp_path / "c.tmp"
++    for f in (old, new, other):
++        f.write_bytes(b"x")
++    past = time.time() - 4 * 86400
++    os.utime(old, (past, past))
++    os.utime(other, (past, past))
++    out = eg._prune_cache()
++    assert (out["scanned"], out["removed"]) == (2, 1)
++    assert not old.exists() and new.exists() and other.exists()
++
++
++def test_the_sweep_plan_does_not_wait_for_the_prune() -> None:
++    import inspect
++
++    src = inspect.getsource(eg)
++    assert "    _prune_cache_in_background()\n" in src
++    assert 'CACHE_DIR.glob("*.npz")' not in src
++    bg = inspect.getsource(eg._prune_cache_in_background)
++    assert "daemon=True" in bg and "target=_prune_cache" in bg
