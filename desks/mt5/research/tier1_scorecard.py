@@ -651,6 +651,69 @@ def _overall(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "weakest_measured": [r["dimension"] for r in weakest], "why": why}
 
 
+#: THE PLAYER-FOOTPRINT PRODUCERS WHOSE OUTPUT NEVER LEFT THE BOX (2026-11-04). The Tier-1
+#: footprint sweep found 35 producers WIRED-UNMEASURED: on a clock, artifact never on origin.
+#: Publishing these paths through the sync script would change money-path code, so their
+#: measurement rides THIS report, which the sync already carries: freshness, size and a bounded
+#: copy of each.
+FOOTPRINT_ARTIFACTS = (*(REPORTS / f"{n}.json" for n in (
+    "FUTURES_STATE", "SHADOW_INSTITUTIONAL", "ACTOR_ATLAS", "ACTOR_PRESSURE", "MARKET_ECOLOGY",
+    "EVENT_SURPRISE", "MACRO_STATE_ENGINE", "PREDICTION_MARKETS", "sge_premium",
+    "ASIA_PLANE")), DATA / "forced_flow_calendar.json")
+#: A copy is embedded whole up to this size and as a shallow outline above it, so the report
+#: stays far inside the sync's 4 MB wire cap however large a producer's output grows.
+FOOTPRINT_INLINE_BYTES = 48_000
+FOOTPRINT_TOTAL_BYTES = 600_000
+
+
+def _outline(doc: Any) -> Any:
+    """Top-level shape only: scalars kept, containers replaced by their type and length."""
+    if not isinstance(doc, dict):
+        return {"type": type(doc).__name__,
+                "len": len(doc) if isinstance(doc, (list, str)) else None}
+    out: dict[str, Any] = {}
+    for k, v in list(doc.items())[:80]:
+        if isinstance(v, (dict, list)):
+            out[str(k)] = {"type": type(v).__name__, "len": len(v)}
+        elif isinstance(v, str):
+            out[str(k)] = v[:200]
+        else:
+            out[str(k)] = v
+    return out
+
+
+def footprints(now: datetime | None = None) -> dict[str, Any]:
+    """Freshness and a bounded copy of every box-local footprint artifact. An absent file is
+    reported ABSENT and an unreadable one UNREADABLE; neither is ever a clean verdict."""
+    now = now or datetime.now(tz=UTC)
+    rows: dict[str, Any] = {}
+    spent = 0
+    for path in FOOTPRINT_ARTIFACTS:
+        rel = _rel(path)
+        try:
+            stat = path.stat()
+        except OSError:
+            rows[rel] = {"status": "ABSENT"}
+            continue
+        doc = _read(path)
+        age_h = round((now.timestamp() - stat.st_mtime) / 3600, 2)
+        row: dict[str, Any] = {"status": "UNREADABLE" if doc is None else "PRESENT",
+                               "bytes": stat.st_size, "mtime_age_hours": age_h,
+                               "generated": _stamp(doc)}
+        if doc is not None:
+            if stat.st_size <= FOOTPRINT_INLINE_BYTES and spent + stat.st_size <= \
+                    FOOTPRINT_TOTAL_BYTES:
+                row["copy"], row["copy_kind"] = doc, "whole"
+                spent += stat.st_size
+            else:
+                row["copy"], row["copy_kind"] = _outline(doc), "outline"
+        rows[rel] = row
+    present = sum(1 for r in rows.values() if r["status"] == "PRESENT")
+    return {"n": len(rows), "present": present, "artifacts": rows,
+            "rule": ("measurement only: each box-local footprint producer's output, carried on "
+                     "an existing wire so a WIRED-UNMEASURED row becomes a measured one")}
+
+
 def build() -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for builder in BUILDERS:
@@ -665,7 +728,15 @@ def build() -> dict[str, Any]:
             "authority": ("MEASUREMENT ONLY -- sizes nothing, gates nothing, certifies nothing. "
                           "It reports where the fourteen Tier-1 dimensions stand, read from the "
                           "artifacts that own them."),
-            "n_rows": len(rows), "rows": rows, "overall": _overall(rows)}
+            "n_rows": len(rows), "rows": rows, "overall": _overall(rows),
+            "footprints": _safe_footprints()}
+
+
+def _safe_footprints() -> dict[str, Any]:
+    try:
+        return footprints()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def render(doc: dict[str, Any]) -> list[str]:
