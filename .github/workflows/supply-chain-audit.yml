@@ -1,0 +1,89 @@
+name: supply-chain-audit
+
+# rea lane Z2d (2026-11-18). Daily audit of what we install and what our workflows run:
+# Actions not pinned to a commit SHA, unpinned / unhashed / typosquat-risk Python packages.
+# Script and rules: .github/scripts/supply_chain_audit.py.
+#
+# NOT A PR CHECK, ON PURPOSE: no pull_request trigger, never a required status. zuck's standing
+# order is no new gates on non-money work and never fixing a gate with a gate. It reports instead:
+# one rolling issue labelled `supply-chain-audit`, updated each run, closed when clean.
+# FAIL CLOSED: findings fail the run, and so does the audit crashing (exit 2) -- a scan that could
+# not read a manifest never reads as "clean".
+
+on:
+  schedule:
+    - cron: "17 5 * * *"   # daily, 05:17 UTC (off the :00 rush)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: supply-chain-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit
+        id: audit
+        run: |
+          set +e
+          python -I .github/scripts/supply_chain_audit.py --json audit.json --md audit.md
+          code=$?
+          if [ "$code" -eq 2 ] || [ ! -s audit.md ]; then
+            printf '## Supply-chain audit: CRASHED\n\nThe audit itself failed (exit %s); see the run log. Treat as FAIL.\n' "$code" > audit.md
+          fi
+          # Mechanical repair preview: what --fix-actions would change, attached to the report.
+          python -I .github/scripts/supply_chain_audit.py --fix-actions --json /dev/null --md /dev/null > /dev/null 2>&1
+          git diff -- .github/workflows > fix-actions.patch
+          git checkout -- .github/workflows
+          if [ -s fix-actions.patch ]; then
+            { echo; echo "### Mechanical fix (pin Actions to the commit each tag points to now)"; echo;
+              echo "Apply with \`python .github/scripts/supply_chain_audit.py --fix-actions\`, or:"; echo;
+              echo '```diff'; head -c 50000 fix-actions.patch; echo '```'; } >> audit.md
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat audit.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: supply-chain-audit
+          path: |
+            audit.json
+            audit.md
+            fix-actions.patch
+          if-no-files-found: ignore
+
+      - name: Report (one rolling issue)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODE: ${{ steps.audit.outputs.code }}
+        run: |
+          label=supply-chain-audit
+          gh label create "$label" --color B60205 --description "Daily supply-chain audit" -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          num=$(gh issue list -R "$GITHUB_REPOSITORY" --label "$label" --state open --json number --jq '.[0].number // empty')
+          { cat audit.md 2>/dev/null || echo "No report was written (step crashed)."; echo; echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"; } > body.md
+          if [ "$CODE" = "0" ]; then
+            [ -n "$num" ] && gh issue close "$num" -R "$GITHUB_REPOSITORY" --comment "Clean on $(date -u +%FT%TZ). $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 0
+          fi
+          if [ -n "$num" ]; then
+            gh issue edit "$num" -R "$GITHUB_REPOSITORY" --body-file body.md
+          else
+            gh issue create -R "$GITHUB_REPOSITORY" --label "$label" --title "Supply-chain audit findings" --body-file body.md
+          fi
+          exit 1

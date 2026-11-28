@@ -89,7 +89,7 @@ jobs:
       law_gate: ${{ steps.evidence.outputs.law_gate }}
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # FULL HISTORY, BLOBLESS (D-20261027-003): check_seal_clears proves the auto-sign's
           # CLEAR record only ever grew, which needs every commit that touched it. A depth-1
@@ -97,7 +97,7 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -153,7 +153,7 @@ jobs:
       # unchanged floor measures BOTH completed suites, not only root testpaths=[tests].
       - name: Preserve root coverage
         if: ${{ !cancelled() && steps.root_tests.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: root-coverage-${{ github.sha }}
           path: .coverage
@@ -178,9 +178,9 @@ jobs:
     outputs:
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -254,7 +254,7 @@ jobs:
         run: python scripts/release_promotion.py counts --junit mt5-junit.xml >> "$GITHUB_OUTPUT"
 
       - name: Preserve desk coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: desk-coverage-${{ github.sha }}
           path: .coverage
@@ -266,16 +266,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
       - run: pip install -e ".[dev]"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: root-coverage-${{ github.sha }}
           path: coverage-input/root
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: desk-coverage-${{ github.sha }}
           path: coverage-input/desk
@@ -323,17 +323,17 @@ jobs:
       - name: State App token (Level 2 only)
         id: app
         if: ${{ vars.STATE_APP_ID != '' && github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3' }}
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.STATE_APP_ID }}
           private-key: ${{ secrets.STATE_APP_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
@@ -447,17 +447,17 @@ jobs:
       - name: State App token (Level 2 only)
         id: app
         if: ${{ vars.STATE_APP_ID != '' }}
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.STATE_APP_ID }}
           private-key: ${{ secrets.STATE_APP_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 

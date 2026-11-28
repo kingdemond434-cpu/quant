@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -46,7 +46,7 @@ jobs:
           grep -v -e '^#' -e '^$' ops/release/risk_suites.txt > "$RUNNER_TEMP/suites"
           xargs -a "$RUNNER_TEMP/suites" git checkout "$BASE" --
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 60
     steps:
       # The harness is the base's, in a directory the PR's tree never touches.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: harness
@@ -80,7 +80,7 @@ jobs:
           persist-credentials: false
 
       # Each tree holds on disk only what the live book imports and reads (code, books, state).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
@@ -103,7 +103,7 @@ jobs:
             /pyproject.toml
           persist-credentials: false
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: head
@@ -124,7 +124,7 @@ jobs:
             /desks/mt5/research/*.py
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -181,7 +181,7 @@ jobs:
       # it against the base's registry itself, and maps it to CONTROLLER (policy.declared_replay).
       - name: Keep the replay report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: replay-shadow-report-${{ github.run_attempt }}
           path: ${{ runner.temp }}/replay_shadow.json
@@ -207,7 +207,7 @@ jobs:
       # PR last moved -- #474's re-runs kept asking llama3.1:8b and two votes hours after #579
       # unpinned it, and timed out each time. LIVE is protected, so its tip is as trusted as any
       # base sha; any other base keeps its exact sha.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: >-
             ${{ github.event.pull_request.base.ref == 'claude/llm-auto-upgrade-verify-gcjac3'
@@ -215,7 +215,7 @@ jobs:
           sparse-checkout: ops/release
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
