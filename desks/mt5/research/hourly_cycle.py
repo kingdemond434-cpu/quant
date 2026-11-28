@@ -1452,6 +1452,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
                      "world_lab", "macro_department", "news_event_stream",
+                     "presser_stt",
                      "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
@@ -2341,6 +2342,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
     # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
     "culture_gap_cells": 300,
+    # Reads two calendar files and the source registry; contacts nothing. Sub-second.
+    "presser_stt": 120,
     # Seconds on a pass with no careers read due; the weekly read is eleven pages at most.
     "firm_lanes": 300,
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
@@ -4620,6 +4623,11 @@ def main() -> None:
     # REQUEST the allocator may read; the deep lane interprets what clears novelty x surprise.
     # Nothing here sizes. `--once` is the hourly pass; the 60 s `--resident` loop is a box task
     # that does not exist yet and is a NAMED gap on the ledger row, not a silent absence.
+    # PRESS-CONFERENCE SPEECH-TO-TEXT (build C row 48): the next central-bank press-conference
+    # windows, each source's terms/robots verdict and the local model's readiness, written
+    # before the news stream reads its seats. The live capture is box task MT5-PresserSTT.
+    pst = _costed("presser_stt", lambda: _producer(
+        "presser_stt", "research/presser_stt.py", "--plan"))
     nes = _costed("news_event_stream", lambda: _producer(
         "news_event_stream", "research/news_event_stream.py", "--once"))
     # THE EVENT-CONDITIONED SLEEVES: eight family cards validated BEFORE an event, so a headline
@@ -6592,7 +6600,7 @@ def main() -> None:
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
-                    "news_event_stream": nes, "event_sleeves": evs,
+                    "news_event_stream": nes, "presser_stt": pst, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
                     "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,
                     "representation_forge": rfg,
