@@ -54,7 +54,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             evidence = [str(e) for e in cpd.variables[1:]]
         except Exception as exc:
             mechs.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                          "why": f"{type(exc).__name__}: {exc}"[:200]})
+                          "why": f"{A.exc_text(exc)}"[:200]})
             continue
         table = values.reshape(values.shape[0], -1)
         stay = float(np.mean([table[k, k] for k in range(min(3, table.shape[0]))

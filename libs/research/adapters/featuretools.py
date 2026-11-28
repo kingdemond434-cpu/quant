@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                                trans_primitives=PRIMITIVES, max_depth=1, verbose=False)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         y = np.append(f.log_returns(), np.nan)
         scored: list[tuple[float, str]] = []

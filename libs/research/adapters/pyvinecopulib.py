@@ -43,7 +43,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=trials, representations=[
             {"kind": "UNMEASURED", "symbols": [f.symbol for f in frames],
-             "why": f"{type(exc).__name__}: {exc}"[:200]}])
+             "why": f"{A.exc_text(exc)}"[:200]}])
     tail = [t for t in tree1 if t["family"] in ("clayton", "gumbel", "student")]
     return A.packet(SYSTEM, bundle, trials=trials, representations=[
         {"kind": "tail_dependence_state", "timeframe": "H1", "n_obs": int(n),

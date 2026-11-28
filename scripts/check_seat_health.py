@@ -46,6 +46,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.ops import producer_census as PCEN  # noqa: E402
+from libs.ops.public_report import redact  # noqa: E402
 
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "SEAT_HEALTH.json"
@@ -571,7 +572,7 @@ def main(argv: list[str] | None = None) -> int:
         doc["producer_census"] = {k: v for k, v in census_doc.items() if k != "rows"}
         try:
             CENSUS_OUT.parent.mkdir(parents=True, exist_ok=True)
-            CENSUS_OUT.write_text(json.dumps(census_doc, indent=1), encoding="utf-8")
+            CENSUS_OUT.write_text(json.dumps(redact(census_doc), indent=1), encoding="utf-8")
         except OSError as exc:
             print(f"producer census: artifact NOT written ({type(exc).__name__}: {exc})")
 

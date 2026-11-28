@@ -59,7 +59,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             cands.append(A.candidate("trend_ma_cross", [f.symbol],
                                      f"UNMEASURED: pyribs raised {type(exc).__name__} on "
                                      f"{f.symbol}", horizon=bundle.horizons[0], source=SYSTEM,
-                                     evidence={"why": f"{type(exc).__name__}: {exc}"[:200]}))
+                                     evidence={"why": f"{A.exc_text(exc)}"[:200]}))
             continue
         for sol, obj, m in elites:
             fa, sl = round(abs(float(sol[0]))) + 2, round(abs(float(sol[1]))) + 3

@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             body = p.read_text(encoding="utf-8") if p.exists() else ""
         except OSError as exc:
             read.append({"file": rel, "exists": p.exists(),
-                         "why": f"{type(exc).__name__}: {exc}"[:120]})
+                         "why": f"{A.exc_text(exc)}"[:120]})
             continue
         read.append({"file": rel, "exists": p.exists(), "bytes": len(body)})
         text += body

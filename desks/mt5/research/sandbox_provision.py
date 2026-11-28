@@ -190,7 +190,7 @@ def ensure_shared(root: Path, *, timeout_s: int = 300) -> tuple[Path, str]:
             env=SB.scrub_env(), capture_output=True, text=True, timeout=timeout_s, check=False,
             cwd=str(base))
     except (subprocess.TimeoutExpired, OSError) as exc:
-        return py, f"venv creation failed: {type(exc).__name__}: {exc}"
+        return py, f"venv creation failed: {A.exc_text(exc)}"
     if made.returncode != 0 or not py.exists():
         return py, f"venv creation failed: {(made.stderr or made.stdout)[-200:]}"
     #: `setuptools` is a RUNTIME prerequisite here, not a build convenience: a venv on 3.12+
@@ -221,7 +221,7 @@ def verify(py: Path, module: str, *, timeout_s: int = 180) -> tuple[bool, str, s
         proc = subprocess.run([str(py), "-c", code], env=SB.scrub_env(),
                               capture_output=True, text=True, timeout=timeout_s, check=False)
     except (subprocess.TimeoutExpired, OSError) as exc:
-        return False, "", f"{type(exc).__name__}: {exc}"[:300]
+        return False, "", f"{A.exc_text(exc)}"[:300]
     out = (proc.stdout or "").strip()
     if proc.returncode == 0 and out.startswith("OK"):
         return True, out[3:].strip(), ""
@@ -249,7 +249,7 @@ def pip_install(py: Path, requirement: str, *, timeout_s: int) -> tuple[bool, st
         return False, f"pip install timed out after {timeout_s}s", round(
             time.monotonic() - t0, 1)
     except OSError as exc:
-        return False, f"pip failed to start: {type(exc).__name__}: {exc}", 0.0
+        return False, f"pip failed to start: {A.exc_text(exc)}", 0.0
     seconds = round(time.monotonic() - t0, 1)
     if proc.returncode == 0:
         return True, "installed", seconds
@@ -358,7 +358,7 @@ def read_licence(sid: str, rows: dict[str, dict[str, Any]], root: Path) -> dict[
         reading = LR.read(base, root=root)
     except Exception as exc:  # a licence read never breaks the supply line
         return {"system": sid, "licence": "UNVERIFIED",
-                "why": f"{type(exc).__name__}: {exc}"[:200]}
+                "why": f"{A.exc_text(exc)}"[:200]}
     LR.apply(row, reading)
     disposition, why = LR.dispose(base, reading)
     if reading.read:

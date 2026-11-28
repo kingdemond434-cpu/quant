@@ -49,6 +49,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.ops import organ_census as oc  # noqa: E402
+from libs.ops.public_report import redact  # noqa: E402
 
 OUT = ROOT / "desks" / "mt5" / "reports" / "ORGAN_CENSUS.json"
 DEBT = ROOT / "docs" / "research" / "organ_census_debt.json"
@@ -123,7 +124,7 @@ def scan(*, root: Path | None = None, require_state: bool = False,
 def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     path = Path(target or OUT)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(doc, indent=2, default=str, sort_keys=False) + "\n",
+    path.write_text(json.dumps(redact(doc), indent=2, default=str, sort_keys=False) + "\n",
                     encoding="utf-8")
     return path
 

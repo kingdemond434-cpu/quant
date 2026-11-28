@@ -45,7 +45,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                          "oos_r2": r2, "generations": GENS, "population": POP})
         except Exception as exc:
             rows.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
     return A.packet(SYSTEM, bundle, trials=trials, research_methods=rows)
 
 

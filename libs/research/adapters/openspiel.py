@@ -50,7 +50,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             mix = {game.action_to_string(0, a): float(p) for a, p in probs.items()}
         except Exception as exc:
             rows.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         rows.append({"kind": "equilibrium_evidence", "symbol": f.symbol, "spread_frac": spread,
                      "vol_h1": vol, "desk_mix": mix, "iterations": ITERS,

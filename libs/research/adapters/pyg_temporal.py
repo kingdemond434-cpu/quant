@@ -54,7 +54,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         emb = h.detach().numpy() if h is not None else np.zeros((k, 8))
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=1, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     return A.packet(SYSTEM, bundle, trials=1, representations=[
         {"kind": "dynamic_graph_embedding", "symbols": [f.symbol for f in frames],
          "loss_first": losses[0], "loss_last": losses[-1], "epochs": EPOCHS,

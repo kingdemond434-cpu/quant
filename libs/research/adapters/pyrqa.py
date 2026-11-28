@@ -57,7 +57,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                              "entropy_diagonal_lines": float(result.entropy_diagonal_lines)})
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "radius": radius,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
     return A.packet(SYSTEM, bundle, trials=trials, representations=reps)
 
 

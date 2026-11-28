@@ -33,7 +33,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         model.init()
     except Exception as exc:
         return A.unmeasured(SYSTEM, bundle, f"MOMENT weights not in the local HF cache: "
-                                            f"{type(exc).__name__}: {exc}"[:220])
+                                            f"{A.exc_text(exc)}"[:220])
     deadline = A.Deadline(bundle.compute_budget_s)
     trials = 0
     reps: list[dict[str, Any]] = []
@@ -52,7 +52,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                                                         * np.linalg.norm(embs[1]), 1e-12))
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "foundation_embedding", "symbol": f.symbol, "window": WINDOW,
                      "dim": int(embs[1].shape[0]), "head": embs[1][:8],

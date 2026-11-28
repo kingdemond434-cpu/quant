@@ -72,7 +72,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=trials, research_methods=[
             {"kind": "UNMEASURED", "symbol": f.symbol,
-             "why": f"{type(exc).__name__}: {exc}"[:200]}])
+             "why": f"{A.exc_text(exc)}"[:200]}])
     observed = [{"fast": design(u)[0], "slow": design(u)[1], "objective_return": float(y)}
                 for u, y in zip(X, Y, strict=True)]
     best = sorted(observed, key=lambda r: -r["objective_return"])[:2]

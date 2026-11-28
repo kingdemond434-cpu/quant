@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             scores = np.asarray(model.get_anomaly_score(test).to_pd().iloc[:, 0], dtype=float)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "anomaly_scores", "symbol": f.symbol, "model": "IsolationForest",
                      "n_test": int(scores.shape[0]), "last": float(scores[-1]),

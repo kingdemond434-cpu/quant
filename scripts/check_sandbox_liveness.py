@@ -46,6 +46,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.ops.public_report import redact  # noqa: E402
 from libs.research import sandbox_rotation as ROT  # noqa: E402
 
 DESK = _ROOT / "desks" / "mt5"
@@ -196,8 +197,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     rep = build_report()
-    _write(OUT, rep)
-    _write(STATE, {"at": rep["at"], "reasons": rep.get("reasons") or {}})
+    _write(OUT, redact(rep))
+    _write(STATE, redact({"at": rep["at"], "reasons": rep.get("reasons") or {}}))
     print(json.dumps(rep, indent=2) if args.json else
           f"sandbox liveness (LAWS 5h): {rep['status']} -- {rep['detail']}\n-> {OUT}")
     if args.report_only:

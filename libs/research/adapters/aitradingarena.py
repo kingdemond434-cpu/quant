@@ -49,7 +49,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                         if st:
                             transitions[st] = transitions.get(st, 0) + 1
             except (OSError, ValueError) as exc:
-                row["why"] = f"{type(exc).__name__}: {exc}"[:160]
+                row["why"] = f"{A.exc_text(exc)}"[:160]
         rows.append(row)
     present = [r for r in rows if r.get("exists")]
     if not present:

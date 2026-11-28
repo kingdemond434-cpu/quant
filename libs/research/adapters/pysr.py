@@ -43,7 +43,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             pred = np.asarray(model.predict(X[-200:]), dtype=float)
         except Exception as exc:
             mechs.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                          "why": f"{type(exc).__name__}: {exc}"[:200]})
+                          "why": f"{A.exc_text(exc)}"[:200]})
             continue
         r2 = 1.0 - float(np.var(y[-200:] - pred) / max(np.var(y[-200:]), 1e-18))
         n_eq = len(eqs) if eqs is not None else 0

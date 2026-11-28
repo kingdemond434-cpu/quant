@@ -62,7 +62,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         except Exception as exc:
             trials += counter["n"]
             methods.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                            "why": f"{type(exc).__name__}: {exc}"[:200]})
+                            "why": f"{A.exc_text(exc)}"[:200]})
             continue
         trials += counter["n"]
         order = np.argsort(F[:, 0])[:MAX_FRONT]

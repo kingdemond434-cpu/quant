@@ -47,7 +47,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from libs.ops.public_report import exc_text
 from libs.research import external_federation as fed
+
+
+def _kept_on_box(what: str, proc: Any) -> str:
+    """A failed subprocess's own output is free text (a pip index URL can carry a token), so
+    it goes to this task's log on the box and the result says only that it failed and how."""
+    out = (getattr(proc, "stderr", "") or getattr(proc, "stdout", "") or "").strip()
+    print(f"[sandbox] {what}:\n{out[-2000:]}", file=sys.stderr)
+    return f"{what}: returncode {getattr(proc, 'returncode', None)} (output kept on the box)"
 
 #: Sandboxes live OUTSIDE the desk tree, so nothing a third-party process writes can land in the
 #: repository the gateway imports from. Overridable for tests only.
@@ -232,7 +241,7 @@ def run(sandbox: Sandbox, argv: list[str], *, timeout_s: int = 600,
         try:
             shutil.copy2(src, sandbox.work / name)
         except OSError as exc:
-            return RunResult(sandbox.system_id, False, f"input {name} unreadable: {exc}")
+            return RunResult(sandbox.system_id, False, f"input {name} unreadable: {exc_text(exc)}")
     t0 = time.monotonic()
     try:
         proc = subprocess.run(argv, cwd=str(sandbox.work), env=scrub_env(),
@@ -242,7 +251,7 @@ def run(sandbox: Sandbox, argv: list[str], *, timeout_s: int = 600,
         return RunResult(sandbox.system_id, False, f"timed out after {timeout_s}s",
                          seconds=round(time.monotonic() - t0, 1))
     except OSError as exc:
-        return RunResult(sandbox.system_id, False, f"failed to start: {type(exc).__name__}: {exc}")
+        return RunResult(sandbox.system_id, False, f"failed to start: {exc_text(exc)}")
     tail = tuple((proc.stdout or "")[-MAX_OUTPUT_BYTES:].strip().splitlines()[-20:])
     return RunResult(sandbox.system_id, proc.returncode == 0,
                      "ran" if proc.returncode == 0 else f"returncode {proc.returncode}",
@@ -353,11 +362,11 @@ def install(sandbox: Sandbox, requirement: str, *, timeout_s: int = 900,
                                   text=True, timeout=300, check=False, cwd=str(sandbox.root))
         except (subprocess.TimeoutExpired, OSError) as exc:
             return InstallResult(sandbox.system_id, False,
-                                 f"venv creation failed: {type(exc).__name__}: {exc}",
+                                 f"venv creation failed: {exc_text(exc)}",
                                  requirement=requirement)
         if made.returncode != 0 or not py.exists():
             return InstallResult(sandbox.system_id, False,
-                                 f"venv creation failed: {(made.stderr or made.stdout)[-300:]}",
+                                 _kept_on_box("venv creation failed", made),
                                  requirement=requirement)
     argv = [str(py), "-m", "pip", "install", "--no-input", "--disable-pip-version-check",
             "--progress-bar", "off", requirement]
@@ -371,12 +380,11 @@ def install(sandbox: Sandbox, requirement: str, *, timeout_s: int = 900,
                              seconds=round(time.monotonic() - t0, 1))
     except OSError as exc:
         return InstallResult(sandbox.system_id, False,
-                             f"pip failed to start: {type(exc).__name__}: {exc}",
+                             f"pip failed to start: {exc_text(exc)}",
                              python=str(py), requirement=requirement)
     if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-3:]
         return InstallResult(sandbox.system_id, False,
-                             "pip install failed: " + " | ".join(t[:160] for t in tail),
+                             _kept_on_box("pip install failed", proc),
                              python=str(py), requirement=requirement,
                              seconds=round(time.monotonic() - t0, 1))
     frozen = subprocess.run([str(py), "-m", "pip", "freeze", "--disable-pip-version-check"],

@@ -162,7 +162,7 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                 files.append(out)
                 fetched = {"attempted": True, "why": "fetched", "rows": len(rows)}
             except Exception as exc:
-                fetched = {"attempted": True, "why": f"{type(exc).__name__}: {exc}"[:200]}
+                fetched = {"attempted": True, "why": f"{A.exc_text(exc)}"[:200]}
     hits: list[dict[str, Any]] = []
     for p in files[-40:]:
         try:

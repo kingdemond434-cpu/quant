@@ -37,7 +37,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                                                        ctx=ctx)
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=0, representations=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     for w in range(N_WINDOWS):
         if deadline.expired():
             break
@@ -49,7 +49,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             coeffs = np.asarray(list(sig), dtype=float).reshape(-1)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "window": [a, b],
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         lvl1 = coeffs[1:1 + d]
         lvl2 = coeffs[1 + d:1 + d + d * d].reshape(d, d) if coeffs.shape[0] >= 1 + d + d * d \

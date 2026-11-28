@@ -64,7 +64,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 yt = y[cut[1]:]
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "level": level,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             reps.append({"kind": "conformal_interval", "symbol": f.symbol,
                          "timeframe": f.timeframe, "api": api, "confidence_level": level,

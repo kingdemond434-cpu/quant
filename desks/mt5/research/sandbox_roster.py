@@ -40,6 +40,7 @@ for _p in (str(ROOT), str(DESK)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.public_report import exc_text, redact  # noqa: E402
 from libs.research import adapters as A  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import sandbox_rotation as ROT  # noqa: E402
@@ -91,7 +92,7 @@ def cell_rows() -> dict[str, dict[str, Any]]:
                         "disposition": "REBUILT", "licence": "desk (own code)",
                         "capability_family": "UNMEASURED", "upstream": "desk",
                         "runs_here": False,
-                        "why": f"cell import failed: {type(exc).__name__}: {exc}"[:200]}
+                        "why": f"cell import failed: {exc_text(exc)}"[:200]}
             continue
         d = CELLS.describe(module)
         out[sid] = {"system_id": sid, "name": name, "kind": "cell", "disposition": "REBUILT",
@@ -302,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = build()
     if not a.dry_run:
-        _write(REPORT, doc)
+        _write(REPORT, redact(doc))
         MARKDOWN.parent.mkdir(parents=True, exist_ok=True)
         MARKDOWN.write_text(render(doc), encoding="utf-8")
     c = doc["counts"]

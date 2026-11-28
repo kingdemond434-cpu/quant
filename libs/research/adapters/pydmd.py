@@ -43,7 +43,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             amps = np.asarray(dmd.amplitudes)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "rank": rank,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         angle = np.abs(np.angle(eigs))
         reps.append({"kind": "koopman_modes", "timeframe": "H1", "rank": rank,

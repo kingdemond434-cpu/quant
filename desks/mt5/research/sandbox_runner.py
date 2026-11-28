@@ -52,6 +52,7 @@ for _p in (str(ROOT), str(DESK)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.ops.public_report import exc_text, redact  # noqa: E402
 from libs.research import adapters as A  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import licence_reader as LR  # noqa: E402
@@ -294,7 +295,7 @@ def plan_adapter(sid: str, row: dict[str, Any], *, root: Path, allow_fetch: bool
         module = __import__(f"libs.research.adapters.{sid}", fromlist=["run"])
     except Exception as exc:
         return Plan(sid, "adapter", "UNMEASURED", "UNDISPOSED", system.licence, version,
-                    spec.requirement, f"adapter import failed: {type(exc).__name__}: {exc}"[:200],
+                    spec.requirement, f"adapter import failed: {exc_text(exc)}"[:200],
                     {"kind": "fix_adapter", "system": sid})
     if bool(getattr(module, "RUNS_WITHOUT_LIBRARY", False)):
         return Plan(sid, "own", "RUNNABLE", "REBUILT", "desk (own code)", A.commit_of(sid),
@@ -383,7 +384,7 @@ def plan_cells() -> list[Plan]:
         except Exception as exc:
             out.append(Plan(CELLS.system_id(name), "cell", "UNMEASURED", "REBUILT",
                             "desk (own code)", A.commit_of(A.CELL_PREFIX + name), "",
-                            f"cell import failed: {type(exc).__name__}: {exc}"[:200],
+                            f"cell import failed: {exc_text(exc)}"[:200],
                             {"kind": "fix_cell", "cell": name}))
             continue
         d = CELLS.describe(module)
@@ -431,17 +432,17 @@ def run_adapter(plan: Plan, bundle: A.ResearchBundle, *, root: Path, timeout_s: 
             "--out", str(out)]
     res = SB.run(box, argv, timeout_s=max(10, timeout_s) + STARTUP_ALLOWANCE_S)
     meta.update({"seconds": res.seconds, "returncode": res.returncode, "run": res.why,
-                 "stdout_tail": list(res.stdout_tail[-5:]), "staged": staged,
+                 "stdout_lines": len(res.stdout_tail), "staged": staged,
                  "python": python, "out": str(out)})
     if out.exists():
         try:
             pkt = SB.packet(box, out)
         except (TypeError, ValueError) as exc:
-            meta["rejected"] = str(exc)[:300]
-            return A.unmeasured(sid, bundle, f"REJECTED_WITH_EVIDENCE: {exc}"[:300]), meta
+            meta["rejected"] = exc_text(exc, "sandbox_runner packet")
+            return A.unmeasured(sid, bundle, f"REJECTED_WITH_EVIDENCE: {exc_text(exc)}"), meta
     else:
         pkt = A.unmeasured(sid, bundle, f"no packet written: {res.why}; "
-                                       + " | ".join(res.stdout_tail[-2:])[:300])
+                                       f"{len(res.stdout_tail)} output line(s) kept on the box")
     with contextlib.suppress(OSError):
         _write(box.root / "sandbox.json", {**box.record(), "last_run": {
             "at": now(), "run_id": pkt.run_id, "seconds": res.seconds, "ok": res.ok,
@@ -461,7 +462,7 @@ def run_in_process(plan: Plan, bundle: A.ResearchBundle, *, root: Path, ctx: CEL
         try:
             pkt = plan.module.run(bundle)
         except Exception as exc:
-            pkt = A.unmeasured(sid, bundle, f"adapter raised: {type(exc).__name__}: {exc}"[:300])
+            pkt = A.unmeasured(sid, bundle, f"adapter raised: {exc_text(exc)}"[:300])
     seconds = round(time.monotonic() - t0, 1)
     folder = root / sid.replace(":", "_")
     meta: dict[str, Any] = {"seconds": seconds, "in_process": True, "folder": str(folder)}
@@ -536,8 +537,7 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
                     research_cost=float(compute_s), department="intel",
                     transformation="sandbox_packet", conn=conn)
             except Exception as exc:
-                out.setdefault("errors", []).append(f"{sym}/{family}: {type(exc).__name__}: "
-                                                    f"{exc}"[:160])
+                out.setdefault("errors", []).append(f"{sym}/{family}: {exc_text(exc)}"[:160])
                 continue
             out["created" if created else "existing"] += 1
     n_disc = 0
@@ -644,7 +644,7 @@ def charge_trials(trials: list[Any], *, apply: bool) -> dict[str, Any]:
                                      "families": sorted(census.families)},
                                     separators=(",", ":")) + "\n")
         except OSError as exc:
-            doc["ledger_error"] = f"{type(exc).__name__}: {exc}"
+            doc["ledger_error"] = f"{exc_text(exc)}"
     return doc
 
 
@@ -722,7 +722,7 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
             _rank = {n: i for i, n in enumerate(_reply.ordered)}
             order = sorted(order, key=lambda p: _rank.get(p.system_id, 10 ** 6))
     except Exception as _exc:                             # pragma: no cover - optional seat
-        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
+        seat_hint = {"verdict": "UNMEASURED", "why": exc_text(_exc, "sandbox_runner seat")}
     #: The seat may reorder the EXPLOIT lane; the SCOUT lane is ordered by age alone and is
     #: pinned back to the front afterwards. A model's opinion may not starve a frontier -- that
     #: is exactly the ratchet the rotation exists to break (L1.32).
@@ -872,13 +872,13 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     if not dry_run:
         state["at"] = doc["at"]
         state["last_bundle"] = doc["bundle"]
-        _write(state_path, state)
+        _write(state_path, redact(state))
         if rows and isinstance(fed_state, dict):
             fed_state["systems"] = {**fed_rows(fed_state), **rows}
             fed_state.setdefault("at", doc["at"])
             with contextlib.suppress(OSError):
                 _write(fed_state_path, fed_state)
-        _write(report_path, doc)
+        _write(report_path, redact(doc))
     return doc
 
 

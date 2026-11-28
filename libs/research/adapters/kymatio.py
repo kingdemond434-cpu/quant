@@ -48,7 +48,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             e2 = float(np.mean(Sx[order == 2] ** 2)) if (order == 2).any() else 0.0
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "scattering_coefficients", "symbol": f.symbol, "J": J, "Q": Q,
                      "order1_energy": e1, "order2_energy": e2,

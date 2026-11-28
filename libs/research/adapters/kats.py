@@ -37,7 +37,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             points = [(str(cp.start_time), str(cp.direction)) for cp in cps]
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "change_points", "symbol": f.symbol, "method": "kats CUSUM on |r|",
                      "points": points, "window": WINDOW})

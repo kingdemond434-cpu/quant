@@ -61,7 +61,7 @@ def _measure(root: Path, organ: str, artifact: str) -> dict[str, Any]:
             row["artifact_age_h"] = round(age / 3600.0, 2)
             row["artifact_bytes"] = ar.stat().st_size
         except OSError as exc:
-            row["why"] = f"{type(exc).__name__}: {exc}"[:120]
+            row["why"] = f"{A.exc_text(exc)}"[:120]
     return row
 
 

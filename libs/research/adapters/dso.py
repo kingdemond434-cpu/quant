@@ -39,7 +39,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             expr = str(getattr(getattr(model, "program_", None), "pretty", lambda: "?")())
         except Exception as exc:
             mechs.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                          "why": f"{type(exc).__name__}: {exc}"[:200]})
+                          "why": f"{A.exc_text(exc)}"[:200]})
             continue
         mechs.append({"kind": "symbolic_equation", "symbol": f.symbol, "expression": expr,
                       "inputs": A.LAGGED_FEATURE_NAMES, "oos_r2": r2, "n_oos": 200,

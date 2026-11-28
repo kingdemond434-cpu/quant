@@ -57,7 +57,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             loads = {str(k): float(v) for k, v in w.iloc[:, 0].items()}
         except Exception as exc:
             methods.append({"kind": "UNMEASURED", "model": model, "risk_measure": rm,
-                            "why": f"{type(exc).__name__}: {exc}"[:200]})
+                            "why": f"{A.exc_text(exc)}"[:200]})
             continue
         vals = np.asarray(list(loads.values()), dtype=float)
         methods.append({"kind": "allocator_challenger", "model": model, "risk_measure": rm,
