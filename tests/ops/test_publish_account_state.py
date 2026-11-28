@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _load(monkeypatch, tmp_path):
     fake = types.ModuleType("MetaTrader5")
-    fake.account_info = lambda: NS(login=1, company="Venue", server="S", currency="EUR",
+    fake.account_info = lambda: NS(login=1, company="Venue", server="FusionMarkets-Live",
+                                   currency="EUR",
                                    balance=1000.0, equity=990.0, margin_free=900.0,
                                    margin=90.0, margin_level=1100.0)
     fake.history_deals_get = lambda a, b: [NS(profit=5.0, commission=-0.4, swap=-0.1)]
@@ -24,13 +25,21 @@ def _load(monkeypatch, tmp_path):
                                      price_open=1.1, sl=1.12, tp=0.0, swap=-0.3, profit=-4.0,
                                      magic=42, time=1_700_000_000)]
     fake.last_error = lambda: (1, "ok")
+    fake.terminal_info = lambda: NS(path=r"C:\Program Files\Fusion Markets MetaTrader 5")
     monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
     spec = importlib.util.spec_from_file_location("publish_account_state",
                                                   ROOT / "ops" / "publish_account_state.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    monkeypatch.setattr(mod, "attach_or_initialize", lambda m, timeout: True)
+    seen: dict = {}
+    monkeypatch.setattr(mod, "attach_or_initialize",
+                        lambda m, **kw: seen.update(kw) or True)
+    mod._attach_kwargs = seen
+    term = tmp_path / "terminal_path.txt"
+    term.write_text("C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe\n", "utf-8")
+    monkeypatch.setattr(mod, "TERMINAL_FILE", term)
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
     monkeypatch.setattr(mod, "OUT", tmp_path / "account_state.json")
     monkeypatch.setattr(mod, "POSITIONS", tmp_path / "account_positions.json")
     return mod
@@ -81,3 +90,51 @@ def test_the_position_book_is_untracked_and_ignored():
     snap = ROOT / "desks" / "mt5" / "data" / "account_state.json"
     if snap.exists():
         assert '"ticket"' not in snap.read_text("utf-8", errors="replace")
+
+
+def test_the_publisher_attaches_to_terminal_path_txt(monkeypatch, tmp_path):
+    """No path meant 'whatever terminal the bridge sees': with Fusion AND FTMO logged in on the
+    box, restart order alone decided whose balance this file published."""
+    mod = _load(monkeypatch, tmp_path)
+    assert mod.main() == 0
+    assert mod._attach_kwargs["path"] == (
+        "C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe")
+
+
+def test_a_non_fusion_server_is_refused_and_paged(monkeypatch, tmp_path):
+    mod = _load(monkeypatch, tmp_path)
+    prior = '{"balance": 266.01}'
+    (tmp_path / "account_state.json").write_text(prior, "utf-8")
+    ftmo = NS(login=1, company="FTMO Global Markets Ltd", server="FTMO-Server2", currency="USD",
+              balance=99666.72, equity=99666.72, margin_free=1.0, margin=0.0, margin_level=None)
+    monkeypatch.setattr(sys.modules["MetaTrader5"], "account_info", lambda: ftmo)
+    assert mod.main() == 1
+    assert (tmp_path / "account_state.json").read_text("utf-8") == prior, "fail closed"
+    assert not (tmp_path / "account_positions.json").exists()
+    pagef = (tmp_path / "data" / "PRINCIPAL_ACTION.md").read_text("utf-8")
+    assert pagef.startswith("ACCOUNT STATE REFUSED:") and "FTMO-Server2" in pagef
+    assert "99666" not in pagef and "login" not in pagef.lower()
+
+
+def test_a_different_attached_terminal_is_refused(monkeypatch, tmp_path):
+    """Right broker, wrong terminal (a second Fusion install, a demo) is still not the desk's."""
+    mod = _load(monkeypatch, tmp_path)
+    monkeypatch.setattr(sys.modules["MetaTrader5"], "terminal_info",
+                        lambda: NS(path=r"C:\Program Files\FTMO Global Markets MT5 Terminal"))
+    assert mod.main() == 1
+    assert not (tmp_path / "account_state.json").exists()
+    assert "terminal_path.txt" in (tmp_path / "data" / "PRINCIPAL_ACTION.md").read_text("utf-8")
+
+
+def test_the_terminal_match_ignores_case_slashes_and_the_exe():
+    import importlib.util as u
+    spec = u.spec_from_file_location("_pas", ROOT / "ops" / "publish_account_state.py")
+    assert spec and spec.loader
+    m = u.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    same = m._same_terminal
+    assert same("C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe",
+                r"c:\program files\fusion markets metatrader 5")
+    assert same("C:\\X\\", "C:\\X")
+    assert not same("C:/A/terminal64.exe", r"C:\B")
+    assert not same("C:/A/terminal64.exe", None)
