@@ -33,8 +33,17 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
      on a CURRENT open-PR head, created in the last UNSTARTED_H hours, newest per (head, workflow),
      and only when that head has no newer run of the same workflow. A run with any started job,
      or one this call or the ledger already owns, is never touched here.
+  4b. CANCELLED GATE RUNS ARE RE-QUEUED TOO (2026-11-13, Autonomy). On 11-13 at 16:27Z 505 queued
+     PR runs were cancelled by hand to free LIVE's seal. Rule 4 never brought the gate's own runs
+     back: it listed only `pull_request` runs, only the newest 100, only 24 h back. So #1041 (CLEAR,
+     approved, every other check green) sat with a cancelled audit-gate run and nothing re-fired it.
+     Rule 4 now also re-runs never-started `pull_request_target` runs (audit-gate, trusted-eval)
+     on a current open-PR head, those first, reads up to UNSTARTED_PAGES pages per event, looks
+     back UNSTARTED_H hours, and re-runs only while the queue has room: at most REQUEUE_QMAX
+     minus the runs already queued (zuck 11-13: no re-runs while the queue is over 60).
+     Re-running a run that never reached a runner changes nothing but its place in the queue.
 
-`pull_request_target` runs (the audit gate: its head_sha is the base's) are never touched, nor
+Rules 1-3 never touch `pull_request_target` runs (the audit gate, trusted-eval), nor
 push, dispatch or schedule runs, nor a run that has started: each is re-read just before its
 cancel. Every open PR is listed (any base), and the runs are read before the PRs, so a head that
 moves in between reads as current (never cancelled) rather than stale.
@@ -48,8 +57,10 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -62,6 +73,11 @@ MAX_CALLS = 6
 #: The ledger: re-runs owed and what the last call did (box-local: reports/ is gitignored).
 REPORT = ROOT / "desks" / "mt5" / "reports" / "LIVE_FIRST_CI.json"
 LIVE_EVENTS = ("push", "workflow_dispatch")
+#: Rule 4b: the events whose never-started cancelled runs are re-run, gate runs first.
+RERUN_EVENTS = ("pull_request_target", "pull_request")
+#: Rule 4b: pages of cancelled runs read per event (100 a page), and the queue ceiling.
+UNSTARTED_PAGES = 5
+REQUEUE_QMAX = 60
 #: THE WHOLE CALL'S WALL-CLOCK BUDGET (2026-11-03 23:31Z, box at 100% CPU). This runs inside
 #: Quant-WorkflowGate BEFORE the audit gate, under the task's 30-minute limit. Unbounded, it made
 #: one `gh api` call per cleared-check comment page and two per cancel; at 13-120 s per call
@@ -73,7 +89,27 @@ LIVE_EVENTS = ("push", "workflow_dispatch")
 BUDGET_S = 300.0
 #: Rule 4: re-runs of never-started cancelled PR runs per call, and how far back it looks.
 MAX_UNSTARTED = 20
-UNSTARTED_H = 24.0
+UNSTARTED_H = 72.0
+#: Share of the budget CLEARed-first may spend reading comments; the rest is LIVE-first's.
+CLEARED_SHARE = 0.4
+#: Pages of queued runs older than LIVE's newest waiting run read per call (100 a page).
+OLDER_PAGES = 10
+#: Parallel cancel / re-run calls (2026-11-13 20:05Z: 98 runs ahead of LIVE, the box's gh calls
+#: took 13-60 s each, one at a time, and the budget ran out after 2 cancels).
+WORKERS = 8
+#: A cancel or re-run that GitHub has not answered in this long is carried to the next call.
+WRITE_TIMEOUT_S = 20
+
+
+#: Set when GitHub says to slow down (429, a secondary/abuse-limit 403, or any Retry-After): no
+#: further call goes out in this call; what is left carries to the next one (Auditor MF1).
+RATE_LIMITED = threading.Event()
+_LIMIT_MARKS = ("secondary rate limit", "abuse", "rate limit exceeded", "retry-after", "http 429")
+
+
+def _rate_limited(stderr: str) -> bool:
+    low = stderr.lower()
+    return any(m in low for m in _LIMIT_MARKS)
 
 
 def _gh(path: str, method: str = "GET") -> Any:
@@ -82,11 +118,13 @@ def _gh(path: str, method: str = "GET") -> Any:
     try:
         p = subprocess.run(
             args, capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=False, timeout=60,
+            check=False, timeout=60 if method == "GET" else WRITE_TIMEOUT_S,
         )  # fmt: skip
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"gh api {method} {path}: timed out") from exc
     if p.returncode != 0:
+        if _rate_limited(p.stderr):
+            RATE_LIMITED.set()
         raise RuntimeError(f"gh api {method} {path}: {p.stderr.strip()[:300]}")
     return json.loads(p.stdout) if p.stdout.strip() else None
 
@@ -143,8 +181,9 @@ def unstarted_candidates(
     owned: set[int] = frozenset(),  # type: ignore[assignment]
 ) -> list[dict[str, Any]]:
     """Rule 4's candidates from already-fetched cancelled runs (pure): first-attempt
-    `pull_request` runs on a current PR head, recent, not owned by the ledger, newest per
-    (head sha, workflow). Whether any job started is read per candidate afterwards."""
+    `pull_request` or `pull_request_target` runs on a current PR head, recent, not owned by the
+    ledger, newest per (head sha, workflow), the gate's `pull_request_target` runs first. Whether
+    any job started is read per candidate afterwards."""
     seen: set[tuple[str, str]] = set()
     out: list[dict[str, Any]] = []
     for r in sorted(cancelled, key=lambda r: str(r.get("created_at")), reverse=True):
@@ -154,7 +193,7 @@ def unstarted_candidates(
         seen.add(key)
         age = _age_min(now, r.get("created_at"))
         if (
-            r.get("event") != "pull_request"
+            r.get("event") not in RERUN_EVENTS
             or r.get("status") != "completed"
             or r.get("conclusion") != "cancelled"
             or int(r.get("run_attempt") or 1) != 1
@@ -165,6 +204,7 @@ def unstarted_candidates(
         ):
             continue
         out.append(r)
+    out.sort(key=lambda r: RERUN_EVENTS.index(str(r.get("event"))))  # stable: newest first in each
     return out
 
 
@@ -176,15 +216,33 @@ def never_started(jobs: list[dict[str, Any]]) -> bool:
 
 
 def _rerun_unstarted(
-    repo: str, now: datetime, heads: dict[str, str], owned: set[int], over: Callable[[], bool]
+    repo: str,
+    now: datetime,
+    heads: dict[str, str],
+    owned: set[int],
+    over: Callable[[], bool],
+    n_queued: int = 0,
 ) -> int:
+    room = min(MAX_UNSTARTED, REQUEUE_QMAX - n_queued)
+    if room <= 0:
+        print(f"  never-started: {n_queued} runs queued (ceiling {REQUEUE_QMAX}), none re-run")
+        return 0
     since = now.timestamp() - UNSTARTED_H * 3600
     day = datetime.fromtimestamp(since, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    got = _gh(f"repos/{repo}/actions/runs?status=cancelled&event=pull_request"
-              f"&created=%3E%3D{day}&per_page=100") or {}  # fmt: skip
+    runs: dict[int, dict[str, Any]] = {}
+    for event in RERUN_EVENTS:
+        for page in range(1, UNSTARTED_PAGES + 1):
+            if over():
+                break
+            got = _gh(f"repos/{repo}/actions/runs?status=cancelled&event={event}"
+                      f"&created=%3E%3D{day}&per_page=100&page={page}") or {}  # fmt: skip
+            batch = got.get("workflow_runs") or []
+            runs.update({int(r["id"]): r for r in batch})
+            if len(batch) < 100:
+                break
     done = 0
-    for r in unstarted_candidates(now, got.get("workflow_runs") or [], heads, owned):
-        if done >= MAX_UNSTARTED or over():
+    for r in unstarted_candidates(now, list(runs.values()), heads, owned):
+        if done >= room or over():
             break
         rid = int(r["id"])
         try:
@@ -214,6 +272,44 @@ def _queued(repo: str) -> list[dict[str, Any]]:
         out += batch
         if len(batch) < 100:
             break
+    return out
+
+
+def _older(repo: str, base: str, now: datetime) -> list[dict[str, Any]]:
+    """LIVE's own queued runs and, when one is waiting, the queued runs created BEFORE the newest
+    waiting one (GitHub lists newest first, so with more than 500 queued, `_queued` never reaches
+    the oldest: on 11-11 09:45Z, 1,223 were queued, LIVE's runs of 11-10 sat past page 5 and the
+    call saw "0 ahead of LIVE"). Bounded at OLDER_PAGES pages."""
+    got = _gh(f"repos/{repo}/actions/runs?branch={base}&status=queued&per_page=100") or {}
+    mine = [r for r in got.get("workflow_runs") or [] if r.get("event") in LIVE_EVENTS]
+    waiting = [
+        _queued_at(r) for r in mine if (_age_min(now, _queued_at(r)) or 0.0) >= LIVE_FIRST_MIN
+    ]
+    if not waiting:
+        return mine
+    out = list(mine)
+    for page in range(1, OLDER_PAGES + 1):
+        batch = (
+            _gh(
+                f"repos/{repo}/actions/runs?status=queued&created=%3C{max(waiting)}"
+                f"&per_page=100&page={page}"
+            )
+            or {}
+        ).get("workflow_runs") or []
+        out += batch
+        if len(batch) < 100:
+            break
+    return out
+
+
+def _merge_runs(*lists: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[Any] = set()
+    out = []
+    for lst in lists:
+        for r in lst:
+            if r.get("id") not in seen:
+                seen.add(r.get("id"))
+                out.append(r)
     return out
 
 
@@ -292,6 +388,69 @@ def _save(path: Path, doc: dict[str, Any]) -> None:
     tmp.replace(path)
 
 
+def _cancel_batch(
+    repo: str,
+    waste: list[int],
+    ahead: list[int],
+    owed: list[dict[str, int]],
+    state: Path,
+    at: str,
+    over: Callable[[], bool],
+) -> list[dict[str, int]]:
+    """Cancel `waste` (never re-run) and `ahead` (owed a re-run) with WORKERS calls at once.
+    One fresh listing of the newest queued runs replaces a read per run; a run not in it (past
+    its pages) is read on its own. A run that is no longer queued has started and is never
+    cancelled. Every owed row is saved BEFORE its cancel goes out (#546 MF2)."""
+    if not (waste or ahead) or over():
+        return []
+    try:
+        fresh = {int(r["id"]): r for r in _queued(repo)}
+    except RuntimeError as exc:
+        print(f"  fresh listing: {exc}; each run is read on its own")
+        fresh = {}
+
+    def still_queued(rid: int) -> dict[str, Any] | None:
+        if rid in fresh:
+            return fresh[rid]
+        if over():
+            return None
+        try:
+            cur = _gh(f"repos/{repo}/actions/runs/{rid}")
+        except RuntimeError as exc:
+            print(f"  read {rid}: {exc}")
+            return None
+        return cur if cur.get("status") == "queued" else None
+
+    ids = list(dict.fromkeys(waste + ahead))
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        cur = dict(zip(ids, pool.map(still_queued, ids), strict=True))
+    go = [rid for rid in ids if cur[rid] is not None]
+    rows: list[dict[str, int]] = []
+    lock = threading.Lock()
+
+    def cancel(rid: int) -> None:
+        if over():
+            return
+        if rid in ahead:  # owed BEFORE its cancel goes out, so a crash never loses it (#546 MF2)
+            row = {"id": rid, "attempt": int((cur[rid] or {}).get("run_attempt") or 1), "calls": 0}
+            with lock:
+                rows.append(row)
+                mine = {r["id"] for r in rows}  # a run owed already and ahead again: once (SF)
+                _save(state, {"at": at, "owed": [r for r in owed if r["id"] not in mine] + rows})
+        try:
+            _gh(f"repos/{repo}/actions/runs/{rid}/cancel", "POST")
+        except RuntimeError as exc:
+            print(f"  cancel {rid}: {exc}")
+
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        list(pool.map(cancel, go))
+    if RATE_LIMITED.is_set():
+        print("  GitHub rate limit: no more calls this call; the rest carry to the next one")
+    elif over():
+        print("  budget spent: the remaining runs keep their place until the next call")
+    return rows
+
+
 def run(
     repo: str,
     base: str,
@@ -303,76 +462,100 @@ def run(
     budget_s: float = BUDGET_S,
 ) -> int:
     # BUDGET_S is a ceiling, never a default to raise: a caller can only shorten the call
-    stop = clock() + min(max(budget_s, 0.0), BUDGET_S)
+    t0 = clock()
+    budget = min(max(budget_s, 0.0), BUDGET_S)
+    stop = t0 + budget
+    # CLEARed-first may spend at most CLEARED_SHARE of the budget: on 11-11 09:45Z it spent all
+    # of it reading comments and the call cancelled nothing ("budget spent" before rule 2).
+    cleared_stop = t0 + CLEARED_SHARE * budget
+
+    RATE_LIMITED.clear()
 
     def over() -> bool:
-        return clock() >= stop
+        return RATE_LIMITED.is_set() or clock() >= stop
+
+    def over_cleared() -> bool:
+        return RATE_LIMITED.is_set() or clock() >= cleared_stop
 
     now = datetime.now(UTC)
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
+    try:  # the oldest queued runs, past `_queued`'s pages; a failed read orders what it has
+        queued = _merge_runs(queued, _older(repo, base, now))
+    except Exception as exc:
+        print(f"  older runs skipped: {type(exc).__name__}: {exc}")
     heads = _heads(repo)
+    owed = _load(state)
+    # LIVE-FIRST BEFORE ANY COMMENT READ (2026-11-13 20:05Z: the box log read "98 ahead of LIVE",
+    # "budget spent", 2 cancelled). LIVE's own order needs no comment read, so it is cancelled
+    # first, in parallel, from one fresh listing; CLEARed-first reads comments with what is left.
+    waste, ahead = plan(now, queued, heads, base)
+    print(f"live-first: {len(waste)} superseded, {len(ahead)} ahead of LIVE, {len(owed)} owed")
+    if dry:
+        return 0
+    cancelled = _cancel_batch(repo, waste, ahead, owed, state, at, over)
     try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
-        cleared = _cleared(repo, queued, heads, over)
+        cleared = _cleared(repo, queued, heads, over_cleared)
     except Exception as exc:
         print(f"  cleared-first skipped: {type(exc).__name__}: {exc}")
         cleared = frozenset()
-    waste, ahead = plan(now, queued, heads, base, cleared)
-    owed = [r for r in _load(state) if r["id"] not in ahead]
-    print(f"live-first: {len(waste)} superseded, {len(ahead)} ahead of LIVE or a CLEARed PR "
-          f"({len(cleared)} CLEARed), {len(owed)} owed")  # fmt: skip
-    if dry:
-        return 0
-    cancelled: list[dict[str, int]] = []
-    for rid in waste + ahead:
-        if over():
-            print("  budget spent: the remaining runs keep their place until the next call")
-            break
-        try:
-            cur = _gh(f"repos/{repo}/actions/runs/{rid}")
-            if cur.get("status") != "queued":
-                continue  # it started meanwhile: a started job is never cancelled
-            if rid in ahead:  # owed BEFORE its cancel, so a crash never loses it (#546 MF2)
-                row = {"id": rid, "attempt": int(cur.get("run_attempt") or 1), "calls": 0}
-                cancelled.append(row)
-                _save(state, {"at": at, "owed": owed + cancelled})
-            _gh(f"repos/{repo}/actions/runs/{rid}/cancel", "POST")
-        except RuntimeError as exc:
-            print(f"  cancel {rid}: {exc}")
+    if cleared and not over():
+        done = set(waste) | set(ahead)
+        _, more = plan(now, queued, heads, base, cleared)
+        more = [rid for rid in more if rid not in done]
+        print(f"cleared-first: {len(more)} more ahead of {len(cleared)} CLEARed PR(s)")
+        cancelled += _cancel_batch(repo, [], more, owed + cancelled, state, at, over)
+    ahead_ids = {r["id"] for r in cancelled}
+    owed = [r for r in owed if r["id"] not in ahead_ids]
     deadline = clock() + (settle_s if cancelled else 0.0)
     left: list[dict[str, int]] = []
     carried: list[dict[str, int]] = []  # not reached this call: carried with its count unchanged
     rerun = 0
-    for row in cancelled + owed:
-        if over() and row not in cancelled:
-            carried.append(row)
-            continue
+    lock = threading.Lock()
+
+    def settle(row: dict[str, int]) -> None:
+        """Re-run one owed run once it has finished cancelling. A run this call cancelled is
+        waited for until `deadline`; an older owed one is read once."""
+        nonlocal rerun
         rid = row["id"]
         while True:
             try:
                 cur = _gh(f"repos/{repo}/actions/runs/{rid}")
             except RuntimeError as exc:
                 print(f"  read {rid}: {exc}")
-                left.append(row)
-                break
+                with lock:
+                    left.append(row)
+                return
             if int(cur.get("run_attempt") or 1) != row["attempt"]:
-                break  # someone re-ran it already
+                return  # someone re-ran it already
             if cur.get("status") == "completed":
                 if cur.get("conclusion") != "cancelled":
-                    break  # it ran to an end of its own: nothing to re-run (#546 MF3)
+                    return  # it ran to an end of its own: nothing to re-run (#546 MF3)
                 if str(cur.get("head_sha")) != heads.get(str(cur.get("head_branch"))):
-                    break  # its head moved: the new head has its own runs
+                    return  # its head moved: the new head has its own runs
                 try:
                     _gh(f"repos/{repo}/actions/runs/{rid}/rerun", "POST")
-                    rerun += 1
+                    with lock:
+                        rerun += 1
                 except RuntimeError as exc:
                     print(f"  rerun {rid}: {exc}")
-                    left.append(row)
-                break
-            if row in owed or clock() >= deadline:
-                left.append(row)  # still cancelling: the next call re-runs it
-                break
+                    with lock:
+                        left.append(row)
+                return
+            if row in owed or clock() >= deadline or over():
+                with lock:
+                    left.append(row)  # still cancelling: the next call re-runs it
+                return
             sleep(5)
+
+    todo: list[dict[str, int]] = []
+    for row in cancelled + owed:
+        if over() and row not in cancelled:
+            carried.append(row)
+        else:
+            todo.append(row)
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        list(pool.map(settle, todo))
     keep: list[dict[str, int]] = list(carried)
     given_up = 0
     for row in left:
@@ -386,7 +569,7 @@ def run(
     if not over():
         owned = {r["id"] for r in cancelled + owed + keep}
         try:
-            unstarted = _rerun_unstarted(repo, now, heads, owned, over)
+            unstarted = _rerun_unstarted(repo, now, heads, owned, over, len(queued))
         except Exception as exc:  # rule 4 never costs rules 1-3, whatever it hits
             print(f"  never-started skipped: {type(exc).__name__}: {exc}")
     _save(state, {"at": at, "owed": keep, "cancelled_superseded": len(waste),
