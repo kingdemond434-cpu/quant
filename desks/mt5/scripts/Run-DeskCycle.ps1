@@ -261,7 +261,11 @@ if ($agentName -eq "claude") {
         "Read", "Edit", "Write", "Glob", "Grep",
         "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)", "Bash(git show:*)",
         "Bash(git fetch:*)", "Bash(git worktree:*)", "Bash(git add:*)", "Bash(git commit:*)",
-        "Bash(git rebase:*)", "Bash(git push origin:*)", "Bash(git rev-parse:*)",
+        "Bash(git rebase:*)", "Bash(git rev-parse:*)",
+        # A pass pushes only its own cro/* branch and opens a draft PR; code reaches the box
+        # branch through the gate alone (2026-11-14: a noon pass pushed five code commits
+        # straight onto LIVE under "push to that branch", with no PR, CLEAR or APPROVE).
+        "Bash(git push -u origin cro/:*)", "Bash(git push origin cro/:*)", "Bash(gh pr create:*)",
         "Bash(python:*)", "Bash(py:*)", "Bash(pytest:*)",
         # Read-only shell the steps use to look around; nothing here writes, pushes or reads secrets.
         "Bash(ls:*)", "Bash(pwd)", "Bash(date)", "Bash(date -u:*)", "Bash(wc:*)"
@@ -272,6 +276,10 @@ if ($agentName -eq "claude") {
         # Hooks are the law gate (2026-11-11: a noon plan wrote "GREEN -> push --no-verify").
         "Bash(git push --no-verify:*)", "Bash(git push origin --no-verify:*)",
         "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)",
+        # Never a direct push to a shared branch, however the refspec is spelled.
+        "Bash(git push origin claude/:*)", "Bash(git push origin HEAD:claude/:*)",
+        "Bash(git push origin desk-sync-clean:*)", "Bash(git push origin HEAD:desk-sync-clean:*)",
+        "Bash(git push origin HEAD:refs/heads/claude/:*)",
         "Edit(scripts/run_deadman_switch.py)",
         "Write(scripts/run_deadman_switch.py)", "Read(data/secrets/**)"
     )
@@ -389,9 +397,15 @@ The shared history of every pass is $Ledger (one JSON row per start and end).
 
 ISOLATION. Other sessions may be editing the live checkout at $RepoRoot. Never edit code there
 directly and never git stash / commit -a. $isolationWhere, test there, rebase
-on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
-hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
-Remove the worktree when done.
+on origin/<box branch>, push THAT cro/ BRANCH (git push -u origin cro/$Lane-$Today) and open a draft
+PR into <box branch> (gh pr create --draft --base <box branch>). The gate merges it after an
+Auditor CLEAR; MT5-AdoptRelease then adopts origin into the live tree hourly and records the
+release in desks/mt5/data/RELEASE.json: that is the canonical release path.
+NEVER PUSH CODE TO <box branch> OR desk-sync-clean, under any refspec, however urgent or small the
+fix. A direct push skips the Auditor, replay-shadow and the owner's approval, and the box adopts
+it within the hour. If the PR cannot be opened, record the item PUSHED-FOR-REVIEW in work_items
+with the cro/ branch name; the hourly pass opens it. Box state reaches origin through the state
+publisher, never through this pass. Remove the worktree when done.
 
 NEVER --no-verify. The pre-commit and pre-push hooks are the law gate; never pass --no-verify
 or -n to git commit or git push, whatever the gate's verdict, run time or a plan step says. If
