@@ -909,7 +909,12 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # BOX SELF-REPAIR (2026-11-18): per-region deep forest production (ops/deep_forest_regions.py)
+    # and the faults the box could not heal by itself (ops/fault_queue.py), both on the hourly
+    # MT5-ProcessHealth clock. Counts, times, task names and verdicts only.
+    "desks/mt5/reports/DEEP_FOREST_REGIONS.json",
+    "desks/mt5/reports/FAULT_QUEUE.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
