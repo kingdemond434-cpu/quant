@@ -1,0 +1,133 @@
+{
+ "class": "terminals",
+ "label": "Market-data terminals (Bloomberg, LSEG Workspace, FactSet, S&P Capital IQ)",
+ "note": "Public product NAMES only (vendor, product, what a trading desk uses it for); nothing from any product is held or fetched. seed_source model_knowledge_unverified: real products, not page-verified in-session (the authoring container's proxy refused the vendors' sites). Each row is rebuilt function by function: headlines, economic calendar, marks, central-bank feeds, earnings calendar.",
+ "entries": [
+  {
+   "id": "paid:bloomberg:terminal",
+   "vendor": "Bloomberg",
+   "dataset": "Bloomberg Terminal",
+   "class": "terminals",
+   "region": "global",
+   "measures": "headlines and wire news, ECO calendar with survey and actuals, FX/rates/commodity marks, central-bank feeds, earnings calendar",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  },
+  {
+   "id": "paid:lseg:workspace",
+   "vendor": "LSEG",
+   "dataset": "LSEG Workspace (formerly Refinitiv Eikon)",
+   "class": "terminals",
+   "region": "global",
+   "measures": "Reuters headlines, economic calendar with Reuters polls, marks, central-bank feeds, I/B/E/S earnings calendar",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  },
+  {
+   "id": "paid:factset:workstation",
+   "vendor": "FactSet",
+   "dataset": "FactSet Workstation",
+   "class": "terminals",
+   "region": "global",
+   "measures": "news, economic calendar, marks, estimates and earnings calendar",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  },
+  {
+   "id": "paid:spglobal:capital_iq_pro",
+   "vendor": "S&P Global",
+   "dataset": "S&P Capital IQ Pro",
+   "class": "terminals",
+   "region": "global",
+   "measures": "news, estimates, earnings calendar, corporate events",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  },
+  {
+   "id": "paid:bloomberg:b_pipe",
+   "vendor": "Bloomberg",
+   "dataset": "B-PIPE real-time market data feed",
+   "class": "terminals",
+   "region": "global",
+   "measures": "real-time FX, rates and commodity marks",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  },
+  {
+   "id": "paid:lseg:real_time",
+   "vendor": "LSEG",
+   "dataset": "LSEG Real-Time (Elektron) feed",
+   "class": "terminals",
+   "region": "global",
+   "measures": "real-time marks and headlines",
+   "frequency": "realtime",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "parent": "bloomberg_terminal",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no free tier; the replica is rebuilt function by function (docs/research/paid_replica_map.json)"
+   }
+  }
+ ]
+}

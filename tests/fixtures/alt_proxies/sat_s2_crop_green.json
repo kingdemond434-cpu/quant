@@ -1,0 +1,21 @@
+{
+ "type": "Feature",
+ "stac_version": "1.0.0",
+ "id": "S2A_15TVG_20260716_0_L2A",
+ "properties": {
+  "created": "2026-07-16T23:22:00.000000+00:00",
+  "datetime": "2026-07-16T17:11:43.142000Z",
+  "grid:code": "MGRS-15TVG",
+  "eo:cloud_cover": 15.0,
+  "s2:nodata_pixel_percentage": 10.0,
+  "s2:vegetation_percentage": 70.0,
+  "s2:not_vegetated_percentage": 5.0
+ },
+ "links": [
+  {
+   "rel": "license",
+   "href": "https://sentinel.esa.int/documents/247904/690755/Sentinel_Data_Legal_Notice"
+  }
+ ],
+ "note": "SYNTHETIC fixture shaped like an earth-search / sentinel-cogs STAC item; numbers are illustrative"
+}

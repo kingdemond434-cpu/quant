@@ -350,7 +350,7 @@ def test_reviewed_terms_carry_evidence() -> None:
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
         # The day the terms were actually read: the 2026-09-30 batch, or a later box read.
-        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-11-11"), sid
+        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-11-11", "2026-11-18"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -574,7 +574,9 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
 
 def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
-    assert blocked == {*BLOCKED, "za_statssa_retail"}       # a mirror-only candidate fails closed
+    # a mirror-only candidate, and a paid-replica source whose operative notice is unread,
+    # fail closed without being blocked ORIGINALS that need a substitute
+    assert blocked == {*BLOCKED, "za_statssa_retail", "sat_s2_crop_green"}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():

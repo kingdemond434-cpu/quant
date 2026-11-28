@@ -1116,6 +1116,35 @@
      "US500"
     ]
    }
+  },
+  "terminals": {
+   "id": "terminals",
+   "label": "Market-data terminals and their trading functions (headlines, economic calendar, marks, central-bank feeds, earnings calendar)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "free economic calendar central bank rss official releases",
+    "zh": "免费 财经日历 央行 公告 数据",
+    "ja": "無料 経済指標カレンダー 中央銀行 発表",
+    "ko": "무료 경제지표 캘린더 중앙은행 발표",
+    "ru": "бесплатный экономический календарь центральный банк пресс-релиз",
+    "pt": "calendário econômico gratuito banco central comunicados",
+    "es": "calendario económico gratuito banco central comunicados",
+    "de": "kostenloser Wirtschaftskalender Zentralbank Pressemitteilung",
+    "fr": "calendrier économique gratuit banque centrale communiqués",
+    "tr": "ücretsiz ekonomik takvim merkez bankası duyuru",
+    "ar": "تقويم اقتصادي مجاني بيانات البنك المركزي",
+    "hi": "मुफ्त आर्थिक कैलेंडर केंद्रीय बैंक विज्ञप्ति"
+   },
+   "instruments": {
+    "global": [
+     "EURUSD",
+     "USDJPY",
+     "GBPUSD",
+     "XAUUSD",
+     "US500",
+     "XTIUSD"
+    ]
+   }
   }
  },
  "targets": {

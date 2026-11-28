@@ -2567,6 +2567,10 @@ def run(
         "te_catalogue": TE_CATALOGUE,
         **dict(paths or {}),
     }
+    # The paid-replica map's outputs sit beside this leg's own report and forest queue, so a
+    # caller that relocates those relocates these too.
+    p.setdefault("replica_report", Path(p["report"]).with_name("PAID_REPLICA_MAP.json"))
+    p.setdefault("replica_queue", Path(p["forest"]).with_name("paid_replica_builds.json"))
     t0 = time.monotonic()
     classes = load_classes(p["classes"])
     crawl = (
@@ -2788,6 +2792,9 @@ def run(
     enrolled_ids = {dataset_id(s) for s in enrolled}
     status = paid_status(catalogue, cands)
     st_n = Counter(v["status"] for v in status.values())
+    replica = replica_pass(catalogue, grounds, now=now, write=not dry_run,
+                           report=Path(p["replica_report"]), queue=Path(p["replica_queue"]),
+                           map_path=Path(p["replica_map"]) if p.get("replica_map") else None)
     # BLOCKED_NO_SUBSTITUTE is only measurable when the blocked-source export is on this host;
     # absent, it is UNMEASURED everywhere it is reported (headline, paid_status, per group) unless
     # another table carried a blocked row, which is then counted.
@@ -2936,12 +2943,53 @@ def run(
             "an enrolled substitute feeds direct cells, exogenous_gate cells and "
             "WORLD_STATE_INPUTS under one dataset_id"
         ),
+        "replica_map": replica,
         "wall_s": round(time.monotonic() - t0, 2),
     }
     _atomic_json(p["report"], doc)
     p["report_md"].parent.mkdir(parents=True, exist_ok=True)
     p["report_md"].write_text(render_md(doc), "utf-8")
     return doc
+
+
+# ------------------------------------------------------------------------- replica map
+def replica_pass(
+    catalogue: list[dict[str, Any]],
+    grounds: list[dict[str, Any]],
+    *,
+    now: datetime,
+    write: bool,
+    report: Path,
+    queue: Path,
+    map_path: Path | None = None,
+) -> dict[str, Any]:
+    """THE PAID-REPLICA MAP, on this leg's clock (principal 2026-11-18: "continuous"). Every
+    catalogue row -- seeds, this pass's crawl, the Asia table -- is routed to a category of
+    docs/research/paid_replica_map.json and given exactly one state (BUILT / QUEUED / BLOCKED);
+    the categories are re-ranked by ROI and the top unbuilt ones are emitted as build tasks into
+    the forest queue (`data/deep_forest_queue/paid_replica_builds.json`). A failure is reported
+    by name in this report, never swallowed into a zero."""
+    try:
+        from research import paid_replica_map as prm
+
+        by_row: dict[str, list[str]] = defaultdict(list)
+        for g in grounds:
+            for pid in g.get("paid_ids") or []:
+                if len(by_row[str(pid)]) < 3:
+                    by_row[str(pid)].append(str(g["name"]))
+        doc = prm.run(
+            catalogue,
+            now=now,
+            map_path=map_path,
+            report=report,
+            queue=queue,
+            grounds_by_row=by_row,
+            write=write,
+        )
+        return {"report": str(report), **prm.summary(doc)}
+    except Exception as exc:
+        _LOG.warning("paid_substitute_engine: replica map failed: %s", exc)
+        return {"status": f"ERROR {type(exc).__name__}: {str(exc)[:200]}"}
 
 
 # --------------------------------------------------------------------------------- fence
