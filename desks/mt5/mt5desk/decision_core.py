@@ -1680,6 +1680,40 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
+def executable_book(sleeves: Iterable[Mapping[str, Any]],
+                    book: Mapping[str, float] | None) -> dict[str, Any]:
+    """What the pass will actually send, per book key, after carriers, aliases, zeros and the heat
+    cap (CRO row 111 Q4: EXECUTABLE_BOOK.json). Pure; the gateway writes it each pass.
+
+    Per key: the allocator's fraction, the carrier, the rows still sending (risk_frac > 0 after
+    the cap), and every row's reason for sending nothing. A market lane carries its resolved lot;
+    a bracket's lot is fixed only at placement against its own stop, so it reads None there."""
+    keys: dict[str, dict[str, Any]] = {}
+    unkeyed: list[dict[str, Any]] = []
+    for s in sleeves:
+        plan = s.get("pending_order") or {}
+        lot = plan.get("lot", plan.get("per")) if isinstance(plan, Mapping) else None
+        row = {"name": s.get("name"), "symbol": s.get("symbol"), "exec": s.get("exec"),
+               "risk_frac": s.get("risk_frac"), "q_charge": s.get("q_charge"),
+               "sized_by": s.get("sized_by"), "lot": lot,
+               "why_zero": (s.get("alias_of") and f"alias of {s.get('alias_of')}")
+               or (s.get("book_key_blocked_by") and f"key held by {s['book_key_blocked_by']}")
+               or (s.get("cap_reason") or s.get("decay_zero") or None)}
+        key = s.get("book_key")
+        if not key:
+            unkeyed.append(row)
+            continue
+        k = keys.setdefault(str(key), {"allocator_fraction": (book or {}).get(str(key)),
+                                       "carrier": s.get("book_key_carrier"), "rows": []})
+        k["rows"].append(row)
+    for k in keys.values():
+        k["sending"] = [r["name"] for r in k["rows"]
+                        if isinstance(r["risk_frac"], (int, float)) and r["risk_frac"] > 0.0]
+    return {"keys": dict(sorted(keys.items())), "unkeyed": unkeyed,
+            "n_keys": len(keys), "n_sending_keys": sum(1 for k in keys.values() if k["sending"]),
+            "n_unkeyed": len(unkeyed)}
+
+
 def fold_book_aliases(keys: Mapping[str, str | None]) -> dict[str, str]:
     """ONE ORDER PER BOOK KEY (hourly pass / Auditor MUST-FIX, 2026-11-04). The allocator prices a
     (symbol, family, window) CELL once; every roster row that `_book_key` folds onto that cell
