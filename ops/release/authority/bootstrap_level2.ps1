@@ -152,6 +152,9 @@ $mergerId = New-BoxApp "merger" "C:\opt\merger\config.json"
 if (-not (Test-Path "C:\opt\merger\config.json")) {
     & (Join-Path $Clone "ops\release\merger\install_merger.ps1") -AppId $mergerId -AppKey (Join-Path $Work "merger.pem") -Clone $Clone | Out-Host
 }
+# The authority admits LEDGER_APPEND PRs only when this App opened them (ledger_append.py, C9).
+$mergerLogin = "$((Get-Content -Raw (Join-Path $Work "merger.json") | ConvertFrom-Json).slug)[bot]"
+@{ login = $mergerLogin } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Registry "MERGER_APP.json") -Encoding UTF8
 
 Step "5/8  The state publisher App, and CI's LIVE-only seal environment"
 $stateId = New-BoxApp "publisher" "C:\opt\publisher\config.json"

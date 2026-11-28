@@ -430,6 +430,14 @@ def test_status_auto_clear_is_success() -> None:
     assert a.status_for({"cls": "AUTO"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
 
 
+def test_status_ledger_append_clear_is_success_without_a_veto() -> None:
+    a = _auth()
+    assert a.status_for({"cls": "LEDGER_APPEND"}, "CLEAR", [], since=None,
+                        veto_h=24)[0] == "success"
+    assert a.status_for({"cls": "LEDGER_APPEND"}, "WAIT", ["x"], since=None,
+                        veto_h=24)[0] == "pending"
+
+
 def test_status_controller_waits_out_the_veto() -> None:
     from datetime import UTC, datetime, timedelta
 
