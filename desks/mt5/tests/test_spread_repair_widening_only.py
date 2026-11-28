@@ -35,7 +35,10 @@ rus = pytest.importorskip("repair_universe_spreads")
 #: source moved from `h1` to `tape` on 2026-09-24 (the H1 statistic was reading a pre-2021
 #: fixed-spread era). A widening-only guarantee that is only tested on the retired source is a
 #: guarantee about code nothing runs.
-SOURCES = ("h1", "tape")
+SOURCES = ("h1", "tape", "ticks")
+
+_PROBE = {"h1": "measured_spread", "tape": "tape_spread", "ticks": "tick_spread"}
+_STAMP = {"h1": "h1_spread_median", "tape": "fusion_zero_m1_tape", "ticks": "tick_tape_median"}
 
 
 @pytest.fixture(params=SOURCES)
@@ -49,7 +52,13 @@ def registry(request, tmp_path, monkeypatch):
     monkeypatch.setattr(rus, "REPORT", tmp_path / "SPREAD_PROVENANCE.json")
     monkeypatch.setattr(rus, "TAPE_REPORT", tmp_path / "SPREAD_TAPE.json")
     measured = {"WIDENS": 200.0, "NARROWS": 7.0, "ZEROED": 39.0}
-    probe = "measured_spread" if request.param == "h1" else "tape_spread"
+    probe = _PROBE[request.param]
+    monkeypatch.setattr(rus, "TICK_REPORT", tmp_path / "TICK_SPREAD_TRUTH.json")
+    # the tick path would otherwise read whatever silver tape this machine holds
+    monkeypatch.setattr(rus, "load_ticks",
+                        lambda write=True, budget_s=None: {
+                            "status": "MEASURED", "source": "tick_tape_median",
+                            "by_symbol": {}, "impact": {}})
     monkeypatch.setattr(rus, probe,
                         lambda sym: (measured[sym], "measured", {"n_priced": 10_000}))
     # the tape path would otherwise open a terminal and read 248 parquets
@@ -108,7 +117,7 @@ def test_the_source_is_stamped_so_a_reader_can_tell_them_apart(registry):
     rus.run(apply=True, write=True, source=registry.source)
     doc = json.loads(registry.read_text())
     stamp = doc["WIDENS"]["_provenance"]["median_spread_pts"]["source"]
-    assert stamp == ("h1_spread_median" if registry.source == "h1" else "fusion_zero_m1_tape")
+    assert stamp == _STAMP[registry.source]
 
 
 def test_an_unknown_source_refuses_rather_than_defaulting(registry):

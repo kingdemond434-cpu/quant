@@ -49,6 +49,17 @@ from 433 deals between 2026-08-23 and 2026-09-22 and the terminal's own M1 tape:
   `spread` stamp samples the widest instant of its hour (`cost_surface.py` says so in its own
   docstring); M1 is the granularity at which a fill actually happens.
 
+CORRECTED 2026-11-10, AND THIS ORGAN DID NOT SEE IT. The paragraph above says a bar's spread
+stamp "samples the widest instant" of its bar. MEASURED against 57-61 days of the desk's own
+tick tape, it is the opposite: the bar file's `spread` column is the bar's MINIMUM quoted spread
+(equal to the rounded tape minimum on 98.9% of matched bars). The QUOTED reading here is taken
+from that same column on M1 bars, so it is a median of per-minute minimums and reads LOW -- it
+could confirm an over-charge and could never reveal an under-charge (USDNOK charged 136 against
+~250 on the tape passed this organ untouched). The honest median is
+`research/tick_spread_truth.py`, which reads the ticks themselves and reports both directions in
+`reports/TICK_SPREAD_TRUTH.json`; where the tape holds a symbol, that artifact is the quote of
+record and this organ's M1 reading is a lower bound on it.
+
 WHAT IS NOT MEASURED, AND STAYS THAT WAY. Market impact needs matched fills at size and the desk
 has none, so impact is UNMEASURED here as it is in CAPACITY.json -- it is NOT replaced by a
 pessimistic default, because an unpriced term makes net a BOUND (which `libs/research/net_edge`
