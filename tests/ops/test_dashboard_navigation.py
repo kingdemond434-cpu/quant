@@ -17,11 +17,16 @@ dashboard; deleting them would have turned a live URL into a 404 for no gain.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 WEB = Path(__file__).resolve().parent.parent.parent / "web"
 CANONICAL = "desk.html"
 PROTECTED_SURVEILLANCE = "dashboard.html"
+#: The phone terminal (C row 14): Quant, Memecoin and Agents tabs. Its Quant tab reads the SAME
+#: desk_state.json the canonical page renders, so it cannot hold a disagreeing number; it points
+#: at the canonical page for the full desk and carries no controls.
+TERMINAL = "terminal.html"
 
 
 def test_the_canonical_dashboard_exists() -> None:
@@ -41,6 +46,15 @@ def test_every_other_page_redirects_to_it() -> None:
             # provenance detail. It is not a second source of truth or a trading control.
             assert "desk_state.json" in src and "read-only" in src
             assert "desk_dashboard_state" in src
+            continue
+        if p.name == TERMINAL:
+            assert "desk_state.json" in src and "read-only" in src
+            assert f'href="{CANONICAL}"' in src, f"{p.name} must point at {CANONICAL}"
+            # Any write verb, in an HTML attribute or a fetch/XHR options object, is a control.
+            writes = re.findall(r"(?:method\s*[=:]\s*|\.open\(\s*)[\"']?\s*(post|put|patch|delete)",
+                                src, re.I)
+            assert "<form" not in src.lower() and not writes, (
+                f"{p.name} is a read-only view; a control on it would make it a second desk")
             continue
         assert CANONICAL in src, f"{p.name} does not point at {CANONICAL}"
         assert 'http-equiv="refresh"' in src and "location.replace" in src, (

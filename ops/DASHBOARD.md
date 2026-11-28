@@ -73,3 +73,15 @@ monitor (L1.59), certified survivors with DSR/PBO/SPA, and broker-reported posit
 
 Missing values render as `—` / `UNMEASURED` rather than `0`. A dashboard that prints a confident
 zero for something it did not measure is how a desk talks itself into a decision (L1.28a).
+
+## The final terminal (`web/terminal.html`)
+
+One page, three tabs, phone-sized, no CDN: **Quant** (accounts, fills, live sleeves, breadth,
+coverage, health from `desk_state.json`), **Memecoin** (`memecoin_state.json` when the lane
+publishes one beside it; otherwise UNMEASURED with the reason), **Agents** (an animated world of
+robot agents walking to one hut per thread, from `threads.json`). Served at
+`https://dash.quanttt.xyz/terminal.html` by the same `quant-desk-web.service` and token.
+
+`threads.json` is written every 3 minutes by `ops/refresh_desk_state.sh` (quant-desk-refresh.timer)
+via `scripts/publish_thread_status.py`, from `docs/thread_briefs/INDEX.json` (or
+`THREAD_BRIEFS_INDEX`). Schema: the script's docstring. Absent input renders UNMEASURED.

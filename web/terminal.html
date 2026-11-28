@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Quant Terminal</title>
+<style>
+/* THE FINAL TERMINAL (C row 14). One self-contained page: no CDN, no external font, no script
+   from anywhere, no build step -- the VPS serves web/ as-is beside desk_state.json.
+   Three tabs: Quant (desk_state.json), Memecoin (memecoin_state.json, UNMEASURED when the lane
+   publishes nothing here), Agents (threads.json, one hut per thread, one robot per thread).
+   An absent measurement renders as the WORD with its reason, never as a zero (L1.28a).
+   Every value is written with textContent and never parsed as markup, so no artifact text can run code. */
+:root{
+  --bg:#000;--card:#0d0d0d;--line:#1e1e1e;--amber:#d4a256;--green:#35d07f;--red:#e5484d;
+  --ink:#f2f2f2;--body:#8a8a8a;--tiny:#6a6a6a;--blue:#5b9bd5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--body);
+  font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line);
+  padding:12px 16px 0}
+h1{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase}
+nav{display:flex;gap:4px}
+nav button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--body);
+  font:inherit;padding:8px 4px;cursor:pointer;text-transform:uppercase;letter-spacing:.12em}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--amber)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section.tab{display:none}section.tab.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.card h2{margin:0 0 8px;font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+.kv .k{color:var(--tiny)}.kv .v{color:var(--ink);text-align:right;overflow-wrap:anywhere}
+.um{color:var(--amber)}.ok{color:var(--green)}.bad{color:var(--red)}
+.why{color:var(--tiny);font-size:11px;margin-top:6px;overflow-wrap:anywhere}
+.meta{color:var(--tiny);font-size:11px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}td,th{padding:3px 4px;border-bottom:1px solid var(--line);
+  text-align:left;font-weight:normal}th{color:var(--tiny)}td.n{text-align:right}
+.tw{overflow-x:auto}
+canvas{display:block;width:100%;height:420px;background:#050806;border:1px solid var(--line);border-radius:6px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Quant Terminal</h1>
+  <nav role="tablist">
+    <button role="tab" data-tab="quant" aria-selected="true">Quant</button>
+    <button role="tab" data-tab="memecoin" aria-selected="false">Memecoin</button>
+    <button role="tab" data-tab="agents" aria-selected="false">Agents</button>
+  </nav>
+</header>
+<main>
+  <section class="tab on" id="tab-quant" role="tabpanel">
+    <div class="meta">read-only view of desk_state.json, the same state the canonical
+      <a href="desk.html">desk.html</a> renders; open desk.html for the full desk.</div>
+    <div class="meta" id="quant-meta">loading desk_state.json</div>
+    <div class="grid" id="quant-grid"></div>
+  </section>
+  <section class="tab" id="tab-memecoin" role="tabpanel">
+    <div class="meta" id="meme-meta">loading memecoin_state.json</div>
+    <div class="grid" id="meme-grid"></div>
+  </section>
+  <section class="tab" id="tab-agents" role="tabpanel">
+    <div class="meta" id="agents-meta">loading threads.json</div>
+    <canvas id="world" aria-label="Robot agents walking between thread huts"></canvas>
+    <div class="card" style="margin-top:12px"><h2>Threads</h2><div class="tw"><table id="agents-table"></table></div></div>
+  </section>
+</main>
+<script>
+"use strict";
+var REFRESH_MS = 60000;
+var STATE_COLOR = {working:"#5b9bd5", blocked:"#e5484d", done:"#35d07f"};
+
+function el(tag, cls, text){var e=document.createElement(tag);if(cls)e.className=cls;
+  if(text!==undefined&&text!==null)e.textContent=String(text);return e;}
+function get(o, path){var p=path.split(".");for(var i=0;i<p.length;i++){
+  if(o===null||o===undefined||typeof o!=="object")return undefined;o=o[p[i]];}return o;}
+function fmt(v){
+  if(v===null||v===undefined||v==="")return null;
+  if(typeof v==="number")return Math.abs(v)>=1000?v.toLocaleString(undefined,{maximumFractionDigits:0}):
+    String(Math.round(v*1000)/1000);
+  if(typeof v==="boolean")return v?"yes":"no";
+  if(typeof v==="object")return Array.isArray(v)?(v.length+" item(s)"):null;
+  return String(v);
+}
+function age(iso){var t=Date.parse(iso);if(isNaN(t))return "age UNMEASURED";
+  var s=Math.max(0,(Date.now()-t)/1000);
+  return s<120?Math.round(s)+"s ago":s<7200?Math.round(s/60)+"m ago":s<172800?Math.round(s/3600)+"h ago":Math.round(s/86400)+"d ago";}
+function tone(v){var s=String(v).toUpperCase();
+  if(/^(OK|LIVE|MEASURED|REPORTING|FRESH|PASS|ADOPTED|IN STEP)/.test(s))return "ok";
+  if(/(FAIL|DEAD|REFUSED|BREACH|SILENT|DOWN|ERROR)/.test(s))return "bad";
+  if(/(UNMEASURED|ATTENTION|STALE|LATE|WARN)/.test(s))return "um";return "";}
+
+/* A card of label/value rows. A value of null renders UNMEASURED, never a zero. */
+function card(title, rows, why){
+  var c=el("div","card");c.appendChild(el("h2",null,title));var kv=el("div","kv");
+  rows.forEach(function(r){var v=fmt(r[1]);kv.appendChild(el("div","k",r[0]));
+    kv.appendChild(el("div","v "+(v===null?"um":tone(v)),v===null?"UNMEASURED":v));});
+  c.appendChild(kv);if(why)c.appendChild(el("div","why",why));return c;}
+function unmeasured(title, why){var c=el("div","card");c.appendChild(el("h2",null,title));
+  c.appendChild(el("div","um","UNMEASURED"));c.appendChild(el("div","why",why));return c;}
+
+function load(name){
+  return fetch(name,{cache:"no-store",credentials:"same-origin"}).then(function(r){
+    if(!r.ok)throw new Error(name+" returned HTTP "+r.status);return r.json();});
+}
+
+/* ---------- Quant ---------- */
+function fillsCard(d){
+  /* Fills per account per market day. Read the dedicated block when the builder publishes one
+     ({account_code: {YYYY-MM-DD: n}}); otherwise say why it is unmeasured. */
+  var f=d.fills_by_account_day;
+  if(f&&typeof f==="object"&&Object.keys(f).length){
+    var c=el("div","card");c.appendChild(el("h2",null,"Fills per account per market day"));
+    var w=el("div","tw"),t=el("table");var hr=el("tr");["account","day","fills"].forEach(function(h){hr.appendChild(el("th",null,h));});
+    t.appendChild(hr);
+    Object.keys(f).sort().forEach(function(acct){var days=f[acct]||{};
+      Object.keys(days).sort().reverse().slice(0,7).forEach(function(day){var r=el("tr");
+        r.appendChild(el("td",null,acct));r.appendChild(el("td",null,day));r.appendChild(el("td","n",fmt(days[day])));t.appendChild(r);});});
+    w.appendChild(t);c.appendChild(w);return c;}
+  var ex=d.execution||{};
+  return card("Fills per account per market day",[
+    ["matched fills (all accounts)",ex.matched_fills],["deals",ex.deals],
+    ["attributed share",ex.attributed_share],["open trades",Array.isArray(ex.open_trades)?ex.open_trades.length:null]],
+    "per-account per-day fills: UNMEASURED -- desk_state.json carries no fills_by_account_day block. "+(ex.why||""));
+}
+function renderQuant(d){
+  var g=document.getElementById("quant-grid");g.textContent="";
+  document.getElementById("quant-meta").textContent="desk_state.json generated "+age(d.generated_at)+" ("+(d.generated_at||"undated")+")";
+  var accts=Array.isArray(d.accounts)&&d.accounts.length?d.accounts:(d.account?[d.account]:[]);
+  if(!accts.length)g.appendChild(unmeasured("Accounts","desk_state.json has no account block"));
+  accts.forEach(function(a){
+    /* Codes and figures only: venue code, currency and money. Never a login or a name. */
+    g.appendChild(card("Account "+(a.venue||a.code||""),[
+      ["currency",a.currency],["balance",a.balance],["equity",a.equity],["today P&L",a.today_pnl],
+      ["open P&L",a.open_pnl],["growth %",a.growth_pct],["trust",a.trust],
+      ["source",a.source_updated_at?age(a.source_updated_at):null]],a.undated_warning||null));});
+  g.appendChild(fillsCard(d));
+  var c=d.clocks||{},p=d.pipeline||{};
+  g.appendChild(card("Live sleeves",[["live sleeves",c.live_sleeves],["gateway armed",c.gateway_armed],
+    ["registry rows",c.registry_rows],["promotion ready",p.promotion_ready],["live (pipeline)",p.live],
+    ["clocks status",c.status]]));
+  var b=d.breadth||{},cv=d.coverage||{};var miners=b.miners&&typeof b.miners==="object"?Object.keys(b.miners).length:null;
+  g.appendChild(card("Breadth",[["miners",miners],["zero-yield miners",Array.isArray(b.zero_yield_miners)?b.zero_yield_miners.length:b.zero_yield_miners],
+    ["window days",b.window_days],["effective breadth",cv.effective_breadth],["nominal sleeves",cv.nominal_sleeves],
+    ["measured",b.measured_at?age(b.measured_at):null]],b.note||null));
+  g.appendChild(card("Coverage",[["status",cv.status],["breadth ratio",cv.breadth_ratio],
+    ["Sharpe x vs one bet",cv.sharpe_multiplier_vs_one_bet],["regime buckets",cv.regime_buckets],
+    ["regime uncovered",cv.regime_uncovered],["clocks configured",c.configured],["certified",c.certified_total]],cv.why||null));
+  var h=d.health||{},o=d.organs||{},rl=d.release||{},rd=d.readiness||{},pr=d.processes||{};
+  g.appendChild(card("Health",[["page health",h.status],["box",get(h,"box.status")],["organs",o.worst],
+    ["release",rl.verdict],["new risk allowed",rl.allows_new_risk],["readiness",rd.status],
+    ["processes",pr.status],["needing attention",pr.n_needing_attention]],o.headline||null));
+}
+
+/* ---------- Memecoin ---------- */
+var MEME_NONE="the memecoin lane runs in its own repository (box tasks MemecoinPaperTerminal and "+
+  "MemecoinPredictionPaper) and publishes no paper state to this dashboard: no memecoin_state.json "+
+  "is served beside desk_state.json, and process_health lists those tasks UNCONTRACTED with no artifact.";
+function renderMeme(m, why, d){
+  var g=document.getElementById("meme-grid");g.textContent="";
+  var procs=(get(d||{},"processes.processes")||[]).filter(function(r){return /memecoin/i.test(r&&r.name||"");});
+  if(!m){document.getElementById("meme-meta").textContent="memecoin paper state: UNMEASURED";
+    g.appendChild(unmeasured("Memecoin paper book",why||MEME_NONE));}
+  else{document.getElementById("meme-meta").textContent="memecoin_state.json generated "+age(m.generated_at||m.at);
+    var src=m.paper&&typeof m.paper==="object"?m.paper:m;var rows=[];
+    Object.keys(src).forEach(function(k){var v=src[k];if(v===null||typeof v!=="object")rows.push([k.replace(/_/g," "),v]);});
+    g.appendChild(card("Memecoin paper book",rows.slice(0,16),m.why||"paper only; never live money"));}
+  if(procs.length)g.appendChild(card("Memecoin box tasks",procs.map(function(r){return [r.name,r.verdict];})));
+}
+
+/* ---------- Agents: huts, robots, a little world ---------- */
+var world={threads:[],robots:[],huts:[],status:"UNMEASURED",why:"loading",w:0,h:0,t:0,running:false};
+var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function layout(){
+  var cv=document.getElementById("world"),dpr=window.devicePixelRatio||1;
+  var w=cv.clientWidth||320,h=cv.clientHeight||420;cv.width=w*dpr;cv.height=h*dpr;
+  cv.getContext("2d").setTransform(dpr,0,0,dpr,0,0);world.w=w;world.h=h;
+  var n=world.threads.length,cols=Math.max(1,Math.min(n,Math.floor(w/90)||1)),rows=Math.max(1,Math.ceil(n/cols));
+  var cw=w/cols,ch=(h-40)/rows;
+  world.huts=world.threads.map(function(t,i){return {x:cw*(i%cols)+cw/2,y:40+ch*Math.floor(i/cols)+ch/2,s:Math.min(cw,ch,90)*0.34,t:t};});
+}
+function seedRobots(){
+  var old=world.robots;world.robots=world.huts.map(function(h,i){
+    var prev=old[i];var start=prev?{x:prev.x,y:prev.y}:{x:world.w/2+(i%5-2)*6,y:world.h-12};
+    if(reduce)start={x:h.x,y:h.y+h.s+6};
+    return {x:start.x,y:start.y,hut:h,phase:i*0.7,state:h.t.state};});
+}
+function drawHut(c,h){
+  var s=h.s,col=STATE_COLOR[h.t.state]||"#8a8a8a";
+  c.fillStyle="#1a1410";c.fillRect(h.x-s,h.y-s*0.4,s*2,s*1.2);
+  c.beginPath();c.moveTo(h.x-s*1.2,h.y-s*0.4);c.lineTo(h.x,h.y-s*1.2);c.lineTo(h.x+s*1.2,h.y-s*0.4);c.closePath();
+  c.fillStyle="#4a3424";c.fill();
+  c.fillStyle=col;c.globalAlpha=h.t.state==="done"?0.9:0.55+0.35*Math.sin(world.t*3);c.fillRect(h.x-s*0.25,h.y,s*0.5,s*0.5);c.globalAlpha=1;
+  c.fillStyle="#8a8a8a";c.font="10px ui-monospace,monospace";c.textAlign="center";
+  var label=h.t.title.length>14?h.t.title.slice(0,13)+"…":h.t.title;c.fillText(label,h.x,h.y+s*0.8+12);
+  if(h.t.open_prs)c.fillText("PR "+h.t.open_prs,h.x,h.y-s*1.3);
+}
+function drawRobot(c,r){
+  var col=STATE_COLOR[r.state]||"#8a8a8a",bob=Math.sin(world.t*8+r.phase)*1.5;
+  var x=r.x,y=r.y+bob;
+  c.fillStyle="#c8c8c8";c.fillRect(x-4,y-10,8,8);           /* head */
+  c.fillStyle=col;c.fillRect(x-2.5,y-8,1.5,1.5);c.fillRect(x+1,y-8,1.5,1.5);   /* eyes */
+  c.fillStyle="#9a9a9a";c.fillRect(x-5,y-2,10,8);            /* body */
+  c.strokeStyle="#c8c8c8";c.beginPath();c.moveTo(x,y-10);c.lineTo(x,y-14);c.stroke();
+  c.fillStyle=col;c.beginPath();c.arc(x,y-15,1.8,0,7);c.fill(); /* antenna light = state */
+  if(r.arrived&&r.state==="blocked"){c.fillStyle="#e5484d";c.font="bold 12px ui-monospace,monospace";c.fillText("!",x+9,y-10);}
+  if(r.arrived&&r.state==="working"&&Math.sin(world.t*6+r.phase)>0.6){c.fillStyle="#d4a256";c.fillRect(x+7,y-4,2,2);c.fillRect(x+10,y-7,2,2);}
+}
+function step(){
+  var cv=document.getElementById("world"),c=cv.getContext("2d");world.t+=1/60;
+  c.clearRect(0,0,world.w,world.h);
+  if(world.status!=="MEASURED"||!world.threads.length){
+    c.fillStyle="#d4a256";c.font="13px ui-monospace,monospace";c.textAlign="center";
+    c.fillText("UNMEASURED",world.w/2,world.h/2-8);c.fillStyle="#6a6a6a";c.font="11px ui-monospace,monospace";
+    var why=world.why||"no threads published";c.fillText(why.length>60?why.slice(0,59)+"…":why,world.w/2,world.h/2+12);
+    world.running=false;return;}
+  c.strokeStyle="#14201a";c.setLineDash([2,4]);
+  world.huts.forEach(function(h){c.beginPath();c.moveTo(world.w/2,world.h-8);c.lineTo(h.x,h.y+h.s);c.stroke();});c.setLineDash([]);
+  world.huts.forEach(function(h){drawHut(c,h);});
+  world.robots.forEach(function(r){
+    var tx=r.hut.x+(r.state==="done"?0:r.hut.s+4),ty=r.hut.y+r.hut.s*0.6;
+    if(r.state==="working"&&r.arrived)tx+=Math.sin(world.t*0.8+r.phase)*r.hut.s*0.9;   /* pacing at the bench */
+    var dx=tx-r.x,dy=ty-r.y,dist=Math.hypot(dx,dy),sp=reduce?dist:1.4;
+    if(dist>sp){r.x+=dx/dist*sp;r.y+=dy/dist*sp;}else{r.x=tx;r.y=ty;r.arrived=true;}
+    drawRobot(c,r);});
+  var vis=document.getElementById("tab-agents").classList.contains("on");
+  if(vis&&!document.hidden)requestAnimationFrame(step);else world.running=false;
+}
+function animate(){if(!world.running){world.running=true;requestAnimationFrame(step);}}
+function renderAgents(doc, why){
+  var meta=document.getElementById("agents-meta"),tb=document.getElementById("agents-table");tb.textContent="";
+  var ok=doc&&doc.status==="MEASURED"&&Array.isArray(doc.threads);
+  world.status=ok?"MEASURED":"UNMEASURED";world.why=ok?null:(why||(doc&&doc.why)||"threads.json absent");
+  world.threads=ok?doc.threads.filter(function(t){return t&&t.title;}).map(function(t){
+    return {title:String(t.title),state:STATE_COLOR[t.state]?t.state:"working",last_activity:t.last_activity,open_prs:t.open_prs};}):[];
+  if(ok){var k=doc.counts||{};meta.textContent="threads.json "+age(doc.generated_at)+" -- "+world.threads.length+" thread(s): "+
+    (k.working||0)+" working, "+(k.blocked||0)+" blocked, "+(k.done||0)+" done";}
+  else meta.textContent="thread status: UNMEASURED -- "+world.why;
+  var hr=el("tr");["thread","state","last activity","open PRs"].forEach(function(h){hr.appendChild(el("th",null,h));});tb.appendChild(hr);
+  world.threads.forEach(function(t){var r=el("tr"),td=el("td");var dot=el("span","dot");dot.style.background=STATE_COLOR[t.state];
+    td.appendChild(dot);td.appendChild(document.createTextNode(t.title));r.appendChild(td);r.appendChild(el("td",null,t.state));
+    r.appendChild(el("td",null,t.last_activity?age(t.last_activity):"UNMEASURED"));
+    r.appendChild(el("td","n",t.open_prs===null||t.open_prs===undefined?"UNMEASURED":t.open_prs));tb.appendChild(r);});
+  layout();seedRobots();animate();
+}
+
+/* ---------- tabs and refresh ---------- */
+function show(name){
+  document.querySelectorAll("nav button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.tab===name?"true":"false");});
+  document.querySelectorAll("section.tab").forEach(function(s){s.classList.toggle("on",s.id==="tab-"+name);});
+  try{history.replaceState(null,"","#"+name);}catch(e){}
+  if(name==="agents"){layout();seedRobots();animate();}
+}
+document.querySelectorAll("nav button").forEach(function(b){b.addEventListener("click",function(){show(b.dataset.tab);});});
+window.addEventListener("resize",function(){layout();seedRobots();});
+document.addEventListener("visibilitychange",function(){if(!document.hidden)animate();});
+
+function refresh(){
+  load("desk_state.json").then(function(d){renderQuant(d);return d;},function(e){
+    var g=document.getElementById("quant-grid");g.textContent="";
+    document.getElementById("quant-meta").textContent="desk state: UNMEASURED";
+    g.appendChild(unmeasured("Desk state",String(e.message||e)));return null;})
+  .then(function(d){return load("memecoin_state.json").then(function(m){renderMeme(m,null,d);},
+    function(){renderMeme(null,null,d);});});
+  load("threads.json").then(function(t){renderAgents(t);},function(e){renderAgents(null,String(e.message||e));});
+}
+var initial=(location.hash||"#quant").slice(1);show(["quant","memecoin","agents"].indexOf(initial)>=0?initial:"quant");
+refresh();setInterval(refresh,REFRESH_MS);
+</script>
+</body>
+</html>
