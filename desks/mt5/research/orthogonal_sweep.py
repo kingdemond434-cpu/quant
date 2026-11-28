@@ -264,7 +264,10 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
 #: FALSE POSITIVE, which no gate downstream can catch. They become admissible only through
 #: `data/vintages/` (ALFRED, revision-aware), which currently covers three series.
 DAILY_MACRO_SERIES = ("DTWEXBGS", "DGS10", "DGS2", "T10Y2Y", "VIXCLS", "SOFR", "DFF",
-                      "BAMLH0A0HYM2", "DCOILWTICO")
+                      "BAMLH0A0HYM2", "DCOILWTICO",
+                      # appended, never inserted: the unnamed default is the FIRST available, and
+                      # a cell minted without a name must keep rebuilding on the dollar.
+                      "DFII10")
 #: One day between a print and a bar that may condition on it. Never zero.
 MACRO_PUBLICATION_LAG_D = 1
 #: Observations before a trailing rank means anything. A rank over 20 points is noise wearing a
@@ -272,7 +275,7 @@ MACRO_PUBLICATION_LAG_D = 1
 MACRO_RANK_MIN_OBS = 250
 
 
-def _macro_series(index, name: str | None = None):
+def _macro_series(index, name: str | None = None, lag_d: int = MACRO_PUBLICATION_LAG_D):
     """A POINT-IN-TIME macro regime series on the bar clock, or None. Never a broadcast scalar.
 
     WHAT THIS REPLACES (measured 2026-08-28). The old reader took `desks/mt5/data/macro_state.json`
@@ -313,10 +316,58 @@ def _macro_series(index, name: str | None = None):
         rank = s.expanding(min_periods=MACRO_RANK_MIN_OBS).rank(pct=True).dropna()
         if rank.empty:
             continue
-        rank.index = rank.index + pd.Timedelta(days=MACRO_PUBLICATION_LAG_D)
+        rank.index = rank.index + pd.Timedelta(days=max(MACRO_PUBLICATION_LAG_D, int(lag_d)))
         out = rank.reindex(rank.index.union(index)).ffill().reindex(index)
         return out if out.notna().sum() >= MACRO_RANK_MIN_OBS else None
     return None
+
+
+def macro_series_named(params) -> str | None:
+    """The conditioning series a `macro_conditional` cell NAMES, or None for the unnamed default.
+
+    `macro_series` wins; otherwise `input_source` -- `fred:<ID>` as this sweep writes it, or a bare
+    `<ID>` as the event graph does. `fred:macro` and empty names name nothing.
+    """
+    p = dict(params or {})
+    raw = str(p.get("macro_series") or p.get("input_source") or "").strip()
+    name = raw.split(":", 1)[1] if raw.lower().startswith("fred:") else raw
+    name = name.strip()
+    return None if not name or name.lower() in {"macro", "macro_state"} else name
+
+
+def macro_for_cell(index, params) -> tuple[object | None, str]:
+    """(series, why) for one `macro_conditional` cell -- the reader both rebuild paths share.
+
+    WHY THIS EXISTS (Global data audit, 2026-11-10). The gauntlet and the forward clock called
+    `_macro_series(index)` with no name, so every cell conditioned on the FIRST available series
+    -- the dollar index -- whatever its identity said: a DGS10 cell, a VIX cell and an HY-spread
+    cell were three spellings of one dollar test, each charged as a trial. A named series is now
+    read by name, at the cell's own publication lag (never under a day), and a name this reader
+    cannot honour is a failed build BY NAME -- never a silent fall back to the dollar, which is a
+    different model. Only daily, market-observed series are admissible by name, for the
+    look-ahead reason `DAILY_MACRO_SERIES` records; a monthly release waits for vintages.
+    """
+    p = dict(params or {})
+    try:
+        lag = max(MACRO_PUBLICATION_LAG_D, int(p.get("publication_lag_d") or 0))
+    except (TypeError, ValueError):
+        lag = MACRO_PUBLICATION_LAG_D
+    transform = str(p.get("transform") or "trailing_pct_rank").strip().lower()
+    if transform != "trailing_pct_rank":
+        return None, (f"transform {transform!r}: this reader builds only the trailing "
+                      "percentile rank")
+    name = macro_series_named(p)
+    if name is None:
+        out = _macro_series(index, lag_d=lag)
+        return out, "ok" if out is not None else "macro series unavailable"
+    if name not in DAILY_MACRO_SERIES:
+        return None, (f"macro series {name!r} is not a daily market-observed FRED series this "
+                      f"reader admits by name ({', '.join(DAILY_MACRO_SERIES)})")
+    out = _macro_series(index, name, lag_d=lag)
+    if out is None:
+        return None, (f"macro series {name!r} unavailable: absent from data/fred_macro.json or "
+                      f"under {MACRO_RANK_MIN_OBS} observations on this bar clock")
+    return out, "ok"
 
 
 def _macro_series_name() -> str | None:

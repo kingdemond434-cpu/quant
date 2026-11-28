@@ -1101,10 +1101,39 @@ def family_cross_asset_residual(
     return signals
 
 
+def _named_macro(index: pd.DatetimeIndex, macro_series: str | None,
+                 publication_lag_d: int | None, transform: str | None) -> pd.Series:
+    """The conditioning series a cell NAMES, through the one reader both rebuild paths share.
+
+    THE FAMILY READS ITS OWN NAMED INPUT (2026-11-10), the specialist families' contract. The
+    sealed gauntlet hands every `macro_conditional` cell `_macro_series(index)` with no name --
+    the first available series, the dollar -- so a DGS10 cell, a VIX cell and an HY-spread cell
+    were all the same dollar bet, each charged as its own trial. A cell that carries
+    `macro_series` (or its own lag or transform) is therefore rebuilt HERE, from
+    `orthogonal_sweep.macro_for_cell`, and the handed default is ignored. What that reader
+    cannot honour RAISES, so the judge files a build failure by name; it never falls back to
+    the dollar under another series' name.
+    """
+    try:
+        from research import orthogonal_sweep as inputs
+    except ImportError:
+        import orthogonal_sweep as inputs  # type: ignore[no-redef]
+    params = {k: v for k, v in (("macro_series", macro_series),
+                                ("publication_lag_d", publication_lag_d),
+                                ("transform", transform)) if v is not None}
+    series, why = inputs.macro_for_cell(index, params)
+    if series is None:
+        raise ValueError(f"macro_conditional: {why}")
+    return series
+
+
 def family_macro_conditional(
     df: pd.DataFrame,
     *,
     macro: pd.Series | None = None,
+    macro_series: str | None = None,
+    publication_lag_d: int | None = None,
+    transform: str | None = None,
     regime_high: float = 0.5,
     atr_n: int = 20,
     stop_atr: float = 2.0,
@@ -1119,9 +1148,11 @@ def family_macro_conditional(
     conditions on that is holding a different bet from one that conditions on last night's range.
     REFUSES without a macro series; a "macro" family inferred from price is a momentum family.
     """
+    d = _h1(df)
+    if macro_series is not None or publication_lag_d is not None or transform is not None:
+        macro = _named_macro(d.index, macro_series, publication_lag_d, transform)
     if macro is None or macro.empty:
         return []
-    d = _h1(df)
     # THE FRAME IS DECLARED HERE because the join is otherwise unreadable. The bar index is BROKER
     # time under a UTC tzinfo (+2 winter, +3 summer, measured by `research/futures_lead_lag`; see
     # `libs/research/bar_clock`), so a genuinely-UTC series reindexed straight onto it lands two

@@ -46,6 +46,36 @@ DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
 CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 
+#: The daily series `macro_conditional` is swept on by NAME, beside the unnamed dollar default:
+#: `orthogonal_sweep.DAILY_MACRO_SERIES` less the dollar (the unnamed cells are the dollar) and
+#: less SOFR (the same overnight rate as DFF with a shorter history: a second trial charged for
+#: one state). The test pins this against that tuple, so a series added there is swept or named.
+MACRO_SERIES_SWEPT = ("DGS10", "DGS2", "T10Y2Y", "VIXCLS", "DFF", "BAMLH0A0HYM2", "DCOILWTICO",
+                      "DFII10")
+MACRO_SERIES_NOT_SWEPT = {"DTWEXBGS": "the unnamed cells already condition on it",
+                          "SOFR": "the same overnight rate as DFF, shorter history"}
+_MACRO_HELD: dict[str, bool] = {}
+
+
+def _macro_held(name: str) -> bool:
+    """Whether data/fred_macro.json holds enough of `name` to rank. An unreadable store refuses
+    nothing (L1.28a): the judge then files the build failure by name."""
+    if name not in _MACRO_HELD:
+        try:
+            try:
+                from research import orthogonal_sweep as osw
+            except ImportError:
+                import orthogonal_sweep as osw  # type: ignore[no-redef]
+            doc = osw._read(osw.BASE.parent.parent / "data" / "fred_macro.json")
+            if not isinstance(doc, dict) or not isinstance(doc.get("series"), dict):
+                return True
+            rows = doc["series"].get(name)
+            _MACRO_HELD[name] = isinstance(rows, list) and len(rows) >= osw.MACRO_RANK_MIN_OBS
+        except Exception:
+            return True
+    return _MACRO_HELD[name]
+
+
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
 #: The grids are deliberately coarse. A wide grid is not a better search -- it is the same search
@@ -86,8 +116,16 @@ READY: dict[str, dict] = {
     "macro_conditional": {
         "why": "a dollar-state condition changes WHEN other sleeves should fire rather than "
                "adding another directional signal",
+        # EVERY DAILY SERIES THE DESK HOLDS, NOT ONLY THE DOLLAR (2026-11-10). The grid named no
+        # series, so every cell conditioned on the first one available: rates, the curve, VIX,
+        # credit, oil and real yields were held on disk and never once tested as a state. A
+        # named cell carries `macro_series` and the family reads it itself
+        # (`families_orthogonal._named_macro`); the unnamed cells keep their identity, so no
+        # existing row is re-minted or re-charged.
         "grid": [
-            {"regime_high": h, "side_in_high": s, "rr": rr, "ttl_bars": 96, "atr_n": 20}
+            {"regime_high": h, "side_in_high": s, "rr": rr, "ttl_bars": 96, "atr_n": 20,
+             **({"macro_series": name} if name else {})}
+            for name in (None, *MACRO_SERIES_SWEPT)
             for h in (0.5, 0.7)
             for s in (1, -1)
             for rr in (2.0,)
@@ -329,6 +367,14 @@ def _testable(fam: str, p: dict) -> bool:
     Refusal is counted per (family, chart, verdict) with the reason, never silent, and an
     unimportable probe refuses NOTHING (L1.28a: a missing measurement is not a verdict).
     """
+    named = str(p.get("macro_series") or "") if fam == "macro_conditional" else ""
+    if named and not _macro_held(named):
+        key = f"{fam}|{p.get('timeframe') or 'H1'}|INPUT_NOT_HELD|{named}"
+        row = LAST_SET_ASIDE.setdefault(key, {
+            "family": fam, "chart": p.get("timeframe") or "H1", "verdict": "INPUT_NOT_HELD",
+            "why": f"data/fred_macro.json holds too little of {named} to rank", "cells": 0})
+        row["cells"] += 1
+        return False
     try:
         from research.gauntlet_buildability import BUILDABLE, cell_verdict
     except Exception:
