@@ -40,6 +40,10 @@ from libs.research_os.adapters.base import MeasurementResult, ResearchAdapter
 
 ROOT = Path(__file__).resolve().parents[3]
 OBS = ROOT / "desks" / "mt5" / "data" / "observables"
+#: Owner-permitted derived output (GITIGNORED). The SPX gamma series is Cboe-derived, so it lives
+#: here and never in the tracked observables directory (owner attestation 2026-11-17).
+OWNER_PERMITTED = ROOT / "desks" / "mt5" / "data" / "owner_permitted"
+GEX_RELPATH = Path("cboe_options") / "cboe_spx_options.jsonl"
 
 #: Distinct gamma snapshots before the series can be used at all. Below this there is no
 #: variation to condition on, and a flat column would silently become a constant term.
@@ -102,10 +106,10 @@ class GammaExposureAdapter(ResearchAdapter):
     """Real dealer gamma from the SPX chain. FORWARD-ONLY -- reports its own immaturity."""
 
     mechanism = "options_hedging"
-    requires = ("desks/mt5/data/observables/cboe_spx_options.jsonl",)
+    requires = ("desks/mt5/data/owner_permitted/cboe_options/cboe_spx_options.jsonl",)
 
     def _snapshots(self) -> pd.DataFrame:
-        path = OBS / "cboe_spx_options.jsonl"
+        path = OWNER_PERMITTED / GEX_RELPATH
         if not path.exists():
             return pd.DataFrame()
         rows = []

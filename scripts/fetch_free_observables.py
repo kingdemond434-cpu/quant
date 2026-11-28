@@ -34,6 +34,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -43,6 +44,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "desks" / "mt5" / "data" / "observables"
 OUT = ROOT / "data" / "free_observables.json"
+#: Owner-gated (Cboe-derived) output lands under the GITIGNORED owner_permitted directory, never in
+#: the tracked OBS: publisher-derived rows do not enter the public repo.
+OWNER_OUT = ROOT / "desks" / "mt5" / "data" / "owner_permitted" / "cboe_options"
 
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk research fetcher)"}
 
@@ -77,6 +81,25 @@ SOURCES: dict[str, dict[str, str]] = {
         "kind": "history",
     },
 }
+
+
+#: CBOE IS TERMS-REFUSED FOR AUTOMATED READS (governance FRED ruling addendum 2026-11-14, the
+#: 11-13 options memo) EXCEPT where the owner's 2026-11-17 attestation reopens it: the SPX option
+#: chain (options OI/gamma) under owner_permissions row `exchange_options_gamma`. The VIX history
+#: is not options OI/gamma and has no row, so it stays refused. Each Cboe source names the row it
+#: needs; `libs.data.owner_permissions` fails closed, keeps robots fail-closed and makes
+#: 401/403/429/451 a hard stop, and every fetched row carries permission=owner_attestation_2026-11-17.
+OWNER_GATED: dict[str, str] = {"cboe_spx_options": "exchange_options_gamma",
+                               "cboe_vix_history": "cboe_vix_history"}
+
+
+def _gated_get(name: str, url: str) -> tuple[bytes | None, str]:
+    """(body, why) for a source that needs an owner row; (None, refusal) otherwise."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.data import owner_permissions as op
+    f = op.permitted_get(OWNER_GATED[name], url)
+    return (f.body, "") if f.ok else (None, f"{f.status}: {f.why}")
 
 
 def _get(url: str, timeout: int = 90) -> bytes | None:
@@ -185,7 +208,16 @@ def main() -> int:
 
     print(f"FREE OBSERVABLES {now.isoformat(timespec='seconds')}")
     for name, meta in SOURCES.items():
-        raw = _get(meta["url"])
+        if name in OWNER_GATED:
+            raw, why = _gated_get(name, meta["url"])
+            if raw is None:
+                report["sources"][name] = {"ok": False, "why": why, "unblocks": meta["unblocks"],
+                                           "missed_growth": f"missed_growth: {meta['unblocks']}"
+                                                            " is UNMEASURED from this source"}
+                print(f"  HELD {name:22s} {why[:100]}")
+                continue
+        else:
+            raw = _get(meta["url"])
         if raw is None:
             report["sources"][name] = {"ok": False, "why": "unreachable",
                                        "unblocks": meta["unblocks"]}
@@ -193,6 +225,10 @@ def main() -> int:
             continue
         try:
             parsed = _PARSERS[name](raw, now)
+            if name in OWNER_GATED:
+                parsed.update({"permission": "owner_attestation_2026-11-17",
+                               "provenance": "permission=owner_attestation_2026-11-17",
+                               "source": OWNER_GATED[name]})
         except Exception as exc:
             report["sources"][name] = {"ok": False,
                                        "why": f"{type(exc).__name__}: {str(exc)[:110]}"}
@@ -202,15 +238,17 @@ def main() -> int:
         # SNAPSHOTS APPEND, HISTORIES REPLACE. A gamma reading is one observation of a series
         # this desk is building; overwriting it would discard the only history that will ever
         # exist, because the source has no history endpoint.
+        dest = OWNER_OUT if name in OWNER_GATED else OBS
+        dest.mkdir(parents=True, exist_ok=True)
         if meta["kind"] == "snapshot":
-            path = OBS / f"{name}.jsonl"
+            path = dest / f"{name}.jsonl"
             with path.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(parsed) + "\n")
             n = sum(1 for _ in path.open(encoding="utf-8"))
             summary = {"ok": True, "path": str(path.relative_to(ROOT)), "observations": n}
             print(f"  ok   {name:22s} appended, {n} observation(s) -- {meta['unblocks']}")
         else:
-            path = OBS / f"{name}.json"
+            path = dest / f"{name}.json"
             path.write_text(json.dumps(parsed, indent=1), "utf-8")
             summary = {"ok": True, "path": str(path.relative_to(ROOT)),
                        "rows": parsed.get("rows") or parsed.get("events")}

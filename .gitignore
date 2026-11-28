@@ -636,3 +636,7 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+
+# Owner-permitted derived output (attestation 2026-11-17): publisher-derived rows (the Cboe
+# SPX gamma series among them) are box state and never reach the public repo.
+desks/mt5/data/owner_permitted/
