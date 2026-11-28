@@ -42,6 +42,34 @@ def test_journal_replay_reconstructs_the_open_book(tmp_path):
     assert j["open_by_replay"] == 1 and j["open_by_gateway_state"] == 1
 
 
+
+def _intent(iid, retcode, ticket, price):
+    return {"sleeve": "s", "symbol": "XAUUSD", "side": "buy", "intent_id": iid,
+            "retcode": retcode, "ticket": ticket, "intended": price,
+            "time": "2026-09-16T01:21:29+00:00"}
+
+
+def test_a_refused_retry_at_the_same_address_is_not_a_duplicate(tmp_path):
+    """The box's own journal, 2026-09-16 01:21: one fill (10009) and one broker refusal (10016,
+    ticket 0) in the same minute share the gateway's symbol|sleeve|side|minute address. One
+    position existed; the drill read it as a duplicate and FAILED."""
+    _journal(tmp_path)
+    with (tmp_path / "order_intents.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(_intent("3728c2b2741c7cc3", 10009, 222753263, 4283.54)) + "\n")
+        fh.write(json.dumps(_intent("3728c2b2741c7cc3", 10016, 0, 4279.24)) + "\n")
+    j = ops.journal_replay(tmp_path)
+    assert j["status"] == "PASS" and j["duplicate_intent_ids"] == 0
+    assert j["shared_intent_addresses"] == 1
+
+
+def test_two_accepted_orders_at_one_address_still_fail(tmp_path):
+    _journal(tmp_path)
+    with (tmp_path / "order_intents.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(_intent("aa", 10009, 501, 4283.54)) + "\n")
+        fh.write(json.dumps(_intent("aa", 10009, 502, 4283.60)) + "\n")
+    j = ops.journal_replay(tmp_path)
+    assert j["status"] == "FAIL" and j["duplicate_intent_ids"] == 1
+
 def test_journal_replay_fails_on_a_torn_line(tmp_path):
     _journal(tmp_path)
     with (tmp_path / "order_intents.jsonl").open("a", encoding="utf-8") as fh:
