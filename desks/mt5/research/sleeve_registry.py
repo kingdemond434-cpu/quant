@@ -614,6 +614,78 @@ def rebase_code(key: str, ident: dict[str, Any]) -> str | None:
     return why
 
 
+def adopt_runtime_version(key: str, ident: dict[str, Any], *, forward_start: str | None,
+                          prior_versions: list[str | None], replayed: bool) -> str | None:
+    """Stamp the registry with the engine's own runtime epoch when that is the ONLY drift.
+
+    THE FLAP THIS ENDS (box read CL3, 2026-11-11). The shadow engine restarted ten clocks onto a
+    new runtime epoch on 10-05 and 10-07 (`session_runtime_window.ensure`), but the registry rows
+    were never stamped: CHFNOK and XAUAUD read runtime_version None there and session-8a37 in
+    shadow_state; AUDSGD read session-8a37 there and contract-867e in shadow_state. Every pass the
+    engine saw `runtime_version` drift and marked IDENTITY_BROKEN; every 30 minutes the healer,
+    whose identity carries no runtime_version, found nothing drifted and resumed them -- about
+    650 to 1,600 times each -- and the clocks accrued nothing for three weeks.
+
+    WHY THIS IS SOUND AND NOT A LOOSENING:
+      * IT FIRES ON `runtime_version` ALONE. Any other drifted field and nothing is written.
+      * THE ENGINE'S EPOCH MUST DESCEND FROM THE REGISTRY'S. The registry's version is either
+        absent (legacy) or one the state itself records as an EARLIER window in
+        `runtime_windows_before`. A registry that is AHEAD of the state, or on a branch the
+        state never passed through, is left alone and the clock stays broken.
+      * `forward_start` ONLY MOVES LATER. The new epoch starts where the engine started it; a
+        day observed under the old semantics is never credited to the new window.
+      * REPLAYED CLOCKS ONLY, exactly as `reconcile()`: a clock that held order authority has
+        real fills from the old code that cannot be recomputed away.
+
+    Returns the reason when the registry was stamped, else None.
+    """
+    version = ident.get("runtime_version")
+    if not version or not replayed:
+        return None
+    reg = _read(REGISTRY)
+    row = (reg.get("sleeves") or {}).get(key)
+    if not row or not row.get("identity"):
+        return None
+    if str(row.get("status") or "LIVE").upper() not in ("LIVE", "ACTIVE", "IDENTITY_BROKEN"):
+        return None
+    if verify(key, ident) != ["runtime_version"]:
+        return None
+    old = row.get("runtime_version")
+    # EVIDENCE OF A PRIOR WINDOW IS REQUIRED EITHER WAY. A legacy (None) registry is accepted only
+    # when the state records at least one earlier window, i.e. the engine provably restarted it.
+    if not [v for v in prior_versions if v]:
+        return None
+    if old is not None and old not in set(prior_versions):
+        return None
+    old_start = row.get("forward_start")
+    # A ratchet, so the two records may disagree in ONE direction only: when the state's start is
+    # EARLIER than the registry's, the registry keeps its later start, and the registry's is the
+    # one promotion counts from. No day before the later of the two is ever credited.
+    new_start = old_start
+    if forward_start and (not old_start or str(forward_start) > str(old_start)):
+        new_start = str(forward_start)
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    why = (f"registry adopted the engine's runtime epoch {version} (was {old or 'legacy'}); "
+           f"forward_start {old_start} -> {new_start}")
+    row.setdefault("runtime_windows_before", []).append({
+        "runtime_version": old, "forward_start": old_start, "ended_at": now,
+        "reason": "engine restarted this clock's runtime epoch; registry stamped to match"})
+    row["runtime_version"] = version
+    row["forward_start"] = new_start
+    row["runtime_adopted_at"] = now
+    if str(row.get("status") or "").upper() == "IDENTITY_BROKEN":
+        row["status"] = "LIVE"
+        row["status_why"] = ""
+        row["status_at"] = now
+        row["identity_restored_at"] = now
+        row["identity_restored_why"] = why
+        # Counted exactly as reconcile() counts, so a clock that keeps flapping stays visible.
+        row["identity_restore_count"] = int(row.get("identity_restore_count") or 0) + 1
+    reg["updated_at"] = now
+    _write(reg)
+    return why
+
+
 def assert_runtime_window_restartable(key: str) -> None:
     """Refuse a migration before its caller writes a new clock ledger epoch."""
     row = (_read(REGISTRY).get("sleeves") or {}).get(key)
