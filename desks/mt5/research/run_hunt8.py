@@ -31,12 +31,22 @@ BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 LOG = open(BASE / "logs" / "hunt8_console.txt", "w", encoding="utf-8")
 
-COT_FAMILIES = [
-    ("cot_net_fade", families.family2_cot_net_fade, dict()),
-    ("cot_change_fade", families.family2_cot_change_fade, dict()),
-    ("cot_change_momentum", families.family2_cot_change_momentum, dict()),
-    ("cot_comm_follow", families.family2_cot_comm_follow, dict()),
+#: Resolved by NAME (2026-11-13): the four COT families were renamed `family2_cot_*` ->
+#: `family_cot_*`, and binding the old attributes at import raised AttributeError -- which, with
+#: run_hunt7's identical fault, killed daily_cycle.weekly_hunt_refresh before any job ran. A name
+#: the library no longer carries is dropped and named in MISSING_FAMILIES, never substituted.
+COT_FAMILY_NAMES: list[tuple[str, str, dict]] = [
+    ("cot_net_fade", "family_cot_net_fade", {}),
+    ("cot_change_fade", "family_cot_change_fade", {}),
+    ("cot_change_momentum", "family_cot_change_momentum", {}),
+    ("cot_comm_follow", "family_cot_comm_follow", {}),
 ]
+
+COT_FAMILIES = [(label, getattr(families, attr), params)
+                for label, attr, params in COT_FAMILY_NAMES if hasattr(families, attr)]
+
+MISSING_FAMILIES = sorted({label for label, attr, _ in COT_FAMILY_NAMES
+                           if not hasattr(families, attr)})
 
 
 def tprint(*a) -> None:
@@ -46,7 +56,12 @@ def tprint(*a) -> None:
     LOG.flush()
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """`argv` is [limit, "SYM,SYM"], both optional. Only the command line passes it: called
+    in-process by daily_cycle it is [], so the daily step's own `--step`/`--force` flags can
+    never reach `int()` here (they did, and would have raised ValueError once the import-time
+    AttributeError above it was fixed)."""
+    args = list(argv) if argv is not None else []
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     symbols = [s for s in sorted(meta) if s in data._SYMBOL_SLUG
                and (data._COT / f"{data._SYMBOL_SLUG[s]}.parquet").exists()]
@@ -87,12 +102,11 @@ def main() -> None:
     tprint(f"{'sym':>8} {'family':<20} {'n':>5} {'exp_R':>7} {'t':>5} "
            f"{'PF':>5} {'maxDD_R':>7} {'WF(oos)':>16} {'GATE':>5}")
     remaining = [s for s in symbols if s not in done]
-    import sys as _sys
-    if len(_sys.argv) > 2:
-        remaining = [s for s in _sys.argv[2].split(",") if s in symbols]
-    limit = int(_sys.argv[1]) if len(_sys.argv) > 1 else len(remaining)
+    if len(args) > 1:
+        remaining = [s for s in args[1].split(",") if s in symbols]
+    limit = int(args[0]) if args else len(remaining)
     for sym in remaining[:limit]:
-        if sym in done and not (_sys.argv[2] if len(_sys.argv) > 2 else ""):
+        if sym in done and len(args) < 2:
             tprint(f"{sym:>8} (resumed - already done)")
             continue
         h1 = pd.read_parquet(UNI / f"{sym}_H1.parquet")
@@ -145,7 +159,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     try:
-        main()
+        main(sys.argv[1:])
     except Exception:
         LOG.write(traceback.format_exc())
         LOG.flush()

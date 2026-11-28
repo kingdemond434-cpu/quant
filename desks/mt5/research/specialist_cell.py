@@ -22,6 +22,12 @@ THE CATALOGUE (`SPECIALISTS`):
   indices  overnight_gap, open_drive (the cash open of each index's own venue),
            month_end_rebalance (fixed-weight allocator flow), month_end_forced_flow
   softs    weather_window (per-commodity crop-cycle windows), wasde (USDA WASDE)
+  implied  on the instruments the CBOE vol indices map to (US500, NAS100, US30, XAUUSD, EURUSD,
+           `IV_OF`), minted by their own class desks: variance_risk_premium (a conditioner over
+           a base cell), vix_term_regime (a VIX term-structure gate, indices only) and iv_shock
+           (a day-over-day implied-vol jump, fade or follow), iv_level_regime (the IV's
+           percentile in its year / its 5-day change z, at onset and as a filter; from #234). Public series: crowding-checked
+           conditioners, not a moat (`mt5desk/families_implied_vol.py`).
 
 BUILDABLE BY THE SEALED GAUNTLET, OR NOT MINTED. Every cell is asked twice. First
 `gauntlet_buildability.cell_verdict` (the family resolves, its data inputs are ones
@@ -50,6 +56,7 @@ import argparse
 import hashlib
 import itertools
 import json
+import re
 import sys
 import time
 from collections import Counter
@@ -150,6 +157,76 @@ WEATHER_WINDOWS: dict[str, list[tuple[int, int, int, str]]] = {
     "OJ": [(601, 1130, 1, "Florida hurricane-season risk premium is bought by processors")],
 }
 GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
+#: The CBOE implied-vol index each mapped instrument is quoted against -- the ground
+#: `recorders/vol_archive.GROUND` maps, and nothing wider (no exotics; 2026-11-13). The series is
+#: PUBLIC: these cells are crowding-checked conditioners, never a moat.
+#: EURUSD -> ^EVZ is NOT minted (Auditor SF3, 2026-11-13): the source answers ^EVZ with no closes,
+#: so every EURUSD cell would build [] and still be charged to the shared trial count. It comes
+#: back when a live ^EVZ source exists.
+IV_OF: dict[str, str] = {"US500": "^VIX", "NAS100": "^VXN", "USTEC": "^VXN", "US30": "^VXD",
+                         "XAUUSD": "^GVZ"}
+#: The base cells the implied-vol operators condition, stated before any data: on indices the
+#: overnight gap the catalogue already mints and a trend book; on gold and the euro a trend and a
+#: reversion book (rich premium pays the calm trend, thin premium the reversion of a stress move).
+IV_BASES: dict[str, list[tuple[str, dict[str, Any]]]] = {
+    "indices": [("overnight_gap_decay", {"gap_atr": 0.5, "ttl_bars": 8}),
+                ("trend_ma_cross", {})],
+    "other": [("trend_ma_cross", {}), ("mean_reversion_bollinger", {})],
+}
+#: The VIX term pairs (short, long) the regime gate reads: the front kink and the 1-to-3-month
+#: slope. Only the S&P curve has published tenors, so the gate is minted on the US indices only.
+VIX_TERM_PAIRS: tuple[tuple[str, str], ...] = (("^VIX9D", "^VIX"), ("^VIX", "^VIX3M"))
+#: The implied-vol LEVEL states (label, feature, op, threshold), ported from #234's declared
+#: conditions minus the ones this catalogue already mints (VRP, term inversion, shock). Fixed, so
+#: the grid's width is the multiplicity it is charged for.
+IV_LEVEL_STATES: tuple[tuple[str, str, str, float], ...] = (
+    ("iv_high", "iv_pct_1y", "ge", 0.8), ("iv_low", "iv_pct_1y", "le", 0.2),
+    ("iv_rising", "iv_chg_5d_z", "ge", 1.5), ("iv_falling", "iv_chg_5d_z", "le", -1.5))
+
+
+def _iv_held(ticker: str) -> bool:
+    """Whether this host holds a reference history for `ticker`. Governance refused Yahoo's terms
+    on 2026-11-13 and FRED before it, so a host may hold NO lawful CBOE history: then nothing is
+    minted -- a cell that can only build [] would still be charged to the shared trial count."""
+    try:
+        from mt5desk.families_implied_vol import REFERENCE_DIR, reference_filename
+    except ImportError:
+        return False
+    return (REFERENCE_DIR / reference_filename(ticker)).is_file()
+
+
+def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    """The implied-vol mechanisms on a mapped instrument whose series this host holds; [] for any
+    other. The term gate also needs both of its tenors held."""
+    iv = IV_OF.get(sym.upper())
+    if not iv or not _iv_held(iv):
+        return []
+    bases = IV_BASES["indices" if klass == "indices" else "other"]
+    out: list[tuple[str, str, list[dict[str, Any]]]] = [
+        ("variance_risk_premium", "vrp_conditioned",
+         [{"base_family": b, "base_params": dict(bp), "symbol": sym, "iv_ticker": iv,
+           "vrp_state": st} for b, bp in bases for st in ("high", "low")]),
+    ]
+    if klass == "indices":
+        out.append(("vix_term_regime", "iv_term_gated",
+                    [{"base_family": b, "base_params": dict(bp), "symbol": sym,
+                      "short_ticker": a, "long_ticker": z, "term_state": st}
+                     for b, bp in bases for a, z in VIX_TERM_PAIRS
+                     if _iv_held(a) and _iv_held(z)
+                     for st in ("contango", "backwardation")]))
+    out.append(("iv_shock", "iv_shock",
+                _grid({"iv_ticker": [iv], "mode": ["fade", "follow"], "k_sd": [1.5, 2.0],
+                       "hold_d": [1, 3]})))
+    # the level state: DIRECT at its onset (both directions, a one-day hold) and INDIRECT over
+    # the trend base every mapped instrument shares -- one mechanism, two families
+    out.append(("iv_level_regime", "iv_level_state",
+                [{"iv_ticker": iv, "feature": f, "op": op, "threshold": thr, "direction": dr,
+                  "ttl_bars": 24} for _lbl, f, op, thr in IV_LEVEL_STATES for dr in (1, -1)]))
+    out.append(("iv_level_regime", "iv_level_conditioned",
+                [{"base_family": "trend_ma_cross", "base_params": {}, "symbol": sym,
+                  "iv_ticker": iv, "feature": f, "op": op, "threshold": thr}
+                 for _lbl, f, op, thr in IV_LEVEL_STATES]))
+    return out
 
 
 def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
@@ -168,6 +245,7 @@ def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
            "window_before_min": w} for w in (240, 1440)]
          + [{"event_kind": "central_bank", "clock": "utc", "symbol": sym,
              "mode": "post_flow_fade", "window_after_min": w} for w in (90, 240)]),
+        *_implied_vol(sym, "fx"),
     ]
 
 
@@ -185,6 +263,7 @@ def _metals(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     out.append(("metals_fix", "forced_flow",
                 _grid({"event_kind": ["fixing"], "clock": ["utc"], "symbol": [sym],
                        "mode": ["pre_flow", "post_flow_fade"]})))
+    out.extend(_implied_vol(sym, "metals"))
     return out
 
 
@@ -199,8 +278,12 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         ("overnight_gap", "overnight_gap_decay",
          _grid({"gap_atr": [0.5, 0.75, 1.0], "ttl_bars": [4, 8]})),
         ("month_end_rebalance", "month_end_rebalance",
-         _grid({"bond_symbol": [BOND_OF.get(sym, "UST10Y")], "days_before": [2, 3],
-                "min_gap_sd": [0.5, 1.0]})),
+         # WIDENED 2026-11-13: on the box all 64 cells of the old 2x2 grid sat under the 66-day
+         # seed floor with no input gap (too few firing days, not missing bars). A five-day
+         # window and a no-threshold arm (min_gap_sd 0: the fund trades whatever gap there is)
+         # are the same mechanism firing on more days; the floor is untouched.
+         _grid({"bond_symbol": [BOND_OF.get(sym, "UST10Y")], "days_before": [2, 3, 5],
+                "min_gap_sd": [0.0, 0.5, 1.0]})),
         ("month_end_forced_flow", "forced_flow",
          _grid({"event_kind": ["month_end"], "clock": ["utc"], "symbol": [sym],
                 "mode": ["pre_flow", "post_flow_fade"]})),
@@ -210,6 +293,7 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         out.append(("open_drive", "opening_range",
                     _grid({"open_hour": hours, "range_bars": [1], "window_bars": [6],
                            "rr": [1.5, 2.0]})))
+    out.extend(_implied_vol(sym, "indices"))
     return out
 
 
@@ -226,6 +310,25 @@ def _softs(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     return out
 
 
+#: The implied-vol priors, shared by every class desk that mints them.
+_IV_PRIORS = {
+    "variance_risk_premium": "option buyers pay sellers a variance risk premium (implied above "
+                             "realised); a rich premium marks calm dealers long premium, a thin "
+                             "one hedgers short gamma into the move (Bollerslev, Tauchen & Zhou "
+                             "2009). Public series: a crowding-checked conditioner, not a moat",
+    "vix_term_regime": "the VIX curve sits in contango in calm and inverts in stress; risk "
+                       "models that read yesterday's regime reposition late. Public series: a "
+                       "crowding-checked regime gate, not a moat",
+    "iv_level_regime": "implied vol at the top of its own year leaves dealers short gamma "
+                       "hedging into moves; at the bottom, long gamma pinning the underlying; a "
+                       "five-session surge or crush is the hedge being bought or unwound (ported "
+                       "from #234). Public series, crowding-checked",
+    "iv_shock": "a jump in implied vol forces option dealers and vol-targeting books to re-hedge "
+                "the underlying on the next session; the move is either over-done (fade) or "
+                "the start of a deleveraging (follow). Public series, crowding-checked",
+}
+
+
 #: class -> (per-symbol cell generator, the specialist's priors per mechanism). The priors are
 #: carried onto every donated row as its mechanism text.
 SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str, Any]]]]],
@@ -239,6 +342,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                           "(Brunnermeier, Nagel & Pedersen 2008)",
         "cb_meeting_drift": "rates desks re-hedge the front end into and out of a scheduled "
                             "central-bank decision (Lucca & Moench 2015 pre-announcement drift)",
+        **_IV_PRIORS,
     }),
     "metals": (_metals, {
         "gold_real_yield": "gold is priced off the real rate and the dollar; a gap between gold "
@@ -247,6 +351,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                              "trade its extremes",
         "metals_fix": "bullion is benchmarked to the London 4pm fix; the benchmarked holder must "
                       "transact at it",
+        **_IV_PRIORS,
     }),
     "energy": (_energy, {
         "eia_inventory": "refiners and index hedgers must resize on the statutory Wednesday EIA "
@@ -261,6 +366,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                                "month-to-date in the month's last days",
         "month_end_forced_flow": "month-end benchmark and index rebalancing flow on a dated "
                                  "calendar",
+        **_IV_PRIORS,
     }),
     "softs": (_softs, {
         "weather_window": "a crop-cycle weather premium is bought by hedgers at any price and "
@@ -300,6 +406,11 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "eia_inventory": ("US", "physical_flow"),
     "month_end_forced_flow": ("GLOBAL", "institutional"),
     "wasde": ("US", "policy_driven"),
+    # CBOE-listed options on US-listed underlyings: the payer is a US options-market participant
+    "variance_risk_premium": ("US", "institutional"),
+    "vix_term_regime": ("US", "institutional"),
+    "iv_shock": ("US", "institutional"),
+    "iv_level_regime": ("US", "institutional"),
 }
 
 
@@ -372,6 +483,17 @@ def _meta() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+_EXC_TAIL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Warning|Exit|Interrupt))"
+                       r"\s*:.*$", re.S)
+
+
+def safe_why(why: object) -> str:
+    """A refusal with any exception MESSAGE cut after its class name. The sealed builder's
+    LAST_BUILD_FAILURE can carry `{Type}: {exc}` (an OSError names a box path) and these reasons
+    reach published reports and committed state (Auditor MF4 on #845, 2026-11-13)."""
+    return _EXC_TAIL.sub(r"\1", str(why))[:160]
+
+
 def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
             ) -> dict[str, Any]:
     """Build the cell through the SEALED `build_cell` and count how it fires on what it built."""
@@ -380,10 +502,12 @@ def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
     try:
         cell = eg.build_cell(sym, family, dict(params), meta)
     except Exception as exc:
-        return {"built": False, "why": f"build_cell raised {type(exc).__name__}: {exc}"[:240]}
+        # The exception's CLASS only: this `why` reaches published reports (SPECIALIST_CELLS.json,
+        # HUNT16_SEEDER.json) and free exception text can carry paths or data (Auditor MF1).
+        return {"built": False, "why": f"build_cell raised {type(exc).__name__}"}
     if cell is None:
-        return {"built": False, "why": str(getattr(eg, "LAST_BUILD_FAILURE", None)
-                                           or "build_cell returned None")[:240]}
+        return {"built": False, "why": safe_why(getattr(eg, "LAST_BUILD_FAILURE", None)
+                                                or "build_cell returned None")}
     got = firing(list(cell.get("sigs") or []), cell["df"])
     return {"built": True, **got}
 
@@ -447,7 +571,7 @@ def charge(cells: list[dict[str, Any]]) -> dict[str, Any]:
                        for r in cells])
     except Exception as exc:
         return {"n_raw": len(cells), "n_effective": None,
-                "basis": f"{UNMEASURED}: trial_ledger failed ({type(exc).__name__}: {exc})"}
+                "basis": f"{UNMEASURED}: trial_ledger failed ({type(exc).__name__})"}
     return {"n_raw": int(c.n_raw), "n_effective": round(float(c.n_effective), 2),
             "inflation": round(float(c.inflation), 3), "n_families": len(c.families),
             "basis": ("libs.research.trial_ledger.census over every cell measured this pass; "
@@ -615,7 +739,7 @@ def _culture_census() -> dict[str, Any]:
     try:
         cells = plan()
     except Exception as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": UNMEASURED, "why": type(exc).__name__}
     return {"status": "MEASURED",
             "source_culture": dict(Counter(c["source_culture"] for c in cells)),
             "participant_structure": dict(Counter(c["participant_structure"] for c in cells))}
@@ -633,7 +757,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
                                  "information": information_class(fam),
                                  "foreign_series": foreign_series(fam)}
     except Exception as exc:
-        new_families = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        new_families = {"status": UNMEASURED, "why": type(exc).__name__}
     return {
         "at": _now(), "organ": "desks/mt5/research/specialist_cell.py",
         "rule": ("each cell is a specialist's named mechanism on one symbol; it is minted only "

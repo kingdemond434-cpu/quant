@@ -100,4 +100,6 @@ def test_cot_candidate_reader_uses_owned_history_weekly(tmp_path, monkeypatch) -
 
     assert list(cot) == ["net"]
     assert 120 <= len(cot) <= 140
-    assert cot.index.dayofweek.nunique() == 1
+    # Weekly, one row per report: Monday after release, Wednesday in a federal-holiday week.
+    assert set(cot.index.dayofweek) <= {0, 2}
+    assert cot.index.to_series().diff().dropna().min() >= pd.Timedelta(days=5)

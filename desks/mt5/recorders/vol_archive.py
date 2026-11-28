@@ -72,14 +72,25 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
+THE REFERENCE HISTORY IS NOW KEPT (2026-11-13). Each cycle already fetched ten years of daily
+closes per ticker and threw them away. `persist_reference` merges them into
+`data/vol_archive/reference/<TICKER>.json` (atomic write, restatements logged, dates the source
+stops serving kept) so `mt5desk/families_implied_vol.py` can replay them point-in-time, with a
+close for date D usable from D+1 00:00 UTC. That replay is of the PUBLIC series: it is what the
+gauntlet judges those families on, and it is a crowding-checked conditioner, not a moat. The
+`backtestable` flag below still speaks only of the desk's OWN vintage series and is unchanged.
+
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
 the archive has no promotion authority in any lane.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
+import os
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -97,12 +108,25 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.win_write import replace_resilient  # noqa: E402
 from recorders.tape_store import _append_line  # noqa: E402
 
 SCHEMA = "vol-archive-1"
 ARCHIVE = _DESK / "data" / "vol_archive" / "observations.jsonl"
 STATE = _DESK / "data" / "vol_archive" / "state.json"
 REPORT = _DESK / "reports" / "VOL_ARCHIVE.json"
+#: The daily REFERENCE HISTORY each cycle fetches, persisted per ticker (2026-11-13). Read by
+#: `mt5desk/families_implied_vol.py` point-in-time; see `persist_reference`.
+REFERENCE_DIR = _DESK / "data" / "vol_archive" / "reference"
+REFERENCE_SCHEMA = "vol-reference-1"
+#: Where every persisted reference close came from, written on each file.
+REFERENCE_SOURCE = "yahoo chart API (query1.finance.yahoo.com v8) / research.free_data.yahoo_daily"
+#: Restatement log entries kept per ticker, newest last -- a flapping source cannot grow a file
+#: without bound, and the bound is far above any restatement count CBOE has produced.
+MAX_RESTATEMENTS = 5000
+#: The options-implied axis the world model and `representation_forge` read (gitignored lake;
+#: the recorder and the hourly cycle both run on the trading box).
+AXIS_FEED = _DESK / "data" / "lake" / "axes" / "options_implied.json"
 UNIVERSE = _DESK / "data" / "universe" / "universe.json"
 
 #: The desk's OWN dated observations needed before anything derived from this archive may be
@@ -185,17 +209,16 @@ class YahooVolSource:
     itself will not serve -- which is the accumulation argument in its strongest form.
 
     Order of preference: the merged Yahoo pair, then `research/free_data.yahoo_daily` (the desk's
-    declared keyless collector, with its own cache), then FRED. FRED is last because it was
-    measured UNREACHABLE from this desk's research container on 2026-09-05 while Yahoo answered;
-    on the trading box the order may well be worth reversing, and the fallback chain is the point
-    rather than any one member of it.
+    declared keyless collector, with its own cache). There is NO FRED leg any more (Auditor MF1,
+    2026-11-13): FRED's CBOE republications are owner-fenced and FRED is refused for automated
+    fetches. Whether Yahoo is itself permissible is open with Governance; the reference history
+    it yields is box-local only (gitignored), never published.
     """
 
     def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
         self.timeout = timeout
         self.range = range_
         self.fresh_range = fresh_range
-        self._fred_ok = True
 
     def series(self, ticker: str) -> dict[str, float] | None:
         history = self._chart(ticker, self.range)
@@ -208,7 +231,9 @@ class YahooVolSource:
                 history = None
         fresh = self._chart(ticker, self.fresh_range)
         if history is None and fresh is None:
-            return self._fred(ticker)
+            # NO FRED FALLBACK (Auditor MF1, 2026-11-13): the CBOE series FRED republishes are
+            # owner-fenced and FRED is refused for automated fetches under the desk's ruling.
+            return None
         merged: dict[str, float] = dict(history or {})
         # THE FRESH TAIL WINS ON OVERLAP. It is the endpoint that is current, and where the two
         # disagree on a shared date the disagreement is the source restating itself -- which is
@@ -244,19 +269,6 @@ class YahooVolSource:
             out[datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()] = float(c)
         return out or None
 
-    def _fred(self, ticker: str) -> dict[str, float] | None:
-        sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
-               "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
-        if not sid or not self._fred_ok:
-            return None
-        try:
-            from research import free_data as fd
-            got = fd.fred_series(sid, start="2015-01-01")
-        except Exception:
-            self._fred_ok = False
-            return None
-        return {str(k): float(v) for k, v in got.items()} if got else None
-
 
 class FakeVolSource:
     """A deterministic vol source for tests. Holds whatever the test puts in it."""
@@ -272,6 +284,128 @@ class FakeVolSource:
         if ticker in self.missing:
             return None
         return self.data.get(ticker)
+
+
+class CapturingSource:
+    """Wraps a VolSource and keeps every series it returned this cycle, so the reference history
+    the cycle already fetched is persisted instead of thrown away. Answers exactly as the wrapped
+    source does; capturing never changes an observation."""
+
+    def __init__(self, inner: VolSource) -> None:
+        self.inner = inner
+        self.captured: dict[str, dict[str, float]] = {}
+
+    def series(self, ticker: str) -> dict[str, float] | None:
+        got = self.inner.series(ticker)
+        if got:
+            self.captured.setdefault(ticker, {}).update(got)
+        return got
+
+
+def reference_filename(ticker: str) -> str:
+    """`^VIX9D` -> `VIX9D.json`; `families_implied_vol.reference_filename` is the same rule."""
+    safe = re.sub(r"[^A-Za-z0-9]+", "_", str(ticker or "").lstrip("^")).strip("_")
+    return f"{safe or 'UNNAMED'}.json"
+
+
+def persist_reference(captured: dict[str, dict[str, float]], directory: Path = REFERENCE_DIR,
+                      now: datetime | None = None) -> dict[str, Any]:
+    """Merge each captured {date: close} series into `directory/<TICKER>.json`, atomically.
+
+    THE HISTORY IS WHAT A BACKTEST NEEDS AND `observations.jsonl` CANNOT GIVE IT: that archive
+    keeps one latest value per cycle (forward-only vintages). The full daily history the source
+    serves was fetched every cycle and discarded; it is kept here so the implied-vol families
+    can replay it point-in-time.
+
+    MERGE, NEVER REPLACE. A date the source stops serving (the measured ^VIX9D long-range
+    staleness) is kept; a date whose value CHANGED is overwritten with the new value and the
+    change is logged under `restatements` with when it was seen, so a restatement is visible
+    rather than silent. `first_seen` records when the desk first held each date -- the vintage
+    a strict as-first-seen reader needs. Values that are not positive finite numbers are refused.
+    The CBOE levels themselves are public and are never claimed as a moat (module docstring)."""
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    out: dict[str, Any] = {}
+    for ticker, series in sorted(captured.items()):
+        path = directory / reference_filename(ticker)
+        try:
+            doc = json.loads(path.read_text("utf-8")) if path.exists() else {}
+        except (OSError, ValueError):
+            doc = {}
+        if not isinstance(doc, dict) or not isinstance(doc.get("closes"), dict):
+            doc = {}
+        closes: dict[str, float] = dict(doc.get("closes") or {})
+        first_seen: dict[str, str] = dict(doc.get("first_seen") or {})
+        restated: list[dict[str, Any]] = list(doc.get("restatements") or [])
+        added = changed = 0
+        for k, v in series.items():
+            try:
+                day = datetime.fromisoformat(str(k)[:10]).date().isoformat()
+                val = float(v)
+            except (TypeError, ValueError):
+                continue
+            if not (math.isfinite(val) and val > 0):
+                continue
+            old = closes.get(day)
+            if old is None:
+                closes[day] = round(val, 6)
+                first_seen.setdefault(day, at)
+                added += 1
+            elif abs(float(old) - val) > 1e-6:
+                restated.append({"date": day, "was": old, "now": round(val, 6), "seen_at": at})
+                closes[day] = round(val, 6)
+                changed += 1
+        if not closes:
+            out[ticker] = {"status": "EMPTY"}
+            continue
+        ordered = dict(sorted(closes.items()))
+        new = {"schema": REFERENCE_SCHEMA, "ticker": ticker, "updated_at": at,
+               "publication_rule": ("a close for date D is usable from D+1 00:00 UTC "
+                                    "(families_implied_vol.PUBLICATION_LAG_H)"),
+               "public_series": True, "source": REFERENCE_SOURCE,
+               "publish": "BOX-LOCAL ONLY: gitignored, never committed (third-party Cboe data)",
+               "n": len(ordered), "first_date": next(iter(ordered)),
+               "last_date": next(reversed(ordered)), "closes": ordered,
+               "first_seen": dict(sorted(first_seen.items())),
+               "restatements": restated[-MAX_RESTATEMENTS:]}
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(new, separators=(",", ":")), "utf-8")
+            replace_resilient(tmp, path)
+        except OSError as exc:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
+            out[ticker] = {"status": "WRITE_FAILED", "error": type(exc).__name__}
+            continue
+        out[ticker] = {"status": "WRITTEN", "n": len(ordered), "added": added,
+                       "restated": changed, "last_date": new["last_date"]}
+    return out
+
+
+def write_axis_feed(registry: dict[str, Any], reference_dir: Path = REFERENCE_DIR,
+                    universe_dir: Path | None = None, out: Path = AXIS_FEED) -> dict[str, Any]:
+    """Build the options-implied axis from the persisted reference history (one definition:
+    `families_implied_vol.axis_feed`) for every ground whose instrument this account lists, and
+    write it atomically. A failure is reported by exception CLASS only."""
+    mapped = {}
+    for g in GROUND:
+        sym = resolve_symbol(g.mt5_candidates, registry)
+        if sym:
+            mapped[sym] = g.vol_ticker
+    try:
+        from mt5desk.families_implied_vol import axis_feed
+        doc = axis_feed(mapped, reference_dir=reference_dir,
+                        universe_dir=universe_dir or _DESK / "data" / "universe")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
+        replace_resilient(tmp, out)
+    except Exception as exc:
+        with contextlib.suppress(OSError):
+            out.with_suffix(".json.tmp").unlink()
+        return {"status": "FAILED", "error": type(exc).__name__}
+    return {"status": "WRITTEN", "path": str(out), "series": len(doc["series"]),
+            "unmeasured": sorted(doc["unmeasured"])}
 
 
 @dataclass
@@ -545,6 +679,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--archive", type=Path, default=ARCHIVE)
     ap.add_argument("--universe", type=Path, default=_DESK / "data" / "universe")
+    ap.add_argument("--reference", type=Path, default=REFERENCE_DIR)
+    ap.add_argument("--axis-feed", type=Path, default=AXIS_FEED)
     args = ap.parse_args(argv)
 
     try:
@@ -556,12 +692,23 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    cycle = observe(YahooVolSource(), registry, args.universe)
+    source = CapturingSource(YahooVolSource())
+    cycle = observe(source, registry, args.universe)
     rows = read_archive(args.archive)
+    reference: dict[str, Any] = {}
     if not args.dry_run:
         append(cycle, args.archive)
         rows = rows + [asdict(o) for o in cycle]
+        reference = persist_reference(source.captured, args.reference)
+        axis = write_axis_feed(registry, args.reference, args.universe, args.axis_feed)
+    else:
+        axis = {"status": "SKIPPED_DRY_RUN"}
     rep = report(rows, cycle)
+    rep["axis_feed"] = axis
+    rep["reference_history"] = {"dir": str(args.reference), "tickers": reference,
+                                "note": ("public CBOE history, persisted for point-in-time "
+                                         "replay by mt5desk/families_implied_vol.py; a "
+                                         "reference, never the desk's own vintage")}
     if not args.dry_run:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
@@ -577,6 +724,8 @@ def main(argv: list[str] | None = None) -> int:
         rv = (f"rv_cc={o.realised_vol_cc}" if o.realised_vol_cc is not None else "rv=UNMEASURED")
         print(f"  {o.vol_ticker:<7} -> {o.mt5_symbol!s:<8} iv={o.implied_vol:<7} {rv:<18} "
               f"vrp={o.variance_risk_premium} term={o.term_shape or '-'}")
+    written = sum(1 for r in reference.values() if r.get("status") == "WRITTEN")
+    print(f"  reference history: {written}/{len(reference)} tickers persisted -> {args.reference}")
     print(f"YIELD observed={len(got)} rows={rep['rows_total']} "
           f"vintages={rep['desk_vintages_min']}")
     return 0

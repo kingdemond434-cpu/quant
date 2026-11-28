@@ -325,3 +325,21 @@ def test_the_donated_flag_comes_from_what_the_door_wrote():
     src = inspect.getsource(LM.run)
     assert "donated_file = door is not None" in src
     assert "bool(donate and cands)" not in src
+
+
+def test_the_hourly_clock_fires_it_once_a_day(tmp_path) -> None:
+    """2026-11-13: the daily chain stalled before reaching it for weeks; the hourly cycle now
+    runs it with --daily, which skips when today's report already exists."""
+    import learned_miners as LM
+    rep = tmp_path / "learned_miners.json"
+    assert not LM.ran_today(rep)
+    rep.write_text(json.dumps({"generated_at": "2026-11-13T05:00:00+00:00"}), "utf-8")
+    assert LM.ran_today(rep, today="2026-11-13") and not LM.ran_today(rep, today="2026-11-14")
+    rep.write_text("{not json", "utf-8")
+    assert not LM.ran_today(rep, today="2026-11-13")
+    desk = Path(LM.__file__).resolve().parent
+    hourly = (desk / "hourly_cycle.py").read_text("utf-8")
+    assert '"research/learned_miners.py", "--once", "--daily"' in hourly
+    assert '"learned_miners": lrnm' in hourly
+    daily = (desk / "daily_cycle.py").read_text("utf-8")
+    assert '\n                 "learned_miners",\n' not in daily

@@ -40,16 +40,34 @@ BREAKOUT_WINDOWS = [
     ("afternoon", dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12)),
 ]
 
-GLOBAL_FAMILIES = [
-    ("asia_momentum", families.family_asia_momentum, dict()),
-    ("momentum_volgate", families.family_momentum_volgate, dict()),
-    ("monday_gap", families.family_monday_gap, dict(mode="momentum")),
-    ("monday_gap_fade", families.family_monday_gap, dict(mode="fade")),
-    ("london_close_momentum", families.family_london_close_momentum, dict()),
-    ("spread_state_avoidance", families.family7_spread_state_avoidance, dict()),
-    ("dow_effect", families.family_dow_effect, dict()),  # negative control
-    ("comex_settlement", families.family4_comex_settlement_effect, dict()),
+#: The sweep's families as NAMES, resolved against `mt5desk.families` at import.
+#:
+#: THIS BOUND ATTRIBUTES AND IT KILLED THE WHOLE WEEKLY CHAIN (box diagnostic, 2026-11-13).
+#: `family7_spread_state_avoidance` no longer exists and `family4_comex_settlement_effect` was
+#: renamed, so `import run_hunt7` raised AttributeError -- and `daily_cycle.weekly_hunt_refresh`
+#: imports it before running ANY job, so fetch_universe, hunt7, hunt8, hunt9, free_shadows,
+#: hunt10 and hunt12 all died with it, every day. Same treatment as
+#: run_edges_macro_fusion_sweep.EDGE_NAMES: the unambiguous rename is mapped
+#: (`family_comex_settlement`), the genuinely gone family is DROPPED AND NAMED in
+#: MISSING_FAMILIES and in reports/hunt7.json, never replaced with a look-alike mechanism.
+GLOBAL_FAMILY_NAMES: list[tuple[str, str, dict]] = [
+    ("asia_momentum", "family_asia_momentum", {}),
+    ("momentum_volgate", "family_momentum_volgate", {}),
+    ("monday_gap", "family_monday_gap", {"mode": "momentum"}),
+    ("monday_gap_fade", "family_monday_gap", {"mode": "fade"}),
+    ("london_close_momentum", "family_london_close_momentum", {}),
+    ("spread_state_avoidance", "family7_spread_state_avoidance", {}),
+    ("dow_effect", "family_dow_effect", {}),  # negative control
+    ("comex_settlement", "family_comex_settlement", {}),
 ]
+
+GLOBAL_FAMILIES = [(label, getattr(families, attr), params)
+                   for label, attr, params in GLOBAL_FAMILY_NAMES if hasattr(families, attr)]
+
+#: Families the library no longer carries, published with the run so "did not survive" and
+#: "was not tested" stay distinguishable.
+MISSING_FAMILIES = sorted({label for label, attr, _ in GLOBAL_FAMILY_NAMES
+                           if not hasattr(families, attr)})
 
 
 def tprint(*a) -> None:
@@ -59,7 +77,12 @@ def tprint(*a) -> None:
     LOG.flush()
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """`argv` is [limit, "SYM,SYM"], both optional. Only the command line passes it: called
+    in-process by daily_cycle it is [], so the daily step's own `--step`/`--force` flags can
+    never reach `int()` here (they did, and would have raised ValueError once the import-time
+    AttributeError above it was fixed)."""
+    args = list(argv) if argv is not None else []
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
 
     def per_symbol_costs(sym: str) -> Costs:
@@ -125,12 +148,11 @@ def main() -> None:
     tprint(f"{'sym':>8} {'family':<22} {'n':>5} {'exp_R':>7} {'t':>5} "
            f"{'PF':>5} {'maxDD_R':>7} {'WF(oos)':>16} {'GATE':>5}")
     remaining = [s for s in sorted(meta) if s not in done]
-    import sys as _sys
-    if len(_sys.argv) > 2:
-        remaining = [s for s in _sys.argv[2].split(",") if s in meta]
-    limit = int(_sys.argv[1]) if len(_sys.argv) > 1 else len(remaining)
+    if len(args) > 1:
+        remaining = [s for s in args[1].split(",") if s in meta]
+    limit = int(args[0]) if args else len(remaining)
     for sym in remaining[:limit]:
-        if sym in done and not (_sys.argv[2] if len(_sys.argv) > 2 else ""):
+        if sym in done and len(args) < 2:
             tprint(f"{sym:>8} (resumed - already done)")
             continue
         h1 = pd.read_parquet(UNI / f"{sym}_H1.parquet")
@@ -152,7 +174,8 @@ def main() -> None:
 
     surv = [r for r in results if r["gate"]]
     (BASE / "reports" / "hunt7.json").write_text(
-        json.dumps({"survivors": surv, "all": results, "swept_at":
+        json.dumps({"survivors": surv, "all": results,
+                    "missing_families": MISSING_FAMILIES, "swept_at":
                     pd.Timestamp.utcnow().isoformat()}, indent=2, default=str),
         encoding="utf-8")
     tprint(f"\n{len(surv)} survivors of {len(results)} tests across {len(meta)} symbols")
@@ -164,7 +187,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     try:
-        main()
+        main(sys.argv[1:])
     except Exception:
         LOG.write(traceback.format_exc())
         LOG.flush()
