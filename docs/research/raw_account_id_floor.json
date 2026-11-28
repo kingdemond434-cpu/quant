@@ -1,0 +1,8 @@
+{
+ "_": "RAW ACCOUNT ID FLOOR (scripts/check_no_raw_account_ids.py, Governance 2026-11-13): per tracked file, how many raw broker account numbers it held when the fence was built. Only SHRINKS. live_ledger.jsonl and order_intents.jsonl hold pre-2026-10-20 rows (the ledger's prefix is sealed); broker_info.json drops to 0 the first time the box runs the fixed refresh_tail.py. A file over its floor, or one not listed, fails the law gate.",
+ "files": {
+  "desks/mt5/data/live_ledger.jsonl": 257,
+  "desks/mt5/data/order_intents.jsonl": 44,
+  "desks/mt5/data/universe/broker_info.json": 249
+ }
+}

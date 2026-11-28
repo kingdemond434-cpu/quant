@@ -338,6 +338,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Portable -- it reads the code -- and a ratchet: today's offenders are the committed floor
     # (docs/research/known_by_date_floor.json), only a NEW one fails, healed ones drop out.
     ("check_known_by_date.py", ()),
+    # NO RAW ACCOUNT NUMBER IN A TRACKED FILE (Governance, 2026-11-13). The repository is public
+    # and the box publishes its state into it; a broker login there is a published account id.
+    # A ratchet: the rows written before the keyed stamp (the sealed live_ledger prefix,
+    # order_intents, broker_info until the box re-runs refresh_tail) are the committed floor
+    # (docs/research/raw_account_id_floor.json); a file over it, or a new file, fails. Portable:
+    # it reads tracked files, so it means the same in CI, a fresh clone and on the box.
+    ("check_no_raw_account_ids.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that

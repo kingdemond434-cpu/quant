@@ -175,7 +175,12 @@ def test_a_declared_login_in_any_allowlisted_file_blocks_that_file(
         rel: str, repo: Path, monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str]) -> None:
     # Under a key nobody would call a login, so only the declared-number rules can catch it.
-    leaky = json.dumps({"symbol_id": "00" + FAKE, "note": "fine"}).encode() + b"\n"
+    body: dict[str, Any] = {"symbol_id": "00" + FAKE, "note": "fine"}
+    if rel == "desks/mt5/data/account_state.json":
+        # The unit-free view publishes only ACCOUNT_PUBLIC_KEYS, so a top-level stray never
+        # reaches the fence; put the declared number under a published key so the FENCE is tested.
+        body = {"server": body}
+    leaky = json.dumps(body).encode() + b"\n"
     other = "desks/mt5/reports/ZZ_clean.json"
     staged, art = _publish(repo, {rel: leaky, other: b'{"fine": true}\n'}, monkeypatch, capsys)
     assert rel not in staged, f"{rel} carried a declared login and was staged anyway"
