@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1225,6 +1226,9 @@ def main() -> int:
     # cell without one goes into this hour's batch card. A fault here costs the stamps, never a
     # row: the docket is written either way.
     prereg: dict[str, Any] = {"status": "UNAVAILABLE"}
+    # From here every step appends to a ledger or replaces a published file; the wall waits for
+    # this section (see _arm_wall) so it never leaves a half-written line in an append-only log.
+    _enter_writes()
     try:
         import sys as _sys
         _root = str(BASE.parents[1])
@@ -1391,6 +1395,109 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
         return {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
 
 
+#: THE MERGE HAS A WALL (box read 2026-11-11). Run pid 36280 started 2026-11-09 18:44Z, logged
+#: its alpha_rl line 13 h later and then sat 16 h more blocked -- 0.03 s of CPU and zero bytes of
+#: I/O a minute, 18 GB committed -- while every hourly trigger was refused as "already running".
+#: The docket went unrebuilt for 29 h and nothing said why. Past this wall the process writes
+#: every thread's stack to the task log (so the next hang names its own line) and exits; the
+#: docket is written atomically, so an unfinished run leaves the previous docket standing.
+#: Twelve hours, not six: the last fifteen published merge_report.json commits on LIVE
+#: (2026-11-06..09) sit 2.7-8.7 h apart, so a healthy run can take ~8 h and a six-hour wall
+#: would have stopped good runs. Twelve clears the slowest healthy one by ~40% and still ends a
+#: hang 17 h sooner than the one above. Override with MERGE_DOCKET_WALL_S (0 disarms); the
+#: variable is read when the wall is armed, never at import, so a malformed value cannot break
+#: the modules that import this one (breadth_sweep, local_converter).
+MERGE_WALL_S = 12 * 3600.0
+
+
+def _wall_seconds() -> float:
+    raw = os.environ.get("MERGE_DOCKET_WALL_S")
+    if raw is None or not raw.strip():
+        return MERGE_WALL_S
+    try:
+        return float(raw)
+    except ValueError:
+        print(f"merge_hypotheses: MERGE_DOCKET_WALL_S={raw!r} is not a number; using "
+              f"{MERGE_WALL_S:.0f}s", flush=True)
+        return MERGE_WALL_S
+#: The exit status of a run stopped at the wall: not 0, so it never reads as a publication.
+MERGE_WALL_EXIT = 124
+
+
+def _arm_wall(wall_s: float | None = None) -> bool:
+    """Dump all stacks and exit MERGE_WALL_EXIT once `wall_s` passes; False when unarmed."""
+    import faulthandler
+    import sys
+
+    _FINISHED.clear()                                # a new run: nothing has finished yet
+    wall = _wall_seconds() if wall_s is None else float(wall_s)
+    if wall <= 0:
+        return False
+    print(f"merge_hypotheses: wall armed at {wall:.0f}s; a run still going then dumps its "
+          f"stacks and exits {MERGE_WALL_EXIT}", flush=True)
+    try:
+        faulthandler.dump_traceback_later(wall, exit=False, file=sys.stderr)
+    except (AttributeError, ValueError, OSError) as exc:
+        # No usable stderr (pythonw, a detached task): the wall still ends the run, unnamed.
+        print(f"merge_hypotheses: no stack dump at the wall ({type(exc).__name__}: {exc})",
+              flush=True)
+
+    def _stop() -> None:
+        # A run already writing its ledgers and docket gets WRITE_GRACE_S to finish; an
+        # append-only log cut mid-line (preregistrations.jsonl's reader stops at the first bad
+        # line) would cost every later entry. A hang inside the writes still ends at the grace.
+        # The lock is KEPT through the exit, so a main() that had not reached its writes cannot
+        # start one now; a run that finished them inside the grace is not stopped at all.
+        held = _WRITES.acquire(timeout=WRITE_GRACE_S)
+        if _FINISHED:
+            if held:
+                _WRITES.release()
+            return
+        try:
+            sys.stderr.flush()
+        except (AttributeError, ValueError, OSError):
+            pass
+        print(f"merge_hypotheses: WALL {wall:.0f}s reached; stacks above; exiting "
+              f"{MERGE_WALL_EXIT} with the previous docket standing", flush=True)
+        os._exit(MERGE_WALL_EXIT)
+
+    # One second after the dump, so the stacks are on disk before the process goes.
+    timer = threading.Timer(wall + 1.0, _stop)
+    timer.daemon = True
+    timer.start()
+    _WALL.append(timer)
+    return True
+
+
+def _disarm_wall() -> None:
+    import faulthandler
+
+    faulthandler.cancel_dump_traceback_later()
+    while _WALL:
+        _WALL.pop().cancel()
+
+
+_WALL: list[Any] = []
+#: Held from preregistration to the end of main(): the wall waits on it (bounded) before exiting.
+_WRITES = threading.Lock()
+_WRITES_HELD: list[bool] = []
+#: Set once main() has returned or raised, before its write lock is released.
+_FINISHED: list[bool] = []
+WRITE_GRACE_S = 1800.0
+
+
+def _enter_writes() -> None:
+    if not _WRITES_HELD:
+        _WRITES.acquire()
+        _WRITES_HELD.append(True)
+
+
+def _leave_writes() -> None:
+    while _WRITES_HELD:
+        _WRITES_HELD.pop()
+        _WRITES.release()
+
+
 def run_cli() -> int:
     """All runtime entry points share one writer and the canonical memory admission."""
     import sys
@@ -1404,7 +1511,15 @@ def run_cli() -> int:
         if not acquired:
             print("merge_hypotheses: DEFERRED -- canonical writer or memory admission unavailable")
             return 75  # transient deferral must not read as a completed publication
-        return main()
+        _arm_wall()
+        t0 = time.monotonic()
+        try:
+            return main()
+        finally:
+            _FINISHED.append(True)
+            _disarm_wall()
+            _leave_writes()
+            print(f"merge_hypotheses: wall time {time.monotonic() - t0:.0f}s", flush=True)
 
 
 if __name__ == "__main__":
