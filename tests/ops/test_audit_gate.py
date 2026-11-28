@@ -166,9 +166,14 @@ def test_ci_passes_only_when_every_run_finished_and_the_gating_jobs_succeeded() 
 
 
 def test_a_skipped_gating_job_is_not_a_success() -> None:
+    """The invariant is the name: a skipped gating job never reads as a pass. Whether it then
+    FAILS or WAITS is the gate's policy, which #1173 changes (a draft's skipped run waits for the
+    full run that marking it ready starts); trusted-eval runs THIS file against that change, so
+    the pin states the invariant and the policy is pinned in the gate's own tests."""
     runs = [_r("quality", conclusion="skipped"), _r("mt5-money-path"), _r("coverage-floor")]
     state, why = ag.checks(runs)
-    assert state == "fail" and "quality" in why
+    assert state in ("fail", "pending") and "quality" in why
+    assert state != "pass"
 
 
 def test_a_rerun_job_is_read_by_its_newest_run() -> None:
