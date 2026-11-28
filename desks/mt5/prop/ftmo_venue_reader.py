@@ -283,6 +283,13 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         mt5.shutdown()
     log(f"ftmo venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
+    # THE PACING LEDGER (idea 625) reads the state just written, every pass: files only.
+    try:
+        import prop_pacing
+        pace = prop_pacing.run()
+        log(f"ftmo pacing: {pace.get('status')} verdict={(pace.get('pace') or {}).get('verdict')}")
+    except Exception as exc:
+        log(f"ftmo pacing not run ({type(exc).__name__}: {exc})")
     return 0
 
 
