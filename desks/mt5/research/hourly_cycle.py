@@ -1725,11 +1725,16 @@ def _auto_leg(entry: dict, leg: str | None = None) -> dict:
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
         # The write-or-explain contract reports the last lines of stderr on a failure, and it can
         # only do that if they survive to here.
-        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "stderr_tail": (r.stderr or "")[-1200:],
-                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
-    except subprocess.TimeoutExpired:
+        res = {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+               "stderr_tail": (r.stderr or "")[-1200:],
+               "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+        if r.returncode != 0:
+            res["stdout_tail"] = _text_tail(r.stdout)
+            res["stderr_tail"] = _text_tail(r.stderr)
+        return res
+    except subprocess.TimeoutExpired as exc:
         return {"exit_code": None, "timeout_s": budget, "status": "TIMEOUT",
+                "stdout_tail": _text_tail(exc.stdout), "stderr_tail": _text_tail(exc.stderr),
                 "at": datetime.now(UTC).isoformat()}
 
 
@@ -1975,8 +1980,10 @@ def _costed(name: str, fn):
             outcome = _exit_outcome(name, _code)
             if ":" in outcome:
                 print(f"  LEG FAILED {name}: {outcome}", flush=True)
-    _close(outcome, outputs=_leg_artifacts(name))
-    _emit_leg(name, outcome)
+    # A FAILED LEG SAYS WHERE IT WAS: its output tails ride on the ledger row and the event.
+    _tails = _fail_tails(out) if outcome != "ok" else {}
+    _close(outcome, outputs=_leg_artifacts(name), **_tails)
+    _emit_leg(name, outcome, **_tails)
     _advance_watermark(name, outcome)
     _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,
                verdict_exits=VERDICT_EXITS.get(name, ()))
@@ -2041,14 +2048,38 @@ def _advance_watermark(name: str, outcome: str) -> None:
         print(f"  watermark for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
-def _emit_leg(name: str, outcome: str) -> None:
+#: How much of a failed leg's stdout and stderr survives into its LEG_FAILED event and its
+#: compute-ledger row. A timed-out leg's captured output was DISCARDED (2026-11-11): five hourly
+#: legs ended FAILED TIMEOUT for days and the box could not say where any of them stalled.
+FAIL_TAIL_CHARS = 2000
+
+
+def _text_tail(value: object, n: int = FAIL_TAIL_CHARS) -> str:
+    """The last `n` characters of captured output, whether it arrived as str, bytes or None."""
+    if value is None:
+        return ""
+    if isinstance(value, bytes | bytearray):
+        value = bytes(value[-4 * n:]).decode("utf-8", errors="replace")
+    return str(value)[-n:]
+
+
+def _fail_tails(out: object) -> dict[str, str]:
+    """The output tails a failed leg's result carries, for its event and its ledger row."""
+    if not isinstance(out, dict):
+        return {}
+    return {k: str(out[k])[-FAIL_TAIL_CHARS:] for k in ("stdout_tail", "stderr_tail")
+            if out.get(k)}
+
+
+def _emit_leg(name: str, outcome: str, **fields: object) -> None:
     """THE EVENT LOG (Tier-1 item I2, 2026-09-09): every leg's end is an event, and the legs
     that mark a domain transition (DATA_UPDATED, GAUNTLET_SWEPT, ALLOCATION_DECIDED, ...)
     emit that transition too, so a consumer can ask what happened since it last looked instead
-    of inferring it from the clock. Never fails the leg; an absent `libs` means no event."""
+    of inferring it from the clock. Never fails the leg; an absent `libs` means no event.
+    `fields` (a failed leg's output tails) ride on the event row."""
     try:
         from libs.ops.events import leg_events
-        leg_events(name, outcome)
+        leg_events(name, outcome, **fields)
     except Exception as exc:
         print(f"  event for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
@@ -2669,33 +2700,24 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
         # The write-or-explain contract reports the last lines of stderr on a failure, and it can
         # only do that if they survive to here.
-        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "stderr_tail": (r.stderr or "")[-1200:],
-                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+        res = {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+               "stderr_tail": (r.stderr or "")[-1200:],
+               "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+        if r.returncode != 0:
+            res["stdout_tail"] = _text_tail(r.stdout)
+            res["stderr_tail"] = _text_tail(r.stderr)
+        return res
     except subprocess.TimeoutExpired as exc:
-        # THE LAST WORDS OF A KILLED LEG ARE KEPT. The tree runner hands back what the child had
-        # printed when the cap hit; dropping it made every capped leg look identical. Measured
-        # 2026-11-10 (box LEG_ROTATION): discovery_compiler, graveyard_resurrection,
-        # axis_registry and qd_frontier each ran to their 720 s cap and wrote nothing, and not
-        # one record said which phase they were in when they were stopped.
+        # THE KILLED CHILD'S OUTPUT IS KEPT. `proctree.run` hands it over on the exception; it
+        # was dropped here, so a leg killed at its cap every hour never said where it was.
         return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "tail": _text_tail(exc.output, 300),
-                "stderr_tail": _text_tail(exc.stderr, 1200),
+                "stdout_tail": _text_tail(exc.stdout), "stderr_tail": _text_tail(exc.stderr),
                 "at": datetime.now(UTC).isoformat()}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
-
-
-def _text_tail(raw: object, n: int) -> str:
-    """The last `n` characters of a child's captured output, whether it came back as str, bytes
-    or nothing at all. Never raises: a record about a killed leg must not itself fail."""
-    if raw is None:
-        return ""
-    if isinstance(raw, bytes):
-        raw = raw.decode("utf-8", errors="replace")
-    return str(raw)[-n:]
 
 
 def execution_twin() -> dict:
@@ -4237,6 +4259,16 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    # THE FILL JOIN, HOURLY (2026-09-30), AT THE HEAD OF THE PASS (moved 2026-11-14).
+    # `reports/markout.json` -- intents joined to live deals, n_matched, slippage against the
+    # ENTRY -- and `reports/attribution_chain.json` had one writer, `daily_cycle._markout`, behind
+    # the 900 s-starved daily chain; `--step markout` runs that one step here, unchanged. It sat
+    # near the tail, unpinned, so when the always-run legs alone planned 3,419 s of the 2,640 s
+    # core budget it was never admitted: last run 11-09 (1-3 s each), markout.json frozen at
+    # 11-11 13:57Z, NEVER RUN in MT5-HourlyCore's plan (box read 2026-11-14). Pinned in
+    # ALWAYS_RUN and placed here, before the heavy legs, like the two fences above.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     # Replication is a required live-door input with a six-hour expiry. Keeping its
     # writer late in the validation department let E8's entry door go stale even
     # while core passes ran. Refresh it on the existing core clock, before the door
@@ -5984,12 +6016,6 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
-    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
-    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
-    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
-    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
-    fmk = _costed("fill_markout", lambda: _producer(
-        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the

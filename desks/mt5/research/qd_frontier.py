@@ -48,11 +48,14 @@ it does not have. That makes `regime` read-only for proposals, better said than 
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
 import sys
+import time
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -230,20 +233,38 @@ def _merge(ev: dict[str, dict[str, Any]], axes: dict[str, str], family: Any, sta
     return row
 
 
-def collect_evidence(note: dict[str, str]) -> dict[str, dict[str, Any]]:
-    """Per-cell quality evidence from the four sources carrying a NUMBER, not merely a state."""
+def _fold_gate_row(ev: dict[str, Any], row: dict[str, Any]) -> None:
+    """One gate-verdict row into the ledger's own evidence (the fold the cursor persists).
+    Every field it touches is a MAX or a first-wins, so folding across passes is exact."""
+    parsed = ar.parse_shadow_key(str(row.get("cell") or ""))
+    fam = row.get("family") or parsed["family"]
+    passed = bool(row.get("passed"))
+    _merge(ev, ar.axis_cell(row.get("sym") or parsed["symbol"], fam, None,
+                            session=parsed["session"], regime_hint=parsed["regime"]),
+           fam, "CERTIFIED" if passed else "MEASURED_FAIL",
+           gate="PASSED" if passed else str(row.get("terminal_gate") or ""))
+
+
+def collect_evidence(note: dict[str, str], *, ledger_state: dict[str, Any] | None = None,
+                     stop_at: float | None = None, ledger_out: dict[str, Any] | None = None,
+                     clock: Callable[[], float] | None = None) -> dict[str, dict[str, Any]]:
+    """Per-cell quality evidence from the four sources carrying a NUMBER, not merely a state.
+
+    The gate ledger is FOLDED from a persisted byte cursor (`axis_registry.fold_ledger`) and
+    stops at `stop_at`: the ledger is ~1M rows on the box and this leg died at its wall cap
+    re-reading it from byte 0 every hour (11-07, FAILED TIMEOUT, no artifact). The ledger's own
+    evidence is the base; the other three sources merge onto a COPY of it, exactly in the order
+    they always did, so a persisted fold never carries another source's reading."""
     ev: dict[str, dict[str, Any]] = {}
     if ar is None:
         return ev
 
-    for row in ar._read_jsonl(GATE_LEDGER, note):
-        parsed = ar.parse_shadow_key(str(row.get("cell") or ""))
-        fam = row.get("family") or parsed["family"]
-        passed = bool(row.get("passed"))
-        _merge(ev, ar.axis_cell(row.get("sym") or parsed["symbol"], fam, None,
-                                session=parsed["session"], regime_hint=parsed["regime"]),
-               fam, "CERTIFIED" if passed else "MEASURED_FAIL",
-               gate="PASSED" if passed else str(row.get("terminal_gate") or ""))
+    ledger = ar.fold_ledger(GATE_LEDGER, ledger_state, _fold_gate_row, stop_at, note,
+                            clock or time.monotonic)
+    if ledger_out is not None:
+        ledger_out.clear()
+        ledger_out.update(ledger)
+    ev = copy.deepcopy(ledger["cells"])
 
     doc = ar._read_json(UNIVERSAL_SURVIVORS, note)
     survivors = doc.get("survivors") if isinstance(doc, dict) else None
@@ -687,10 +708,23 @@ def accounting(niches: dict[str, dict[str, Any]], space: dict[str, dict[str, str
             "proposals": {w: len(selection[w]) for w in WORKERS}}
 
 
-def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | None = None
+def cursor_path() -> Path:
+    """Beside the report (reports/ is untracked), so a test that redirects the report moves it."""
+    return OUT_REPORT.with_name(OUT_REPORT.stem + ".ledger_cursor.json")
+
+
+def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | None = None, *,
+          budget_s: float | None = None, ledger_state: dict[str, Any] | None = None,
+          clock: Callable[[], float] | None = None
           ) -> tuple[dict[str, Any], dict[str, dict[str, Any]], list[dict[str, Any]]]:
-    """(report, niches, proposals). Every input may be absent; none of them may raise."""
+    """(report, niches, proposals). Every input may be absent; none of them may raise.
+
+    The gate-ledger fold stops at STOP_SHARE of `budget_s` and resumes from `ledger_state` next
+    pass; a stopped pass is written with `partial: true` and never reads as a full one."""
+    clock = clock or time.monotonic
     now, registry_at = datetime.now(UTC), UNKNOWN
+    stop_at = clock() + ar.STOP_SHARE * budget_s if (budget_s and ar is not None) else None
+    ledger: dict[str, Any] = {}
     note: dict[str, str] = {}
     why: list[str] = []
     cells: dict[str, dict[str, Any]] = {}
@@ -705,7 +739,9 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
     else:
         doc = ar._read_json(AXIS_REPORT, note)
         registry_at = str(doc.get("at")) if isinstance(doc, dict) else UNKNOWN
-        cells = collect_cells(note, collect_evidence(note))
+        cells = collect_cells(note, collect_evidence(note, ledger_state=ledger_state,
+                                                     stop_at=stop_at, ledger_out=ledger,
+                                                     clock=clock))
         niches = build_niches(cells)
         if previous is None:
             doc = ar._read_json(OUT_MAP, note)
@@ -730,8 +766,17 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
               "summary": {**accounting(niches, space, selection), "n_niches": len(niches),
                           "niches_in_file": min(len(niches), REPORT_NICHES),
                           "axis_registry_at": registry_at},
-              "proposals": selection, "unmeasured": {"inputs": note, "why": why}, "rule": RULE}
-    return report, niches, [p for w in WORKERS for p in selection[w]]
+              "proposals": selection, "unmeasured": {"inputs": note, "why": why}, "rule": RULE,
+              "partial": not ledger.get("complete", True), "budget_s": budget_s,
+              "ledger_cursor": {k: v for k, v in ledger.items() if k != "cells"}}
+    proposals = [p for w in WORKERS for p in selection[w]]
+    if report["partial"]:
+        why.append("PARTIAL: the gate-ledger fold stopped at its budget; occupancy is every "
+                   "other source plus the ledger up to the cursor, and the next pass resumes there")
+        for p in proposals:
+            p["partial_pass"] = True
+    report["_ledger_state"] = ledger
+    return report, niches, proposals
 
 
 def _atomic_write(path: Path, text: str) -> None:
@@ -743,12 +788,16 @@ def _atomic_write(path: Path, text: str) -> None:
 
 def write(report: dict[str, Any], niches: dict[str, dict[str, Any]],
           proposals: list[dict[str, Any]]) -> Path:
-    """Report, persistent map and the intake donation -- all three atomic, in that order."""
+    """Report, persistent map and the intake donation -- all three atomic, in that order -- and
+    then the ledger cursor, LAST, so a pass killed mid-write resumes from the previous cursor."""
+    ledger = report.pop("_ledger_state", None)
     _atomic_write(OUT_REPORT, json.dumps(report, indent=1, default=str))
     _atomic_write(OUT_MAP, json.dumps({"at": report["at"], "n_niches": len(niches),
                                        "niches": niches}, indent=1, default=str))
     donation = INTAKE / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
     _atomic_write(donation, json.dumps(proposals, indent=1, default=str))
+    if isinstance(ledger, dict) and ledger.get("ledger") and ar is not None:
+        ar.save_cursor(cursor_path(), ledger)
     return donation
 
 
@@ -780,8 +829,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-proposals", type=int, default=DEFAULT_PROPOSALS,
                     help=f"cap the intake donation (default {DEFAULT_PROPOSALS}, "
                          f"hard ceiling {MAX_PROPOSALS})")
+    ap.add_argument("--budget-s", type=float, default=None,
+                    help="seconds this pass may spend (default: the cycle's exported cap); the "
+                         "gate-ledger fold stops at 85% of it and resumes next pass")
     args = ap.parse_args(argv)
-    report, niches, proposals = build(args.max_proposals)
+    budget = ar.leg_budget_s(args.budget_s) if ar is not None else None
+    state = ar.load_cursor(cursor_path()) if ar is not None else None
+    report, niches, proposals = build(args.max_proposals, budget_s=budget, ledger_state=state)
     target = "DRY RUN (nothing written)" if args.dry_run else str(
         write(report, niches, proposals))
     for line in summary(report, proposals, target):

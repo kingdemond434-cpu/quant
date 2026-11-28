@@ -87,7 +87,8 @@ SPEC = ("carry_risk_off", "month_end_rebalance", "seasonal_window", "entry_condi
 
 @pytest.mark.parametrize("name", SPEC)
 def test_registered_buildable_and_mapped(name):
-    from research import axis_registry, gauntlet_buildability as gb
+    from research import axis_registry
+    from research import gauntlet_buildability as gb
     assert fo.ORTHOGONAL_FAMILIES[name] is fs.SPECIALIST_FAMILIES[name]
     assert name in fo.FAMILY_INPUTS
     assert gb.family_verdict(name)[0] == gb.BUILDABLE
@@ -106,7 +107,8 @@ def test_clusters_and_sweep_exclusion():
 def test_carry_risk_off_and_month_end_rebalance_are_not_price_only():
     """Both read another series, so neither may carry the price-only label anywhere: the
     buildability census, the axis registry's information source, or FAMILY_INPUTS' sentinel."""
-    from research import axis_registry, gauntlet_buildability as gb
+    from research import axis_registry
+    from research import gauntlet_buildability as gb
     assert gb.information_class("carry_risk_off") == gb.EXOGENOUS
     assert gb.information_class("month_end_rebalance") == gb.CONDITIONED
     assert gb.information_class("seasonal_window") == gb.PRICE_ONLY
@@ -263,8 +265,9 @@ def test_the_sealed_build_cell_builds_every_specialist_family(store):
 
 # ------------------------------------------------------------------- the specialist organ ---
 def test_catalogue_is_lane_filtered_and_buildable():
-    from research import specialist_cell as sc
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
+
+    from research import specialist_cell as sc
     cells = sc.plan({"fx": ["EURUSD"], "metals": ["XAUUSD"], "energy": ["XTIUSD"],
                      "indices": ["US500"], "softs": ["CORN"]})
     mechs = {(c["klass"], c["mechanism"]) for c in cells}
@@ -501,6 +504,7 @@ def test_residual_label_is_the_signal_bar_the_filter_keeps(store, monkeypatch):
     """MF1: a trade is labelled at its SIGNAL bar, with the stamp `entry_conditioned` filters on,
     so every measured bucket is exactly the filtered bucket -- on all four axes."""
     from mt5desk.families import get_family_func
+
     from research import residual_search as rs
     d = store["FXA"]
     monkeypatch.setattr(rs, "_bars", lambda sym: store.get(sym))
@@ -645,3 +649,96 @@ def test_vol_regime_warm_up_is_no_regime_and_not_its_complement(store):
         assert not m[:warm].any()
     assert (hv | nhv)[warm:].all() and not (hv & nhv).any()
     assert (lv | nlv)[warm:].all() and not (lv & nlv).any()
+
+
+class _Clock:
+    """A fake monotonic clock a stub can move forward."""
+
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def _kids(n: int) -> list[dict]:
+    out = []
+    for h in range(n):
+        k = _kid()
+        k["params"] = {**k["params"], "hours": [h]}
+        k["finding"] = {**k["finding"], "bucket": h}
+        out.append(k)
+    return out
+
+
+def test_residual_builds_stop_inside_the_budget_and_resume_next_pass(tmp_path, monkeypatch):
+    """The box: 400.7 s at a 400 s cap against `--budget-s 300`, FAILED TIMEOUT. A sealed build is
+    never started that the slowest build so far says cannot end in time; the children not reached
+    carry no build stamp, so the next pass builds exactly those -- and the measured ones are
+    charged on the pass that measured them."""
+    from research import gauntlet_buildability as gb
+    from research import residual_search as rs
+    from research import specialist_cell as sc
+    clock = _Clock()
+    built: list[int] = []
+
+    def _measure(sym, fam, params, meta):
+        built.append(params["hours"][0])
+        clock.t += 10.0
+        return {"built": True, "signal_days": 99, "trade_days_lb": 99}
+
+    from research import proposer_common as pc
+    monkeypatch.setattr(rs, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(sc, "_meta", lambda: {})
+    monkeypatch.setattr(sc, "measure", _measure)
+    monkeypatch.setattr(gb, "cell_verdict", lambda f, p: (gb.BUILDABLE, ""))
+    got: list[list[dict]] = []
+    monkeypatch.setattr(pc, "donate", lambda src, rows, n: got.append(rows) or tmp_path / "d")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(got[-1])})
+    rep = rs.emit(_kids(3), dry_run=False, budget_s=25.0, tests_run=5, clock=clock)
+    assert built == [0, 1], "the third build would have ended past the budget"
+    assert rep["partial"] is True and rep["counts"]["not_reached_this_pass"] == 1
+    assert rep["trial_charge_this_pass"]["contract_tests_run"] == 5 + 2
+
+    rep2 = rs.emit(_kids(3), dry_run=False, budget_s=25.0, tests_run=5, clock=_Clock())
+    assert built == [0, 1, 2], "the next pass builds only the child it had not reached"
+    assert rep2["partial"] is False and rep2["measured_this_pass"] == 1
+    assert rep2["donated_total"] == 3
+
+
+def test_residual_pass_writes_partial_when_the_clock_runs_out_before_the_builds(tmp_path,
+                                                                            monkeypatch):
+    """The policy reads now run BEFORE the open-ended builds; a pass whose reads ate the clock
+    still writes RESIDUAL_SEARCH.json, marked partial, with every child left for the next pass."""
+    from research import gauntlet_buildability as gb
+    from research import residual_search as rs
+    from research import specialist_cell as sc
+    clock = _Clock()
+    trades = [{"sleeve": "s", "symbol": "EURUSD", "basis": "shadow",
+               "t": pd.Timestamp("2026-01-01", tz="UTC"), "r": 0.1}] * 25
+    monkeypatch.setattr(rs, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(rs, "load_trades", lambda: (trades, {"n_trades": 25}))
+    monkeypatch.setattr(rs, "parent_specs", dict)
+    monkeypatch.setattr(rs, "data_window", lambda t: {})
+    monkeypatch.setattr(rs, "residualise", lambda t, s: {})
+    monkeypatch.setattr(rs, "label", lambda t: {})
+    monkeypatch.setattr(rs, "search", lambda t: {"tests_run": 4, "findings": []})
+    monkeypatch.setattr(rs, "children", lambda t, f, s: (_kids(2), {}))
+
+    def _slow_policy():
+        clock.t += 1e6
+        return {"status": "UNMEASURED"}
+
+    monkeypatch.setattr(rs, "gate_policy", _slow_policy)
+    monkeypatch.setattr(rs, "modifier_policy", lambda t: {"status": "UNMEASURED"})
+    monkeypatch.setattr(rs, "cited", dict)
+    monkeypatch.setattr(sc, "_meta", lambda: {})
+    monkeypatch.setattr(sc, "measure", lambda *a: pytest.fail("no build may start past the stop"))
+    monkeypatch.setattr(gb, "cell_verdict", lambda f, p: (gb.BUILDABLE, ""))
+    out = tmp_path / "RESIDUAL_SEARCH.json"
+    doc = rs.build(dry_run=True, budget_s=300.0, clock=clock)
+    assert doc["partial"] is True
+    cc = doc["residual"]["conditioned_cells"]
+    assert cc["counts"]["not_reached_this_pass"] == 2 and cc["measured_this_pass"] == 0
+    out.write_text(json.dumps(doc, default=str), "utf-8")
+    assert json.loads(out.read_text("utf-8"))["partial"] is True

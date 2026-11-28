@@ -57,6 +57,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter, defaultdict
@@ -475,6 +476,7 @@ def children(trades: list[dict[str, Any]], findings: list[dict[str, Any]],
              specs: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]], Counter]:
     """Each finding x each certified parent whose own in-bucket residual has the finding's sign."""
     from mt5desk.families_specialist import wrappable
+
     from research import universe_policy as up
     try:
         from research.family_policy import family_banned
@@ -534,8 +536,31 @@ def _save_state(state: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
+#: THE PASS STOPS INSIDE ITS BUDGET (2026-11-11). On the box this leg ended FAILED TIMEOUT at its
+#: 400 s cap against a 300 s `--budget-s` (11-09): the budget bounded only the child builds, and
+#: it was measured from the START OF `emit`, after the trade load, the labels and the search had
+#: already spent their share -- and the counterfactual-policy reads ran after it, unbounded. Now
+#: one deadline at STOP_SHARE of the pass budget governs the whole pass: the policy reads run
+#: BEFORE the builds, and the builds take what is left, never starting one that the slowest
+#: build this pass says cannot finish in time. A child not reached keeps no `day` stamp, so the
+#: next pass builds it first (the state file IS the cursor).
+STOP_SHARE = 0.85
+
+
+def leg_budget_s(cli: float | None, default: float = 600.0,
+                 env: dict[str, str] | None = None) -> float:
+    """The smaller of the pass's own `--budget-s` and the cycle's exported kill cap."""
+    env = os.environ if env is None else env
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    own = float(cli) if cli and float(cli) > 0 else (cap if cap > 0 else float(default))
+    return min(own, cap) if cap > 0 else own
+
+
 def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
-         tests_run: int) -> dict[str, Any]:
+         tests_run: int, clock: Any = None) -> dict[str, Any]:
     """Verdict, sealed build, floor, then the door -- the specialist organ's own path.
 
     THE SEARCH'S OWN SELECTION IS CHARGED. Every child was selected from `tests_run` bucket
@@ -544,10 +569,11 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
     under-charged by the whole search), and every donated row carries the search as its claim:
     `claim_selection_trials = tests_run` under one `claim_family` per finding, the field the
     trial ledger (`trial_ledger.trial_from_record`) charges once per claim family."""
+    clock = clock or time.monotonic
     tests_run = int(tests_run)
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
     from research.specialist_cell import _meta, charge, measure
-    started = time.monotonic()
+    started = clock()
     today = datetime.now(tz=UTC).date().isoformat()
     state = _load_state()
     cs = state["cells"]
@@ -555,6 +581,7 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
     counts: Counter = Counter()
     measured: list[dict[str, Any]] = []
     cands: list[dict[str, Any]] = []
+    slowest = 0.0
     for c in kids:
         verdict, why = cell_verdict(c["family"], c["params"])
         if verdict != BUILDABLE:
@@ -563,12 +590,16 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
         ident = identity(c["symbol"], c["family"], c["params"])
         prior = cs.get(ident) or {}
         if prior.get("day") != today:
-            if time.monotonic() - started > budget_s:
+            # A build is never STARTED that the slowest one this pass says cannot end in time:
+            # a sealed build cannot be interrupted, and one begun at the edge is the overrun.
+            if budget_s <= 0 or clock() - started + slowest > budget_s:
                 counts["not_reached_this_pass"] += 1
                 continue
+            t_build = clock()
             prior = {**prior, **measure(c["symbol"], c["family"], c["params"], meta),
                      "day": today, "symbol": c["symbol"], "family": c["family"],
                      "params": c["params"], "parent": c["parent"]}
+            slowest = max(slowest, clock() - t_build)
             cs[ident] = prior
             measured.append({**c, "mechanism": f"residual:{c['finding']['axis']}",
                              "klass": "residual"})
@@ -624,6 +655,10 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
     if not dry_run:
         _save_state(state)
     return {"children_named": len(kids), "measured_this_pass": len(measured),
+            "partial": bool(counts.get("not_reached_this_pass")),
+            "resume": ("the children not reached carry no build stamp for today, so the next "
+                       "pass builds them first" if counts.get("not_reached_this_pass") else None),
+            "build_budget_s": round(float(budget_s), 1),
             "counts": dict(counts), "candidates_this_pass": len(cands), "donation": donation,
             "trial_charge_this_pass": {**charge(measured), "bucket_tests_run": tests_run,
                                        "contract_tests_run": tests_run + len(measured)},
@@ -871,8 +906,11 @@ def _true_utc_of_hour_findings(trades: list[dict[str, Any]], findings: list[dict
 
 
 # ==================================================================================== run ===
-def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
-    started = time.monotonic()
+def build(*, dry_run: bool = False, budget_s: float = 600.0,
+          clock: Any = None) -> dict[str, Any]:
+    clock = clock or time.monotonic
+    started = clock()
+    stop_at = started + STOP_SHARE * float(budget_s)
     trades, notes = load_trades()
     specs = parent_specs()
     doc: dict[str, Any] = {
@@ -896,14 +934,21 @@ def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
         _true_utc_of_hour_findings(trades, found["findings"])
         kids, skipped = children(trades, found["findings"], specs)
         doc["residual"] = {"status": "MEASURED", "model": model, "labels": labels, **found,
-                           "conditioned_cells": emit(kids, dry_run=dry_run,
-                                                     budget_s=budget_s,
-                                                     tests_run=found["tests_run"]),
                            "children_not_expressible": dict(skipped)}
+    # THE POLICY READS GO BEFORE THE BUILDS: they are bounded reads, the builds are the one
+    # open-ended loop, so the builds take whatever is left of the deadline rather than the reads
+    # running after them unbounded. Neither reads anything the other writes.
     doc["counterfactual_policy"] = {"gates": gate_policy(),
                                     "capital_modifiers": modifier_policy(trades),
                                     "cited_organs": cited()}
-    doc["elapsed_s"] = round(time.monotonic() - started, 2)
+    if doc["residual"].get("status") == "MEASURED":
+        doc["residual"]["conditioned_cells"] = emit(
+            kids, dry_run=dry_run, budget_s=max(0.0, stop_at - clock()),
+            tests_run=found["tests_run"], clock=clock)
+    cc = doc["residual"].get("conditioned_cells") or {}
+    doc["partial"] = bool(cc.get("partial"))
+    doc["budget_s"] = float(budget_s)
+    doc["elapsed_s"] = round(clock() - started, 2)
     return doc
 
 
@@ -925,13 +970,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=600.0)
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args(argv)
-    doc = run(dry_run=args.dry_run, budget_s=args.budget_s, out=args.out)
+    doc = run(dry_run=args.dry_run, budget_s=leg_budget_s(args.budget_s), out=args.out)
     res = doc["residual"]
     gp = doc["counterfactual_policy"]["gates"]
     print(f"residual_search: residual={res.get('status')} trades={doc['inputs'].get('n_trades')} "
           f"tests={res.get('tests_run')} findings={len(res.get('findings') or [])} "
           f"children={(res.get('conditioned_cells') or {}).get('children_named')} "
-          f"gates={gp.get('status')}:{len(gp.get('gates') or {})} -> {args.out or OUT}")
+          f"gates={gp.get('status')}:{len(gp.get('gates') or {})}"
+          f"{' PARTIAL' if doc.get('partial') else ''} -> {args.out or OUT}")
     return 0
 
 

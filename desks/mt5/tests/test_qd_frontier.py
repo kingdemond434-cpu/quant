@@ -500,3 +500,44 @@ def test_the_report_caps_its_niche_block_but_never_its_count(desk, monkeypatch):
     report, niches, _p = qd.build(0)
     assert len(niches) == 4 and report["n_niches"] == 4
     assert len(report["niches"]) == 2 and report["summary"]["niches_in_file"] == 2
+
+
+# ------------------------------------------------------------------ the budget and the cursor
+class _Tick:
+    """A fake monotonic clock: every reading is one second after the last."""
+
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        self.t += 1.0
+        return self.t
+
+
+def test_the_ledger_fold_stops_at_its_budget_writes_a_partial_pass_and_resumes(desk):
+    """This leg ended FAILED TIMEOUT at its cap on the box (11-07) and wrote nothing for days.
+    It now stops the gate-ledger fold at 85% of its budget, writes the report, the map and the
+    donation marked partial, and resumes from the byte cursor; two passes equal one whole read."""
+    rows = [{"cell": f"{s}.{f}.asia", "sym": s, "family": f, "passed": i == 2,
+             "terminal_gate": "pbo"}
+            for i, (s, f) in enumerate([("EURUSD", "carry"), ("GBPUSD", "carry"),
+                                        ("XAUUSD", "session_range_breakout"),
+                                        ("USDJPY", "level_breakout"), ("XAGUSD", "carry")])]
+    _write_lines(desk["GATE_LEDGER"], rows)
+    _whole, whole_niches, _ = qd.build()
+    budget = 3.5 / ar.STOP_SHARE            # start = 1, stop at 4.5: three rows folded
+    report, niches, proposals = qd.build(budget_s=budget, clock=_Tick())
+    assert report["partial"] is True and report["ledger_cursor"]["rows_this_pass"] == 3
+    assert any("PARTIAL" in w for w in report["unmeasured"]["why"])
+    assert all(p.get("partial_pass") is True for p in proposals)
+    qd.write(report, niches, proposals)
+    assert json.loads(desk["OUT_REPORT"].read_text("utf-8"))["partial"] is True
+    assert desk["OUT_MAP"].exists()
+    cursor = ar.load_cursor(qd.cursor_path())
+    assert cursor["rows_total"] == 3
+
+    report2, niches2, _ = qd.build(budget_s=1000.0, ledger_state=cursor, clock=_Tick())
+    assert report2["partial"] is False and report2["ledger_cursor"]["rows_this_pass"] == 2
+    assert set(niches2) == set(whole_niches)
+    assert {k: v["elite_evidence_basis"] for k, v in niches2.items()} == \
+        {k: v["elite_evidence_basis"] for k, v in whole_niches.items()}
