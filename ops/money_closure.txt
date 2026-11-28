@@ -357,3 +357,5 @@ libs/ops/token_refresh.py
 libs/research/forward_ledger.py
 libs/regime/disagreement.py
 desks/mt5/research/decay_backtest.py
+desks/mt5/mt5desk/family_macro_fair_value.py
+desks/mt5/research/shadow_institutional.py
