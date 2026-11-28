@@ -648,8 +648,25 @@ def book_name(name: object) -> str:
 #: path to 0.01. A name here sends NOTHING on its venue whatever any file says. Removing one is a
 #: principal act. Each is a missed-growth line (rail "principal_zero_pin"; journal D-20261020-001).
 #:
-#: zuck 2026-10-20 21:52Z: "trade only gold asia for fusion and mt5" -- both books.
+#: RETIRED (zuck 2026-11-05 16:06Z, "ALL ACCOUNTS TRADE EVERYTHING (E8/FTMO not gold-only); FTMO
+#: copies all sleeves", superseding his 2026-10-20 21:52Z "trade only gold asia for fusion and
+#: mt5"). The set is kept so the old order can be restored WITHOUT A PUSH: the file
+#: `data/GOLD_ASIA_ONLY_ENABLED` (presence) folds it back into `principal_zeros("fusion")` and
+#: `principal_zeros("e8")` on the next pass. Absent -> retired. Retiring the code pin changes no
+#: size: london_am and afternoon are sized by CERT_BOOK_LIVE.json / the allocator as every other
+#: sleeve is (sovereignty: a 0.0 there still sends nothing).
 GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset({"gold_london_am", "gold_afternoon"})
+GOLD_ASIA_ONLY_FILE = _DESK / "data" / "GOLD_ASIA_ONLY_ENABLED"
+GOLD_ASIA_ONLY_VENUES: frozenset[str] = frozenset({"fusion", "e8"})
+
+
+def gold_asia_only() -> bool:
+    """Whether the retired 10-20 gold-asia-only pin is switched back on (the revert file exists).
+    An unreadable directory reads as absent: the standing order is the 11-05 one."""
+    try:
+        return GOLD_ASIA_ONLY_FILE.exists()
+    except OSError:
+        return False
 #: The scalp lane's stand-down (zuck 2026-09-29; the XAU scalp sleeves retired 2026-09-30). The
 #: allocator's pf.book still funded xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z
 #: (coordinator, read-only on the box); only its RETIRED status kept it off Fusion.
@@ -674,16 +691,25 @@ FUSION_FX_OUT_ZERO: frozenset[str] = frozenset({
     "usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
     "eurzar_carry_asia_p_8339edce23032d21"})
 PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
-    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO | FUSION_FX_OUT_ZERO,
-    "e8": GOLD_ASIA_ONLY_ZERO,
+    "fusion": SCALP_LANE_ZERO | GAP_DECAY_ZERO | FUSION_FX_OUT_ZERO,
+    "e8": frozenset(),
 }
+
+
+def principal_zeros(venue: str = "fusion") -> frozenset[str]:
+    """`PRINCIPAL_ZERO[venue]`, plus the retired `GOLD_ASIA_ONLY_ZERO` while its revert file
+    (`GOLD_ASIA_ONLY_FILE`) exists. Read at call time; every reader of the pins goes through it."""
+    base = PRINCIPAL_ZERO.get(venue, frozenset())
+    if venue in GOLD_ASIA_ONLY_VENUES and gold_asia_only():
+        return frozenset(base | GOLD_ASIA_ONLY_ZERO)
+    return frozenset(base)
 
 
 def principal_zero(name: object, venue: str = "fusion") -> bool:
     """True when `name` (any `_v<n>` version, any case) is one of `PRINCIPAL_ZERO[venue]`.
     Reads no file, so it cannot fail open."""
     base = book_name(name).lower()
-    return bool(base) and base in {k.lower() for k in PRINCIPAL_ZERO.get(venue, frozenset())}
+    return bool(base) and base in {k.lower() for k in principal_zeros(venue)}
 
 
 def cert_book_zero(name: object, venue: str = "fusion") -> bool:

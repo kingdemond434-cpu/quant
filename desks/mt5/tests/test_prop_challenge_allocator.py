@@ -516,3 +516,92 @@ def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkey
     row = uni["columns"]["EURUSD_x_asia"]
     assert row["admitted"] is False and "TIER_S_BLOCKED" in row["why"]
     assert "replication MISMATCH" in row["why"]
+
+
+def test_the_806_cells_are_held_out_until_retested() -> None:
+    """FTMO arming precheck (zuck 2026-11-05 16:06Z, FTMO copies every sleeve): GBPSEK/NOKSEK
+    carry_risk_off and CHFDKK entry_conditioned wait for #806; their siblings do not."""
+    assert pca.pending_retest("GBPSEK", "GBPSEK_carry_risk_off_asia") == "GBPSEK carry_risk_off"
+    assert pca.pending_retest("noksek", "", "external.NOKSEK.carry_risk_off.p=1")
+    assert pca.pending_retest("CHFDKK", "x", None, "entry_conditioned") == \
+        "CHFDKK entry_conditioned"
+    assert pca.pending_retest("CHFDKK", "CHFDKK_overnight_gap_decay_asia") is None
+    assert pca.pending_retest("EURSEK", "EURSEK_carry_risk_off_asia") is None
+
+
+def _two_column_world(tmp_path: Path, monkeypatch, cols: list[str],
+                      specs: dict[str, dict]) -> dict:
+    import kelly_survival as ks
+    worlds = tmp_path / "worlds.npz"
+    np.savez(worlds, names=np.asarray(cols), r=np.full((2, 5, len(cols)), 0.1))
+    screen = [{"certificate": f"external.{c}", "column": c, "symbol": c[:6]} for c in cols]
+    monkeypatch.setattr(ks, "WORLDS", worlds)
+    monkeypatch.setattr(ks, "LEDGER", tmp_path / "no_ledger.jsonl")
+    monkeypatch.setattr(ks, "certified_roster", lambda names: (list(cols), screen))
+    monkeypatch.setattr(ks, "_extend_worlds", lambda r, c, s, seed: (r, c, ""))
+    monkeypatch.setattr(pca, "tier_s_columns", lambda s, d: {})
+    monkeypatch.setattr(pca, "venue_listing",
+                        lambda: ({c[:6]: {} for c in cols}, "test listing"))
+    monkeypatch.setattr(pca, "e8_symbols", lambda: set())
+    monkeypatch.setattr(pca, "quarantined_symbols", lambda: set())
+    monkeypatch.setattr(pca, "ftmo_commissions", lambda: {})
+    monkeypatch.setattr(pca, "copy_switch", lambda: {})
+    monkeypatch.setattr(pca, "venue_cost_bias",
+                        lambda *a, **k: {"status": "PRICED", "bias_r_per_trade": 0.0})
+    monkeypatch.setattr(pca, "sleeve_spec",
+                        lambda key: (specs[key.removeprefix("external.")], "ok"))
+    import mt5desk.decision_core as dc
+    monkeypatch.setattr(dc, "principal_zero", lambda c, lane: False)
+    monkeypatch.setattr(pca, "door_block", lambda key: None)
+    return pca.build_universe()
+
+
+def test_duplicate_executables_are_one_bet(tmp_path, monkeypatch) -> None:
+    """Two carry certificates that rebuild to the same order spec take the solve's heat once."""
+    a, b = "EURNOK_carry_asia_p_1", "EURNOK_carry_asia_p_2"
+    spec = {"symbol": "EURNOK", "family": "carry", "fingerprint": "same"}
+    uni = _two_column_world(tmp_path, monkeypatch, [a, b], {a: spec, b: dict(spec)})
+    assert uni["status"] == "OK" and uni["cols"] == [a]
+    row = uni["columns"][b]
+    assert row["admitted"] is False and row["rail"] == "ftmo_duplicate_executable"
+    assert a in row["why"]
+
+
+def test_a_pending_retest_cell_takes_no_solve_heat(tmp_path, monkeypatch) -> None:
+    held, kept = "GBPSEK_carry_risk_off_asia", "EURUSD_x_asia"
+    uni = _two_column_world(tmp_path, monkeypatch, [held, kept], {
+        held: {"symbol": "GBPSEK", "family": "carry_risk_off", "fingerprint": "g"},
+        kept: {"symbol": "EURUSD", "family": "x", "fingerprint": "e"}})
+    assert uni["cols"] == [kept]
+    assert uni["columns"][held]["rail"] == "ftmo_pending_retest"
+
+
+def test_the_holds_reach_the_missed_growth_ledger_priced(tmp_path, monkeypatch) -> None:
+    """Auditor S1 on #953: PENDING_RETEST is a hold, so its column's prior mean R per trade is
+    billed through FTMO_ALLOCATOR.json rail_blocks into missed_growth's published lines; the
+    duplicate is published at 0 R (its order still trades through the kept column)."""
+    import missed_growth as mg
+    held, kept = "GBPSEK_carry_risk_off_asia", "EURNOK_carry_asia_p_1"
+    dup = "EURNOK_carry_asia_p_2"
+    spec = {"symbol": "EURNOK", "family": "carry", "fingerprint": "same"}
+    uni = _two_column_world(tmp_path, monkeypatch, [held, kept, dup], {
+        held: {"symbol": "GBPSEK", "family": "carry_risk_off", "fingerprint": "g"},
+        kept: spec, dup: dict(spec)})
+    blocks = {b["column"]: b for b in pca.rail_blocks(uni)}
+    assert blocks[held]["rail"] == "ftmo_pending_retest" and blocks[held]["prior_r"] == 0.1
+    assert blocks[dup]["rail"] == "ftmo_duplicate_executable" and blocks[dup]["prior_r"] == 0.0
+    report = tmp_path / "FTMO_ALLOCATOR.json"
+    report.write_text(json.dumps({"rail_blocks": list(blocks.values())}), encoding="utf-8")
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", report)
+    lines = mg.published_ftmo_allocator_lines()["rails"]
+    assert lines["ftmo_pending_retest"]["n"] == 1
+    assert lines["ftmo_pending_retest"]["forgone_prior_r_per_trade"] == 0.1
+    assert lines["ftmo_pending_retest"]["n_unpriced"] == 0
+    assert lines["ftmo_duplicate_executable"]["forgone_prior_r_per_trade"] == 0.0
+    # Absent binds nothing; torn is UNMEASURED, never a clean zero.
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", tmp_path / "absent.json")
+    assert mg.published_ftmo_allocator_lines()["rails"] == {}
+    report.write_text("{torn", encoding="utf-8")
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", report)
+    assert mg.published_ftmo_allocator_lines()["rails"]["ftmo_pending_retest"]["verdict"] == \
+        mg.UNMEASURED
