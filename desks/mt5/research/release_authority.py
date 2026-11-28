@@ -95,15 +95,21 @@ def _current_identity(ident: dict[str, Any], rel: dict[str, Any]) -> dict[str, A
     BEFORE the recycled gateway rewrites release_identity.json, so the file it read still judged
     the PREVIOUS seal. The noon pass saw may_create_exposure=false with undrifted REFUSED for
     paths the new seal already named, while the gateway, measuring live, allowed new risk. When
-    the file names a different release_id than RELEASE.json, the verdict is re-measured live
-    (never written: release_identity's own writer owns that file)."""
+    the file names a different release_id than RELEASE.json, the verdict is re-measured live.
+
+    THE RE-MEASURE NOW REFRESHES THE MIRROR (2026-11-04). Its only regular writer is the Fusion
+    gateway pass, which exits at its pause check while the ruin rail holds it, so after the 18:17Z
+    adoption of c5ddf5f11 the published file kept naming the 10-29 code at 147 h and every lag
+    reader saw false lag. The write goes through release_identity's own writer (best effort,
+    swallows OSError), so the file still has one author; this pass just calls it at the moment the
+    file is known to be stale -- right after Adopt-And-Seal writes a new seal."""
     rel_id, ident_id = str(rel.get("release_id") or ""), str(ident.get("release_id") or "")
     if not rel_id or not ident_id or rel_id == ident_id:
         return ident
     try:
         sys.path.insert(0, str(DESK))
         from mt5desk import release_identity  # type: ignore[import-not-found]
-        live = release_identity.verdict(ROOT, write=False).to_dict()
+        live = release_identity.verdict(ROOT, write=True).to_dict()
     except Exception as exc:
         return {**ident, "verdict": "UNMEASURED",
                 "reason": (f"release_identity.json judged release {ident_id}, the seal is "
