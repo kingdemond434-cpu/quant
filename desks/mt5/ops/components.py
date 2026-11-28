@@ -875,6 +875,25 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # FIRST-PRINT CAPTURE (2026-11-18, build-check row 45). Hourly leg
+        # `first_print_capture`; not in the Tier-1 ledger, so its artifacts and reader are
+        # declared here: futures_state reads the lake as the fallback for its scheduled-release
+        # first prints when ALFRED is not fetched.
+        ComponentSpec(
+            component_id="executable:desks/mt5/research/first_print_capture.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/research/first_print_capture.py",),
+            inputs=("desks/mt5/data/first_print_sources.json",),
+            outputs=("desks/mt5/reports/FIRST_PRINT_CAPTURE.json", "data/lake/first_prints/"),
+            consumers=("desks/mt5/research/futures_state.py",),
+            cadence_s=3600, timeout_s=180, progress_metric="first_prints_held",
+            expected_artifact_schema="desks/mt5/reports/FIRST_PRINT_CAPTURE.json",
+            owner="department:macro", restart_action="restart:resident:dept_macro",
+            criticality="optional", resource_budget={"budget_s": 180},
+            schedule="hourly_cycle:first_print_capture", artifact_class="hourly",
+            notes=("terms and robots record in first_print_sources.json; robots read live and "
+                   "fail closed; 401/403/451/wall held until released, 429 held 24 h; "
+                   "no FRED, no ALFRED")),
         # THE CHINESE-MODEL RESEARCH ENSEMBLE (2026-11-17, #1242). Run by the MT5-DeepSeek task
         # right after the DeepSeek cycle (ops/run_deepseek_windows.ps1). Its discoveries enter the
         # same compiler every seat feeds; the report is its per-model, per-provider record.

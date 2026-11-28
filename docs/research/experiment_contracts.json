@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "first_print_capture": {
+   "hypothesis": "Capturing each scheduled US release's FIRST published value from the primary publisher (BLS, Census) as it lands, stamped at the release slot and kept apart from later revisions, gives the desk point-in-time release surprises without ALFRED, so futures_state's scheduled-release shock features can be rebuilt from first prints the desk owns rather than from revised values that leak the future.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "first_prints_held",
+    "better": "up",
+    "organ": "report:FIRST_PRINT_CAPTURE.json"
+   },
+   "falsifier": {
+    "metric": "first_prints_held",
+    "op": "==",
+    "threshold": 0,
+    "after": "45 days on the trading box with no first print stored for any series: robots, terms or the publishers' APIs refuse every pass, so no release's first value is ever owned"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
