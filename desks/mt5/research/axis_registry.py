@@ -162,7 +162,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
-    "macro_release event market": "event_reaction",
+    # `degree_day_revision` (2026-11-11) trades a dated NOAA CPC forecast issue's revision: the
+    # scheduled repricer of expected gas burn pays.
+    "macro_release event market": "event_reaction degree_day_revision",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
