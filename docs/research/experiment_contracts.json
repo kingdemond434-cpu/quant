@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "pnl_explain": {
+   "hypothesis": "Splitting each account's daily P&L into signal, slippage, commission, swap and fees shows how much of the signal the round trip eats, per account, so the judge and allocator can price cost per account instead of per symbol.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_accounts",
+    "better": "up",
+    "organ": "report:PNL_EXPLAIN.json"
+   },
+   "falsifier": {
+    "metric": "n_accounts",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no account's closed trades can be priced, so the explain carries nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
