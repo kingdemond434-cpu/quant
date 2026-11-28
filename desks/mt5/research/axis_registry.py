@@ -176,7 +176,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
-                                            " ae_latent",
+                                            " ae_latent china_stress_contagion",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
     "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
