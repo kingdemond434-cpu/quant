@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "bl_challengers": {
+   "hypothesis": "Building the Black-Litterman / MVO challenger books (prior, certified views, the desk's own world-state views, BL only, MVO, shuffled-view control) on history they had not seen and holding them over realised returns tells whether any BL belief adds growth to the sovereign allocator, and the perturbation test says how hard each book moves when its inputs move a little.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "forward.n_windows",
+    "better": "up",
+    "organ": "report:BL_CHALLENGERS.json"
+   },
+   "falsifier": {
+    "metric": "forward.n_windows",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h window: no window was ever scored, so the challengers are not reaching the desk's evidence"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
