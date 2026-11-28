@@ -67,6 +67,19 @@ MAX_FETCH = 50_000
 #: A file of the daily clock's own is what stops that class of accident: the daily tier stops
 #: depending on which intraday file happens to exist for a symbol this week.
 DERIVED: dict[str, str] = {"D1": "H1"}
+
+#: A series whose newest CLOSED bar is older than this after a fetch is a DEAD FEED, not a quiet
+#: market: four days clears a weekend plus a holiday. MEASURED 2026-11-13: Fusion put UST10Y and
+#: UST05Y into close-only, the terminal kept serving its cached history (last bar 2025-12-31
+#: 09:14Z), and this script rewrote all fourteen files every pass with no new bar, so every mtime
+#: read fresh while 25 cross_asset_residual clocks starved for 48 days with nothing raising.
+STALE_FEED_DAYS = 4.0
+#: MetaTrader `SYMBOL_TRADE_MODE_*` values that mean the venue stopped offering the instrument.
+VENUE_MODES = {0: "DISABLED", 1: "LONG_ONLY", 2: "SHORT_ONLY", 3: "CLOSE_ONLY", 4: "FULL"}
+#: Where the dead feeds are published, one row per symbol, read by people and by the hourly pass.
+ALARMS = desk_root() / "reports" / "BAR_FEED_ALARMS.json"
+#: (symbol, timeframe) -> the alarm row for this pass. Filled by `refresh_symbol`.
+_ALARMS: dict[tuple[str, str], dict] = {}
 #: What was derived, from what, and when. Read by `refresh_symbol` so a derived series is never
 #: FETCHED -- see the refusal there.
 DERIVED_MANIFEST = OUT / "derived_series.json"
@@ -349,8 +362,28 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     combined = pd.concat([old, new])
     combined = combined[~combined.index.duplicated(keep="last")].sort_index()
     added = len(combined) - len(old)
+    last_bar = combined.index.max() if len(combined) else None
+    age_d = ((pd.Timestamp.now(tz="UTC") - last_bar).total_seconds() / 86400.0
+             if last_bar is not None else None)
+    if age_d is not None and age_d > STALE_FEED_DAYS:
+        # A DEAD FEED IS AN ALARM, NEVER A REWRITE. Writing the same history back refreshed the
+        # mtime, and every staleness check that reads mtime then called the series live.
+        info = mt5.symbol_info(sym)
+        mode = getattr(info, "trade_mode", None) if info is not None else None
+        _ALARMS[(sym, tf)] = {
+            "symbol": sym, "timeframe": tf, "last_bar_utc": str(last_bar),
+            "age_days": round(age_d, 2), "bars_added": int(added),
+            "venue_trade_mode": (VENUE_MODES.get(mode, str(mode)) if info is not None
+                                 else "SYMBOL_NOT_LISTED"),
+        }
+        if added <= 0:
+            return f"STALE_FEED no new bar since {last_bar} ({age_d:.0f}d) -- file NOT rewritten"
+    if added <= 0:
+        # Nothing new: the file already holds every bar the terminal served. Leave it alone so
+        # its mtime keeps meaning "a bar arrived".
+        return f"unchanged (last {last_bar}) -- file NOT rewritten"
     _atomic_parquet(combined, pq)
-    return f"+{added} bars (last {combined.index.max()}){hole}"
+    return f"+{added} bars (last {last_bar}){hole}"
 
 
 def _report_derivation(doc: dict) -> None:
@@ -362,6 +395,60 @@ def _report_derivation(doc: dict) -> None:
         print(f"  {len(skipped)} not derived:")
         for name, why in sorted(skipped.items())[:12]:
             print(f"   {name:20s} {why}")
+
+
+def _dependent_clocks(symbols: set[str]) -> dict[str, list[str]]:
+    """Forward clocks that trade or read each dead symbol, from the shadow state's own keys."""
+    out: dict[str, list[str]] = {s: [] for s in symbols}
+    try:
+        state = json.loads((desk_root() / "reports" / "shadow" / "shadow_state.json")
+                           .read_text("utf-8"))
+    except (OSError, ValueError):
+        return out
+    for key in state if isinstance(state, dict) else {}:
+        if key == "retired_clocks":
+            continue
+        own = str(key).split(".", 1)[0]
+        for s in symbols:
+            if own == s or f"'{s}'" in str(key) or f"={s}_" in str(key):
+                out[s].append(str(key))
+    return out
+
+
+def write_alarms(server: str) -> dict:
+    """Publish this pass's dead feeds. Written every pass, so an empty list is a measurement."""
+    by_sym: dict[str, dict] = {}
+    for (sym, tf), row in sorted(_ALARMS.items()):
+        entry = by_sym.setdefault(sym, {"symbol": sym, "venue_trade_mode": row["venue_trade_mode"],
+                                        "last_bar_utc": row["last_bar_utc"], "timeframes": []})
+        entry["timeframes"].append(tf)
+        entry["last_bar_utc"] = max(entry["last_bar_utc"], row["last_bar_utc"])
+    deps = _dependent_clocks(set(by_sym))
+    for sym, entry in by_sym.items():
+        entry["dependent_clocks"] = len(deps.get(sym, []))
+        entry["dependent_clock_keys"] = deps.get(sym, [])[:50]
+        # PUBLISHED, never appended to data/missed_growth.jsonl: no rail or gate chose this, the
+        # venue did. It still has a price, and the price is every clock that needs the series.
+        entry["missed_growth"] = {
+            "mechanism": "dead_bar_feed", "symbol": sym,
+            "forgone": (f"{entry['dependent_clocks']} forward clock(s) cannot accrue evidence "
+                        f"while {sym} delivers no bars"),
+            "cure": ("a successor symbol at the venue, or the venue re-opening the instrument; "
+                     "a substitute series is a different model and needs its own certificate"),
+        }
+    doc = {"generated_at": pd.Timestamp.now(tz="UTC").isoformat(), "server": server,
+           "stale_feed_days": STALE_FEED_DAYS, "n_dead_symbols": len(by_sym),
+           "dead_feeds": sorted(by_sym.values(), key=lambda e: -e["dependent_clocks"])}
+    ALARMS.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ALARMS.with_name(ALARMS.name + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    os.replace(tmp, ALARMS)
+    if by_sym:
+        print(f"\nALARM: {len(by_sym)} symbol(s) deliver no bars (> {STALE_FEED_DAYS:.0f}d):")
+        for e in doc["dead_feeds"]:
+            print(f"   {e['symbol']:12s} {e['venue_trade_mode']:18s} last {e['last_bar_utc']} "
+                  f"clocks={e['dependent_clocks']}")
+    return doc
 
 
 def main() -> int:
@@ -420,6 +507,10 @@ def main() -> int:
                 "account": getattr(account, "login", 0) if account else 0,
             }
     ok = sum(1 for r in results if " +" in r)
+    try:
+        write_alarms(server_name)
+    except Exception as e:                    # the alarm must never cost the refresh itself
+        print(f"BAR_FEED_ALARMS not written: {type(e).__name__}")
     holes = [r for r in results if "GAP" in r]
     print(f"\n{ok}/{len(results)} (symbol, timeframe) series refreshed "
           f"across {len(broker_info)} symbol(s)")

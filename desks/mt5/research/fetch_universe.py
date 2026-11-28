@@ -231,6 +231,17 @@ def _clocked_symbols() -> set[str]:
             if isinstance(v, dict) and str(v.get("status") or "") == "ACTIVE"}
 
 
+def _dead_feeds() -> set[str]:
+    """Symbols `refresh_tail` last published as delivering no bars (reports/BAR_FEED_ALARMS)."""
+    try:
+        doc = json.loads((OUT.parent.parent / "reports" / "BAR_FEED_ALARMS.json")
+                         .read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    rows = doc.get("dead_feeds") if isinstance(doc, dict) else None
+    return {str(r["symbol"]) for r in rows or [] if isinstance(r, dict) and r.get("symbol")}
+
+
 def _refresh_order(candidates: list[str]) -> list[str]:
     """Order the refresh by what most needs it: clocked first, then stalest first.
 
@@ -256,7 +267,12 @@ def _refresh_order(candidates: list[str]) -> list[str]:
         except OSError:
             return float("inf")         # never fetched: the stalest thing there is
 
-    ordered = sorted(candidates, key=lambda s: (0 if s in clocked else 1, -age(s)))
+    # A DEAD FEED GOES LAST. `refresh_tail` no longer rewrites a file whose venue stopped
+    # sending bars, so its mtime stays the oldest in the lake for good; by age alone it would
+    # lead every pass and spend the head of each run on a symbol that cannot answer.
+    dead = _dead_feeds()
+    ordered = sorted(candidates,
+                     key=lambda s: (s in dead, 0 if s in clocked else 1, -age(s)))
     if clocked:
         worst = ordered[0]
         print(f"{len(clocked)} clocked symbol(s); refreshing {worst} first "
