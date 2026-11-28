@@ -5456,7 +5456,7 @@
     "desks/mt5/research/countries/kr/agents.py:715 the data plane wired into every agent's context"
    ],
    "scheduled_by": "hourly_cycle:global_research_os",
-   "artifact": "desks/mt5/reports/KR_DATA_PLANE.json",
+   "artifact": "desks/mt5/reports/GLOBAL_RESEARCH_OS.json; desks/mt5/reports/KR_DATA_PLANE.json (the KR plane, MISSING: see gap)",
    "consumer": "the twelve KR agents (ctx.data_plane); the transmission seeds in countries/kr/pack.py",
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE -- the builder was not cut off. data_plane.py is 1,223 lines carrying all four lanes and a vintage store, nowcast.py is 690, and KR_DATA_PLANE.json on this box was written today"
