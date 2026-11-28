@@ -1,0 +1,11 @@
+{
+  "_doc": "Installers the SYSTEM adopter applies by itself (ops/box/apply_installers.py, run from ops/box/box_selfheal.ps1 on every adoption). A row runs once per installer version (sha256), never for credentials or auth. principal 'system': the installer registers SYSTEM tasks and runs as it is. principal 'desk_user': the installer registers a task for the interactive desk account and must declare a -User parameter, which the applier fills from the auto-logon account; without one the row is refused. args: switches only.",
+  "installers": [
+    {
+      "path": "desks/mt5/scripts/install_rotate_logs_task.ps1",
+      "args": ["-IfMissing"],
+      "principal": "system",
+      "why": "#1138 log rotation, merged 11-17 12:19Z; registration waited for an Administrator run"
+    }
+  ]
+}
