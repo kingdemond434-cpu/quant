@@ -629,14 +629,22 @@ def state_vector() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+#: The subprocess cap on the hourly smoke (see smoke_release).
+SMOKE_RELEASE_TIMEOUT_S = 300
+
+
 def smoke_release() -> dict:
     """The box-side smoke test, every hour: does the code on this box import, compile and match
     the sealed release? Its verdict rides sync_marker.json so every other brain sees it. A
     failing smoke is the gateway refusing new risk an hour earlier than the dashboard would
     notice; a smoke that cannot run is recorded as exactly that, never as a pass."""
+    # THE CAP SITS ABOVE THE MEASURED RANGE (box compute_ledger 11-08..11-11, 73 runs: median
+    # 37.7 s, p90 121.9 s; 26 of 73 killed at the old 120 s, spread over 17 UTC hours and no
+    # more often beside heavy jobs than the passes that finished). A cap inside the normal range
+    # records a smoke that could not finish, never the verdict it would have reached.
     try:
         r = subprocess.run([PYE, str(BASE / "scripts" / "smoke_release.py")],
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, timeout=SMOKE_RELEASE_TIMEOUT_S)
         return {"rc": r.returncode, "tail": (r.stdout or r.stderr or "")[-400:]}
     except (subprocess.TimeoutExpired, OSError) as exc:
         return {"rc": None, "error": f"{type(exc).__name__}: {exc}"}
