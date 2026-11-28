@@ -169,11 +169,28 @@ def asset_class_of(symbol: str) -> str:
     # trustworthy, because the symbol is known to be a real broker instrument and only its label
     # is missing.
     try:
-        sys.path.insert(0, str(BASE))
-        from mt5desk.universe import asset_class as _pattern_class
-        return _norm(_pattern_class(symbol))
+        return _norm(_pattern_classifier()(symbol))
     except Exception:
         return ""
+
+
+@lru_cache(maxsize=1)
+def _pattern_classifier():
+    """`mt5desk.universe.asset_class`, imported once per process.
+
+    THIS USED TO PUSH `BASE` ONTO sys.path ON EVERY CALL. `asset_class_of` runs once per cell, and
+    for the three registry rows with no class of their own (BEYONDMEAT, BLOCKINC, WALGREENS today)
+    every call inserted another copy, so sys.path grew by one entry per call -- measured 1,000
+    entries for 1,000 calls. Every later import then stat()s each entry in turn. Box stack samples
+    2026-11-10 (Desk health, Q2) caught axis_registry and qd_frontier at 300 s and 600 s inside the
+    plain numpy/pandas imports of mt5desk/families.py, "stuck in importlib path stat", and both
+    organs have not finished since 2026-09-25/26. Insert once, only if absent.
+    """
+    base = str(BASE)
+    if base not in sys.path:
+        sys.path.insert(0, base)
+    from mt5desk.universe import asset_class
+    return asset_class
 
 
 def lane(symbol: str) -> str:
