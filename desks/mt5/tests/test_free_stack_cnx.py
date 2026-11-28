@@ -390,6 +390,8 @@ def test_proposer_mints_exchange_cells_by_axis_from_the_published_series(store, 
     run(budget_s=600, fetch=_shfe_fetch(), store=store, roster=_roster(tmp_path, 140),
         now=NOW, only=["cnx_shfe"], live=False)
     monkeypatch.setattr(fsp, "SERIES", store.series)
+    # Axis mapping is under test here, not history depth: a one-run store holds a few points.
+    monkeypatch.setattr(fsp, "column_observations", lambda sid, col: fsp.MIN_OBSERVATIONS)
     columns = json.loads(store.columns.read_text("utf-8"))
     roster = {"cnx_shfe": json.loads((tmp_path / "roster.json").read_text("utf-8")
                                      )["sources"][0],
