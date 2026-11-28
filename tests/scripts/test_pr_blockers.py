@@ -33,6 +33,9 @@ def test_the_gate_constants_match_the_gate() -> None:
     spec.loader.exec_module(ag)
     assert tuple(ag.GATING_JOBS) == pb.GATING_JOBS
     assert ag.REGISTRY_HOLD_H == pb.VETO_H
+    assert ag.ROOT_REGISTRY_HOLD_H == pb.ROOT_VETO_H
+    assert ag.registry_hold_h(False) == pb.VETO_H
+    assert ag.registry_hold_h(True) == max(pb.VETO_H, pb.ROOT_VETO_H)
 
 
 def test_each_blocker_in_merge_path_order() -> None:
@@ -43,7 +46,10 @@ def test_each_blocker_in_merge_path_order() -> None:
     assert c(NOW, _pr(), _clear(sha="b" * 40), _green(), None)["blocker"] == "AUDIT_STALE"
     assert c(NOW, _pr(), _clear(), ("failed", ["quality"]), None)["blocker"] == "CI_FAILED"
     assert c(NOW, _pr(), _clear(), ("pending", ["quality"]), None)["blocker"] == "CI_PENDING"
-    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None)["blocker"] == "VETO_WINDOW"
+    # No veto wait for an ordinary PR; a ROOT PR keeps the gate's 24 h window.
+    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None)["blocker"] == "READY"
+    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None, root=True)["blocker"] == "VETO_WINDOW"
+    assert c(NOW, _pr(), _clear(hours_ago=25), _green(), None, root=True)["blocker"] == "READY"
     off = {
         "description": "registry: authority: LIVE's root digest is not the pinned one, "
         "so the path is off"
@@ -177,3 +183,14 @@ def test_the_gate_status_is_a_fixed_code_never_its_free_text() -> None:
     row = pb.classify(NOW, _pr(number=7), None, ("green", []), free)
     assert row["gate"] == "GATE_FAILURE" and "script" not in json.dumps(row)
     assert "gate_says" not in row
+
+
+def test_root_is_read_with_the_gates_own_rule_and_fails_closed() -> None:
+    def boom(_url: str) -> Any:
+        raise RuntimeError("503")
+
+    assert pb._touches_root(boom, "o/r", 7) is True  # unreadable files: the longer window
+    assert pb._touches_root(lambda _u: [{"filename": "README.md"}], "o/r", 7) is False
+    assert pb._touches_root(lambda _u: [], "o/r", 7) is True  # empty list counts as ROOT
+    full = [{"filename": f"docs/x{i}.md"} for i in range(100)]
+    assert pb._touches_root(lambda _u: full, "o/r", 7) is True  # a full page may hide ROOT

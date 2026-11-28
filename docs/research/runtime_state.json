@@ -26,7 +26,7 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 840,
+  "NEVER": 841,
   "UNMEASURED": 43
  },
  "scope": {
@@ -28099,6 +28099,34 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "promoter (re-judges the reopened clocks)"
+  },
+  {
+   "organ": "leg:limit_optimality",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/limit_optimality.py"
+   ],
+   "clock": "hourly_cycle:limit_optimality",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LIMIT_OPTIMALITY.json",
+   "artifact_declared": "desks/mt5/reports/LIMIT_OPTIMALITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T04:40:13+00:00"
   }
  ],
  "ratchet": {
