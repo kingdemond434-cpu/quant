@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import runpy
 from pathlib import Path
 
@@ -32,7 +33,8 @@ def test_decide_appends_with_sequential_ids(tmp_path):
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="", evidence=[],
                            supersedes="")
     r1, r2 = CTX["decide"](a, j), CTX["decide"](a, j)
-    assert r1["id"].endswith("-001") and r2["id"].endswith("-002")
+    assert re.fullmatch(r"D-\d{8}-001-[0-9a-f]{6}", r1["id"])
+    assert re.fullmatch(r"D-\d{8}-002-[0-9a-f]{6}", r2["id"])
 
 
 def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
@@ -46,8 +48,8 @@ def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
                            evidence=[], supersedes="")
     first, second = CTX["decide"](a, j), CTX["decide"](a, j)
-    assert first["id"] == f"D-{day}-020"
-    assert second["id"] == f"D-{day}-021"
+    assert first["id"].startswith(f"D-{day}-020-")
+    assert second["id"].startswith(f"D-{day}-021-")
     assert j.read_text(encoding="utf-8").startswith(original)
 
 
@@ -78,7 +80,21 @@ def test_ids_are_minted_past_the_fetched_live_copy_too(tmp_path):
     j.write_text("".join(json.dumps(r) + "\n" for r in rows[:2]), encoding="utf-8")
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
                            evidence=[], supersedes="")
-    assert CTX["decide"](a, j)["id"] == f"D-{day}-006"
+    assert CTX["decide"](a, j)["id"].startswith(f"D-{day}-006-")
+
+
+def test_two_branches_minting_the_same_serial_still_get_distinct_ids(tmp_path):
+    """Two sessions that cannot see each other's branch both mint serial 001 (#593, #918, #926,
+    #934 on 2026-11-11). The content tag keeps their ids apart, and a tagged id still counts
+    toward the next serial."""
+    a = argparse.Namespace(title="one", decision="d", why="w", by="me", owner="", evidence=[],
+                           supersedes="")
+    b = argparse.Namespace(title="two", decision="d", why="w", by="you", owner="", evidence=[],
+                           supersedes="")
+    ra, rb = CTX["decide"](a, tmp_path / "a.jsonl"), CTX["decide"](b, tmp_path / "b.jsonl")
+    assert ra["id"].split("-")[2] == rb["id"].split("-")[2] == "001"
+    assert ra["id"] != rb["id"]
+    assert CTX["next_id"]([ra], ra["id"].split("-")[1]).endswith("-002")
 
 
 def test_rationale_sync_refreshes_generated_block_and_keeps_human_text(tmp_path):
