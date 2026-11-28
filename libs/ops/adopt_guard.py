@@ -73,6 +73,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -719,6 +720,68 @@ def uncovered(root: Path, paths: list[str], target: str, clears: list[Clear]) ->
     return [p for p in paths if (p, tree.get(p)) not in ok]
 
 
+#: The box's own fast-lane classifier (#1240). Absent on a box that has not adopted it: then
+#: nothing is exempt and every governed path needs a CLEAR, exactly as before.
+FAST_LANE_REL = ".github/scripts/fast_lane.py"
+#: Revert switch, no push needed: while this file exists, no path is exempt.
+FAST_LANE_OFF_REL = "desks/mt5/data/ADOPT_FAST_LANE_DISABLED"
+
+
+def fast_lane_exempt(
+    root: Path,
+    paths: list[str],
+    target: str,
+    clears: list[Clear],
+    classify: Callable[..., tuple[bool, str]] | None = None,
+) -> dict[str, str]:
+    """{path: why} for each uncovered path the box's OWN fast-lane classifier calls non-money.
+
+    THE GAP (2026-11-17). zuck's standing order is that a PR touching no live money merges on a
+    smoke check alone, with no Auditor CLEAR. `pre` adopted only paths a CLEAR row vouches for,
+    so the first such merge of a .py file would have held EVERY later adoption on HOLD_UNAUDITED
+    and the box would have stopped taking code. A path is exempt here only when the classifier
+    in the box's current, sealed checkout (never the incoming one) says it is off the money path,
+    off the release and box machinery, no risk suite and no producer of a file the money code
+    reads. Each path is judged alone with the target's copy, which is what the per-file rules
+    already do, and against the money closure of the TARGET as well as the sealed tree's (#1287
+    audit MF1: a cleared money change in the same target may newly import it); a classifier that
+    cannot take the target's closure exempts nothing. A HOLD row naming the path's target
+    content still holds it; a missing or failing classifier exempts nothing; FAST_LANE_OFF_REL
+    switches the whole exemption off.
+    """
+    if not paths or (root / FAST_LANE_OFF_REL).exists():
+        return {}
+    held = {(p, b) for r in clears if r.verdict == "HOLD" for p, b in r.paths.items()}
+    if classify is None:
+        f = root / FAST_LANE_REL
+        if not f.is_file():
+            return {}
+        try:
+            spec = importlib.util.spec_from_file_location("adopt_fast_lane", f)
+            if spec is None or spec.loader is None:
+                return {}
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules["adopt_fast_lane"] = mod
+            spec.loader.exec_module(mod)
+            classify = mod.classify
+        except Exception:  # an unloadable classifier exempts nothing
+            return {}
+    tree = _tree(root, target)
+    out: dict[str, str] = {}
+    for p in paths:
+        if (p, tree.get(p)) in held:
+            continue
+        try:
+            fast, why = classify([p], target, closure_rev=target)
+        except TypeError:  # a classifier that cannot read the target's closure: exempt nothing
+            return {}
+        except Exception:
+            continue
+        if fast:
+            out[p] = why
+    return out
+
+
 def clear_row(root: Path, commit: str, verdict: str, report: str, *, base: str) -> dict[str, Any]:
     """The row a lander appends for an auditor verdict on `commit` (cut from `base`): the object
     of every path the commit changes, for a HOLD as much as a CLEAR."""
@@ -830,6 +893,8 @@ def pre(
     clears, unverified = authenticated(root, effective_clears(root, target))
     delta = governed_delta(root, sealed, target)
     miss = uncovered(root, delta, target, clears)
+    fast = fast_lane_exempt(root, miss, target, clears)
+    miss = [p for p in miss if p not in fast]
     if miss:
         return HOLD, {
             "decision": "HOLD_UNAUDITED",
@@ -853,8 +918,10 @@ def pre(
         "decision": "GO",
         "target": target,
         "sealed": sealed,
-        "reason": f"{len(delta)} governed path(s), every one auditor CLEAR",
+        "reason": f"{len(delta)} governed path(s), every one auditor CLEAR"
+        + (f" or off the money path ({len(fast)}, fast lane)" if fast else ""),
         "governed_paths": delta[:50],
+        "fast_lane_exempt": dict(list(fast.items())[:50]),
         # adopter v3 audit MF3: the hold costs entries, so it goes up only when this adoption
         # changes something governed: code against the seal, steering state, or code a box
         # session committed on HEAD that the target rewrites (v5 audit MF3c)
