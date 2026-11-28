@@ -38,6 +38,7 @@ def family_formula(
     rr: float = 1.5,
     drivers: dict[str, pd.DataFrame] | None = None,
     population: str | None = None,
+    panel_symbols: list[str] | tuple[str, ...] | None = None,
 ) -> list[Signal]:
     # `population` IS PROVENANCE, NOT A PARAMETER (2026-09-30): the search-paradigm census stamps
     # which search population drew the tree (`"gp"`, ...) into params, where it names the cell.
@@ -47,6 +48,7 @@ def family_formula(
     # accepted and ignored: two trees that differ only by the population that found them are the
     # same rule and trade the same signals.
     del population
+    from libs.research import alpha_grammar as _grammar
     from libs.research.alpha_grammar import (
         DRIVER_TERMINALS,
         evaluate,
@@ -75,7 +77,34 @@ def family_formula(
     frames = terminal_frames(d, raw=df, drivers=drivers, atr_n=atr_n)
     if any(t in DRIVER_TERMINALS and t not in frames for t in terminals_in(expr)):
         return []
-    v = evaluate(expr, frames)
+    # A PUBLISHED-LIBRARY FORMULA THAT RANKS ACROSS INSTRUMENTS (GTJA RANK) is evaluated on the
+    # peer panel its recipe names (`panel_symbols`, the symbol's `universe_policy.peer_class`
+    # frozen when `formula_library` minted the cell), and the grammar node is seeded with this
+    # symbol's column -- the PANEL contract. The peers' bars are read on this chart through
+    # `family_inputs.bars_named`, as lead_lag and triangle read theirs. No loaded peer is no
+    # cross-section, and that is no signal -- never a rank of one instrument against itself.
+    memo: dict[str, Any] | None = None
+    lib = _grammar.library_key(expr)
+    if lib is not None:
+        from libs.research import formula_catalog, formula_ops
+
+        spec = formula_catalog.get(lib)
+        if spec is not None and spec.needs_panel:
+            from mt5desk.family_inputs import bars_named
+
+            loaded = {str(p): _h1(b) for p in (panel_symbols or ())
+                      if (b := bars_named(str(p), d)) is not None}
+            if not loaded:
+                return []
+            try:
+                fields = formula_ops.panel_from_bars({"__self__": d, **loaded}, d.index)
+                col = formula_catalog.evaluate(lib, fields)["__self__"]
+            except (formula_ops.FormulaError, KeyError):
+                return []
+            import json as _json
+
+            memo = {_json.dumps(expr, default=str): col.astype(float)}
+    v = evaluate(expr, frames, memo)
     r = v.rolling(int(norm), min_periods=int(norm))
     z = ((v - r.mean()) / r.std()).to_numpy(dtype=float)
     if np.isfinite(z).sum() < 0.05 * z.size:

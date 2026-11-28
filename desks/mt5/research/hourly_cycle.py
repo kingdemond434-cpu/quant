@@ -1540,8 +1540,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
     # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
-    **dict.fromkeys(("math_lab", "expression_factory", "physics_lab", "coevolution"),
-                    "mathlab"),
+    **dict.fromkeys(("math_lab", "expression_factory", "formula_library", "physics_lab",
+                     "coevolution"), "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
@@ -2470,6 +2470,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
     "expression_factory": 720,
+    # THE PUBLISHED FORMULA LIBRARIES (GTJA-191, Alpha158) stop themselves at --budget-s 480 and
+    # write FORMULA_LIBRARY.json; the cap sits above the self-stop plus its donation write.
+    "formula_library": 600,
     # THE FREE-STACK HUNTER stops itself at --budget-s 600 and persists its cursor after every
     # source, so a cut pass still advanced; the cap sits above so the yield artifact is written.
     "free_stack_hunt": 720,
@@ -5159,6 +5162,14 @@ def main() -> None:
     xpf = _costed("expression_factory", lambda: _producer("expression_factory",
                                                            "research/expression_factory.py",
                                                            "--once", "--budget-s", "600"))
+    # THE PUBLISHED FORMULA LIBRARIES, the formula family's operator-exact producer: GTJA-191 and
+    # Qlib Alpha158 as published, one cell per (formula, symbol, H1, horizon) on the hypothesis
+    # lane, cross-sectional RANK within the symbol's peer class. Cells are donated through
+    # family_donation (data/intelligence/formula_library/), each charged as a trial once.
+    # Writes reports/FORMULA_LIBRARY.json.
+    flb = _costed("formula_library", lambda: _producer("formula_library",
+                                                        "research/formula_library.py",
+                                                        "--once", "--budget-s", "480"))
     # ITS BENCHMARK (2026-09-30): candidates per hour against EasyQuant's 32/h, the factory's
     # stage profile, and the idea-to-verdict latency from its campaign journal. Writes
     # reports/FACTORY_THROUGHPUT.json.
@@ -6640,7 +6651,8 @@ def main() -> None:
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
-                    "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
+                    "math_lab": mlb, "expression_factory": xpf, "formula_library": flb,
+                    "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
