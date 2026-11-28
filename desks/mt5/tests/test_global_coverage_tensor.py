@@ -104,7 +104,12 @@ def _seat(desk: dict[str, Path], name: str, *, pit: bool) -> None:
 
 
 def _build(**kw: Any) -> dict[str, Any]:
-    return G.build(now=NOW, conn=_conn(), budget_s=120, **kw)
+    # `build` closes only a connection it opened itself, so the one handed in is closed here.
+    conn = _conn()
+    try:
+        return G.build(now=NOW, conn=conn, budget_s=120, **kw)
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------- the CRO contract
