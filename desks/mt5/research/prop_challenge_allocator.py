@@ -597,6 +597,38 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
+def formula_unmeasured(cert_key: str) -> str | None:
+    """Why `cert_key`'s stored verdict funds nothing here, or None.
+
+    A FORMULA CERTIFICATE THAT READS THE SPREAD OR THE TICK COLUMNS IS UNMEASURED EVIDENCE
+    (Auditor + Judge, box read 2026-11-10 18:08Z): 5,702 of 5,757 `formula` certificates read
+    spread/activity/flow, and on AUDSGD the certified edge disappears once unrecorded (zero)
+    spread bars are read as missing. THE RULE IS NOT THIS MODULE'S: the one answer for the
+    enrolment door and both allocators is `shadow_admission.formula_input_unmeasured(name, row)`,
+    which lifts per certificate on its own re-gate at or after FORMULA_INPUT_RULE_EFFECTIVE_UTC.
+    This module holds no copy of it and no release file. Evidence invalidity, never a risk cut:
+    no other column, cap or fraction changes, and each refusal is named on the report (rail
+    `ftmo_formula_unmeasured`). FAIL CLOSED: a formula certificate whose row or whose shared test
+    cannot be read is UNMEASURED too (absence never resolves to a clean verdict)."""
+    store = _read_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    if not store.get("survivors"):
+        store = _read_json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    row = (store.get("survivors") or {}).get(cert_key)
+    spec = row.get("shadow_spec") if isinstance(row, dict) else None
+    fam = str((spec or {}).get("family") or "") if isinstance(spec, dict) else ""
+    if fam != "formula" and ".formula." not in str(cert_key):
+        return None
+    if not isinstance(row, dict):
+        return (f"UNMEASURED: formula certificate {cert_key} is not readable in the store, so "
+                f"its spread/tick dependence cannot be ruled out")
+    try:
+        import shadow_admission as sa
+        return sa.formula_input_unmeasured(cert_key, row)
+    except Exception as exc:
+        return (f"UNMEASURED: the shared formula input test is unavailable "
+                f"({type(exc).__name__}); no capital on a formula certificate without it")
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -661,6 +693,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
     door_blocked: list[str] = []
+    formula_held: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
@@ -679,6 +712,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
+        elif (unm := formula_unmeasured(cert_key)):
+            reason = unm
+            formula_held.append(col)
         else:
             door = door_block(cert_key)
             if door:
@@ -688,7 +724,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                 reason = f"TIER_S_BLOCKED at the executor's door: {door}"
                 door_blocked.append(col)
         if reason:
-            columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
+            columns[col] = {"admitted": False, "why": reason,
+                            "rail": ("ftmo_formula_unmeasured" if col in formula_held
+                                     else "ftmo_universe")}
             continue
         admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
@@ -707,6 +745,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps, "door_blocked": door_blocked,
+                "formula_unmeasured": formula_held,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
                 "listing": listing, "tier_s": tier_s}
     r = np.stack(slices, axis=2)
@@ -721,6 +760,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
             "caps": caps, "specs": specs, "door_blocked": door_blocked,
+            "formula_unmeasured": formula_held,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -998,6 +1038,8 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["rail_blocks"] = rail_blocks(uni)
     doc["tier_s_door_blocked"] = {"n": len(uni.get("door_blocked") or []),
                                   "columns": sorted(uni.get("door_blocked") or [])}
+    doc["formula_unmeasured"] = {"n": len(uni.get("formula_unmeasured") or []),
+                                 "columns": sorted(uni.get("formula_unmeasured") or [])}
     doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
                                if row.get("e8_overlap"))
     doc["status"] = now_block["status"]
