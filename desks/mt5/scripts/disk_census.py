@@ -35,10 +35,21 @@ import shutil
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 REPO = BASE.parent.parent
 REPORT = BASE / "reports" / "DISK_CENSUS.json"
+#: One compact row per census (2026-11-10): the drive used 370 GB more on 11-10 than on 11-03 and
+#: nothing could say WHERE, because the census kept only its latest snapshot and ran on no clock.
+#: The history is what turns "the disk is full" into "this directory grew N GB since yesterday".
+HISTORY = BASE / "reports" / "DISK_CENSUS_HISTORY.jsonl"
+HISTORY_TOP = 40          # rows per history entry: the 40 largest trees carry the story
+#: Retention (Auditor should-fix on #880): the box sync refuses files over 4 MB, so the history
+#: keeps only a tail -- entries from the last HISTORY_DAYS, and never more than HISTORY_KEEP rows
+#: (a month at the 6 h cadence is 120; ~4 KB each keeps the file well under 1 MB).
+HISTORY_DAYS = 31
+HISTORY_KEEP = 150
 
 REFETCHABLE, SYSTEM, IRREPLACEABLE, REVIEW = "REFETCHABLE", "SYSTEM", "IRREPLACEABLE", "REVIEW"
 
@@ -174,13 +185,103 @@ def census(depth: int) -> list[dict]:
     return rows
 
 
+def _parse(ts: str | None) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def report_age_h(now: datetime, report: Path = REPORT) -> float | None:
+    """Hours since the last census by its OWN stamp (never file mtime: adoption rewrites mtimes)."""
+    try:
+        t = _parse(json.loads(report.read_text("utf-8")).get("generated_at"))
+    except (OSError, ValueError, AttributeError):
+        return None
+    return None if t is None else (now - t).total_seconds() / 3600
+
+
+def read_history(path: Path = HISTORY) -> list[dict[str, Any]]:
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for ln in lines:
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and _parse(row.get("at")):
+            out.append(row)
+    return out
+
+
+def history_row(at: str, used_gb: float, free_gb: float, by_class: dict[str, float],
+                rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"at": at, "used_gb": used_gb, "free_gb": free_gb, "by_class_gb": by_class,
+            "top": {r["path"]: r["gb"] for r in rows[:HISTORY_TOP]}}
+
+
+def growth(history: list[dict[str, Any]], now_row: dict[str, Any],
+           hours: float) -> dict[str, Any]:
+    """Used-GB and per-directory growth against the newest entry at least `hours` old.
+
+    Only a directory present in BOTH entries gets a gb_delta. One absent from the old top-N is
+    listed under `new_in_top` with its size and no delta: it may have sat just under the
+    top-N and grown a little, or be a brand-new tree, and the history cannot tell which, so
+    claiming its whole size as growth would overstate it.
+    """
+    now_t = _parse(now_row["at"])
+    base: dict[str, Any] | None = None
+    base_t: datetime | None = None
+    for row in history:
+        t = _parse(row.get("at"))
+        if t is None or now_t is None or (now_t - t).total_seconds() < hours * 3600:
+            continue
+        if base_t is None or t > base_t:
+            base, base_t = row, t
+    if base is None:
+        return {"status": "UNMEASURED", "why": f"no census at least {hours:g} h old yet"}
+    old = base.get("top") or {}
+    growers = sorted(((p, round(gb - float(old[p]), 2))
+                      for p, gb in now_row["top"].items() if p in old), key=lambda x: -x[1])
+    entrants = sorted(((p, round(float(gb), 2)) for p, gb in now_row["top"].items()
+                       if p not in old), key=lambda x: -x[1])
+    return {"status": "MEASURED", "since": base["at"],
+            "used_gb_delta": round(now_row["used_gb"] - float(base.get("used_gb", 0.0)), 2),
+            "top_growers": [{"path": p, "gb_delta": d} for p, d in growers[:10] if d > 0],
+            "new_in_top": [{"path": p, "size_gb": g} for p, g in entrants[:10]]}
+
+
+def append_history(row: dict[str, Any], path: Path = HISTORY) -> None:
+    now_t = _parse(row.get("at"))
+    kept = [r for r in read_history(path)
+            if now_t is None or (t := _parse(r.get("at"))) is None
+            or (now_t - t).total_seconds() <= HISTORY_DAYS * 86400]
+    rows = [*kept[-(HISTORY_KEEP - 1):], row]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".jsonl.tmp")
+    tmp.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), "utf-8")
+    os.replace(tmp, path)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--depth", type=int, default=2, help="directory levels to break down (2)")
     ap.add_argument("--all", action="store_true", help="print every row, not the top 25")
     ap.add_argument("--top", type=int, default=25)
+    ap.add_argument("--min-age-h", type=float, default=0.0,
+                    help="skip (exit 0) when the last census is younger than this, by its stamp")
     args = ap.parse_args(argv)
+
+    now = datetime.now(UTC)
+    age = report_age_h(now, REPORT)
+    if args.min_age_h > 0 and age is not None and age < args.min_age_h:
+        print(f"disk_census: last census {age:.1f} h old (< {args.min_age_h:g} h) -- skipped")
+        return 0
 
     try:
         du = shutil.disk_usage(str(REPO))
@@ -218,15 +319,28 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{by_class[REFETCHABLE] / (1024 ** 3):.1f} GB is REFETCHABLE -- that is the "
               f"headroom available without losing a single fact.")
 
+    at = now.isoformat(timespec="seconds")
+    by_class_gb = {k: round(v / (1024 ** 3), 2) for k, v in by_class.items()}
+    hrow = history_row(at, round(used / (1024 ** 3), 2), round(free / (1024 ** 3), 2),
+                       by_class_gb, rows)
+    hist = read_history(HISTORY)
+    grow = {"24h": growth(hist, hrow, 24), "7d": growth(hist, hrow, 24 * 7)}
+    for k, g in grow.items():
+        if g["status"] == "MEASURED":
+            print(f"growth {k}: used {g['used_gb_delta']:+.1f} GB since {g['since']}; top "
+                  + ", ".join(f"{x['path']} {x['gb_delta']:+.1f}" for x in g["top_growers"][:3])
+                  + "".join(f"; new in top {x['path']} {x['size_gb']:.1f} GB"
+                            for x in g["new_in_top"][:3]))
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps({
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "generated_at": at, "growth": grow,
         "total_gb": round(total / (1024 ** 3), 2), "used_gb": round(used / (1024 ** 3), 2),
         "free_gb": round(free / (1024 ** 3), 2),
         "accounted_gb": round(accounted / (1024 ** 3), 2),
-        "by_class_gb": {k: round(v / (1024 ** 3), 2) for k, v in by_class.items()},
+        "by_class_gb": by_class_gb,
         "rows": rows[:400],
     }, indent=1), "utf-8")
+    append_history(hrow, HISTORY)
     print(f"\nwritten: {REPORT}")
     return 0
 
