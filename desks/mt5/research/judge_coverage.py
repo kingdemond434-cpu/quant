@@ -123,6 +123,29 @@ WINDOW_H = 1.0
 #: winner-take-all rule that rediscovers the exact starvation this organ was built to end.
 FLOOR_SHARE = 0.25
 
+#: A family is EXHAUSTED at the judge -- its floor share is trimmed, never removed -- once its own
+#: record says another hour of floor is near-worthless: at least `EXHAUSTED_MIN_JUDGED` realised
+#: verdicts and a 95% posterior upper bound on its pass rate (`p_optimistic`, the number the
+#: value ranking already spends) at or below `EXHAUSTED_HI`. Measured 2026-11-17 on the box's
+#: JUDGE_COVERAGE.json (13:10Z): 22 families sat there, each holding the full equal floor (93 of
+#: 35,992 cells a pass, 2,046 in all) while overnight_gap_decay (p_hi 0.104, 17,022 unjudged) and
+#: the never-judged families (p_hi 1.0) waited on the remainder. An exhausted family keeps
+#: `EXHAUSTED_FLOOR_FRACTION` of the equal share and never less than one cell, so it is still
+#: explored every pass and a pass that arrives lifts it straight back; the cells it gives up go
+#: down the value ranking with the rest of the remainder. The floor POOL is unchanged, and no
+#: gate, trial charge or verdict is touched -- this decides only which cells are judged first.
+EXHAUSTED_MIN_JUDGED = 5_000
+EXHAUSTED_HI = 0.001
+EXHAUSTED_FLOOR_FRACTION = 0.10
+#: BREADTH GUARD on the rule above (Hourly pass, 2026-11-17 20:04Z, for the principal): thousands
+#: of verdicts on a HANDFUL of variants say those variants are dead, not the family. A family is
+#: trimmed only once its judged rows span at least this many DISTINCT structural variants
+#: (`structural_cell`: chart, session, regime, direction and representation on the
+#: family|symbol|horizon grid; threshold-only parameter changes are one variant). Counted from the
+#: docket in the same walk that counts the backlog, capped here, and published per family as
+#: `judged_variants`; a family the walk did not count keeps its full floor.
+EXHAUSTED_MIN_VARIANTS = 50
+
 #: The judge's capacity is MEASURED from its own ledger (the busiest recent hour), never assumed
 #: off a machine size -- CLAUDE.md's 8 GB/96 GB note is the standing lesson about inventing one.
 #: The floor exists only so a cold tree with no ledger still produces a usable allocation.
@@ -3219,6 +3242,42 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     return out
 
 
+def exhausted_families(ranking: list[dict[str, Any]] | None) -> set[str]:
+    """Families whose own realised record says the floor is near-worthless (EXHAUSTED_* above).
+
+    Read from the published value ranking, so the rule spends exactly the numbers the ranking
+    shows: `realised_judged`, `p_optimistic` and `judged_variants` (the distinct structural
+    variants its judged rows span, `EXHAUSTED_MIN_VARIANTS`). A row missing any of the three is
+    NOT exhausted -- an unmeasured, new or swarm-born family keeps its full floor (L1.28a)."""
+    out: set[str] = set()
+    for row in ranking or ():
+        try:
+            judged = int(row["realised_judged"])
+            hi = float(row["p_optimistic"])
+            variants = int(row["judged_variants"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (judged >= EXHAUSTED_MIN_JUDGED and variants >= EXHAUSTED_MIN_VARIANTS
+                and 0.0 <= hi <= EXHAUSTED_HI):
+            out.add(str(row.get("family") or ""))
+    return out
+
+
+def family_floors(backlog: dict[str, int], capacity: int, floor_share: float = FLOOR_SHARE,
+                  ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
+    """Each family's floor of the hour: the equal share, trimmed for an EXHAUSTED family.
+
+    Every family with backlog still gets at least one cell and never more than its backlog."""
+    live = {f: n for f, n in backlog.items() if n > 0}
+    if not live or capacity <= 0:
+        return {}
+    floor_pool = int(capacity * max(0.0, min(1.0, floor_share)))
+    per_family_floor = max(1, floor_pool // len(live))
+    trimmed = max(1, int(per_family_floor * EXHAUSTED_FLOOR_FRACTION))
+    dead = exhausted_families(ranking)
+    return {f: min(n, trimmed if f in dead else per_family_floor) for f, n in live.items()}
+
+
 def allocate(backlog: dict[str, int], capacity: int,
              floor_share: float = FLOOR_SHARE,
              ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
@@ -3227,7 +3286,10 @@ def allocate(backlog: dict[str, int], capacity: int,
     THE FLOOR IS THE BREADTH MANDATE AND IT NEVER MOVES. Every family holding an unjudged cell
     gets an equal share of the first `FLOOR_SHARE` of the hour, because starving a family is how
     this desk reached a six-family concentration in the first place, and a ranking that could
-    zero a family would rebuild it inside a week.
+    zero a family would rebuild it inside a week. The one exception is EARNED, never typed: a
+    family whose own record is exhausted (`exhausted_families`: 5,000+ verdicts across 50+
+    distinct variants and a 95% upper bound on its pass rate at or below 0.1%) keeps a tenth of the equal share and at least one
+    cell, so it is never zeroed, and the cells it gives up join the value-ranked remainder.
 
     THE REMAINDER IS WHERE THE RETURN IS. Spending it in proportion to backlog spends it on
     whichever miner ran hardest, which is a measure of the desk's own output and not of what an
@@ -3243,9 +3305,7 @@ def allocate(backlog: dict[str, int], capacity: int,
     live = {f: n for f, n in backlog.items() if n > 0}
     if not live or capacity <= 0:
         return {}
-    floor_pool = int(capacity * max(0.0, min(1.0, floor_share)))
-    per_family_floor = max(1, floor_pool // len(live))
-    quota = {f: min(n, per_family_floor) for f, n in live.items()}
+    quota = family_floors(live, capacity, floor_share, ranking)
     spare = capacity - sum(quota.values())
     if spare <= 0:
         return quota
@@ -3817,10 +3877,19 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # Counted in the SAME pass over the docket as the backlog (one walk of 1.6M rows, not two).
     carried: dict[str, int] = {}
     parked_since: dict[str, int] = {}
+    # The breadth guard's count (`EXHAUSTED_MIN_VARIANTS`): distinct structural variants among
+    # each family's JUDGED rows, capped at the threshold so a family stops costing once it is met.
+    judged_variants: dict[str, set[str]] = {}
     for row in rows:
         fam = str(row.get("family") or "")
         cid = row.get("_cell")
         if cid and cid in judged_cells:
+            if fam:
+                _jv = judged_variants.get(fam)
+                if _jv is None:
+                    _jv = judged_variants[fam] = set()
+                if len(_jv) < EXHAUSTED_MIN_VARIANTS:
+                    _jv.add(_grid_and_structural(row)[1])
             continue
         if fam in banned:
             # NOT backlog: a cell that cannot reach the book is not work the judge owes. It is
@@ -3934,6 +4003,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
+    for _rk in ranking:
+        _rk["judged_variants"] = len(judged_variants.get(str(_rk["family"]), ()))
     quota = allocate(backlog, capacity, ranking=ranking)
     _check_budget("ranking")
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -4054,11 +4125,13 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     hours_to_drain = drain_eta.get("hours")
     _h_gross = drain_eta.get("hours_at_zero_creation")
     forgone_per_hour = (value_deferred / max(_h_gross or 1.0, 1.0) if _h_gross else 0.0)
+    floors = family_floors(backlog, capacity, FLOOR_SHARE, ranking)
+    exhausted = exhausted_families(ranking)
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)
-        row["floor"] = min(backlog.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
-            sum(1 for v in backlog.values() if v > 0), 1)))
+        row["floor"] = floors.get(fam, 0)
+        row["floor_exhausted"] = fam in exhausted
         row["remainder"] = max(0, row["quota"] - row["floor"])
         row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
         row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
