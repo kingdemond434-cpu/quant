@@ -73,7 +73,7 @@ def test_every_default_family_is_swept_on_every_chart_and_session_except_the_ban
     assert charts == {"M5", "M15", "H1", "D1"}
     sessions_m5 = {str(c["params"].get("session") or "all") for c in tmc
                    if c["params"].get("timeframe") == "M5"}
-    assert sessions_m5 == {"all", "asia", "london", "ny"}
+    assert sessions_m5 == set(bs.SESSION_AXIS)
     # Daily bars carry no session.
     assert all("session" not in c["params"] for c in tmc if c["params"].get("timeframe") == "D1")
     # Most intraday first, so a capped merge reaches the charts ranked highest.

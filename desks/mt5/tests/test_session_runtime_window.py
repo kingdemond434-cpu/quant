@@ -135,10 +135,11 @@ def test_the_probe_sees_the_changes_content_alone_missed(monkeypatch) -> None:
     before = runtime.contract_fingerprint()
     assert before == runtime.CONTRACT and before.startswith("contract-")
     with monkeypatch.context() as m:
-        m.setitem(family_call.SESSIONS, "overlap", (13, 16))         # an added overlap window
+        # WINDOWS is the table session_window reads (SESSIONS + the fine sessions).
+        m.setitem(family_call.WINDOWS, "ldn_ny_overlap", (13, 16))          # a moved overlap window
         assert runtime.contract_fingerprint() != before
     with monkeypatch.context() as m:
-        m.setitem(family_call.SESSIONS, "tokyo", (0, 8))             # an alias the filter learns
+        m.setitem(family_call.WINDOWS, "tokyo", (0, 8))              # an alias the filter learns
         assert runtime.contract_fingerprint() != before
     with monkeypatch.context() as m:
         m.setattr(runtime, "IDENTITY_KEYS",

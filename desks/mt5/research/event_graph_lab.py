@@ -161,7 +161,7 @@ def load_universe() -> dict[str, str]:
 def _sessions() -> dict[str, tuple[int, int] | None]:
     table = dict(SESSION_SEED)
     try:
-        from mt5desk.family_call import SESSIONS
+        from mt5desk.family_call import WINDOWS as SESSIONS
         table.update({str(k): v for k, v in dict(SESSIONS).items()})
     except Exception:
         pass

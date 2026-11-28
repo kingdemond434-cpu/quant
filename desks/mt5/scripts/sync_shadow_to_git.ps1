@@ -857,6 +857,11 @@ $reportPaths = @(
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE BOX'S OWN BAR AND TICK CENSUS (2026-10-06). Written by the hourly `timeframe_coverage`
+    # leg: series per chart, fresh symbols, intraday gaps, the downloader's verdicts and the tick
+    # recorder's status. No reader off the box could say how much M1 the desk holds, and an
+    # outside read of the box was refused; the box now says it on this wire.
+    "desks/mt5/reports/TIMEFRAME_COVERAGE.json",
     # THE E8 GOLD LANE'S PLACEMENT EVIDENCE (2026-10-20). prop/e8_evidence.py writes both on every
     # five-minute E8-Gold pass; scripts/check_placement_interlock.py judges the lane from them.
     # Until now they existed only on the box, so no reader off it could say whether the E8 book
