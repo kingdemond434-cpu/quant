@@ -4,8 +4,10 @@
 # live in a bash file (`ops/free_tier.env`). On this box there is no systemd, no bash and no
 # logged-in session at 03:00, so the organ ran only while somebody else's Linux box was up.
 # This runner is the Windows half: it reads the same env file, runs the same cycle, appends the
-# same log, and exits with the cycle's own code. A DARK seat is exit 0 by design; a policy
-# failure is exit 2 and is meant to show as a failed task.
+# same log, and exits with the cycle's own code. A DARK seat, a spent budget and a rate limit
+# are exit 0 by design; a policy failure is exit 2; a failed call, a retired DeepSeek pin with
+# no DeepSeek id to move to, or a run with zero findings is exit 1 (2026-10-29) -- all meant to
+# show as a failed task. Task Scheduler restarts on a LAUNCH failure only, not on a nonzero exit.
 $ErrorActionPreference = 'Stop'
 
 $Root = 'C:\opt\quant'
