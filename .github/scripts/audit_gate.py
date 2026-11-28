@@ -871,6 +871,7 @@ def registry_window(
     now: datetime,
     notify: Callable[[str, str], bool],
     hold_h: float | None = None,
+    body: str | None = None,
 ) -> tuple[datetime | None, str]:
     """(when the veto window for (pr, head) started, or None; why). The start is the gate's own
     record of the moment its notice was DELIVERED, kept in `seen_path` beside the registry. The
@@ -893,7 +894,7 @@ def registry_window(
         if at.tzinfo is None or at > now:
             return None, "the veto-window record has a bad time"
         return at, ""
-    body = (
+    body = body or (
         f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {hold:.0f} h "
         "with every check green. To stop it: an AUDIT HOLD on the PR, a HOLD row, DEACTIVATE "
         "merges, or a new push."
@@ -967,6 +968,160 @@ def registry_clear(
         return None, f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {hold:.0f} h"
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
     return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+
+
+# THE SILENT-VETO ROOT PATH (zuck 2026-11-18 17:22Z, "Yes perfect", to Governance's design of
+# 17:21Z). A ROOT or NEVER-STANDING PR merges WITHOUT his line only when a mechanical proof shows
+# it cannot loosen anything, and only after a 72 h window from the gate's own delivered notice
+# passes with no veto. Two classes, nothing else:
+#   S1  a .py file whose AST, docstrings stripped, is identical at base and head (comments and
+#       docstrings only: the code that runs is the same code);
+#   S2  a ROOT_POLICY grow_only list whose head is the base with lines INSERTED and none removed
+#       or reordered (more protected paths, more risk suites, more trusted-eval suites).
+# SILENT_ROOT_LOCKED never takes this path, whatever the change: every workflow, this gate (the
+# window itself lives here), the box's runner of it, the release authority and its signers, and
+# the memecoin LIVE fence. A change to any of those still needs zuck's own line. Unsure is no: an
+# unreadable side, a rename, an added or removed file, an unparsable .py, any other path in the
+# never-standing set. Everything else still binds: the Auditor CLEAR of the head, the base-run
+# trusted-eval, every gating and AUTO job, up to date with LIVE, the controller switched on, and
+# the merge pinned to the head. The PR must be ROOT-ONLY: any other file sends it to the normal
+# paths. A veto is any of: an AUDIT HOLD, a trusted comment exactly `VETO` anywhere on the PR
+# (never lifted on this path, not even by a later CLEAR), a DEACTIVATE on #453, or a new push (a
+# new head starts a new window). The window record sits beside the box registry; with no
+# registry, or no delivered notice, no window starts and nothing merges this way.
+SILENT_ROOT_HOLD_H = 72.0
+SILENT_ROOT_LOCKED = (
+    ".github/workflows/*",
+    ".github/scripts/audit_gate.py",
+    ".github/scripts/memecoin_gate.py",
+    "ops/box/workflow_gate.ps1",
+    "ops/release/authority/*",
+    "ops/signing/*",
+    "ops/release_authority.py",
+    "ops/run_release_authority.cmd",
+)
+VETO = "VETO"
+SILENT_ROOT_TITLE = "silent-veto ROOT"
+
+
+def code_identity(src: str) -> str | None:
+    """The module's AST with every module, class and function docstring removed, as a string;
+    None when it does not parse. Comments never reach the AST, so two sources with the same
+    identity differ only in comments, docstrings and layout."""
+    import ast
+
+    try:
+        tree = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return None
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            body = node.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                node.body = body[1:] or [ast.Pass()]
+    return ast.dump(tree, include_attributes=False)
+
+
+#: An inserted grow-only line: blank, a comment, or one plain path or glob that cannot be read
+#: as an option (#1367 audit SF: no leading "-", "!" or whitespace-separated words).
+_GROW_LINE = re.compile(r"^(?:\s*|\s*#.*|[A-Za-z0-9_.*/][A-Za-z0-9_.*/\-]*)$")
+#: PEP 263: an encoding cookie in a comment on the first two lines (#1367 audit HOLD 3).
+_CODING = re.compile(r"^[ \t\f]*#.*?coding[:=][ \t]*([-\w.]+)")
+
+
+def inserted_only(old: str, new: str) -> bool:
+    """Is `new` exactly `old` with one or more plain lines inserted (none removed, none
+    reordered), each inserted line blank, a comment, or a single path or glob?"""
+    a, b = old.splitlines(), new.splitlines()
+    if len(b) <= len(a):
+        return False
+    added: list[str] = []
+    i = 0
+    for line in b:
+        if i < len(a) and line == a[i]:
+            i += 1
+        else:
+            added.append(line)
+    return i == len(a) and all(_GROW_LINE.match(x) for x in added)
+
+
+def _decoding(src: str) -> tuple[bool, tuple[str, ...]]:
+    """What decides how the file's bytes become text: a BOM and the encoding cookie lines."""
+    head = src.splitlines()[:2]
+    cookies = tuple(m.group(1).lower() for ln in head if (m := _CODING.match(ln)))
+    return src.startswith("\ufeff"), cookies
+
+
+def tightening_only(
+    files: list[Mapping[str, Any]], show: Callable[[str, str], str], base_ref: str, head: str
+) -> tuple[bool, str]:
+    """(may this PR take the silent-veto ROOT path; why). `show(rev, path)` reads a file at a
+    revision and raises when it cannot. Every never-standing file must be S1 or S2 and none may
+    be locked; at least one must be present (otherwise this path does not apply)."""
+    pats = never_standing_patterns()
+    try:
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        grow = [str(x).lower() for x in policy["grow_only"]]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        return False, "silent-veto: the root policy is unreadable"
+    if pats is None or not files:
+        return False, "silent-veto: the root policy or the file list is unreadable"
+
+    def hit(name: str, among: Iterable[str]) -> bool:
+        return any(fnmatch.fnmatchcase(name.lower(), p.lower()) for p in among)
+
+    rooted = 0
+    for f in files:
+        name = str(f.get("filename") or "")
+        old = str(f.get("previous_filename") or "")
+        if not name:
+            return False, "silent-veto: a file has no name"
+        if not (hit(name, pats) or (old and hit(old, pats))):
+            # #1367 audit HOLD 1: a root-only PR. Any other file would merge without the
+            # standing path's own checks, so a mixed PR takes the normal paths.
+            return False, f"silent-veto: {name} is not a root file; only root-only PRs qualify"
+        rooted += 1
+        if hit(name, SILENT_ROOT_LOCKED) or (old and hit(old, SILENT_ROOT_LOCKED)):
+            return False, f"silent-veto: {name} is locked; it needs zuck's own line"
+        if old or str(f.get("status") or "") != "modified":
+            return False, f"silent-veto: {name} is {f.get('status')}, not an in-place edit"
+        try:
+            before, after = show(f"origin/{base_ref}", name), show(head, name)
+        except Exception as exc:
+            return False, f"silent-veto: {name} cannot be read ({type(exc).__name__})"
+        if name.lower() in grow:
+            if not inserted_only(before, after):
+                return False, f"silent-veto: {name} is grow-only; this edit removes or moves lines"
+        elif name.lower().endswith(".py"):
+            a, b = code_identity(before), code_identity(after)
+            if _decoding(before) != _decoding(after):
+                return False, f"silent-veto: {name} changes its encoding cookie or BOM"
+            if a is None or b is None or a != b:
+                return False, f"silent-veto: {name} changes code, not only comments or docstrings"
+        else:
+            return False, f"silent-veto: {name} is neither a comment-only .py nor a grow-only list"
+    if not rooted:
+        return False, "silent-veto: no root or never-standing file (the normal paths decide)"
+    return True, f"silent-veto: {rooted} root file(s), comments, docstrings or insertions only"
+
+
+def vetoed(comments: Iterable[Mapping[str, Any]]) -> bool:
+    """A trusted comment exactly VETO (any case, any spacing) anywhere on the PR, or any edited
+    trusted comment (an edit can hide a VETO). It is never lifted on this path, by a later CLEAR
+    or a new head (#1367 audit HOLD 2): after a VETO the PR needs zuck's own line. Any trusted
+    author may veto: stopping is always safe."""
+    for c in comments:
+        body = " ".join(str(c.get("body") or "").split()).upper()
+        trusted = str(c.get("author_association") or "") in TRUSTED
+        edited = c.get("updated_at") not in (None, c.get("created_at"))
+        if trusted and (body == VETO or edited):
+            return True
+    return False
 
 
 # THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
@@ -1615,12 +1770,59 @@ def run(
                 # it rests on the standing approval, not a comment newer than the CLEAR: the
                 # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
                 clear = {**clear, "standing": "yes"}
+            if not ok and box and level == "PROTECTED":
+                sclear, swhy = silent_root_now(clear)
+                if sclear is not None:
+                    return sclear, f"{why}; {swhy}"
+                awhy = f"{awhy}; {swhy}"
             if ok or not registry:
                 return (clear if ok else None), f"{why}; {awhy}"
             why = f"{why}; {awhy}"
         if not registry:
             return None, why
         return registry_now(found, why)
+
+    def silent_root_now(clear: dict[str, str]) -> tuple[dict[str, str] | None, str]:
+        """The silent-veto ROOT path (SILENT_ROOT_HOLD_H), box only, after zuck's own path did
+        not cover the CLEAR. The window's notice goes out only once every other condition holds."""
+        path = os.environ.get(REGISTRY_ENV) or ""
+        if not path:
+            return None, "silent-veto: no box registry, so no window record"
+        ok, why = tightening_only(files, lambda rev, n: _git("show", f"{rev}:{n}"), base, head)
+        if not ok:
+            return None, why
+        on, owhy = switches()
+        if not on:
+            return None, f"silent-veto: {owhy}"
+        comments = _flat(
+            _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
+        )
+        if vetoed(comments):
+            return None, f"silent-veto: a `{VETO}` (or an edited comment) on the PR stands"
+        fresh, fwhy = up_to_date(base, head)
+        if not fresh:
+            return None, f"silent-veto: {fwhy}"
+        ok, ewhy = trusted_eval_passed(repo, pr, head, base)
+        if not ok:
+            return None, f"silent-veto: {ewhy}"
+        now = datetime.now(UTC)
+        body = (
+            f"ROOT PR #{pr} at {head[:9]} changes only comments, docstrings or grow-only "
+            f"insertions ({why}). The Auditor CLEARed it. The box merges it after "
+            f"{SILENT_ROOT_HOLD_H:.0f} h with every check green unless vetoed. To stop it: "
+            f"comment {VETO} on the PR, an AUDIT HOLD, DEACTIVATE RELEASE CONTROLLER on "
+            f"#{approvals_issue}, or a new push."
+        )
+        start, wwhy = registry_window(
+            Path(path + ".silent_root.json"), pr, head, now, run_notify, SILENT_ROOT_HOLD_H, body
+        )
+        if start is None:
+            return None, f"silent-veto: {wwhy}"
+        age_h = (now - start).total_seconds() / 3600.0
+        if age_h < SILENT_ROOT_HOLD_H:
+            return None, f"silent-veto: the window is {age_h:.1f} of {SILENT_ROOT_HOLD_H:.0f} h"
+        got = {**clear, "sha": head, "method": "merge", "silent": "yes", "standing": "yes"}
+        return got, f"{SILENT_ROOT_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
 
     def authority_rows() -> tuple[list[dict[str, Any]], str]:
         """The authority path's one CLEAR row for this head, or none; why (see AUTHORITY_*)."""
@@ -1725,6 +1927,8 @@ def run(
         need = required + auto
         if clear.get("standing") and RISK_JOB not in need:
             need = (*need, RISK_JOB)
+        if clear.get("silent"):  # the silent-veto ROOT path runs every AUTO job too
+            need = (*need, *(j for j in AUTO_JOBS if j not in need))
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
@@ -1807,6 +2011,8 @@ def run(
                 if clear["verdict"] == mode.upper()
                 else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
                 if clear.get("by") == "registry"
+                else f"Merge #{pr} ({SILENT_ROOT_TITLE} {head[:9]}, from the box)"
+                if clear.get("silent")
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
