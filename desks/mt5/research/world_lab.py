@@ -920,6 +920,16 @@ def main(argv: list[str] | None = None) -> int:
         donate(SEAT, [dict(r) for r in rows], tests_run=len(doc.get("scenarios") or {}))
         doc["donation"] = donation_counts()
         doc["donated"] = int(doc["donation"].get("donated") or 0)
+    if not a.dry_run:
+        # THE SEAT'S HEARTBEAT: a pass whose residuals never clear the round trip donates nothing,
+        # and without this the seat cannot tell that from a leg that did not run (2026-11-11).
+        from research.proposer_common import pass_census
+        effects = sum(len(sc.get("effects") or []) for sc in (doc.get("scenarios") or {}).values())
+        pass_census(SEAT, tried=effects, new=len(rows), duplicate=0,
+                    donated=int(doc.get("donated") or 0), leg="world_lab",
+                    scenarios=len(doc.get("scenarios") or {}),
+                    refused=int(doc.get("n_refused") or 0),
+                    best_residual_over_cost=(doc.get("best_residual_over_cost") or {}).get("ratio"))
     print(f"WORLD LAB  {doc['status']}  nodes={doc.get('n_nodes')} arcs={doc.get('n_edges')} "
           f"merged={doc.get('identities_merged')} basis={doc.get('edge_basis')} seed={a.seed}")
     for name, sc in list((doc.get("scenarios") or {}).items())[:6]:

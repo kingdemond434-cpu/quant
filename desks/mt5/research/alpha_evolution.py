@@ -1294,6 +1294,12 @@ def main() -> int:
     for f in rep["generator_failures"]:
         print(f"  population failed: {f}")
     print(f"written: {REPORT}")
+    # THE SEAT'S HEARTBEAT (2026-11-11): a sweep in which nothing survives the deflated screen
+    # donates nothing; the census says it ran. Before the yield line, which must stay last.
+    pc.pass_census(SOURCE, tried=int(rep.get("tests_run") or 0),
+                   new=int(rep.get("cells_proposed") or 0), duplicate=None,
+                   donated=int(rep.get("cells_proposed") or 0) if rep.get("donated") not in (None, "None") else 0,
+                   leg="alpha_evolution", symbols_swept=int(rep.get("symbols_swept") or 0))
     # THE HOURLY ORGAN'S YIELD LINE. `hourly_discovery` parses the last line beginning with
     # this prefix, so the per-population ledger reaches the hourly report as counters rather
     # than as prose in a truncated tail.

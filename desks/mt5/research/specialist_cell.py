@@ -679,6 +679,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {r['asset_class']:8} {r['mechanism']:24} grid={r.get('grid', 0):5} "
               f"clears={r.get('clears_floor', 0):4} held={r.get('held_back_under_floor', 0):4} "
               f"gap={r.get('input_gap', 0):4} seeded={r.get('seeded_total', 0):4}")
+    if not args.dry_run and args.out is None:
+        # THE SEAT'S HEARTBEAT (2026-11-11): a cell is donated once (`donated_at`), so a pass
+        # whose clearing cells were all seeded before writes no donation; the census says so.
+        from research.proposer_common import pass_census
+        clears = sum(int(r.get("clears_floor") or 0) for r in s.get("by_mechanism") or [])
+        new = int(s.get("candidates_this_pass") or 0)
+        pass_census(SOURCE, tried=int(s.get("cells_in_catalogue") or 0), new=new,
+                    duplicate=max(0, clears - new),
+                    donated=int((s.get("donation") or {}).get("donated") or 0),
+                    leg="specialist_cell", clears_floor=clears,
+                    measured_this_pass=int(s.get("measured_this_pass") or 0),
+                    donation_status=str((s.get("donation") or {}).get("status")))
     return 0
 
 

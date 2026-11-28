@@ -1297,6 +1297,18 @@ def main(argv: list[str] | None = None) -> int:
         print(line)
     print("dry run -- nothing enqueued, nothing donated, nothing written" if args.dry_run
           else f"-> {OUT}")
+    if not args.dry_run:
+        # THE SEAT'S HEARTBEAT (2026-11-11): the cursor and the content-hash dedup mean a pass
+        # over already-disposed intake donates nothing; the census says it ran.
+        from research.proposer_common import pass_census
+        pass_census(SOURCE, tried=int(report.get("generated_cells") or 0),
+                    new=int(report.get("donated") or 0),
+                    duplicate=None, donated=int(report.get("donated") or 0),
+                    leg="discovery_compiler", intake=int((report.get("intake") or {}).get("n") or 0),
+                    expanded=int(report.get("expanded") or 0),
+                    compiled=int(report.get("compiled") or 0),
+                    blocked=int((report.get("blocked") or {}).get("n") or 0),
+                    budget_stopped=bool(report.get("budget_stopped")))
     return 0
 
 

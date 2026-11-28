@@ -302,6 +302,62 @@ def candidate(source: str, symbol: str, family: str, params: dict, mechanism: st
                                                 "self-deflated"}}
 
 
+#: The per-pass heartbeat a donating seat leaves, found something or not (2026-11-11).
+CENSUS_NAME = "pass_census.json"
+
+
+def pass_census(source: str, *, tried: int, new: int, duplicate: int | None = None,
+                donated: int | None = None, seat_dir: Path | None = None,
+                **extra: Any) -> Path | None:
+    """Overwrite `<seat>/pass_census.json` with this pass's counts. Never raises.
+
+    "RAN, FOUND NOTHING NEW" AND "DEAD" LOOKED THE SAME. Measured on the box 2026-11-11: fifteen
+    hourly legs closed LEG_DONE ok while their seat folders read days stale. Most donate only
+    NEW rows, so a pass that deduplicated everything wrote nothing, and a seat-age reader cannot
+    tell that from a leg that never ran. This one small file, rewritten every real pass, is the
+    difference. It is not a donation: it holds counts and no row list, so the compiler, which
+    reads every json under the intelligence roots, extracts zero rows from it.
+
+    `tried` is what the pass looked at, `new` what it found that it had not donated before,
+    `duplicate` what it set aside as already seen, `donated` what the door actually took.
+    Extra fields are kept only when scalar (or a flat dict of scalars), so no caller can turn
+    the heartbeat into a row-bearing file by accident.
+    """
+    def _scalar(v: Any) -> bool:
+        return v is None or isinstance(v, (str, int, float, bool))
+
+    kept: dict[str, Any] = {}
+    for k, v in extra.items():
+        if _scalar(v):
+            kept[k] = v
+        elif isinstance(v, dict) and all(_scalar(x) for x in v.values()):
+            kept[k] = {str(a): b for a, b in v.items()}
+    doc = {"source": source, "kind": "pass_census",
+           "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "tried": int(tried), "new": int(new),
+           "duplicate": None if duplicate is None else int(duplicate),
+           "donated": None if donated is None else int(donated), **kept,
+           "rule": ("a heartbeat, not a donation: rewritten by every real pass of this seat's "
+                    "writer, so a fresh file with new=0 reads 'ran, nothing new' and a stale "
+                    "one reads 'did not run'")}
+    try:
+        out = (seat_dir if seat_dir is not None else INTEL / source)
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / CENSUS_NAME
+        body = json.dumps(doc, indent=1, default=str)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(body, encoding="utf-8")
+        try:
+            tmp.replace(path)
+        except OSError:
+            # os.replace onto a destination another process holds raises on Windows.
+            path.write_text(body, encoding="utf-8")
+            tmp.unlink(missing_ok=True)
+        return path
+    except (OSError, TypeError, ValueError):
+        return None
+
+
 #: What the last `donate` did with its candidates, so a proposer's report can carry the refusal
 #: count without every proposer being rewritten to thread it through. Replaced on every call.
 LAST_DONATION: dict[str, Any] = {}

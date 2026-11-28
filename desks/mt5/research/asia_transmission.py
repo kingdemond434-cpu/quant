@@ -434,6 +434,11 @@ def main(argv: list[str] | None = None) -> int:
             donated = str(path) if path else None
         if not donated:
             null_charged = charge_null(looks, at)
+        # THE SEAT'S HEARTBEAT (2026-11-11): a pass where no chain measures as an edge donates
+        # nothing; the census says it ran and what it looked at.
+        pc.pass_census("asia_transmission", tried=len(rows), new=len(proposals), duplicate=0,
+                       donated=len(cands) if donated else 0, leg="organ_battery",
+                       looks=looks, verdicts=dict(Counter(str(r.get("verdict")) for r in rows)))
     remembered = remember(rows, at)
     memory = failure_memory()
 

@@ -155,6 +155,9 @@ def desk(tmp_path, monkeypatch):
     # writes into the desk's real discovery contract or its pre-registration ledger. Tests that
     # are ABOUT donating re-patch this with a recorder of their own.
     monkeypatch.setattr(rq, "_donate", lambda cands, tests: None)
+    # ...and the seat's per-pass census lands under tmp_path, never in the real seat.
+    from research import proposer_common as pc
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
     yield tmp_path
     up._registry.cache_clear()
 
@@ -368,6 +371,10 @@ def test_cli_dry_run_writes_nothing_and_a_real_run_writes_both_artifacts(desk, c
     report = json.loads((desk / "RESIDUAL_QUEUE.json").read_text("utf-8"))
     assert rows and len(rows) == report["n_items"]
     assert report["rule"] == rq.RULE
+    # THE SEAT'S HEARTBEAT: a real pass leaves its census even when it donated nothing.
+    census = json.loads((desk / "intel" / "residual_queue" / "pass_census.json").read_text("utf-8"))
+    assert census["kind"] == "pass_census" and census["tried"] == report["n_items"]
+    assert census["donated"] == report["donated_this_pass"]
     assert report["n_open"] + report["n_donated"] + report["n_explained"] \
         + report["n_stale"] == report["n_items"]
     assert len(report["top"]) == min(30, report["n_items"])

@@ -469,6 +469,7 @@ def test_donate_is_handed_the_rows_and_the_seat(tmp_path: Path,
     import research.proposer_common as pc
     monkeypatch.setattr(pc, "donate", capture)
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(seen.get("rows") or [])})
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
     monkeypatch.setattr(wl, "GRAPH", desk_graph(tmp_path))
     for name in ("CAUSAL_LAB", "ECOLOGY", "COST_SURFACE"):
         monkeypatch.setattr(wl, name, tmp_path / "absent.json")
@@ -482,6 +483,8 @@ def test_donate_is_handed_the_rows_and_the_seat(tmp_path: Path,
     assert out["donated"] == len(seen["rows"])
     assert set(out) >= {"at", "n_nodes", "n_edges", "scenarios", "donated", "unmeasured",
                         "authority", "rule"}
+    census = json.loads((tmp_path / "intel" / "world_lab" / "pass_census.json").read_text("utf-8"))
+    assert census["new"] == len(seen["rows"]) and census["donated"] == out["donated"]
 
 
 def test_one_question_is_charged_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

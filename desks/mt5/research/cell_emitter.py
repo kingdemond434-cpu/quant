@@ -1025,6 +1025,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  trials: n_raw {tc.get('n_raw')} n_effective {tc.get('n_effective')}")
     if doc["donated_to"]:
         print(f"donated: {doc['donated_to']}")
+    if not a.dry_run and a.fixtures is None:
+        # THE SEAT'S HEARTBEAT (2026-11-11): a file already read (`seen` by content digest) is
+        # skipped, so a pass over unchanged grounds donates nothing; the census says it ran.
+        from research.proposer_common import pass_census
+        pass_census(SOURCE, tried=int(y.get("fetched") or 0), new=int(y.get("donated") or 0),
+                    duplicate=int(y.get("unchanged_skipped") or 0),
+                    donated=int(y.get("donated") or 0) if doc["donated_to"] else 0,
+                    seat_dir=DONATE_DIR, leg="cell_emitter",
+                    grounds_reached=int(doc.get("grounds_reached") or 0))
     return 0
 
 
