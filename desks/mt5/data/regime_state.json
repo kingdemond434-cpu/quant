@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-28T12:00:02.493149+00:00",
+  "swept_at": "2026-11-28T12:15:02.318102+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 88,
-      "shadow_exp_r": -0.1963,
+      "shadow_n": 61,
+      "shadow_exp_r": 0.3642,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_asia": {
@@ -856,7 +856,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2818,
+      "shadow_exp_r": -0.3071,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_asia": {
@@ -1164,7 +1164,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2512,
+      "shadow_exp_r": -0.2519,
       "woke_on_shadow": false
     },
     "NAS100|pca_residual_asia": {
@@ -1186,7 +1186,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.451,
+      "shadow_exp_r": -0.4527,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_asia": {
@@ -1296,7 +1296,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3342,
+      "shadow_exp_r": -0.6107,
       "woke_on_shadow": false
     },
     "NZDSGD|overnight_gap_decay_asia": {
