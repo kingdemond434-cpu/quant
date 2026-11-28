@@ -104,6 +104,35 @@ def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
     return True
 
 
+def _keep_older_history(path: Path, frame):  # type: ignore[no-untyped-def]
+    """`frame` plus every bar in `path` OLDER than frame's first bar, except the file's own last
+    bar. Never raises.
+
+    An unreadable or absent file contributes nothing, which is the old behaviour exactly. The
+    file's own last bar is never carried over: it may have been forming when it was written.
+    """
+    import pandas as pd
+    if frame is None or len(frame) == 0 or not path.exists():
+        return frame
+    try:
+        old = pd.read_parquet(path)
+        if old.empty or not isinstance(old.index, pd.DatetimeIndex):
+            return frame
+        if old.index.tz is None:
+            old.index = old.index.tz_localize("UTC")
+        # The old file's LAST bar was the pull's still-forming bar when it was written. Where the
+        # new pull overlaps it, the fresh bar replaces it; where the pull does not reach it, it is
+        # dropped rather than kept as final -- a one-bar hole is honest, a frozen half bar is not.
+        older = old[(old.index < frame.index.min()) & (old.index < old.index.max())]
+        if older.empty or not set(frame.columns) <= set(older.columns):
+            return frame
+        out = pd.concat([older[list(frame.columns)].astype(frame.dtypes.to_dict()), frame])
+    except Exception:
+        return frame
+    out.index.name = frame.index.name
+    return out
+
+
 def _refresh_scalp_bars() -> None:
     """Refresh broker M1/M5/M15 before replay; never place or modify an order.
 
@@ -172,6 +201,14 @@ def _refresh_scalp_bars() -> None:
                 frame = pd.DataFrame(rates)
                 frame.index = pd.to_datetime(frame.pop("time"), unit="s", utc=True)
                 frame.index.name = "timestamp"
+                # THE PULL IS A ROLLING WINDOW, SO IT MUST NEVER SHRINK THE FILE (2026-10-20).
+                # 20,000 M5 gold bars are ~101 calendar days, while the forward engine's fetch
+                # start (SHADOW_START - FETCH_DAYS) is further back and recedes a day every day.
+                # Replacing the file with the pull cut its head off on every refresh, and
+                # `require_coverage` then refused it: XAUUSD@M5 clocks read BLOCKED_NO_BARS with
+                # SHADOW_START itself inside the file. Older bars the file already holds are
+                # kept; the fresh pull wins wherever the two overlap.
+                frame = _keep_older_history(out_dir / f"XAUUSD_{label}.parquet", frame)
                 # SERIALISED FIRST, THEN SWAPPED IN: an in-place to_parquet over a file the scalp
                 # lane is reading is a sharing violation on Windows (PermissionError 13).
                 import io as _io
