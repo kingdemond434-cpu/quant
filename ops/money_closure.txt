@@ -357,3 +357,8 @@ libs/ops/token_refresh.py
 libs/research/forward_ledger.py
 libs/regime/disagreement.py
 desks/mt5/research/decay_backtest.py
+desks/mt5/mt5desk/family_earnings_breadth.py
+libs/data/free_stack.py
+libs/data/free_stack_cnx.py
+libs/data/keyed_sources.py
+libs/data/off_limits.py
