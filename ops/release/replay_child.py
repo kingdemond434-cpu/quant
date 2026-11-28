@@ -41,8 +41,23 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
-#: Module attributes the book reads and writes its own files through.
-SANDBOXED = ("OUT", "INTENTS", "LOG", "STATE", "GUARD", "ARMED_MARKER")
+#: Module attributes the book reads and writes its own files through. BRACKET_SLIP_FILE
+#: (2026-11-18): the replay rewrote the tracked desks/mt5/data/E8_GOLD_SLIP.json on every run,
+#: and the second tree then read the first tree's measurement.
+SANDBOXED = ("OUT", "INTENTS", "LOG", "STATE", "GUARD", "ARMED_MARKER", "BRACKET_SLIP_FILE")
+#: State files OTHER prop modules keep, sandboxed per scenario when the tree has the module.
+#: mt5desk.account_breakers.STATE is the daily-loss latch (#890, desks/mt5/mt5desk/
+#: account_breakers.py): unsandboxed, a latch one scenario tripped stood every later scenario
+#: down. A module the tree lacks is named in the output's `sandbox_absent`, never skipped silently
+#: (audit HOLD on #1353: keyed on the wrong package, the latch leaked while the loop said nothing).
+SANDBOXED_ELSEWHERE: dict[str, tuple[str, ...]] = {
+    "mt5desk.account_breakers": ("STATE",),
+    # the rails ledger the breakers bill each refusal to (data/fusion_book_rails.jsonl)
+    "mt5desk.fusion_rails": ("LEDGER",),
+    # the identity page's root: data/alert_ledger.json and logs/gold_oco_identity_alert.json
+    # under it (found by `tree_writes`); a name ending _ROOT or _DIR is given a directory
+    "mt5desk.gold_oco": ("ALERT_ROOT",),
+}
 SYMBOL_ID = 6102
 CONTRACT = 100.0
 SPREAD = 0.4
@@ -644,6 +659,69 @@ def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[st
     return out
 
 
+#: Where a tree keeps state; anything written under these during a replay is a leak, reported.
+STATE_ROOTS = ("desks/mt5/data", "desks/mt5/logs", "data", "logs")
+
+
+def state_snapshot(tree: Path) -> dict[str, int]:
+    """{relative path: mtime_ns} of every file under the tree's STATE_ROOTS."""
+    out: dict[str, int] = {}
+    for root in STATE_ROOTS:
+        base = tree / root
+        if base.is_dir():
+            for f in base.rglob("*"):
+                if f.is_file():
+                    out[f.relative_to(tree).as_posix()] = f.stat().st_mtime_ns
+    return out
+
+
+def broker_to_utc(stamp: Any) -> Any:
+    """The true UTC instant of a broker-clock wall time (NY+7: the stamp minus seven hours, read
+    as New York wall time; the spring gap shifts forward, the autumn repeat reads as summer) --
+    libs.regime.session_clock.server_to_utc restated here so both trees get the SAME clock,
+    whatever either tree's own copy says. The scenario's day and hours, and every stubbed tick,
+    are on the broker clock, exactly as the terminal stamps them."""
+    import pandas as pd
+
+    naive = pd.Timestamp(stamp).tz_localize(None) - pd.Timedelta(hours=7)
+    local = naive.tz_localize("America/New_York", ambiguous=True, nonexistent="shift_forward")
+    return local.tz_convert("UTC")
+
+
+def scenario_clock(clock: dict[str, Any]) -> type:
+    """A `datetime` whose now()/utcnow() read the scenario's clock, so the book judges a tick
+    against the instant the scenario is at -- not the runner's wall clock, which put every quote
+    ~36 days stale and tripped the disconnect breaker (2026-11-18). `clock["now"]` is broker wall
+    time, as the stubbed tick is, so now() is its true UTC instant (`broker_to_utc`) and a fresh
+    tick reads 0 s old. Everything else, isinstance included, behaves exactly as
+    `datetime.datetime`; what now() returns is a plain datetime."""
+    import datetime as dtm
+
+    real: Any = dtm.datetime
+
+    class _Meta(type):
+        def __instancecheck__(cls, obj: object) -> bool:
+            return isinstance(obj, real)
+
+        def __subclasscheck__(cls, sub: type) -> bool:
+            return issubclass(sub, real)
+
+    def _utc() -> Any:
+        return broker_to_utc(clock["now"]).to_pydatetime()
+
+    class ScenarioDatetime(real, metaclass=_Meta):  # type: ignore[misc]
+        @classmethod
+        def now(cls, tz: Any = None) -> Any:
+            at = _utc()
+            return at.astimezone(tz) if tz is not None else at.replace(tzinfo=None)
+
+        @classmethod
+        def utcnow(cls) -> Any:
+            return _utc().replace(tzinfo=None)
+
+    return ScenarioDatetime
+
+
 def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     stub = types.ModuleType("MetaTrader5")
     stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
@@ -652,13 +730,50 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     import os
 
     os.environ.pop("QUANT_PROP_ACCOUNT", None)  # the FTMO leg replays the FTMO account
+    # e8_evidence's heartbeat and decision ledger (2026-11-18: written into the tree's data/)
+    os.environ["E8_EVIDENCE_DIR"] = str(Path.cwd() / "e8_evidence")
+    # ...and its alert page: the ledger, the delivery log beside it, and the channels config it
+    # reads from there (found by `tree_writes`: data/alert_ledger.json and alert_delivery.jsonl)
+    os.environ["E8_ALERT_LEDGER"] = str(Path.cwd() / "alerts" / "alert_ledger.json")
+    # provenance keeps its page state, alert ledger and delivery log beside the key file it is
+    # pointed at: an ABSENT key here (as on any runner: KEY_UNAVAILABLE, unchanged), so those
+    # land in the scenario too instead of the tree's data/ and desks/mt5/logs/
+    os.environ["QUANT_ACCOUNT_KEY_FILE"] = str(Path.cwd() / "e8_key" / "absent.hmac")
     import pandas as pd
 
     work = Path.cwd()
+    before = state_snapshot(tree)
+    day = pd.Timestamp(scenario["day"], tz="UTC")
+    clock = {"now": day}
+    # Before the tree's first import, so every `from datetime import datetime` in it reads the
+    # scenario's clock (pandas and the stdlib are already loaded and keep the real one).
+    import datetime as dtm
+
+    dtm.datetime = scenario_clock(clock)  # type: ignore[assignment,misc]
     from prop import e8_gold as g
 
     for name in SANDBOXED:
         setattr(g, name, work / f"{name.lower()}.json")
+    import importlib
+    import importlib.util
+
+    absent: list[str] = []
+    for modname, names in SANDBOXED_ELSEWHERE.items():
+        try:
+            found = importlib.util.find_spec(modname) is not None
+        except ModuleNotFoundError:
+            found = False
+        if not found:
+            absent.append(modname)  # reported: nothing of it can leak, and the reader can see so
+            continue
+        mod = importlib.import_module(modname)
+        for name in names:
+            stem = f"{modname.rsplit('.', 1)[-1]}_{name.lower()}"
+            if name.endswith(("_ROOT", "_DIR")):
+                (work / stem).mkdir(exist_ok=True)
+                setattr(mod, name, work / stem)
+            else:
+                setattr(mod, name, work / f"{stem}.json")
     if scenario.get("own"):  # today's asia bracket filled into the scenario's position
         (work / "state.json").write_text(
             json.dumps(
@@ -666,13 +781,11 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             ),
             "utf-8",
         )
-    if scenario.get("guard"):  # the guard keys its anchor by the wall clock's server day
+    if scenario.get("guard"):  # the guard keys its anchor by the (scenario) clock's server day
         from prop import e8_guard
 
         guard = {**scenario["guard"], "day": e8_guard.server_day()}
         (work / "guard.json").write_text(json.dumps(guard), "utf-8")
-    day = pd.Timestamp(scenario["day"], tz="UTC")
-    clock = {"now": day}
 
     class _Tick:
         @property
@@ -777,7 +890,11 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             if getattr(m, "__file__", None)
         }
     )
-    result: dict[str, Any] = {"steps": steps, "imported": imported}
+    after = state_snapshot(tree)
+    # a write the sandbox missed: the next scenario, or the other tree, would read it
+    writes = sorted(k for k, v in after.items() if before.get(k) != v)
+    result: dict[str, Any] = {"steps": steps, "imported": imported, "sandbox_absent": absent,
+                              "tree_writes": writes}  # fmt: skip
     if scenario.get("fusion_roster") is not None:  # after `imported`: it measures data only
         try:
             result["fusion_roster"] = fusion_roster_leg(tree, scenario["fusion_roster"], work)
