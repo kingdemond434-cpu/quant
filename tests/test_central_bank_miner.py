@@ -93,8 +93,11 @@ def test_seeded_feeds_are_a_seed_not_a_boundary(miner) -> None:  # type: ignore[
     """LAWS §1 anti-hardcode: adding a bank must be adding a row, never editing logic."""
     # BIS left FEEDS 2026-08-28 (§13: its RSS sits under robots `Disallow: /doclist/`); its
     # full-text corpus is mined by side_channels/bis_speech_tone.py instead. RBA was added.
-    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoJ", "BoE", "BoC", "RBA"}
-    assert "BIS" not in miner.FEEDS
+    # BoJ left FEEDS 2026-11-18: its terms refuse commercial copying (refused_hosts boj.or.jp).
+    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoE", "BoC", "RBA"}
+    assert "BIS" not in miner.FEEDS and "BoJ" not in miner.FEEDS
+    from libs.data.refused_hosts import refusal
+    assert all(refusal(info["url"]) is None for info in miner.FEEDS.values())
     assert (_SRC.parent / "bis_speech_tone.py").exists()
     for info in miner.FEEDS.values():
         assert info["url"].startswith("https://") and info["currency"]

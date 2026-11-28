@@ -34,6 +34,29 @@ REFUSED_HOSTS: dict[str, str] = {
     "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "theice.com": "ICE: terms refuse automated collection of its data",
+    # CENTRAL BANKS AND THE FX REGULATOR (read 2026-11-18, policy_doc_nlp row 47; the full
+    # clauses are on their rows in desks/mt5/research/policy_doc_sources.json once #1344 lands).
+    # The fullwidth comma in the clause is written as \uff0c so the quote stays verbatim.
+    "safe.gov.cn": ("SAFE 法律声明 (read 2026-11-18): \"任何媒体、互联网站和商业机构不得利用"
+                    "本网发布的内容进行商业性转载\uff0c也不得歪曲和篡改本网发布的内容。\" "
+                    "\"经许可的媒体、网站可对本网内容进行非商业性转载\""),
+    # MAS: the site terms govern www.mas.gov.sg; MAS datasets and its API carry their own licence
+    # that allows commercial use, so only the website host is listed.
+    "www.mas.gov.sg": ("MAS Terms of Use (read 2026-11-18): \"No Content ... may be reproduced, "
+                       "republished, uploaded, posted, transmitted or distributed in any way ... "
+                       "without the prior written permission of MAS\", except one copy \"for "
+                       "your own personal non-commercial use\"; \"caching and links to, and the "
+                       "framing of this Web Site or any of the Contents are prohibited\""),
+    "rbi.org.in": ("RBI Disclaimer (read 2026-11-18): \"Except as set forth below, caching and "
+                   "links to, and the framing of this Web Site or any of the contents are "
+                   "prohibited.\" \"© Reserve Bank of India. All Rights Reserved.\""),
+    "resbank.co.za": ("SARB Disclaimer (read 2026-11-18): the material on this website \"may not "
+                      "be copied, reproduced, adapted, published or distributed in any form "
+                      "whatsoever without the prior written consent of the South African "
+                      "Reserve Bank.\""),
+    "boj.or.jp": ("BoJ copyright page (read 2026-11-17, #1254): \"copying or reproduction of "
+                  "the content for commercial purposes requires the Bank's prior permission\" "
+                  "(Public Relations Department)"),
 }
 
 

@@ -105,18 +105,8 @@ DOCUMENT_SOURCES = {
         "sections": ["vote", "economic_outlook", "policy_discussion"],
         "symbols": ["GBPUSD", "GBPJPY", "UK10Y", "UK100"],
     },
-    "BOJ_STATEMENT": {
-        "schedule": "monthly",
-        "url_pattern": "https://www.boj.or.jp/en/announcements/release_{year}/index.htm",
-        "sections": ["yield_curve_control", "etf_purchases", "forward_guidance"],
-        "symbols": ["USDJPY", "EURJPY", "JP225", "JP10Y"],
-    },
-    "BOJ_OUTLOOK": {
-        "schedule": "quarterly",
-        "url_pattern": "https://www.boj.or.jp/en/mopo/outlook/index.htm",
-        "sections": ["growth", "inflation", "risk_balance"],
-        "symbols": ["USDJPY", "JP225", "JP10Y"],
-    },
+    # BOJ_STATEMENT and BOJ_OUTLOOK removed 2026-11-18: BoJ's terms require prior permission
+    # for commercial copying (libs/data/refused_hosts.py boj.or.jp), so neither is fetched.
 }
 
 

@@ -37,6 +37,13 @@ WHY_STATUTE = ("5 U.S.C. 13107(c): congressional financial disclosure reports ma
                "obtained or used for a commercial purpose; never fetched")
 
 
+#: Central banks and the FX regulator whose own terms refuse a trading desk's automated copying
+#: (read 2026-11-17/18; the verbatim clauses are on their rows in `libs/data/refused_hosts.py`).
+#: Refused HERE too, because this is the check every transport makes before a request.
+CENTRAL_BANK_TERMS_REFUSED: tuple[str, ...] = (
+    "safe.gov.cn", "www.mas.gov.sg", "rbi.org.in", "resbank.co.za", "boj.or.jp")
+
+
 def off_limits(url: str) -> str | None:
     """The refusal reason when `url` points at an off-limits host, else None. A URL whose host
     cannot be read is refused too (fail closed)."""
@@ -49,6 +56,10 @@ def off_limits(url: str) -> str | None:
             return f"{WHY} [{host}]"
     if host in STATUTE_HOSTS:
         return f"{WHY_STATUTE} [{host}]"
+    for dom in CENTRAL_BANK_TERMS_REFUSED:
+        if host == dom or host.endswith("." + dom):
+            from libs.data.refused_hosts import refusal
+            return f"{STATUS}: {refusal(url) or dom} [{host}]"
     return None
 
 

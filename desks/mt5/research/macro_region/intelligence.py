@@ -289,9 +289,11 @@ SOURCE_CLASSES: dict[str, tuple[dict[str, Any], ...]] = {
              "https://www.snb.ch/de/the-snb/mandates-goals/monetary-policy", "de", "CH",
              "central_bank", "SNB terms: reuse with attribution", _FX),
         _src("macro:cb:boj", "Bank of Japan", "https://www.boj.or.jp/", "ja", "JP",
-             "central_bank", "BoJ terms: reuse with attribution", _ALL),
+             "central_bank", "TERMS_BLOCKED: BoJ copyright requires prior permission for "
+             "commercial copying (refused_hosts boj.or.jp)", _ALL),
         _src("macro:cb:pboc", "People's Bank of China", "http://www.pbc.gov.cn/", "zh", "CN",
-             "central_bank", "PBoC terms: public information", _FX),
+             "central_bank", "ROBOTS_BLOCKED: pbc.gov.cn robots refuses the root and "
+             "robots.txt (2026-11-18); terms unread", _FX),
         _src("macro:cb:boe", "Bank of England",
              "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes", "en", "GB",
              "central_bank", "Open Government Licence v3.0", _ALL),
@@ -312,7 +314,8 @@ SOURCE_CLASSES: dict[str, tuple[dict[str, Any], ...]] = {
              "central_bank", "Norges Bank terms: reuse with attribution", _FX),
         _src("macro:cb:mas", "Monetary Authority of Singapore",
              "https://www.mas.gov.sg/news", "en", "SG", "central_bank",
-             "MAS terms: public information", _FX),
+             "TERMS_BLOCKED: MAS Terms of Use refuse reproduction without written "
+             "permission (refused_hosts www.mas.gov.sg)", _FX),
     ),
     "statistics_office": (
         _src("macro:stat:bls", "US Bureau of Labor Statistics", "https://www.bls.gov/bls/news-release.htm",

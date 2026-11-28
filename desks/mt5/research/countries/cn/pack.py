@@ -731,14 +731,17 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "SAFE 银行结售汇 -- bank FX settlement and sales",
      "covers": "the netted corporate and household conversion flow",
      "frequency": "monthly", "lag": "about three weeks",
-     "root": "safe.gov.cn", "licence": "free, public",
+     "root": "safe.gov.cn",
+     "licence": ("TERMS_BLOCKED: SAFE 法律声明 refuses commercial reproduction "
+                 "(refused_hosts); never fetched"),
      "note": "The closest China publishes to an FX flow series. Netted and late, so it is an "
              "ex-post attribution tool and never a signal."},
     {"id": "pboc_reserves",
      "name": "外汇储备 -- official FX reserves",
      "covers": "the headline reserve stock, valuation effects included",
      "frequency": "monthly", "lag": "about seven days",
-     "root": "pbc.gov.cn, safe.gov.cn", "licence": "free, public",
+     "root": "pbc.gov.cn, safe.gov.cn",
+     "licence": "TERMS_BLOCKED (SAFE) and ROBOTS_BLOCKED (PBOC robots refuses); never fetched",
      "note": "Valuation moves dominate the monthly change, so the raw print is close to useless "
              "without a currency and duration adjustment the desk would have to build itself."},
     {"id": "ccass_southbound_holdings",
@@ -819,7 +822,9 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("cn_official", "The PBOC, CFETS, SAFE, the statistics bureau and customs",
                  layer="official",
-                 roots=("pbc.gov.cn", "chinamoney.com.cn", "safe.gov.cn", "stats.gov.cn",
+                 # pbc.gov.cn and safe.gov.cn left the roots 2026-11-18: SAFE's 法律声明 refuses
+                 # commercial reproduction (libs/data/refused_hosts.py) and PBOC's robots refuse.
+                 roots=("chinamoney.com.cn", "stats.gov.cn",
                         "data.stats.gov.cn", "customs.gov.cn", "mof.gov.cn", "ndrc.gov.cn"),
                  queries=("人民币汇率中间价", "公开市场业务交易公告", "贷款市场报价利率",
                           "存款准备金率", "货币政策执行报告", "社会融资规模", "银行结售汇",

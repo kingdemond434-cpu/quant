@@ -830,17 +830,6 @@
    "dataset_class": "futures_volume_oi"
   },
   {
-   "name": "中国人民银行 调查统计",
-   "region": "cn",
-   "language": "zh",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "PBoC statistics releases",
-   "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
-   "dataset_class": "central_bank_data"
-  },
-  {
    "name": "国家统计局 数据",
    "region": "cn",
    "language": "zh",
@@ -861,16 +850,6 @@
    "why": "ChinaBond curves; rates leg of CNH carry",
    "url": "https://www.chinabond.com.cn/cb/cn/yjfx/zzsj/index.shtml",
    "dataset_class": "rates_curves"
-  },
-  {
-   "name": "中国人民银行 公开市场业务与公告",
-   "region": "cn",
-   "language": "zh",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "PBoC press releases and policy communications -> USDCNH",
-   "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html"
   },
   {
    "name": "外汇交易中心 中间价公告",
@@ -1157,20 +1136,6 @@
    "url": "https://www.saa.or.jp/learning/publication/index.html"
   },
   {
-   "name": "日本銀行 統計",
-   "region": "jp",
-   "language": "ja",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "BoJ statistics; JGB, flow of funds",
-   "url": "https://www.boj.or.jp/statistics/index.htm",
-   "alt": [
-    "https://www.boj.or.jp/en/statistics/index.htm"
-   ],
-   "dataset_class": "central_bank_data"
-  },
-  {
    "name": "財務省 外国為替平衡操作の実施状況",
    "region": "jp",
    "language": "ja",
@@ -1213,19 +1178,6 @@
    "why": "the statistics portal; release calendars",
    "url": "https://www.e-stat.go.jp/",
    "dataset_class": "macro_vintages"
-  },
-  {
-   "name": "日本銀行 金融政策決定会合",
-   "region": "jp",
-   "language": "ja",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "BoJ decisions and statements -> USDJPY",
-   "url": "https://www.boj.or.jp/mopo/mpmdeci/index.htm",
-   "alt": [
-    "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
-   ]
   },
   {
    "name": "財務省 為替介入・要人発言",
@@ -1421,17 +1373,6 @@
    "market": "KR"
   },
   {
-   "name": "한국은행 경제통계시스템 ECOS",
-   "region": "kr",
-   "language": "ko",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "BoK statistics portal",
-   "url": "https://ecos.bok.or.kr/",
-   "dataset_class": "central_bank_data"
-  },
-  {
    "name": "KRX 정보데이터시스템",
    "region": "kr",
    "language": "ko",
@@ -1452,16 +1393,6 @@
    "why": "trade releases: the KRW export channel",
    "url": "https://unipass.customs.go.kr/ets/",
    "dataset_class": "trade_data"
-  },
-  {
-   "name": "한국은행 통화정책방향",
-   "region": "kr",
-   "language": "ko",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "BoK decisions -> USDKRW",
-   "url": "https://www.bok.or.kr/portal/bbs/B0000245/list.do?menuNo=200761"
   },
   {
    "name": "기획재정부 외환시장 동향",
@@ -1872,17 +1803,6 @@
    "market": "SG"
   },
   {
-   "name": "MAS statistics",
-   "region": "sg",
-   "language": "en",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "MAS statistics: S$NEER, reserves",
-   "url": "https://www.mas.gov.sg/statistics",
-   "dataset_class": "central_bank_data"
-  },
-  {
    "name": "SingStat",
    "region": "sg",
    "language": "en",
@@ -1892,16 +1812,6 @@
    "why": "national statistics releases",
    "url": "https://www.singstat.gov.sg/",
    "dataset_class": "macro_vintages"
-  },
-  {
-   "name": "MAS monetary policy statements",
-   "region": "sg",
-   "language": "en",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "MAS band decisions -> USDSGD",
-   "url": "https://www.mas.gov.sg/monetary-policy"
   },
   {
    "name": "SGX derivatives statistics",
@@ -2609,21 +2519,6 @@
    "market": "IN"
   },
   {
-   "name": "RBI working papers",
-   "region": "in",
-   "language": "en",
-   "route": "search",
-   "kind": "research",
-   "weight": 0.5,
-   "why": "RBI research",
-   "site": "rbi.org.in",
-   "queries": [
-    "working paper exchange rate intervention rupee volatility",
-    "working paper fii flows"
-   ],
-   "market": "IN"
-  },
-  {
    "name": "YouTube IN trading",
    "region": "in",
    "language": "en",
@@ -2658,17 +2553,6 @@
    ]
   },
   {
-   "name": "RBI DBIE statistics",
-   "region": "in",
-   "language": "en",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "RBI database: reserves, intervention",
-   "url": "https://dbie.rbi.org.in/",
-   "dataset_class": "central_bank_data"
-  },
-  {
    "name": "NSDL FPI statistics",
    "region": "in",
    "language": "en",
@@ -2700,16 +2584,6 @@
    "why": "gold/silver/crude futures OI",
    "url": "https://www.mcxindia.com/market-data",
    "dataset_class": "futures_volume_oi"
-  },
-  {
-   "name": "RBI press releases",
-   "region": "in",
-   "language": "en",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "RBI policy and intervention notices -> USDINR",
-   "url": "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx"
   },
   {
    "name": "DGCI&S trade statistics",
@@ -3478,21 +3352,6 @@
    "market": "ZA"
   },
   {
-   "name": "SARB working papers",
-   "region": "za",
-   "language": "en",
-   "route": "search",
-   "kind": "research",
-   "weight": 0.5,
-   "why": "SARB research",
-   "site": "resbank.co.za",
-   "queries": [
-    "working paper rand exchange rate carry",
-    "working paper capital flows"
-   ],
-   "market": "ZA"
-  },
-  {
    "name": "Fin24 / BusinessTech markets",
    "region": "za",
    "language": "en",
@@ -3506,17 +3365,6 @@
     "gold platinum exports rand"
    ],
    "market": "ZA"
-  },
-  {
-   "name": "SARB statistics",
-   "region": "za",
-   "language": "en",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "SARB data",
-   "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
-   "dataset_class": "central_bank_data"
   },
   {
    "name": "Statistics South Africa",
@@ -3539,16 +3387,6 @@
    "why": "JSE data: foreign flows, derivatives",
    "url": "https://www.jse.co.za/market-data",
    "dataset_class": "positioning"
-  },
-  {
-   "name": "SARB media statements",
-   "region": "za",
-   "language": "en",
-   "route": "http",
-   "kind": "macro",
-   "weight": 1.0,
-   "why": "SARB decisions -> USDZAR",
-   "url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements"
   },
   {
    "name": "Minerals Council South Africa",

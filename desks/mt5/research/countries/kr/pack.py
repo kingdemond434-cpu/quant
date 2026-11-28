@@ -677,7 +677,8 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "외환당국 순거래 -- official net FX transactions",
      "covers": "the authorities' own spot intervention, netted",
      "frequency": "quarterly", "lag": "about three months",
-     "root": "bok.or.kr", "licence": "free, public",
+     "root": "bok.or.kr",
+     "licence": "TERMS_UNREAD: BOK's copyright policy could not be read in full; never fetched",
      "note": "The only official intervention series and USELESS AS A SIGNAL at this lag. It is "
              "kept for ex-post attribution and for calibrating what the verbal ladder implied."},
     {"id": "ksd_foreign_bond_holdings",
@@ -772,7 +773,9 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("kr_official", "Bank of Korea, the statistics office, customs and the ministries",
                  layer="official",
-                 roots=("bok.or.kr", "ecos.bok.or.kr", "kostat.go.kr", "kosis.kr",
+                 # bok.or.kr left the roots 2026-11-18: its copyright policy could not be read
+                 # in full, and unread terms are not permission. ECOS is the keyed Open API.
+                 roots=("ecos.bok.or.kr", "kostat.go.kr", "kosis.kr",
                         "customs.go.kr", "unipass.customs.go.kr", "motie.go.kr", "moef.go.kr",
                         "fsc.go.kr", "fss.or.kr"),
                  queries=("통화정책방향", "금융통화위원회 의사록", "외환보유액", "국제수지",

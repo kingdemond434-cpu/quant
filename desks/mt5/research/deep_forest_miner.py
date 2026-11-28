@@ -189,6 +189,16 @@ TERMS_REFUSED: dict[str, str] = {
     "youtube.com": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
     "youtu.be": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
 }
+#: Hosts whose terms or robots could NOT be read (2026-11-18, policy_doc_nlp row 47). Unread is
+#: not permission, so a ground on one is refused until a reading is recorded here.
+TERMS_UNREAD: dict[str, str] = {
+    "pbc.gov.cn": ("PBOC: robots refuses the root and robots.txt itself (read 2026-11-18), so "
+                   "no page, the legal notice included, can be read under robots"),
+    "csrc.gov.cn": ("CSRC: robots.txt answers the home page as HTML (unread) and the 法律声明 is "
+                    "robots-disallowed (2026-11-18)"),
+    "www.bok.or.kr": ("BOK: 'All rights reserved'; the 저작권 보호방침 could be read only to its "
+                      "first sentence (2026-11-18)"),
+}
 #: A page that is a region wall, not content: the site serves it to every address outside
 #: mainland China. It is recorded as REGION_BLOCKED and never parsed (no proxy, no VPN: that
 #: would be routing around the publisher's own access control).
@@ -239,6 +249,15 @@ def access_refusal(url: str) -> str | None:
     for h, why in TERMS_REFUSED.items():
         if host == h or host.endswith("." + h):
             return f"TERMS_REFUSED: {why}"
+    # The desk-wide list of hosts whose own terms refuse automated contact (HKEX, the SSE, CME,
+    # FRED, ...) binds this miner too, so a ground added to the roster later is still refused.
+    from libs.data.refused_hosts import refusal as _host_refusal
+    desk_refusal = _host_refusal(url)
+    if desk_refusal:
+        return f"TERMS_REFUSED: {desk_refusal}"
+    for h, why in TERMS_UNREAD.items():
+        if host == h or host.endswith("." + h):
+            return f"TERMS_UNREAD: {why}"
     parts = urlparse(url)
     if parts.path == "/robots.txt":
         return None

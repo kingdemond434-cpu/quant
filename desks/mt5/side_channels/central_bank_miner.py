@@ -48,7 +48,9 @@ ARCHIVE = OUT / "cb_documents.jsonl"
 FEEDS: dict[str, dict[str, str]] = {
     "Fed": {"url": "https://www.federalreserve.gov/feeds/press_monetary.xml", "currency": "USD"},
     "ECB": {"url": "https://www.ecb.europa.eu/rss/press.html", "currency": "EUR"},
-    "BoJ": {"url": "https://www.boj.or.jp/en/rss/whatsnew.xml", "currency": "JPY"},
+    # BoJ REMOVED 2026-11-18: its copyright page requires the Bank's prior permission for any
+    # commercial copying (libs/data/refused_hosts.py boj.or.jp; fenced on #1254), and a trading
+    # desk's archive of its releases is commercial copying. JPY coverage is a named gap.
     "BoE": {"url": "https://www.bankofengland.co.uk/rss/news", "currency": "GBP"},
     # RBA: BOTH published feed paths return HTTP 403 from this box under two distinct UAs
     # (probed 2026-08-26) -- an edge block on the IP, NOT an absent feed. The row stays so the
