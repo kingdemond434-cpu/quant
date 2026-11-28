@@ -92,14 +92,17 @@ def registered() -> set[str]:
 
 def minted() -> tuple[dict[str, int], str]:
     """{family: cells} over the registry the compiler actually reads, and the db it came from."""
-    from libs.moat.registry import connect
-    conn = connect()
+    # READ-ONLY: this fence only counts. `connect()` evolves and commits on every open, and on the
+    # trading box that write path, not the 5.6 s GROUP BY, is what reached the 600 s fence
+    # timeout (LG2, 2026-11-11).
+    from libs.moat.registry import connect_readonly
+    conn = connect_readonly()
     try:
         rows = list(conn.execute(
             "SELECT family, COUNT(*) FROM research_candidates GROUP BY family"))
     finally:
         conn.close()
-    return ({str(f or ""): int(n) for f, n in rows}, "libs.moat.registry.connect()")
+    return ({str(f or ""): int(n) for f, n in rows}, "libs.moat.registry.connect_readonly()")
 
 
 def survey() -> dict[str, Any]:
