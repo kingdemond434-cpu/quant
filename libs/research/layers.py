@@ -346,6 +346,8 @@ LEG_LAYER: dict[str, str] = {
     # other by sweeping ten model families across six representations of the same bars. The
     # output of each is a conditioning model, never a size or a fill, so the layer is prediction.
     "coevolution": "prediction", "model_search": "prediction",
+    # first-party official feeds captured with four clocks: what the desk knows, sooner
+    "live_wire": "information",
     "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",

@@ -1,0 +1,3021 @@
+{
+ "schema": "live-wire-feeds/1",
+ "doc": "THE LIVE WIRE: free, keyless, first-party official feeds worldwide, polled at sub-hour cadence into desks/mt5/data/news_captures.jsonl, which news_event_stream's fast lane already reads. Edited here, never in code (research/live_wire.py). Only rows whose terms.verdict is OK are requested; every other row is the measured breadth of what was assessed and why it is not polled.",
+ "user_agent": "quant-desk-livewire/1.0 (public official feeds; honours robots.txt and conditional GET)",
+ "backfill_window_h": 48,
+ "max_new_per_feed": 50,
+ "probe": {
+  "at": "2026-11-17",
+  "status": "UNMEASURED",
+  "why": "the build container's egress proxy refused every feed host (connect_rejected), so no robots.txt or HEAD probe could be made from it; URLs marked 'listed on ...' were read off the publisher's own feed-listing page through a research reader, the rest are from memory. Robots is enforced at every fetch on the box through index_discovery.robots_refusal (fail closed) and the result is published per feed in reports/LIVE_WIRE.json"
+ },
+ "crypto_exchange_rule": "owner ruling 2026-11-17 20:40Z (governance/mt5-only-means-trading-ruling-2026-11-17.md): MT5-only governs TRADING; public crypto-exchange feeds are allowed as research/signal inputs under each exchange's own API terms and robots, rows on these domains carry publisher_class crypto_exchange, and nothing here ever places an order. None assessed yet: missed_growth = crypto venue flow/funding/liquidation signals for Fusion crypto CFDs and cross-asset regime remain unread until a dedicated assessment lands",
+ "refused_hosts": {
+  "stlouisfed.org": "FRED/ALFRED: refused for all automated fetches (terms ruling 2026-11-13)",
+  "yahoo.com": "Yahoo terms refuse automated collection without express prior permission",
+  "yahooapis.com": "Yahoo: the same terms cover its API host",
+  "comtrade.un.org": "UN Comtrade: terms refuse automated use",
+  "comtradeplus.un.org": "UN Comtrade: terms refuse automated use",
+  "comtradeapi.un.org": "UN Comtrade: terms refuse automated use",
+  "cboe.com": "Cboe: terms refuse automated collection of its data",
+  "theice.com": "ICE: terms refuse automated collection of its data",
+  "archive.org": "archive.org/Wayback: terms refuse automated collection",
+  "youtube.com": "YouTube: terms refuse automated access",
+  "youtu.be": "YouTube: terms refuse automated access",
+  "dukascopy.com": "Dukascopy terms refuse bots and commercial use of its data",
+  "reddit.com": "Reddit: terms refuse automated collection without a data agreement",
+  "portwatch.imf.org": "IMF PortWatch: refused pending terms reconciliation",
+  "spdrgoldshares.com": "SPDR: terms refuse automated collection",
+  "ssga.com": "SPDR/SSGA: terms refuse automated collection"
+ },
+ "crypto_exchange_domains": [
+  "binance.com",
+  "bybit.com",
+  "okx.com",
+  "hyperliquid.xyz",
+  "coinbase.com",
+  "kraken.com",
+  "bitfinex.com",
+  "kucoin.com",
+  "deribit.com",
+  "bitmex.com",
+  "gate.io",
+  "htx.com",
+  "huobi.com",
+  "mexc.com",
+  "bitget.com"
+ ],
+ "feeds": [
+  {
+   "id": "fed_press_monetary",
+   "url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "UST10Y"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 120,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_speeches_testimony",
+   "url": "https://www.federalreserve.gov/feeds/speeches_and_testimony.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "US500",
+    "UST10Y"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_h41_balance_sheet",
+   "url": "https://www.federalreserve.gov/feeds/h41.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "UST10Y"
+   ],
+   "cadence": "weekly",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_h15_rates",
+   "url": "https://www.federalreserve.gov/feeds/h15.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "UST10Y",
+    "USDJPY"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_policy_rates",
+   "url": "https://www.federalreserve.gov/feeds/prates.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_g17_industrial_production",
+   "url": "https://www.federalreserve.gov/feeds/g17.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "statistics",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "fx"
+   ],
+   "symbols": [
+    "US500",
+    "EURUSD"
+   ],
+   "cadence": "monthly",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fed_press_all",
+   "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+   "kind": "rss",
+   "publisher": "Federal Reserve Board",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on federalreserve.gov/feeds/feeds.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk.poll_official_rss (free_data.RSS_FEEDS['FED']); polling twice would double-count one headline",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "bls_news_release_all",
+   "url": "https://www.bls.gov/feed/news_release_all.xml",
+   "kind": "rss",
+   "publisher": "US Bureau of Labor Statistics",
+   "publisher_class": "statistics",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "US500"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk (free_data.RSS_FEEDS['BLS'])",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "eia_press",
+   "url": "https://www.eia.gov/rss/press_rss.xml",
+   "kind": "rss",
+   "publisher": "US Energy Information Administration",
+   "publisher_class": "energy",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "energy"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on eia.gov/tools/rssfeeds (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "eia_today_in_energy",
+   "url": "https://www.eia.gov/rss/todayinenergy.xml",
+   "kind": "rss",
+   "publisher": "US Energy Information Administration",
+   "publisher_class": "energy",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "energy"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on eia.gov/tools/rssfeeds (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "eia_gasoline_diesel",
+   "url": "https://www.eia.gov/petroleum/gasdiesel/includes/gas_diesel_rss.xml",
+   "kind": "rss",
+   "publisher": "US Energy Information Administration",
+   "publisher_class": "energy",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "energy"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "cadence": "weekly",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on eia.gov/tools/rssfeeds (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "eia_heating_oil_propane",
+   "url": "https://www.eia.gov/petroleum/heatingoilpropane/includes/hopu_rss.xml",
+   "kind": "rss",
+   "publisher": "US Energy Information Administration",
+   "publisher_class": "energy",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "energy"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XNGUSD"
+   ],
+   "cadence": "weekly",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on eia.gov/tools/rssfeeds (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ofac_recent_actions",
+   "url": "https://ofac.treasury.gov/system/files/126/ofac.xml",
+   "kind": "rss",
+   "publisher": "US Treasury OFAC",
+   "publisher_class": "treasury",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "USDCNH",
+    "USDTRY"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 180,
+   "keyless": true,
+   "url_source": "memory (OFAC recent-actions feed; URL not read from a listing page)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://ofac.treasury.gov/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "treasury_auctions_fiscaldata",
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?sort=-auction_date&page%5Bsize%5D=25",
+   "kind": "json-api",
+   "publisher": "US Treasury Fiscal Data",
+   "publisher_class": "treasury",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "bonds",
+    "fx"
+   ],
+   "symbols": [
+    "UST10Y",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "memory (Fiscal Data API documentation)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription; Fiscal Data API documented for keyless public use",
+    "terms_url": "https://fiscaldata.treasury.gov/api-documentation/",
+    "read_at": "2026-11-17"
+   },
+   "json": {
+    "items": "data",
+    "id": [
+     "cusip",
+     "auction_date",
+     "security_term"
+    ],
+    "title": [
+     "security_type",
+     "security_term",
+     "auction_date",
+     "high_yield",
+     "bid_to_cover_ratio"
+    ],
+    "published": "auction_date",
+    "link": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
+   }
+  },
+  {
+   "id": "usgs_quakes_significant_hour",
+   "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.atom",
+   "kind": "atom",
+   "publisher": "US Geological Survey",
+   "publisher_class": "hazard",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices",
+    "energy"
+   ],
+   "symbols": [
+    "USDJPY",
+    "JPN225",
+    "XTIUSD"
+   ],
+   "cadence": "realtime",
+   "sub_hour": true,
+   "poll_every_s": 120,
+   "keyless": true,
+   "url_source": "memory (USGS real-time feed summary)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "usgs_quakes_m45_hour",
+   "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_hour.atom",
+   "kind": "atom",
+   "publisher": "US Geological Survey",
+   "publisher_class": "hazard",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices",
+    "energy"
+   ],
+   "symbols": [
+    "USDJPY",
+    "JPN225",
+    "XTIUSD"
+   ],
+   "cadence": "realtime",
+   "sub_hour": true,
+   "poll_every_s": 120,
+   "keyless": true,
+   "url_source": "memory (USGS real-time feed summary)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "nhc_atlantic",
+   "url": "https://www.nhc.noaa.gov/index-at.xml",
+   "kind": "rss",
+   "publisher": "NOAA National Hurricane Center",
+   "publisher_class": "hazard",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "energy",
+    "softs"
+   ],
+   "symbols": [
+    "XNGUSD",
+    "XTIUSD"
+   ],
+   "cadence": "intraday",
+   "sub_hour": true,
+   "poll_every_s": 600,
+   "keyless": true,
+   "url_source": "memory (NHC RSS index)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.weather.gov/disclaimer",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "usda_latest_releases",
+   "url": "https://www.usda.gov/rss/latest-releases.xml",
+   "kind": "rss",
+   "publisher": "US Department of Agriculture",
+   "publisher_class": "government",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "softs"
+   ],
+   "symbols": [
+    "WHEAT",
+    "CORN",
+    "SOYBEAN"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.usda.gov/policies-and-links",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "whitehouse_presidential_actions",
+   "url": "https://www.whitehouse.gov/presidential-actions/feed/",
+   "kind": "rss",
+   "publisher": "The White House",
+   "publisher_class": "government",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds",
+    "energy"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "US500",
+    "XTIUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 180,
+   "keyless": true,
+   "url_source": "memory (WordPress category feed; URL not read from a listing page)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "US federal government work: 17 U.S.C. 105 places it outside copyright; the publisher lists this RSS feed for public subscription",
+    "terms_url": "https://www.whitehouse.gov/copyright/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "sec_press_releases",
+   "url": "https://www.sec.gov/news/pressreleases.rss",
+   "kind": "rss",
+   "publisher": "US SEC",
+   "publisher_class": "regulator",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "shares"
+   ],
+   "symbols": [
+    "US500",
+    "NAS100"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "SEC fair-access policy requires a User-Agent naming a company and contact email; this organ's UA carries no personal or contact details by law of the desk. EDGAR is reached by alpha_capture through the QUANT_EDGAR_UA key, not here",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "SEC enforcement/rule headlines reach the fast lane only via wires until a contact UA is configured by NAME for this organ"
+  },
+  {
+   "id": "cftc_press",
+   "url": "https://www.cftc.gov/RSS/index.htm",
+   "kind": "rss",
+   "publisher": "US CFTC",
+   "publisher_class": "regulator",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "XTIUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "cftc.gov/RSS/index.htm",
+   "terms": {
+    "verdict": "NOT_AVAILABLE",
+    "reason": "cftc.gov/RSS/index.htm (read 2026-11-17): 'As of October 2026, the CFTC has temporarily disabled all RSS feeds'",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "CFTC press and enforcement headlines unavailable first-party until CFTC re-enables RSS"
+  },
+  {
+   "id": "nyfed_markets_api",
+   "url": "https://markets.newyorkfed.org/api/rates/all/latest.json",
+   "kind": "json-api",
+   "publisher": "Federal Reserve Bank of New York",
+   "publisher_class": "central_bank",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "bonds",
+    "fx"
+   ],
+   "symbols": [
+    "UST10Y"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the NY Fed is not a federal agency, so 17 U.S.C. 105 does not apply; its terms of use were not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "NY Fed headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on SOFR/EFFR prints is lost until the terms are read and recorded"
+  },
+  {
+   "id": "govuk_hm_treasury",
+   "url": "https://www.gov.uk/government/organisations/hm-treasury.atom",
+   "kind": "atom",
+   "publisher": "HM Treasury (GOV.UK)",
+   "publisher_class": "treasury",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds",
+    "indices"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "EURGBP",
+    "UK100"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "memory (GOV.UK organisation .atom)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Open Government Licence v3.0 (GOV.UK content, commercial reuse permitted with attribution); GOV.UK publishes .atom for every finder/organisation page",
+    "terms_url": "https://www.gov.uk/help/terms-conditions",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "govuk_business_trade",
+   "url": "https://www.gov.uk/government/organisations/department-for-business-and-trade.atom",
+   "kind": "atom",
+   "publisher": "Department for Business and Trade (GOV.UK)",
+   "publisher_class": "government",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "UK100"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 600,
+   "keyless": true,
+   "url_source": "memory (GOV.UK organisation .atom)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Open Government Licence v3.0 (GOV.UK content, commercial reuse permitted with attribution); GOV.UK publishes .atom for every finder/organisation page",
+    "terms_url": "https://www.gov.uk/help/terms-conditions",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "govuk_ofsi_sanctions",
+   "url": "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation.atom",
+   "kind": "atom",
+   "publisher": "OFSI (GOV.UK)",
+   "publisher_class": "treasury",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "XAUUSD",
+    "XBRUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "memory (GOV.UK organisation .atom)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Open Government Licence v3.0 (GOV.UK content, commercial reuse permitted with attribution); GOV.UK publishes .atom for every finder/organisation page",
+    "terms_url": "https://www.gov.uk/help/terms-conditions",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "boe_news",
+   "url": "https://www.bankofengland.co.uk/rss/news",
+   "kind": "rss",
+   "publisher": "Bank of England",
+   "publisher_class": "central_bank",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "EURGBP",
+    "UK100"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk (free_data.RSS_FEEDS['BOE'])",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ons_release_calendar",
+   "url": "https://www.ons.gov.uk/releasecalendar",
+   "kind": "rss",
+   "publisher": "UK ONS",
+   "publisher_class": "statistics",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "UK100"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_AVAILABLE",
+    "reason": "ONS publishes no release RSS: its own blog (onsdigital.blog.gov.uk, 2025-03-06, read 2026-11-17) points users to the human calendar and the aggregated-search data endpoint was retired (developer.ons.gov.uk/retirement/aggregatedsearch)",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "UK CPI/labour/GDP release headlines arrive only via the calendar and wires, minutes late"
+  },
+  {
+   "id": "fca_news",
+   "url": "https://www.fca.org.uk/news/rss.xml",
+   "kind": "rss",
+   "publisher": "UK FCA",
+   "publisher_class": "regulator",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "GBPUSD",
+    "UK100"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "FCA website terms not read in this pass; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "FCA headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on UK conduct/regulatory notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "uk_dmo",
+   "url": "https://www.dmo.gov.uk/",
+   "kind": "rss",
+   "publisher": "UK Debt Management Office",
+   "publisher_class": "treasury",
+   "region": "GB",
+   "language": "en",
+   "asset_classes": [
+    "bonds",
+    "fx"
+   ],
+   "symbols": [
+    "GBPUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "no first-party DMO feed URL was verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "gilt auction results reach the desk only via wires until a DMO feed is located"
+  },
+  {
+   "id": "ecb_press",
+   "url": "https://www.ecb.europa.eu/rss/press.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "EURGBP",
+    "EURJPY",
+    "GER40",
+    "EUSTX50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk (free_data.RSS_FEEDS['ECB'])",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_statistical_press",
+   "url": "https://www.ecb.europa.eu/rss/statpress.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "EURGBP",
+    "EURJPY",
+    "GER40",
+    "EUSTX50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_operations",
+   "url": "https://www.ecb.europa.eu/rss/operations.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "EURGBP",
+    "EURJPY",
+    "GER40",
+    "EUSTX50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_yield_curve",
+   "url": "https://www.ecb.europa.eu/rss/yc.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "bonds",
+    "fx"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GER40"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_usd",
+   "url": "https://www.ecb.europa.eu/rss/fxref-usd.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURUSD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_jpy",
+   "url": "https://www.ecb.europa.eu/rss/fxref-jpy.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURJPY"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_gbp",
+   "url": "https://www.ecb.europa.eu/rss/fxref-gbp.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURGBP"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_chf",
+   "url": "https://www.ecb.europa.eu/rss/fxref-chf.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURCHF"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_aud",
+   "url": "https://www.ecb.europa.eu/rss/fxref-aud.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURAUD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_cad",
+   "url": "https://www.ecb.europa.eu/rss/fxref-cad.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURCAD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_nzd",
+   "url": "https://www.ecb.europa.eu/rss/fxref-nzd.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURNZD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_nok",
+   "url": "https://www.ecb.europa.eu/rss/fxref-nok.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURNOK"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_sek",
+   "url": "https://www.ecb.europa.eu/rss/fxref-sek.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURSEK"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_cny",
+   "url": "https://www.ecb.europa.eu/rss/fxref-cny.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDCNH"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_try",
+   "url": "https://www.ecb.europa.eu/rss/fxref-try.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURTRY"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_zar",
+   "url": "https://www.ecb.europa.eu/rss/fxref-zar.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDZAR"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_mxn",
+   "url": "https://www.ecb.europa.eu/rss/fxref-mxn.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDMXN"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "ecb_fxref_pln",
+   "url": "https://www.ecb.europa.eu/rss/fxref-pln.html",
+   "kind": "rss",
+   "publisher": "European Central Bank",
+   "publisher_class": "central_bank",
+   "region": "EA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURPLN"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on ecb.europa.eu/home/html/rss.en.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "ECB copyright notice (ecb.europa.eu/services/disclaimer, read 2026-11-17): 'users of this website may make free use of the information obtained directly from it' with the ECB cited; feed listed on ecb.europa.eu/home/html/rss.en.html",
+    "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "eurostat_news_releases",
+   "url": "https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=maximized&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_PREREL",
+   "kind": "atom",
+   "publisher": "Eurostat",
+   "publisher_class": "statistics",
+   "region": "EU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "EURGBP",
+    "EURJPY",
+    "GER40",
+    "EUSTX50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on ec.europa.eu/eurostat/web/rss/about-rss (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Commission Decision 2011/833/EU on reuse of Commission documents and Eurostat's copyright notice (free reuse, commercial included, with acknowledgement); feed listed on ec.europa.eu/eurostat/web/rss/about-rss (read 2026-11-17)",
+    "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "esma_news",
+   "url": "https://www.esma.europa.eu/press-news/press-releases",
+   "kind": "rss",
+   "publisher": "ESMA",
+   "publisher_class": "regulator",
+   "region": "EU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "EURUSD",
+    "EURGBP",
+    "EURJPY",
+    "GER40",
+    "EUSTX50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "no first-party ESMA feed URL was verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "ESMA product-intervention/leverage notices reach the desk only via wires"
+  },
+  {
+   "id": "bundesbank_latest",
+   "url": "https://www.bundesbank.de/service/rss/en/633306/feed.rss",
+   "kind": "rss",
+   "publisher": "Deutsche Bundesbank",
+   "publisher_class": "central_bank",
+   "region": "DE",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GER40"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on bundesbank.de/en/homepage/rss (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the RSS page states no reuse terms and Bundesbank's 'User information' page was not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Bundesbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on latest releases is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bundesbank_speeches",
+   "url": "https://www.bundesbank.de/service/rss/en/633296/feed.rss",
+   "kind": "rss",
+   "publisher": "Deutsche Bundesbank",
+   "publisher_class": "central_bank",
+   "region": "DE",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GER40"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on bundesbank.de/en/homepage/rss (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the RSS page states no reuse terms and Bundesbank's 'User information' page was not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Bundesbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on speeches is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bundesbank_open_market_ops",
+   "url": "https://www.bundesbank.de/service/rss/en/878806/feed.rss",
+   "kind": "rss",
+   "publisher": "Deutsche Bundesbank",
+   "publisher_class": "central_bank",
+   "region": "DE",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GER40"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on bundesbank.de/en/homepage/rss (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the RSS page states no reuse terms and Bundesbank's 'User information' page was not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Bundesbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on open market operations is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bafin_news",
+   "url": "https://www.bafin.de/EN/Homepage/homepage_node.html",
+   "kind": "rss",
+   "publisher": "BaFin",
+   "publisher_class": "regulator",
+   "region": "DE",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "fx"
+   ],
+   "symbols": [
+    "GER40",
+    "EURUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party BaFin feed URL or reuse terms were verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "BaFin headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on German supervisory notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "boc_press_releases",
+   "url": "https://www.bankofcanada.ca/content_type/press-releases/feed/",
+   "kind": "rss",
+   "publisher": "Bank of Canada",
+   "publisher_class": "central_bank",
+   "region": "CA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "USDCAD",
+    "CADJPY"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on bankofcanada.ca/?p=41736 (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Bank of Canada terms (bankofcanada.ca/terms, read 2026-11-17): 'permits you to freely use, copy, distribute and transmit its website content', commercial use allowed with attribution; must not circumvent request-frequency limits (honoured by poll_every_s)",
+    "terms_url": "https://www.bankofcanada.ca/terms/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "boc_announcements",
+   "url": "https://www.bankofcanada.ca/content_type/announcements/feed/",
+   "kind": "rss",
+   "publisher": "Bank of Canada",
+   "publisher_class": "central_bank",
+   "region": "CA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "USDCAD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on bankofcanada.ca/?p=41736 (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Bank of Canada terms (bankofcanada.ca/terms, read 2026-11-17): 'permits you to freely use, copy, distribute and transmit its website content', commercial use allowed with attribution; must not circumvent request-frequency limits (honoured by poll_every_s)",
+    "terms_url": "https://www.bankofcanada.ca/terms/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "boc_fx_usdcad",
+   "url": "https://www.bankofcanada.ca/valet/fx_rss/FXUSDCAD",
+   "kind": "rss",
+   "publisher": "Bank of Canada",
+   "publisher_class": "central_bank",
+   "region": "CA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDCAD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 3600,
+   "keyless": true,
+   "url_source": "listed on bankofcanada.ca/?p=41736 (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Bank of Canada terms (bankofcanada.ca/terms, read 2026-11-17): 'permits you to freely use, copy, distribute and transmit its website content', commercial use allowed with attribution; must not circumvent request-frequency limits (honoured by poll_every_s); the Bank notes its rates are not a benchmark for executing trades (informational use only)",
+    "terms_url": "https://www.bankofcanada.ca/terms/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "statcan_the_daily",
+   "url": "https://www150.statcan.gc.ca/rss/dai-quo/0-eng.rss",
+   "kind": "rss",
+   "publisher": "Statistics Canada",
+   "publisher_class": "statistics",
+   "region": "CA",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "energy"
+   ],
+   "symbols": [
+    "USDCAD",
+    "XTIUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 300,
+   "keyless": true,
+   "url_source": "listed on www150.statcan.gc.ca/dai-quo/rss-eng.htm (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "Statistics Canada Open Licence (commercial reuse permitted with attribution); feed listed on www150.statcan.gc.ca/dai-quo/rss-eng.htm (read 2026-11-17)",
+    "terms_url": "https://www.statcan.gc.ca/en/reference/licence",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "rba_media_releases",
+   "url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of Australia",
+   "publisher_class": "central_bank",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUS200"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 180,
+   "keyless": true,
+   "url_source": "listed on rba.gov.au/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "RBA copyright notice (rba.gov.au/copyright, read 2026-11-17) s.2: 'all RBA Material is provided under a Creative Commons Attribution 4.0 International License'; feed listed on rba.gov.au/rss/index.html",
+    "terms_url": "https://www.rba.gov.au/copyright/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "rba_speeches",
+   "url": "https://www.rba.gov.au/rss/rss-cb-speeches.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of Australia",
+   "publisher_class": "central_bank",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUS200"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 600,
+   "keyless": true,
+   "url_source": "listed on rba.gov.au/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "RBA copyright notice (rba.gov.au/copyright, read 2026-11-17) s.2: 'all RBA Material is provided under a Creative Commons Attribution 4.0 International License'; feed listed on rba.gov.au/rss/index.html",
+    "terms_url": "https://www.rba.gov.au/copyright/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "rba_statement_on_monetary_policy",
+   "url": "https://www.rba.gov.au/rss/rss-cb-smp.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of Australia",
+   "publisher_class": "central_bank",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUS200"
+   ],
+   "cadence": "quarterly",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on rba.gov.au/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "RBA copyright notice (rba.gov.au/copyright, read 2026-11-17) s.2: 'all RBA Material is provided under a Creative Commons Attribution 4.0 International License'; feed listed on rba.gov.au/rss/index.html",
+    "terms_url": "https://www.rba.gov.au/copyright/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "rba_changes_to_tables",
+   "url": "https://www.rba.gov.au/rss/rss-cb-changes-to-tables.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of Australia",
+   "publisher_class": "central_bank",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUS200"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 900,
+   "keyless": true,
+   "url_source": "listed on rba.gov.au/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "RBA copyright notice (rba.gov.au/copyright, read 2026-11-17) s.2: 'all RBA Material is provided under a Creative Commons Attribution 4.0 International License'; feed listed on rba.gov.au/rss/index.html",
+    "terms_url": "https://www.rba.gov.au/copyright/",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "rba_exchange_rates",
+   "url": "https://www.rba.gov.au/rss/rss-cb-exchange-rates.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of Australia",
+   "publisher_class": "central_bank",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "AUDUSD"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on rba.gov.au/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "RBA copyright notice s.2 EXCLUDES 'Financial Data' (and the Cash Rate, s.4) from CC BY 4.0; exchange-rate data falls outside the licence the rest of the site carries",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "RBA headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on daily AUD fixes is lost until the terms are read and recorded"
+  },
+  {
+   "id": "abs_releases",
+   "url": "https://www.abs.gov.au/",
+   "kind": "rss",
+   "publisher": "Australian Bureau of Statistics",
+   "publisher_class": "statistics",
+   "region": "AU",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "AUDUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "no first-party ABS release feed URL was verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "AU CPI/labour release headlines reach the fast lane only via wires"
+  },
+  {
+   "id": "rbnz_news",
+   "url": "https://www.rbnz.govt.nz/feeds/news",
+   "kind": "rss",
+   "publisher": "Reserve Bank of New Zealand",
+   "publisher_class": "central_bank",
+   "region": "NZ",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "NZDUSD",
+    "AUDNZD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 180,
+   "keyless": true,
+   "url_source": "web search result rbnz.govt.nz/feeds/news (2026-11-17)",
+   "terms": {
+    "verdict": "OK",
+    "basis": "RBNZ copyright page (rbnz.govt.nz/copyright, read 2026-11-17): 'This material may be reproduced and used without the specific permission of the Bank' with attribution",
+    "terms_url": "https://www.rbnz.govt.nz/copyright",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "norges_bank_news",
+   "url": "https://www.norges-bank.no/en/",
+   "kind": "rss",
+   "publisher": "Norges Bank",
+   "publisher_class": "central_bank",
+   "region": "NO",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURNOK",
+    "USDNOK"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "terms permit copying with Norges Bank cited (norges-bank.no/en/disclaimer, read 2026-11-17) but no feed URL was verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Norges Bank rate decisions reach the desk only via wires until its feed URL is recorded"
+  },
+  {
+   "id": "riksbank_press_releases",
+   "url": "https://www.riksbank.se/en-gb/rss/press-releases/",
+   "kind": "rss",
+   "publisher": "Sveriges Riksbank",
+   "publisher_class": "central_bank",
+   "region": "SE",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURSEK",
+    "USDSEK"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "web search results riksbank.se/en-gb/rss/ (2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the Riksbank RSS page states no reuse terms and the site terms were not read",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Riksbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on press releases is lost until the terms are read and recorded"
+  },
+  {
+   "id": "riksbank_calendar",
+   "url": "https://www.riksbank.se/en-gb/rss/calendar/",
+   "kind": "rss",
+   "publisher": "Sveriges Riksbank",
+   "publisher_class": "central_bank",
+   "region": "SE",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURSEK",
+    "USDSEK"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "web search results riksbank.se/en-gb/rss/ (2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the Riksbank RSS page states no reuse terms and the site terms were not read",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Riksbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on the release calendar is lost until the terms are read and recorded"
+  },
+  {
+   "id": "riksbank_speeches",
+   "url": "https://www.riksbank.se/en-gb/rss/speeches/",
+   "kind": "rss",
+   "publisher": "Sveriges Riksbank",
+   "publisher_class": "central_bank",
+   "region": "SE",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "EURSEK",
+    "USDSEK"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "web search results riksbank.se/en-gb/rss/ (2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the Riksbank RSS page states no reuse terms and the site terms were not read",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Riksbank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on speeches is lost until the terms are read and recorded"
+  },
+  {
+   "id": "riksgalden_news",
+   "url": "https://www.riksgalden.se/en/press-and-publications/press-releases-and-news/news/?feed=RSS",
+   "kind": "rss",
+   "publisher": "Swedish National Debt Office",
+   "publisher_class": "treasury",
+   "region": "SE",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "EURSEK"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "web search result (2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "Riksgalden site terms not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Riksgalden headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on SGB auction notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "snb_news",
+   "url": "https://www.snb.ch/en/node/10532/rss",
+   "kind": "rss",
+   "publisher": "Swiss National Bank",
+   "publisher_class": "central_bank",
+   "region": "CH",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals"
+   ],
+   "symbols": [
+    "USDCHF",
+    "EURCHF",
+    "XAUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk (free_data.RSS_FEEDS['SNB'])",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "boj_announcements_en",
+   "url": "https://www.boj.or.jp/en/announcements/rss.rdf",
+   "kind": "rdf",
+   "publisher": "Bank of Japan",
+   "publisher_class": "central_bank",
+   "region": "JP",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "USDJPY",
+    "EURJPY",
+    "JPN225"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "already polled by news_desk (free_data.RSS_FEEDS['BOJ'])",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "boj_whatsnew_ja",
+   "url": "https://www.boj.or.jp/rss/whatsnew.xml",
+   "kind": "rss",
+   "publisher": "Bank of Japan",
+   "publisher_class": "central_bank",
+   "region": "JP",
+   "language": "ja",
+   "asset_classes": [
+    "fx",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "BoJ's RSS/terms page answered a client error to the reader on 2026-11-17, so its terms are unread; the EN route in free_data is not a terms ruling",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "BoJ (Japanese) headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on JA-first announcements is lost until the terms are read and recorded"
+  },
+  {
+   "id": "mof_japan_whats_new",
+   "url": "https://www.mof.go.jp/english/news.rss",
+   "kind": "rss",
+   "publisher": "Ministry of Finance Japan",
+   "publisher_class": "treasury",
+   "region": "JP",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "bonds"
+   ],
+   "symbols": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on mof.go.jp/english/about_mof/rss/index.html (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the RSS page reads 'Copyright (c) Ministry of Finance Japan. All Rights Reserved.' and does not name the Government of Japan Standard Terms of Use",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "MoF Japan headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on FX-intervention and JGB auction notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "jpx_news",
+   "url": "https://www.jpx.co.jp/english/",
+   "kind": "rss",
+   "publisher": "Japan Exchange Group",
+   "publisher_class": "exchange",
+   "region": "JP",
+   "language": "en",
+   "asset_classes": [
+    "indices"
+   ],
+   "symbols": [
+    "JPN225"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "exchange notices and data are licensed; JPX terms not read",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "JPX headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on TSE/OSE market notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bok_rss",
+   "url": "https://www.bok.or.kr/static/guide/portal/popup/rss_popup.html",
+   "kind": "rss",
+   "publisher": "Bank of Korea",
+   "publisher_class": "central_bank",
+   "region": "KR",
+   "language": "ko",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDKRW"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the BoK RSS guide page answered robots_disallowed to an automated reader on 2026-11-17 and the terms were not read",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "BoK headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on Korean rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "pboc_news",
+   "url": "http://www.pbc.gov.cn/en/3688110/index.html",
+   "kind": "rss",
+   "publisher": "People's Bank of China",
+   "publisher_class": "central_bank",
+   "region": "CN",
+   "language": "zh",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "USDCNH",
+    "XAUUSD",
+    "HK50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed was verified and the site's reuse terms were not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "People's Bank of China headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on CNY fixings and PBoC notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "nbs_china_releases",
+   "url": "https://www.stats.gov.cn/english/PressRelease/",
+   "kind": "rss",
+   "publisher": "National Bureau of Statistics of China",
+   "publisher_class": "statistics",
+   "region": "CN",
+   "language": "zh",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "USDCNH",
+    "XAUUSD",
+    "HK50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed was verified and the site's reuse terms were not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "National Bureau of Statistics of China headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on China CPI/PMI/GDP is lost until the terms are read and recorded"
+  },
+  {
+   "id": "mofcom_news",
+   "url": "http://english.mofcom.gov.cn/",
+   "kind": "rss",
+   "publisher": "Ministry of Commerce of China",
+   "publisher_class": "government",
+   "region": "CN",
+   "language": "zh",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "symbols": [
+    "USDCNH",
+    "XAUUSD",
+    "HK50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed was verified and the site's reuse terms were not read; unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Ministry of Commerce of China headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on export controls and tariff notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "rbi_press_releases",
+   "url": "https://rbi.org.in/pressreleases_rss.xml",
+   "kind": "rss",
+   "publisher": "Reserve Bank of India",
+   "publisher_class": "central_bank",
+   "region": "IN",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDINR"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "web search result (2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "RBI disclaimer (read 2026-11-17): 'caching and links to, and the framing of this Web Site or any of the contents are prohibited' except as set forth; footer reads All Rights Reserved",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "RBI headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "pib_india",
+   "url": "https://pib.gov.in/",
+   "kind": "rss",
+   "publisher": "Press Information Bureau (India)",
+   "publisher_class": "government",
+   "region": "IN",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "USDINR"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "PIB reuse terms not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "PIB headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on Indian government releases is lost until the terms are read and recorded"
+  },
+  {
+   "id": "hkma_press_releases",
+   "url": "https://www.hkma.gov.hk/eng/other-information/rss/rss_press-release.xml",
+   "kind": "rss",
+   "publisher": "Hong Kong Monetary Authority",
+   "publisher_class": "central_bank",
+   "region": "HK",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "USDHKD",
+    "HK50"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "listed on hkma.gov.hk/eng/other-information/rss (read 2026-11-17)",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "HKMA Terms and Conditions of Use para 12 (read 2026-11-17): website Information may be used 'only, for non-commercial purposes'; commercial use is permitted only through the HKMA APIs (para 17)",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "HKMA headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on HKD peg operations and press releases is lost until the terms are read and recorded"
+  },
+  {
+   "id": "hkma_open_api",
+   "url": "https://api.hkma.gov.hk/",
+   "kind": "json-api",
+   "publisher": "Hong Kong Monetary Authority",
+   "publisher_class": "central_bank",
+   "region": "HK",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDHKD"
+   ],
+   "cadence": "intraday",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "HKMA T&C para 17 permits commercial use through its APIs, but no endpoint path was verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "HKD interbank liquidity / aggregate balance prints are not polled until an API path is recorded"
+  },
+  {
+   "id": "mas_news",
+   "url": "https://www.mas.gov.sg/",
+   "kind": "rss",
+   "publisher": "Monetary Authority of Singapore",
+   "publisher_class": "central_bank",
+   "region": "SG",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDSGD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed URL was verified and the reuse terms were not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Monetary Authority of Singapore headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bcb_news",
+   "url": "https://www.bcb.gov.br/",
+   "kind": "rss",
+   "publisher": "Banco Central do Brasil",
+   "publisher_class": "central_bank",
+   "region": "BR",
+   "language": "pt",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDBRL"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed URL was verified and the reuse terms were not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Banco Central do Brasil headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "sarb_news",
+   "url": "https://www.resbank.co.za/",
+   "kind": "rss",
+   "publisher": "South African Reserve Bank",
+   "publisher_class": "central_bank",
+   "region": "ZA",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDZAR"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed URL was verified and the reuse terms were not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "South African Reserve Bank headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "cbrt_news",
+   "url": "https://www.tcmb.gov.tr/",
+   "kind": "rss",
+   "publisher": "Central Bank of the Republic of Turkiye",
+   "publisher_class": "central_bank",
+   "region": "TR",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDTRY",
+    "EURTRY"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party feed URL was verified and the reuse terms were not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Central Bank of the Republic of Turkiye headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on rate decisions is lost until the terms are read and recorded"
+  },
+  {
+   "id": "banxico_sie_api",
+   "url": "https://www.banxico.org.mx/SieAPIRest/service/v1/",
+   "kind": "json-api",
+   "publisher": "Banco de Mexico",
+   "publisher_class": "central_bank",
+   "region": "MX",
+   "language": "es",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [
+    "USDMXN"
+   ],
+   "cadence": "daily",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": false,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "the SIE API requires a registered token (not keyless) and its terms were not read; no key is configured by name for this organ",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Banxico FIX and rate prints reach the desk via the ECB MXN reference rate only"
+  },
+  {
+   "id": "bis_cb_speeches",
+   "url": "https://www.bis.org/doclist/cbspeeches.rss",
+   "kind": "rss",
+   "publisher": "Bank for International Settlements",
+   "publisher_class": "central_bank",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "BIS terms (bis.org/terms_conditions.htm, read 2026-11-17) grant redistribution only 'for non-commercial purposes'; other uses need written permission",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "BIS headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on central-bank speeches worldwide is lost until the terms are read and recorded"
+  },
+  {
+   "id": "cme_notices",
+   "url": "https://www.cmegroup.com/",
+   "kind": "rss",
+   "publisher": "CME Group",
+   "publisher_class": "exchange",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XCUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "exchange notices and settlement data are licensed products; the exchange's terms were not read and unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "CME Group headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on settlement/margin notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "lme_notices",
+   "url": "https://www.lme.com/",
+   "kind": "rss",
+   "publisher": "London Metal Exchange",
+   "publisher_class": "exchange",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XCUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "exchange notices and settlement data are licensed products; the exchange's terms were not read and unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "London Metal Exchange headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on settlement/margin notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "hkex_rss",
+   "url": "https://www.hkex.com.hk/Services/RSS-Feeds?sc_lang=en",
+   "kind": "rss",
+   "publisher": "HKEX",
+   "publisher_class": "exchange",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XCUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "exchange notices and settlement data are licensed products; the exchange's terms were not read and unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "HKEX headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on settlement/margin notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "eurex_notices",
+   "url": "https://www.eurex.com/",
+   "kind": "rss",
+   "publisher": "Eurex",
+   "publisher_class": "exchange",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XCUUSD"
+   ],
+   "cadence": "event",
+   "sub_hour": false,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "exchange notices and settlement data are licensed products; the exchange's terms were not read and unclear terms fail closed",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "Eurex headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on settlement/margin notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "gdacs_alerts",
+   "url": "https://www.gdacs.org/xml/rss.xml",
+   "kind": "rss",
+   "publisher": "GDACS (EC JRC / UN OCHA)",
+   "publisher_class": "hazard",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "energy",
+    "softs",
+    "fx"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "USDJPY"
+   ],
+   "cadence": "realtime",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "GDACS reuse terms not read in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "GDACS headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on global disaster alerts is lost until the terms are read and recorded"
+  },
+  {
+   "id": "jfsa_news",
+   "url": "https://www.fsa.go.jp/en/",
+   "kind": "rss",
+   "publisher": "Japan Financial Services Agency",
+   "publisher_class": "regulator",
+   "region": "JP",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "symbols": [
+    "USDJPY",
+    "JPN225"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "BLOCKED_ON_TERMS",
+    "reason": "no first-party JFSA feed URL or reuse terms were verified in this pass",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "JFSA headlines reach the fast lane only via wires; first-party seconds-to-minutes latency on Japanese supervisory notices is lost until the terms are read and recorded"
+  },
+  {
+   "id": "bea_releases",
+   "url": "https://www.bea.gov/news",
+   "kind": "rss",
+   "publisher": "US Bureau of Economic Analysis",
+   "publisher_class": "statistics",
+   "region": "US",
+   "language": "en",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices",
+    "bonds"
+   ],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "US500"
+   ],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "NOT_LOCATED",
+    "reason": "no first-party BEA release feed URL was verified in this pass (public domain, so only the URL is missing)",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "GDP/PCE release headlines reach the fast lane only via wires and the BLS/Fed feeds"
+  },
+  {
+   "id": "kystverket_ais",
+   "url": "https://www.kystverket.no/",
+   "kind": "sse",
+   "publisher": "Norwegian Coastal Administration (AIS)",
+   "publisher_class": "hazard",
+   "region": "NO",
+   "language": "en",
+   "asset_classes": [
+    "energy"
+   ],
+   "symbols": [
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "cadence": "realtime",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "DUPLICATE",
+    "reason": "owned by the ais_norway organ (raw AIS TCP stream, separate branch); not re-polled here",
+    "read_at": "2026-11-17"
+   }
+  },
+  {
+   "id": "fred_release_calendar",
+   "url": "https://fred.stlouisfed.org/releases/calendar",
+   "kind": "rss",
+   "publisher": "stlouisfed.org",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "stlouisfed.org is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever stlouisfed.org carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "yahoo_finance_headlines",
+   "url": "https://finance.yahoo.com/news/rssindex",
+   "kind": "rss",
+   "publisher": "yahoo.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "yahoo.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever yahoo.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "cboe_market_notices",
+   "url": "https://www.cboe.com/us/options/notices/",
+   "kind": "rss",
+   "publisher": "cboe.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "cboe.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever cboe.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "ice_notices",
+   "url": "https://www.theice.com/notices",
+   "kind": "rss",
+   "publisher": "theice.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "theice.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever theice.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "reddit_forex",
+   "url": "https://www.reddit.com/r/Forex/new/.rss",
+   "kind": "rss",
+   "publisher": "reddit.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "reddit.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever reddit.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "dukascopy_calendar",
+   "url": "https://www.dukascopy.com/swiss/english/marketwatch/calendar/",
+   "kind": "rss",
+   "publisher": "dukascopy.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "dukascopy.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever dukascopy.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "imf_portwatch",
+   "url": "https://portwatch.imf.org/",
+   "kind": "rss",
+   "publisher": "portwatch.imf.org",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "portwatch.imf.org is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever portwatch.imf.org carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  },
+  {
+   "id": "youtube_cb_livestreams",
+   "url": "https://www.youtube.com/feeds/videos.xml?channel_id=",
+   "kind": "rss",
+   "publisher": "youtube.com",
+   "publisher_class": "refused",
+   "region": "GLOBAL",
+   "language": "en",
+   "asset_classes": [
+    "fx"
+   ],
+   "symbols": [],
+   "cadence": "event",
+   "sub_hour": true,
+   "poll_every_s": 0,
+   "keyless": true,
+   "url_source": "memory",
+   "terms": {
+    "verdict": "REFUSED_HOST",
+    "reason": "youtube.com is on the desk's terms-refused host list; never fetched",
+    "read_at": "2026-11-17"
+   },
+   "missed_growth": "whatever youtube.com carried is UNMEASURED from it; first-party feeds in this registry stand in"
+  }
+ ]
+}
