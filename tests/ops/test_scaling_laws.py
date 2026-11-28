@@ -83,3 +83,44 @@ def test_main_writes_the_report(tmp_path: Path, monkeypatch) -> None:
     assert sl.main([]) == 0
     doc = json.loads((tmp_path / "scaling.json").read_text("utf-8"))
     assert "law" in doc and "axes" in doc
+
+
+def test_main_streams_large_inputs_in_bounded_memory(tmp_path: Path, monkeypatch) -> None:
+    """2026-11-11: this organ grew past 30 GB on the box by loading the whole hypothesis graph.
+    Readers now stream; peak Python allocation must not scale with file size."""
+    import tracemalloc
+    from datetime import UTC, datetime, timedelta
+
+    from libs.ops import compute_ledger
+
+    now = datetime.now(tz=UTC)
+    graph, ledger = tmp_path / "graph.jsonl", tmp_path / "ledger.jsonl"
+    pad = "x" * 400
+    with graph.open("w", encoding="utf-8") as g:
+        for i in range(40_000):
+            day = (now - timedelta(days=i % 10)).isoformat()
+            g.write(json.dumps({"at": day, "fate": "BORN" if i % 3 else "CERTIFIED",
+                                "pad": pad}) + "\n")
+        g.write("not json\n\n")
+    with ledger.open("w", encoding="utf-8") as f:
+        for i in range(10):
+            f.write(json.dumps({"at": (now - timedelta(days=i)).isoformat(),
+                                "wall_s": 3600.0 * (i + 1)}) + "\n")
+        f.write(json.dumps({"at": (now - timedelta(days=90)).isoformat(), "wall_s": 1e6}) + "\n")
+    monkeypatch.setattr(sl, "OUT", tmp_path / "scaling.json")
+    monkeypatch.setattr(sl, "GRAPH", graph)
+    monkeypatch.setattr(compute_ledger, "LEDGER", ledger)
+
+    size = graph.stat().st_size
+    tracemalloc.start()
+    assert sl.main([]) == 0
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    assert peak < size / 4, (peak, size)
+
+    doc = json.loads((tmp_path / "scaling.json").read_text("utf-8"))
+    expect = sl.build(list(sl._ledger_rows(sl.WINDOW_DAYS, ledger)),
+                      [json.loads(x) for x in graph.read_text("utf-8").splitlines()
+                       if x.startswith("{")], now=datetime.fromisoformat(doc["at"]))
+    assert doc["law"] == expect["law"]
+    assert doc["law"]["total_hours"] == 55.0

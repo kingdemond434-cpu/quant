@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import math
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -50,7 +51,7 @@ def _day(stamp: Any) -> str | None:
     return (d if d.tzinfo else d.replace(tzinfo=UTC)).date().isoformat()
 
 
-def hours_by_day(rows: list[dict[str, Any]]) -> dict[str, float]:
+def hours_by_day(rows: Iterable[dict[str, Any]]) -> dict[str, float]:
     out: dict[str, float] = defaultdict(float)
     for r in rows:
         day = _day(r.get("at"))
@@ -59,7 +60,7 @@ def hours_by_day(rows: list[dict[str, Any]]) -> dict[str, float]:
     return dict(out)
 
 
-def survivors_by_day(graph_rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+def survivors_by_day(graph_rows: Iterable[dict[str, Any]]) -> dict[str, dict[str, int]]:
     out: dict[str, dict[str, int]] = defaultdict(lambda: {"born": 0, "certified": 0})
     for r in graph_rows:
         day = _day(r.get("at"))
@@ -114,7 +115,7 @@ def fit(hours: dict[str, float], survivors: dict[str, dict[str, int]],
     return out
 
 
-def build(ledger_rows: list[dict[str, Any]], graph_rows: list[dict[str, Any]],
+def build(ledger_rows: Iterable[dict[str, Any]], graph_rows: Iterable[dict[str, Any]],
           now: datetime | None = None, window_days: int = WINDOW_DAYS) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     cut = (now - timedelta(days=window_days)).date().isoformat()
@@ -141,25 +142,49 @@ def build(ledger_rows: list[dict[str, Any]], graph_rows: list[dict[str, Any]],
     }
 
 
-def _graph_rows(path: Path) -> list[dict[str, Any]]:
+def _iter_jsonl(path: Path) -> Iterator[dict[str, Any]]:
+    """Stream dict rows one line at a time.
+
+    BOUNDED MEMORY (2026-11-11): the old reader did `read_text().splitlines()` and kept every row
+    as a dict. On the box the hypothesis graph is large enough that this organ grew to 30 GB+ of
+    commit and starved the live terminals. Both readers now stream, so peak memory is one line
+    plus the per-day buckets (at most a few hundred keys), whatever the files grow to. The
+    answer is identical: the same rows reach the same aggregators in the same order."""
     try:
-        text = path.read_text("utf-8")
+        fh = path.open("r", encoding="utf-8", errors="replace")
     except OSError:
-        return []
-    out = []
-    for line in text.splitlines():
+        return
+    with fh:
+        for line in fh:
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict):
+                yield row
+
+
+def _graph_rows(path: Path) -> Iterator[dict[str, Any]]:
+    return _iter_jsonl(path)
+
+
+def _ledger_rows(window_days: int, path: Path) -> Iterator[dict[str, Any]]:
+    """compute_ledger.rows() semantics (rows stamped inside the window), streamed."""
+    cut = datetime.now(tz=UTC).timestamp() - window_days * 86400.0
+    for row in _iter_jsonl(path):
         try:
-            row = json.loads(line)
-        except ValueError:
+            stamp = datetime.fromisoformat(str(row.get("at"))).timestamp()
+        except (ValueError, TypeError):
             continue
-        if isinstance(row, dict):
-            out.append(row)
-    return out
+        if stamp >= cut:
+            yield row
 
 
 def main(argv: list[str] | None = None) -> int:
-    from libs.ops.compute_ledger import rows as ledger_rows
-    doc = build(ledger_rows(WINDOW_DAYS), _graph_rows(GRAPH))
+    from libs.ops import compute_ledger
+    doc = build(_ledger_rows(WINDOW_DAYS, compute_ledger.LEDGER), _graph_rows(GRAPH))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     law = doc["law"]
