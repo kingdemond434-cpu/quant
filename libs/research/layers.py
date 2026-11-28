@@ -50,6 +50,7 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    "attention_substitutes": "information",
     # Published strategy CODE read into family cells: what the desk knows (a rule someone
     # wrote), not a prediction -- the gauntlet does the predicting.
     "cell_emitter": "information",
@@ -688,6 +689,9 @@ LEG_LAYER: dict[str, str] = {
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
+    # CRO D18 measured on recorded consumer reads: a measurement of the desk's own wiring, meta.
+    "dataset_use_census": "meta",
+    "catalog_routes": "information", "discovery_audit": "meta",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

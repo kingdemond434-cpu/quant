@@ -1236,8 +1236,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "bo_retail_dollar", "The household dollar market: r/BOLIVIA, the Facebook and WhatsApp "
                             "casa-de-cambio groups, the street cambistas of the Miamicito and "
                             "the Eloy Salmon", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/BOLIVIA/",
-               "https://www.facebook.com/search/top?q=d%C3%B3lar%20paralelo%20bolivia"),
+        roots=("https://www.facebook.com/search/top?q=d%C3%B3lar%20paralelo%20bolivia",),
         queries=("dólar paralelo hoy Bolivia", "dónde comprar dólares La Paz",
                  "cambistas Santa Cruz cotización", "banco no da dólares",
                  "cómo pagar importación sin dólares", "ahorrar en dólares Bolivia"),

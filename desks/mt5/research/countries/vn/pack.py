@@ -574,8 +574,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "single most valuable non-official source in the pack and it exists only in "
                "Vietnamese"),
     _src("VN-S5", "retail investor forums and chat", layer="retail_ecology",
-         roots=("https://f319.com/", "https://f247.com/", "https://www.reddit.com/r/VietNam/",
-                "https://vozforums.com/"),
+         roots=("https://f319.com/", "https://f247.com/", "https://vozforums.com/"),
          languages=("vi",), licence="public web; quote verbatim and attribute",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

@@ -741,7 +741,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("ke_retail_ecology", "Kenyan boards and the crowd, in Swahili and English",
          layer="retail_ecology",
          roots=("wazua.co.ke (the long-running Kenyan investment forum)",
-                "reddit.com/r/Kenya (economy and cost-of-living threads)",
                 "public X/Twitter threads on the shilling and the price of unga",
                 "public Facebook group discussion of farm-gate and market prices, described "
                 "generically"),

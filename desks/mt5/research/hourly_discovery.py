@@ -88,12 +88,19 @@ ORGANS: dict[str, str] = {
     # read-only.
     "conversion_ledger": "run",
     "trial_allocator": "run",
+    # The withheld-benchmark discovery audit (2026-10-06): no network, two file reads -- what
+    # share of ~60 real datasets the discovery path has found, by route/region/type, and
+    # CONTAMINATED if any seed can read the benchmark. Benchmark coverage, not world coverage.
+    "discovery_audit": "run",
     # world miners: mechanism claims from public ground
     "repo_miner": "run",
     "deep_forest_miner": "run_budget",
     "world_crawler": "crawl_budget",
     # data organs: datasets and moats
     "data_prospector": "run",
+    # Catalogue APIs (CKAN, DCAT, Opendatasoft, SDMX, STAC, Common Crawl CDX) walked from
+    # resumable cursors; rows land in discoveries_catalog_* for acquire_datasets to fetch.
+    "catalog_routes": "run_budget",
     "acquire_datasets": "main",
     "fetch_futures_curves": "main",
     # proposers: families over the desk's bars, deflated by their own search

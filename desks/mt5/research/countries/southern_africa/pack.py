@@ -1667,7 +1667,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                               "Zimbabwean diaspora investment communities, and the Afrikaans "
                               "personal-finance ground that spans the CMA",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Namibia", "https://www.facebook.com",
+        roots=("https://www.facebook.com",
                "https://www.mmegi.bw/business"),
         queries=("hoe om te belê aandele", "geld spaar Namibië", "madi a peeletso",
                  "how to buy NSX shares", "kutenga masheya", "beleggings advies"),

@@ -568,8 +568,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "which is the SIGN variable TH-C conditions on and which the customs data only "
                "confirms a month later"),
     _src("TH-S5", "Thai retail communities", layer="retail_ecology",
-         roots=("https://pantip.com/forum/sinthorn", "https://www.facebook.com/groups/",
-                "https://www.reddit.com/r/Thailand/"),
+         roots=("https://pantip.com/forum/sinthorn", "https://www.facebook.com/groups/"),
          languages=("th",), licence="public web; platform terms apply",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

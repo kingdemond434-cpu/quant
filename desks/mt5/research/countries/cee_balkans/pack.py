@@ -1083,10 +1083,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class(
         "cee_retail_forums", "Czech and Slovak Patria/Modrastrecha discussion boards, Hungarian "
                              "Portfolio and Privatbankar comment ecologies, Romanian and "
-                             "Bulgarian investing forums, the national Reddit and Facebook groups",
+                             "Bulgarian investing forums and the national Facebook groups",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/czech/", "https://www.reddit.com/r/hungary/",
-               "https://www.reddit.com/r/Romania/", "https://forum.investo.cz",
+        roots=("https://forum.investo.cz",
                "https://www.facebook.com/groups/tozsdezes"),
         queries=("hypotéka fixace sazba", "devizahitel per", "cum investesc in actiuni",
                  "инвестиране в акции", "kam investovat peníze", "forint gyengülés miért",

@@ -1771,8 +1771,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                                   "r/Tunisia, the Facebook currency and import groups, YouTube "
                                   "and TikTok channels in Darija and Tunisian Arabic",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/algeria/", "https://www.reddit.com/r/Tunisia/",
-               "https://www.youtube.com/results?search_query=سعر+الاورو+في+الجزائر"),
+        roots=("https://www.youtube.com/results?search_query=سعر+الاورو+في+الجزائر",),
         queries=("سعر الاورو اليوم في السكوار", "شحال الاورو", "كيفاش نبدل الدولار",
                  "الاستيراد من الخارج", "سعر الذهب في الجزائر اليوم", "التحويل من فرنسا",
                  "cours euro square aujourd'hui", "changer des euros en Algerie",

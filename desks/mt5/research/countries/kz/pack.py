@@ -754,10 +754,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "and heavy promotion; KEPT AT LOW WEIGHT, never dropped, because the follow counts "
               "are the only public read on retail crowding in this market"),
     source_class(
-        "kz_kaspi_reddit", "Kaspi.kz community, Reddit and the Russian forums Kazakhs use",
+        "kz_kaspi_forums", "Kaspi.kz community and the Russian forums Kazakhs use",
         layer="retail_ecology",
-        roots=("https://kaspi.kz/", "https://www.reddit.com/r/Kazakhstan/",
-               "https://smart-lab.ru/"),
+        roots=("https://kaspi.kz/", "https://smart-lab.ru/"),
         queries=("Kaspi", "Каспи", "депозит ставка", "депозит мөлшерлемесі", "доллар алу",
                  "как купить доллары", "теңге әлсіреуі", "ослабление тенге", "смартлаб"),
         languages=("ru", "kk"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",

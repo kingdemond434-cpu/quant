@@ -109,12 +109,20 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
+    from libs.data import terms_fence as _tf
     try:
+        # LIVE's credential-safe redirects, plus THE REDIRECT GUARD: the terms processor runs on
+        # the first request and every redirected one, so a 30x into a terms-fenced platform
+        # raises before a connection is opened.
         from libs.data.keyed_sources import keyed_urlopen
-        with keyed_urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        _tf.check_request(url, hdr)
+        with keyed_urlopen(req, timeout=HTTP_TIMEOUT_S,
+                           handlers=(_tf.TermsGuardProcessor(),)) as resp:
             if redirected_off_limits(url, resp.geturl()):
                 raise FetchError("off_limits", f"redirect from {url}")
             raw: bytes = resp.read(MAX_BYTES + 1)
+    except _tf.TermsFenced as exc:
+        raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc
     except urllib.error.HTTPError as exc:
         raise FetchError(f"http_{exc.code}", url) from exc
     except Exception as exc:
@@ -147,6 +155,14 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # THE TERMS FENCE, BEFORE ANY REQUEST (principal 2026-09-30: no Reddit or StockTwits at all).
+    # A fenced URL is refused closed and counted; it is never a request and never a failure.
+    from libs.data import terms_fence as _tf
+    platform = _tf.platform_of_url(url)
+    if platform:
+        h.failures[_tf.PLATFORMS[platform]["status"]] += 1
+        h.notes.append(f"terms fence ({platform}): {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)

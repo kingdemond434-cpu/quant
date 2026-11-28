@@ -85,6 +85,9 @@ def test_every_index_request_passes_the_robots_gate(monkeypatch) -> None:
     opened = []
     monkeypatch.setattr(index_discovery.urllib.request, "urlopen",
                         lambda *a, **k: opened.append(a) or (_ for _ in ()).throw(OSError()))
+    # The gated fetch goes through the terms fence's guarded opener (#192), after robots.
+    monkeypatch.setattr(index_discovery._tf, "guarded_urlopen",
+                        lambda *a, **k: opened.append(a) or (_ for _ in ()).throw(OSError()))
     monkeypatch.setattr(index_discovery, "_ROBOTS", {
         "https://api.example.org": _rules(["User-agent: *", "Disallow: /private"]),
         "https://down.example.org": "robots.txt unreadable (URLError)"})

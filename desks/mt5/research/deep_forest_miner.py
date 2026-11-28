@@ -97,6 +97,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -405,6 +406,11 @@ def accept_language(lang: str) -> str:
 
 
 # ------------------------------------------------------------------------------- fetching
+def fenced_ground(g: dict[str, Any]) -> str | None:
+    """The fenced platform a ground belongs to (its route, url, site or feeds), or None."""
+    return _tf.fenced_ground(g)
+
+
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
@@ -878,6 +884,10 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     across runs and no region is worked only because it sorts first in a file."""
     picked = []
     for g in grounds:
+        # A TERMS-FENCED ground (Reddit, 2026-09-30; libs/data/terms_fence.py) is never
+        # scheduled: it is registered, reported by name under `terms_fenced`, and not fetched.
+        if fenced_ground(g):
+            continue
         if region and str(g.get("region")) != region and cluster_of(g) != region:
             continue
         if only and not ({str(g.get("name")), str(g.get("route")), str(g.get("region")),
@@ -1462,15 +1472,12 @@ class _Run:
                 "errors": errors[:4]}
 
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
-        """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
-        the feeds do not -- measured by side_channels/reddit_miner)."""
-        feeds = []
-        for sub in g.get("subs") or []:
-            feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")
-            feeds.append(f"https://www.reddit.com/r/{sub}/new/.rss")
-        out = self.ground_rss(g, feeds)
-        out["subs"] = len(g.get("subs") or [])
-        return out
+        """FENCED 2026-09-30: Reddit's User Agreement and Data API terms cover the RSS feeds and
+        the anonymous JSON too and require an agreement for commercial use, which the desk does
+        not hold. Nothing is requested; the refusal names the reason and the substitutes.
+        (`work` refuses the ground before reaching here; this stays so a direct call cannot
+        fetch either.)"""
+        return {**_tf.refusal("reddit"), "claims": 0, "subs": len(g.get("subs") or [])}
 
     def ground_wayback(self, g: dict[str, Any]) -> dict[str, Any]:
         """A ground that no longer exists (the Quantopian forum) through the Wayback Machine:
@@ -1679,6 +1686,14 @@ class _Run:
         if route == "unreachable":
             self.status.append({**row, "status": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
+            return
+        # THE PLATFORM TERMS FENCE (2026-09-30). A ground on a platform whose own agreement bars
+        # this desk's automated use -- every `route: reddit` ground, and any ground whose url or
+        # site is on Reddit or StockTwits -- is never fetched. Its row says so by name, with the
+        # lawful substitutes that now carry its information class (libs/data/terms_fence.py).
+        fenced = fenced_ground(g)
+        if fenced:
+            self.status.append({**row, **_tf.refusal(fenced), "claims": 0})
             return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
@@ -1932,6 +1947,9 @@ FRONTIER_NAME = "deep_forest_frontier.json"
 _FRONTIER_OUTCOME: dict[str, str] = {
     "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
     "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED",
+    # A platform-terms fence (libs/data/terms_fence.py) is a named blocker that lifts only with
+    # an agreement; it is BLOCKED in the frontier's vocabulary, with the ruling as the blocker.
+    "BLOCKED_WITH_SUBSTITUTE": "BLOCKED", "BLOCKED_TERMS": "BLOCKED",
 }
 
 
@@ -1955,7 +1973,8 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
     state = hf.load(path)
     for g in grounds:
         name = str(g.get("name") or "")
-        if name and name not in state.vectors:
+        # A terms-fenced ground is not frontier work waiting to happen: never seeded NAMED_ONLY.
+        if name and name not in state.vectors and not fenced_ground(g):
             hf.record(state, name, outcome="NAMED_ONLY", language=str(g.get("language") or ""),
                       region=str(g.get("region") or ""))
     for s in grounds_status:
@@ -2273,7 +2292,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.setdefault(reg, {"cluster": cluster_of(g), "grounds": 0, "worked": 0,
                                        "productive": 0, "blocked": 0, "claims": 0, "datasets": 0,
                                        "story": 0, "dataset": 0, "macro": 0, "momentum_only": 0,
-                                       "languages": []})
+                                       "languages": [], "terms_fenced": 0})
+        if fenced_ground(g):
+            # Registered, never workable: counted apart, so `worked == grounds` stays a
+            # statement about the grounds the desk may actually fetch.
+            b["terms_fenced"] += 1
+            continue
         b["grounds"] += 1
         kind = "dataset" if g.get("kind") == "dataset" else ("macro" if g.get("kind") == "macro"
                                                               else "story")
@@ -2317,6 +2341,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
+           # Registered grounds on a terms-fenced platform: never scheduled, never fetched,
+           # named here with the ruling so the gap is visible (libs/data/terms_fence.py).
+           "terms_fenced": sorted({str(g.get("name")) for g in grounds if fenced_ground(g)}),
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,

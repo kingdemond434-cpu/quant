@@ -1372,8 +1372,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "ua_retail", "Ukrainian retail money communities: Minfin.com.ua rate boards and forums, "
                      "the bank Telegram channels, r/ukraine and the cash-rate chats",
         layer="retail_ecology",
-        roots=("https://minfin.com.ua/ua/currency/", "https://index.minfin.com.ua",
-               "https://www.reddit.com/r/ukraine/"),
+        roots=("https://minfin.com.ua/ua/currency/", "https://index.minfin.com.ua"),
         queries=("готівковий курс долара", "курс в обмінниках", "де купити долар",
                  "курс на чорному ринку", "обмежння на картку", "готівка євро",
                  "наличный курс доллара", "курс в обменниках сегодня"),

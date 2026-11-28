@@ -21,6 +21,10 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
+    BLOCKED_WITH_SUBSTITUTE  the source is on a platform whose own agreement bars the desk's
+                    automated use (StockTwits Terms s.5 -- `stocktwits_macro`; Reddit's Data API
+                    terms), a NAMED ruling in libs/data/terms_fence.py, not a label: nothing is
+                    requested, and the row carries the reason and the lawful substitutes.
     ROBOTS_REFUSED  robots.txt disallows the path, or could not be read (5xx, timeout, HTML, or
                     401/403/429/451): not fetched this pass, retried next (Governance with the
                     Auditor, 2026-11-13, RFC 9309 failing closed). BLOCKED_BY_ROBOTS is the old
@@ -481,6 +485,20 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
+    # THE PLATFORM TERMS FENCE (2026-09-30) -- NOT a robots or licence label (those stay labels,
+    # LAWS 5e). A source on a platform whose own agreement bars the desk's automated use
+    # (StockTwits Terms s.5; Reddit's Data API terms -- libs/data/terms_fence.py) is never
+    # requested, not even for robots.txt. The row names the ruling and the substitutes.
+    try:
+        from libs.data import terms_fence as _tf
+        fenced = _tf.platform_of_url(url) or _tf.fenced_source(sid)
+    except Exception as exc:                 # fail CLOSED: a fence that cannot load fetches nothing
+        rec.update({"status": "BLOCKED_TERMS", "why": f"terms fence unavailable: {exc!r}"})
+        return rec
+    if fenced:
+        rec.update({**_tf.refusal(fenced)})
+        return rec
+
     # ROBOTS IS OBEYED (Governance with the Auditor, 2026-11-13): a Disallow or an unreadable
     # robots.txt means no fetch. The row stays, named, with its missed_growth line.
     allowed, why_robots = _robots_allows(url)
@@ -522,12 +540,16 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     req = urllib.request.Request(send_url, data=body_out, headers=headers)
     # A KEYED ROW NEVER HANDS ITS CREDENTIAL TO ANOTHER HOST: urllib copies headers to a
     # cross-host redirect target, so the bearer / declared key header is dropped there.
+    from libs.data import terms_fence as _tfg
     from libs.data.keyed_sources import keyed_opener, scrub_body
-    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
+    # THE REDIRECT GUARD on the keyed path too: every hop is checked against the terms fence.
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,),
+                           (_tfg.TermsGuardProcessor(),))
               if _key else None)
     try:
+        # THE REDIRECT GUARD: a 30x into a terms-fenced platform is refused, never followed.
         with (opener.open(req, timeout=timeout) if opener else
-              urllib.request.urlopen(req, timeout=timeout, context=_TLS)) as r:
+              _tfg.guarded_urlopen(req, timeout=timeout, context=_TLS)) as r:
             hop = redirected_off_limits(url, r.geturl())
             if hop:                       # redirected into an off-limits ground: body unread
                 rec.update({"status": OFF_STATUS, "why": hop})
@@ -538,6 +560,9 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             last_mod = r.headers.get("Last-Modified")
             cenc = str(r.headers.get("Content-Encoding") or "")
             body = r.read(MAX_BYTES)
+    except _tfg.TermsFenced as e:
+        rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
         if code == 304:
@@ -839,8 +864,8 @@ def _print_summary(rows: list[dict[str, Any]], sources: list[dict[str, Any]],
                    census: Counter[str]) -> int:
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", ROBOTS_STATUS, "BLOCKED_TERMS", "BLOCKED_PAID",
-               "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_WITH_SUBSTITUTE", ROBOTS_STATUS, "BLOCKED_TERMS",
+               "BLOCKED_PAID", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

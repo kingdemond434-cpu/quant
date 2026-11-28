@@ -728,18 +728,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "wave's local impact. FRINGE AND KEPT: frequently wrong, and the only daily signal "
               "on a quarterly phenomenon"),
     source_class(
-        "ge_relocant_communities", "Relocant forums, Facebook groups and Reddit",
-        layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Sakartvelo/",
-               "https://www.reddit.com/r/georgiarelocation/"),
-        queries=("релокация", "ВНЖ Грузия", "открыть счёт", "перевод денег", "SWIFT",
-                 "карта иностранного банка", "комиссия за перевод"),
-        languages=("ru", "en"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", licence="public social; API terms govern automated access",
-        notes="the relocation flow's own participants describing the PAYMENT CHANNEL in real "
-              "time -- which corridor works this week, at what cost. That is the mechanism behind "
-              "GE-C and it is invisible in any official series"),
-    source_class(
         "ge_car_trade_forums", "Vehicle re-export trade communities", layer="retail_ecology",
         roots=("https://www.myauto.ge/", "https://t.me/s/"),
         queries=("ავტო იმპორტი", "განბაჟება", "ფოთი", "ბათუმი", "растаможка", "Поти",

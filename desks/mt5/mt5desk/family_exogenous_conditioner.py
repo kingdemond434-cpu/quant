@@ -78,7 +78,8 @@ def _load(path: Path) -> pd.DataFrame | None:
 
 
 def conditioner(source: str, signal: str, transform: str, *, lag_hours: int = DEFAULT_LAG_HOURS,
-                z_window: int = DEFAULT_Z_WINDOW, root: Path | None = None) -> pd.Series | None:
+                z_window: int = DEFAULT_Z_WINDOW, root: Path | None = None,
+                use: str = "new_hypotheses") -> pd.Series | None:
     """The pack's column as a lagged, transformed series on its own `available_time` clock.
 
     None whenever the pack, the column, the stamp or the transform is unavailable -- every one of
@@ -94,6 +95,15 @@ def conditioner(source: str, signal: str, transform: str, *, lag_hours: int = DE
         return None
     if "available_time" not in df.columns:
         return None          # no PIT stamp means no honest join; never guess one
+    if root is None:
+        # CRO D18 counts a dataset as fed only on a recorded read (libs/data/dataset_use). Only
+        # the desk's own lake is recorded; a test root is not the desk's data. Never raises.
+        try:
+            from libs.data.dataset_use import record_reads
+            record_reads(f"family:{use}", {f"lake:{path.stem}": str(path.stat().st_mtime)},
+                         use=use)
+        except Exception:                                               # noqa: BLE001
+            pass
     stamp = pd.to_datetime(df["available_time"], errors="coerce", utc=True)
     value = pd.to_numeric(df[str(signal)], errors="coerce")
     s = pd.Series(value.to_numpy(), index=stamp).dropna()

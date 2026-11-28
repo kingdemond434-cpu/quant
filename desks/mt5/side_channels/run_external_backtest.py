@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore")
 from collections import Counter  # noqa: E402
 from functools import lru_cache  # noqa: E402
 from pathlib import Path  # noqa: E402
+from typing import Any  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
@@ -616,6 +617,47 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     return testable, coverage
 
 
+def quarantine_terms_fenced(
+    rows: list[dict], archive: Path | None = None
+) -> tuple[list[dict], dict]:
+    """SKIP every row on a terms-fenced lineage (libs/data/terms_fence.py: Reddit and its mirrors,
+    StockTwits, X), counted by platform. The docket build quarantines too; this is the second
+    lock, because `test_grid.json` (the bridge) and the merged results file reach this stage
+    without passing through the docket build. A fence that cannot load raises: no backtest runs
+    on an unfenced grid."""
+    from libs.data import terms_fence as tf
+    kept: list[dict] = []
+    held: list[dict] = []
+    by_platform: Counter = Counter()
+    lifted: Counter = Counter()
+    for r in rows:
+        p = tf.quarantined_row(r) if isinstance(r, dict) else None
+        lp = tf.lifted_row(r) if isinstance(r, dict) and not p else None
+        if lp:
+            lifted[lp] += 1
+        if p:
+            by_platform[p] += 1
+            held.append(r)
+            continue
+        kept.append(r)
+    rep: dict[str, Any] = {
+        "skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
+        "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable",
+        "missed_growth": {"mechanism": "terms_fence_quarantine",
+                          "what_is_lost": "backtests of cells whose lineage is a terms-fenced "
+                                          "platform",
+                          "size": "UNMEASURED",
+                          "reopens_when": "the platform grants automated use, or the cell "
+                                          "re-certifies on a clean lineage"}}
+    # THE ORIGIN LIFT (live_sleeve_policy `reddit_origin_lifted`): rows fenced only by a lifted
+    # platform's idea origin are JUDGED, counted here so the lift is never silent.
+    rep["origin_lift"] = {"admitted": dict(lifted), "policy": tf.lift_status()["status"],
+                          "rule": "the terms gate governs data ACCESS, not an idea's origin"}
+    if archive is not None:
+        rep["archive"] = tf.archive_quarantined(held, archive)
+    return kept, rep
+
+
 def _budget_s() -> float:
     """The cell loop's wall clock: BACKTEST_BUDGET_MIN, never past the cycle's cap.
 
@@ -640,6 +682,10 @@ def _budget_s() -> float:
 
 def run_all() -> list[dict]:
     raw_grid = _docket_rows()
+    raw_grid, terms_q = quarantine_terms_fenced(raw_grid)
+    if terms_q["skipped"]:
+        print(f"  terms fence: {terms_q['skipped']} fenced row(s) QUARANTINED, not backtested "
+              f"{terms_q['by_platform']}")
     if not raw_grid:
         print("No candidates: neither the docket nor test_grid.json yielded a row.")
         return []
@@ -652,6 +698,7 @@ def run_all() -> list[dict]:
     grid, routing = route_by_lane(grid)
     grid, coverage = hold_uncoverable(grid)
     coverage["routing"] = routing
+    coverage["terms_quarantine"] = terms_q
     # THE MARKET CONSTITUTION, READ AND RECORDED (LAWS 5m compiler): which of these cells run
     # under a compiled session/settlement clause, and which symbols carry none. Never a gate.
     coverage["constraints"] = constraints_coverage([str(c.get("symbol") or "") for c in grid])
@@ -698,6 +745,16 @@ def run_all() -> list[dict]:
         prior_by_key = {_cell_key(r): r for r in prior} if isinstance(prior, list) else {}
     except (OSError, ValueError):
         prior_by_key = {}
+    # RESULTS ALREADY BANKED FROM A FENCED LINEAGE LEAVE THE ARTIFACT TOO (the merge consumes it
+    # as a producer): counted beside the grid's own quarantine.
+    _kept_prior, _q_prior = quarantine_terms_fenced(
+        list(prior_by_key.values()),
+        BASE / "data" / "hypotheses" / "terms_quarantine_results.json")
+    if _q_prior["skipped"]:
+        prior_by_key = {_cell_key(r): r for r in _kept_prior}
+        print(f"  terms fence: {_q_prior['skipped']} banked result row(s) from a fenced lineage "
+              f"moved to the quarantine archive {_q_prior['by_platform']}")
+    terms_q["banked_results_dropped"] = _q_prior["skipped"]
 
     # Untested cells sort before tested ones ("" < any ISO timestamp), then oldest first.
     grid.sort(key=lambda c: (cursor.get(_cell_key(c), ""), str(c.get("symbol"))))

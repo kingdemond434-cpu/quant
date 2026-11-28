@@ -572,9 +572,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "the vocabulary the participants actually use. Mined as CLAIMS about mechanism, "
                "never as evidence of an effect"),
     _src("IN-S5", "retail investor boards and chat", layer="retail_ecology",
-         roots=("https://forum.valuepickr.com/", "https://www.reddit.com/r/IndianStreetBets/",
-                "https://www.reddit.com/r/IndiaInvestments/",
-                "https://mmb.moneycontrol.com/"),
+         roots=("https://forum.valuepickr.com/", "https://mmb.moneycontrol.com/"),
          languages=("en", "hi"), licence="public web; platform terms apply",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

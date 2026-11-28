@@ -103,7 +103,8 @@ def test_persistence_failure_never_claims_success(tmp_path, monkeypatch, all_fai
     monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "registry.json")
     monkeypatch.setattr(acquisition, "REPORT", tmp_path / "report.json")
     monkeypatch.setattr(
-        acquisition, "_endpoints", lambda limit: [("https://example.test/data", "example.test")]
+        acquisition, "_endpoints",
+        lambda limit, keyed=None: [("https://example.test/data", "example.test")],
     )
     monkeypatch.setattr(acquisition, "_fetch", lambda url: (b"data", "csv"))
     frame = pd.DataFrame({"value": [1.0, 2.0]}, index=pd.date_range("2020-01-01", periods=2))

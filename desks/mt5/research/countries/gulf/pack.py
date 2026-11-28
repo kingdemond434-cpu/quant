@@ -1483,9 +1483,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "gulf_retail_forums", "Gulf retail communities: the Kuwaiti equity forums, Arabic "
                               "finance accounts on X and Telegram, r/Kuwait, r/Qatar, r/Oman "
                               "and r/Bahrain", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Kuwait/", "https://www.reddit.com/r/qatar/",
-               "https://www.reddit.com/r/Oman/", "https://www.reddit.com/r/Bahrain/",
-               "https://www.q8yat.com"),
+        roots=("https://www.q8yat.com",),
         queries=("منتدى الأسهم الكويتية", "توصيات اليوم", "سوق الكويت للأوراق المالية",
                  "شنو أشتري", "تداول الذهب", "الاستثمار في البورصة", "التمويل الشخصي",
                  "gold souk price today Kuwait", "best broker Qatar"),

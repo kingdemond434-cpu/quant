@@ -114,6 +114,13 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
         if src is None:
             skipped[sid] = "no roster row"
             continue
+        from libs.data import terms_fence as _tf
+        platform = (_tf.fenced_source(sid) or _tf.fenced_source(str(src.get("kind") or ""))
+                    or _tf.platform_of_url(str(src.get("url") or "")))
+        if platform:
+            # A series already stored from a fenced platform mints nothing (2026-09-30 ruling).
+            skipped[sid] = f"terms-fenced: {platform}"
+            continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
             continue
@@ -171,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
     doc: dict[str, Any] = {"built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                            "writer": "research/free_stack_proposer.py", "seat": SEAT,
                            "sources_with_columns": len(columns), "skipped": skipped,
+                           "terms_fenced_skipped": sum(1 for v in skipped.values()
+                                                       if v.startswith("terms-fenced")),
                            "grid_total": len(grid),
                            "cn_exchange": cn_exchange_block(grid, roster, columns, skipped)}
     if not grid:

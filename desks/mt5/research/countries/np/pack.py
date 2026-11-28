@@ -1159,8 +1159,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                                  "r/Nepal and r/NepalStock, the ShareSansar comment threads, "
                                  "the Facebook NEPSE groups and the Gulf and Malaysia worker "
                                  "forums", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Nepal/", "https://www.reddit.com/r/NepalStock/",
-               "https://www.sharesansar.com/"),
+        roots=("https://www.sharesansar.com/",),
         queries=("सेयर किन्ने कि नकिन्ने", "नेप्से कहाँ जान्छ", "धितो कर्जा ब्याज",
                  "खाडीमा काम", "श्रम स्वीकृति कति दिन", "हुण्डी दर", "कोरिया ईपीएस नतिजा"),
         languages=("ne", "en"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
@@ -1173,7 +1172,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "np_hundi_chatter", "Public commentary on the informal transfer channel and the gold "
                             "corridor: the hundi rate against the formal remittance rate, and "
                             "the border gold trade", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Nepal/", "https://www.abhiyandaily.com/",
+        roots=("https://www.abhiyandaily.com/",
                "https://www.onlinekhabar.com/"),
         queries=("हुण्डी दर आज", "हुण्डी कारोबार", "सुन तस्करी पक्राउ", "सुनको कोटा",
                  "अवैध सुन", "विदेशी मुद्रा अपचलन"),
