@@ -522,6 +522,8 @@ def engine_p1(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
 
 
 def _vix_points(ctx: Context) -> list[tuple[datetime, float]]:
+    """VIXCLS as (REFERENCE date, level) -- the date the close describes, not when it was known;
+    `_vix_known` places each on its knowledge time."""
     fred = ctx.fred
     series = fred.get("series") if isinstance(fred, dict) else None
     raw = series.get("VIXCLS") if isinstance(series, dict) else None
@@ -537,7 +539,10 @@ def _vix_points(ctx: Context) -> list[tuple[datetime, float]]:
         items = []
     for it in items:
         if isinstance(it, dict):
-            t = _parse_time(it.get("date") or it.get("at") or it.get("t"))
+            # `d` IS THE AXIS'S OWN KEY (`axis_ingest.ingest_fred`: points [{d, v}]). It was
+            # never read, so every VIXCLS point parsed to no time and P2 was UNMEASURED on a
+            # surface that existed.
+            t = _parse_time(it.get("d") or it.get("date") or it.get("at") or it.get("t"))
             v = _num(it, "value", "v", "close")
         elif isinstance(it, (list, tuple)) and len(it) >= 2:
             t, v = _parse_time(it[0]), _num(it[1])
@@ -546,6 +551,22 @@ def _vix_points(ctx: Context) -> list[tuple[datetime, float]]:
         if t is not None and v is not None and v > 0:
             pts.append((t, float(v)))
     return sorted(pts)
+
+
+def _vix_known(pts: list[tuple[datetime, float]]) -> tuple[np.ndarray, np.ndarray]:
+    """(knowledge stamps as naive-UTC datetime64, levels), read through the bitemporal store at
+    VIXCLS's declared release timing (`data_os.known_axis_series`: FRED posts day t on the next
+    US business day). The flat `+ 1 day` this replaces made a Friday close knowable on Saturday
+    and a pre-holiday close a day before FRED had it."""
+    from libs.tiers import data_os
+
+    raw = pd.Series([v for _, v in pts], index=pd.DatetimeIndex([t for t, _ in pts]),
+                    dtype=float)
+    raw = raw[~raw.index.duplicated(keep="last")].sort_index()
+    known = data_os.known_axis_series("fred", "VIXCLS", raw)
+    idx = pd.DatetimeIndex(known.index)
+    idx = idx.tz_convert("UTC").tz_localize(None) if idx.tz is not None else idx
+    return idx.to_numpy(dtype="datetime64[ns]"), known.to_numpy(dtype=float)
 
 
 def _sensor_state(ctx: Context, sensor: str) -> str:
@@ -568,9 +589,7 @@ def engine_p2(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
                f"cboe_delayed_surface {_sensor_state(ctx, 'cboe_delayed_surface')}")
         return _unmeasured(P2, why, source="fred.json VIXCLS; SHADOW_INSTITUTIONAL sensors")
     hb = HB[h]
-    stamps = np.array([np.datetime64(t.replace(tzinfo=None) + timedelta(days=1), "ns")
-                       for t, _ in pts])
-    values = np.array([v for _, v in pts], dtype=float)
+    stamps, values = _vix_known(pts)
     pos = np.searchsorted(stamps, close_t, side="right") - 1
     ok = pos >= 0
     iv = np.full(len(close_t), np.nan)
