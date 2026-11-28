@@ -1532,6 +1532,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # THE SIX-EVENT TRACE (CRO duty D26): one read of recorded artifacts, ~5 s.
                      # Not core: a never-run meta leg is admitted ahead of every stale one.
                      "six_event_trace",
+                     # THE NOON LANE'S OWN STATE, PUBLISHED (K6): its parsed exit codes and
+                     # checkpoint fields, read by cro_noon_freshness right after. ~1 s.
+                     "cro_lane_state",
+                     # THE DAILY P&L EXPLAIN (K4): report-only split of realised P&L, ~1 s.
+                     "pnl_explain",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2409,6 +2414,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "cro_noon_freshness": 60,
     "policy_lift_reopen": 120,
     "six_event_trace": 120,
+    "cro_lane_state": 60,
+    "pnl_explain": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -6337,6 +6344,16 @@ def main() -> None:
     # RED WHEN THE NOON CRO PASS STOPS LANDING (2026-10-29). It was driven from a laptop session
     # parked since 09-29 and the ledger held two noon rows in a month with nothing turning red.
     # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
+    # THE NOON LANE'S EXIT CODES LEAVE THE BOX (K6, 2026-11-17). The launcher's early exits (5 on
+    # 11-13, 1 on 11-17) write no ledger row; this publishes the exits it parses from the log and
+    # the checkpoint's allowlisted fields (never log text), and the freshness check below turns a
+    # non-zero one RED.
+    cln = _costed("cro_lane_state", lambda: _producer(
+        "cro_lane_state", "scripts/publish_cro_lane_state.py", "--lane", "noon"))
+    # THE DAILY P&L EXPLAIN (K4, 2026-11-17): signal, entry slippage, commission, swap and FX
+    # conversion per day for the whole book, in bps of notional (per-account detail stays in a
+    # gitignored box-local file). Report-only; nothing trades on it.
+    pex = _costed("pnl_explain", lambda: _producer("pnl_explain", "research/pnl_explain.py"))
     cnf = _costed("cro_noon_freshness", lambda: _producer(
         "cro_noon_freshness", "scripts/check_cro_noon_freshness.py"))
     # THE SIX-EVENT TRACE, OFF THE DAILY CHAIN (2026-11-10). Its only clock was step 36 of 39 in
@@ -6720,6 +6737,7 @@ def main() -> None:
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cro_noon_freshness": cnf, "six_event_trace": sxt,
+                    "cro_lane_state": cln, "pnl_explain": pex,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
