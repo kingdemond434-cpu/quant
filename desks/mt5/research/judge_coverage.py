@@ -2241,10 +2241,10 @@ def reader_fixes_live(at: str, *, path: Path | None = None,
         new = {**stamps, **{i: {"live_since": at} for i in fresh}}
         written = False
         if write:
+            tmp = target.with_name(target.name + ".tmp")
             try:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if txn is None:
-                    tmp = target.with_name(target.name + ".tmp")
                     tmp.write_text(json.dumps(new, indent=1), "utf-8")
                     _replace_retry(tmp, target)
                 else:
@@ -2253,6 +2253,13 @@ def reader_fixes_live(at: str, *, path: Path | None = None,
                 written = True
             except OSError:
                 written = False
+            finally:
+                # A replace that failed leaves the .tmp it just wrote; the bank write below
+                # unlinks its own in a finally and this stamp did not (the audit of 1e2f27789 says
+                # both do). It stayed hidden because no reader fix was live on LIVE, so this branch
+                # never ran in the suite; the tape reader fix (#884) makes one live.
+                with contextlib.suppress(OSError):
+                    tmp.unlink(missing_ok=True)
         if written:
             stamps = new
         else:

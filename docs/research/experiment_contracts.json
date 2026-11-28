@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "tape_liveness": {
+   "hypothesis": "Comparing the tick tape's writers, its shared reader and the judge's tape-family counts every hour surfaces any break between recording and certification within one pass, where reading the recorder alone reported a blind reader as healthy for weeks (2026-10-29).",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "red_count",
+    "better": "down",
+    "organ": "report:TAPE_LIVENESS.json"
+   },
+   "falsifier": {
+    "metric": "red_count",
+    "op": ">",
+    "threshold": 0,
+    "after": "a RED that persists for 24 hourly passes without an owner acting means the check is noise to its readers and must be re-scoped, not ignored"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

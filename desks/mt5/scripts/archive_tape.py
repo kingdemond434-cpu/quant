@@ -11,8 +11,8 @@ MOVE it, not to shrink it.
 
 WHAT MAKES THIS SAFE, AND IT IS NOT CARE. Every reader of the tape takes a bounded tail:
 
-    research/orthogonal_sweep._ticks    sorted(d.glob("*.parquet"))[-30:]
-    research/edge_search                sorted(tape_dir.glob("*.parquet"))[-30:]
+    research/orthogonal_sweep._ticks    mt5desk.tape_days.recent_quotes(..., 30)  (30 day KEYS
+    research/edge_search                + one neighbour key, both writers, by date)
     research/mined_ground               WINDOW_DAYS = 7
     build_zentech_state (moat_coverage) files with mtime inside 7 days
 

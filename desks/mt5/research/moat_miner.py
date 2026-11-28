@@ -90,21 +90,9 @@ FEATURES = (
 
 def _tape_frame(symbol: str, days: int = TAPE_DAYS):
     """The symbol's recent ticks as one frame, or None. Same window every other reader uses."""
-    import pandas as pd
-    d = TICKS / symbol
-    if not d.exists():
-        return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-days:]:
-        try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-        except Exception:                                       # noqa: BLE001
-            continue                                            # a torn partition is not fatal
-    if not frames:
-        return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    # Days by DATE from either writer; a torn partition is skipped (mt5desk.tape_days).
+    from mt5desk.tape_days import recent_quotes
+    return recent_quotes(TICKS / symbol, days)
 
 
 def tape_features(symbol: str, rule: str = "1h"):
