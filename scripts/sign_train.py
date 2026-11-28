@@ -242,11 +242,24 @@ def _confirm(moved: dict[str, str]) -> bool:
     return True
 
 
+def _needs_repin(moved: dict[str, str]) -> bool:
+    """True when some moved file has a QB-002 rotation constant to re-pin."""
+    return any(rel in ROTATIONS for rel in moved)
+
+
 def _commit_holds(head: str, moved: dict[str, str], commit: str = "HEAD") -> bool:
-    """The new commit carries both files and every new QB-002 "to" (a hook may unstage one)."""
+    """The new commit carries the manifest, and quantbench.py with every new QB-002 "to" when a
+    moved file has a rotation (a hook may unstage one).
+
+    A sealed file with no QB-002 rotation (capital_modifiers.py, rails.py: manifest-only) moves
+    no "to", so quantbench.py is unchanged and git cannot carry it; requiring it anyway failed
+    every such sign and undid a correct manifest re-sign (2026-11-18, #1348)."""
     files = set(_git("show", "--name-only", "--format=", commit).splitlines())
-    if _git("rev-parse", f"{commit}~1") != head or not {MANIFEST, QUANTBENCH} <= files:
+    needed = {MANIFEST} | ({QUANTBENCH} if _needs_repin(moved) else set())
+    if _git("rev-parse", f"{commit}~1") != head or not needed <= files:
         return False
+    if not _needs_repin(moved):
+        return True
     bench = _git("show", f"{commit}:{QUANTBENCH}")
     return all(sha in bench for rel, sha in moved.items() if rel in ROTATIONS)
 

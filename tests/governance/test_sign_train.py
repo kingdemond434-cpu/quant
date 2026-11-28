@@ -186,3 +186,37 @@ def test_the_audit_signs_only_cleared_bytes() -> None:
     assert expect == {"x.py": a}
     assert st.binding_problems({"x.py": a, "y.py": b}, expect) != []
     assert st.binding_problems({"x.py": a}, expect) == []
+
+
+def test_a_manifest_only_move_holds_with_the_manifest_alone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """capital_modifiers.py / rails.py have no QB-002 rotation: the sign commit carries the
+    manifest only, and that is a complete sign (2026-11-18, #1348)."""
+    head = "a" * 40
+    answers = {("show", "--name-only", "--format=", "HEAD"): st.MANIFEST,
+               ("rev-parse", "HEAD~1"): head}
+    monkeypatch.setattr(st, "_git", lambda *args: answers[args])
+    moved = {"libs/portfolio/capital_modifiers.py": "d" * 64, "libs/portfolio/rails.py": "e" * 64}
+    assert not st._needs_repin(moved)
+    assert st._commit_holds(head, moved)
+
+
+def test_a_rotation_move_still_needs_quantbench_and_its_new_to(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    head = "a" * 40
+    rel = next(iter(st.ROTATIONS))
+    new = "f" * 64
+    answers: dict[tuple[str, ...], str] = {
+        ("show", "--name-only", "--format=", "HEAD"): st.MANIFEST,
+        ("rev-parse", "HEAD~1"): head,
+    }
+    monkeypatch.setattr(st, "_git", lambda *args: answers[args])
+    assert st._needs_repin({rel: new})
+    assert not st._commit_holds(head, {rel: new})          # manifest alone is a half-sign
+    answers[("show", "--name-only", "--format=", "HEAD")] = f"{st.MANIFEST}\n{st.QUANTBENCH}"
+    answers[("show", f"HEAD:{st.QUANTBENCH}")] = "no new to here"
+    assert not st._commit_holds(head, {rel: new})          # quantbench without the new "to"
+    answers[("show", f"HEAD:{st.QUANTBENCH}")] = f"... {new} ..."
+    assert st._commit_holds(head, {rel: new})
