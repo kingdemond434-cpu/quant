@@ -27,7 +27,7 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 840,
-  "UNMEASURED": 43
+  "UNMEASURED": 44
  },
  "scope": {
   "attested": 1064,
@@ -28099,6 +28099,36 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "promoter (re-judges the reopened clocks)"
+  },
+  {
+   "organ": "leg:sleeve_cost_in_r",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/sleeve_cost_in_r.py"
+   ],
+   "clock": "hourly_cycle:sleeve_cost_in_r",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SLEEVE_COST_IN_R.json",
+   "artifact_declared": "desks/mt5/reports/SLEEVE_COST_IN_R.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 46,
+   "artifact_bytes": 129150,
+   "artifact_sha256": "985678234c772b29f0e753155cb2b1e763e5b3853269305837ab81b028002ae2",
+   "summary": {
+    "_": "UNMEASURED (trimmed to hold the file under 800 KB)"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-11T17:20:49+00:00"
   }
  ],
  "ratchet": {

@@ -1,0 +1,102 @@
+{
+ "schema": "sleeve-cost-in-r-1",
+ "generated_at": "2026-11-11T18:00:56+00:00",
+ "report_only": true,
+ "consumer": null,
+ "intended_consumer": "allocator / vol-target arm (idea 531/415)",
+ "idea": 656,
+ "status": "OK",
+ "tolerances": {
+  "undercharged_if_measured_over_charged_gt": 1.25
+ },
+ "n_fusion_net_edge_measured": 29,
+ "live_flips": [],
+ "summary": {
+  "n_sleeves": 81,
+  "cost_eats_edge": [
+   "external.CADJPY.session_range_breakout",
+   "external.EURJPY.session_range_breakout",
+   "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "external.EURJPY.session_range_breakout.rr=2.5_wb=12"
+  ],
+  "undercharged": [],
+  "surface_suspect": [
+   "gold_asia_v2",
+   "gold_asia_v3",
+   "gold_asia_v4",
+   "gold_london_am_v2",
+   "gold_london_am_v3",
+   "gold_london_am_v4",
+   "gold_afternoon_v2",
+   "gold_afternoon_v3",
+   "gold_afternoon_v4",
+   "xauusd_session_range_breakout_asia_5_wb_12",
+   "xauusd_session_range_breakout_asia_5_wb_8",
+   "xauusd_session_range_breakout_asia_0_wb_12",
+   "xauusd_macro_conditional_asia_p_5fa26e224170b851",
+   "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4",
+   "xauusd_macro_conditional_asia_p_fe355d4759ed4898",
+   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "external.XAUUSD.session_range_breakout",
+   "external.CADJPY.session_range_breakout",
+   "external.EURJPY.session_range_breakout",
+   "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+   "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "external.AUDCAD.discovered.p=a7324e7affe1f80a"
+  ],
+  "flips_at_minute": [],
+  "n_minute_from_sm1": 0,
+  "not_in_sm1": [
+   "gold_asia_v2",
+   "gold_asia_v3",
+   "gold_asia_v4",
+   "gold_london_am_v2",
+   "gold_london_am_v3",
+   "gold_london_am_v4",
+   "gold_afternoon_v2",
+   "gold_afternoon_v3",
+   "gold_afternoon_v4",
+   "xauusd_session_range_breakout_asia_5_wb_12",
+   "xauusd_session_range_breakout_asia_5_wb_8",
+   "xauusd_session_range_breakout_asia_0_wb_12",
+   "xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059",
+   "xauusd_cross_asset_residual_asia_p_5a29a76a02065a5a",
+   "xauusd_cross_asset_residual_asia_p_8de5a3b89f6be0db",
+   "xauusd_cross_asset_residual_asia_p_2479d0d883199a4b",
+   "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
+   "xauusd_cross_asset_residual_asia_p_49eee8b22060afb7",
+   "xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86",
+   "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf",
+   "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37",
+   "xauusd_macro_conditional_asia_p_5fa26e224170b851",
+   "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4",
+   "xauusd_macro_conditional_asia_p_fe355d4759ed4898",
+   "xauusd_range_reversion_asia_p_ff35bb7c8427d66f",
+   "xauusd_range_reversion_asia_p_f83412948ea922b5"
+  ],
+  "n_minute_unmeasured": 70,
+  "n_fusion_measured": 41,
+  "n_fusion_net_edge_measured": 29,
+  "venues_unmeasured": [
+   "e8",
+   "ftmo"
+  ],
+  "fusion_unmeasured_reasons": {
+   "no gauntlet certificate row": 12,
+   "stop distance no live entries, no recoverable certificate charge, no H1 stop_atr spec": 40
+  }
+ },
+ "sleeves_redacted": {
+  "n": 81,
+  "note": "per-sleeve rows omitted to keep the archive reviewable; original_sha256 names the full report"
+ }
+}
