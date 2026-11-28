@@ -23,6 +23,10 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
     silent     `reports/SILENT_ORGANS.json` fence RED (a NEW silent organ or an escalation) or
                UNMEASURED (an input unreadable, stale or existence-only), or the census older
                than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
+    intel_feed either intel-feed artifact (`reports/HOURLY_DISCOVERY.json`,
+               `data/intelligence/seed_miners_state.json`) absent or older than INTEL_FEED_MAX_MIN
+               -- 2026-11-03: hel8 stopped shipping the feed and nothing paged; the box's own
+               `intel_feed` leg now writes both, and this is how its silence reaches a human
 
 All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
 whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
@@ -63,6 +67,12 @@ OUT = BASE / "reports" / "BOX_HEARTBEAT.json"
 GATEWAY_BEAT = BASE / "reports" / "DESK_STALE.json"
 WATCHDOG_BEAT = BASE / "data" / "stall_watch.json"
 SILENT_ORGANS = BASE / "reports" / "SILENT_ORGANS.json"
+#: The intel feed the `intel_feed` leg (MT5-Dept-Intel) writes; the same rows and age as
+#: ops/organ_contract.py's "MT5-Dept-Intel (intel feed: ...)" contracts.
+INTEL_FEED: tuple[Path, ...] = (BASE / "reports" / "HOURLY_DISCOVERY.json",
+                                BASE / "data" / "intelligence" / "seed_miners_state.json")
+#: Hourly, plus a long intel pass and one missed run.
+INTEL_FEED_MAX_MIN = 180.0
 #: The census is an hourly leg plus an issue-board clock; three hours is two missed passes.
 SILENT_MAX_MIN = 180.0
 RESEARCH_MAX_H = 6.0
@@ -126,6 +136,7 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
                       "min_gb": DISK_MIN_GB,
                       "fail": disk_free_gb is None or disk_free_gb < DISK_MIN_GB}
     checks["silent"] = silent_check(t)
+    checks["intel_feed"] = intel_feed_check(t)
     failing = sorted(k for k, v in checks.items() if v["fail"])
     return {"at": dt.isoformat(timespec="seconds"), "checks": checks, "failing": failing,
             "verdict": "FAIL" if failing else "OK"}
@@ -145,6 +156,18 @@ def silent_check(now: float, path: Path | None = None) -> dict[str, Any]:
             "max_min": SILENT_MAX_MIN, "new_silent": new[:12],
             "fail": (age is None or age > SILENT_MAX_MIN or not fence
                      or fence in ("RED", "UNMEASURED"))}
+
+
+def intel_feed_check(now: float, paths: tuple[Path, ...] | None = None) -> dict[str, Any]:
+    """The intel feed as a heartbeat check: every artifact must exist and be younger than
+    INTEL_FEED_MAX_MIN. An absent one fails -- a feed that never started is not a fresh one."""
+    ages: dict[str, float | None] = {}
+    for p in (INTEL_FEED if paths is None else paths):
+        a = _age_min(p, now)
+        ages[p.name] = None if a is None else round(a, 1)
+    stale = sorted(n for n, a in ages.items() if a is None or a > INTEL_FEED_MAX_MIN)
+    return {"age_min": ages, "max_min": INTEL_FEED_MAX_MIN, "stale": stale,
+            "fail": bool(stale) or not ages}
 
 
 def _url(paths: tuple[Path, ...] = SECRETS) -> str:
