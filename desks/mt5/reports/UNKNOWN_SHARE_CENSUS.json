@@ -5,13 +5,13 @@
   "docket_unique_cells": 1748773,
   "sample": 6000,
   "overlay": [],
-  "complete": false,
-  "stage": "building",
+  "complete": true,
+  "stage": "complete",
   "utc_day": "2026-11-28",
   "started_at": "2026-11-28T03:55:35+00:00",
-  "written_at": "2026-11-28T04:18:27+00:00",
+  "written_at": "2026-11-28T04:32:21+00:00",
   "cells_planned": 6000,
-  "cells_visited": 1876,
+  "cells_visited": 6000,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 38640,
     "rss_cap_mb": 9660,
-    "peak_rss_mb": 889
+    "peak_rss_mb": 978
   },
-  "lockbox_cut": "2022-07-18",
+  "lockbox_cut": "2022-04-08",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 338,
-  "elapsed_s": 1367.0,
+  "cells_carved_at_own_tail": 753,
+  "elapsed_s": 2201.1,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 20,
@@ -39,125 +39,143 @@
     }
   },
   "sampled_cells": {
-    "cells": 1876,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 38
     },
-    "preflight_refused": 837,
-    "build_failed": 1,
+    "preflight_refused": 2683,
+    "build_failed": 2,
     "build_failed_by_reason": {
-      "family_raised:TypeError": 1
+      "family_raised:TypeError": 2
     },
-    "deferred": 0,
-    "judged_built": 1000,
-    "unknown": 140,
-    "unknown_share_of_judged": 0.14,
+    "deferred": 1179,
+    "judged_built": 2098,
+    "unknown": 286,
+    "unknown_share_of_judged": 0.1363,
     "wilson95": [
-      0.1199,
-      0.1629
+      0.1223,
+      0.1517
     ],
     "unknown_by_reason": {
-      "no_signals": 97,
-      "too_rare": 20,
-      "lockbox_consumed_history": 13,
-      "short_history_after_cut": 10
+      "no_signals": 200,
+      "too_rare": 39,
+      "lockbox_consumed_history": 25,
+      "short_history_after_cut": 22
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 88,
+      "session_excludes_fire_hour": 78,
+      "too_rare": 27,
+      "lockbox_consumed_history": 25,
+      "short_history_after_cut": 22,
+      "input_absent:orderflow_imbalance": 22,
+      "input_absent:liquidity_regime": 12,
+      "session_thins_below_60": 12
+    },
     "unknown_by_family": {
-      "formula": 39,
-      "session_range_breakout": 15,
-      "orderflow_imbalance": 8,
-      "liquidity_regime": 7,
-      "htf_anchor_trend": 5,
-      "regime_transition": 5,
-      "joint_genome": 4,
-      "overnight_drift": 4,
-      "execution_state": 4,
-      "vol_transition": 4,
-      "regime_split": 3,
-      "comex_settlement": 3,
-      "alt_series_momentum": 3,
-      "level_breakout": 3,
-      "hedging_demand_close": 3
+      "formula": 76,
+      "session_range_breakout": 41,
+      "orderflow_imbalance": 22,
+      "htf_anchor_trend": 17,
+      "overnight_drift": 15,
+      "liquidity_regime": 12,
+      "execution_state": 7,
+      "regime_transition": 6,
+      "jump": 6,
+      "vol_transition": 6,
+      "joint_genome": 5,
+      "level_breakout": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "alt_series_momentum": 4
     },
     "unknown_by_chart": {
-      "H1": 47,
-      "M30": 26,
-      "M5": 24,
-      "M1": 15,
-      "M15": 13,
-      "H4": 9,
-      "D1": 6
+      "H1": 103,
+      "M30": 50,
+      "M5": 35,
+      "M15": 33,
+      "M1": 31,
+      "H4": 19,
+      "D1": 15
     },
     "judged_by_chart": {
-      "H1": 420,
-      "M30": 187,
-      "M15": 165,
-      "M5": 136,
-      "M1": 46,
-      "H4": 35,
-      "D1": 11
+      "H1": 852,
+      "M30": 420,
+      "M15": 353,
+      "M5": 282,
+      "M1": 89,
+      "H4": 76,
+      "D1": 26
     }
   },
   "sampled_plus_siblings": {
-    "cells": 1876,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 38
     },
-    "preflight_refused": 837,
-    "build_failed": 1,
+    "preflight_refused": 2683,
+    "build_failed": 2,
     "build_failed_by_reason": {
-      "family_raised:TypeError": 1
+      "family_raised:TypeError": 2
     },
-    "deferred": 0,
-    "judged_built": 1000,
-    "unknown": 140,
-    "unknown_share_of_judged": 0.14,
+    "deferred": 1179,
+    "judged_built": 2098,
+    "unknown": 286,
+    "unknown_share_of_judged": 0.1363,
     "wilson95": [
-      0.1199,
-      0.1629
+      0.1223,
+      0.1517
     ],
     "unknown_by_reason": {
-      "no_signals": 97,
-      "too_rare": 20,
-      "lockbox_consumed_history": 13,
-      "short_history_after_cut": 10
+      "no_signals": 200,
+      "too_rare": 39,
+      "lockbox_consumed_history": 25,
+      "short_history_after_cut": 22
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 88,
+      "session_excludes_fire_hour": 78,
+      "too_rare": 27,
+      "lockbox_consumed_history": 25,
+      "short_history_after_cut": 22,
+      "input_absent:orderflow_imbalance": 22,
+      "input_absent:liquidity_regime": 12,
+      "session_thins_below_60": 12
+    },
     "unknown_by_family": {
-      "formula": 39,
-      "session_range_breakout": 15,
-      "orderflow_imbalance": 8,
-      "liquidity_regime": 7,
-      "htf_anchor_trend": 5,
-      "regime_transition": 5,
-      "joint_genome": 4,
-      "overnight_drift": 4,
-      "execution_state": 4,
-      "vol_transition": 4,
-      "regime_split": 3,
-      "comex_settlement": 3,
-      "alt_series_momentum": 3,
-      "level_breakout": 3,
-      "hedging_demand_close": 3
+      "formula": 76,
+      "session_range_breakout": 41,
+      "orderflow_imbalance": 22,
+      "htf_anchor_trend": 17,
+      "overnight_drift": 15,
+      "liquidity_regime": 12,
+      "execution_state": 7,
+      "regime_transition": 6,
+      "jump": 6,
+      "vol_transition": 6,
+      "joint_genome": 5,
+      "level_breakout": 5,
+      "regime_split": 4,
+      "comex_settlement": 4,
+      "alt_series_momentum": 4
     },
     "unknown_by_chart": {
-      "H1": 47,
-      "M30": 26,
-      "M5": 24,
-      "M1": 15,
-      "M15": 13,
-      "H4": 9,
-      "D1": 6
+      "H1": 103,
+      "M30": 50,
+      "M5": 35,
+      "M15": 33,
+      "M1": 31,
+      "H4": 19,
+      "D1": 15
     },
     "judged_by_chart": {
-      "H1": 420,
-      "M30": 187,
-      "M15": 165,
-      "M5": 136,
-      "M1": 46,
-      "H4": 35,
-      "D1": 11
+      "H1": 852,
+      "M30": 420,
+      "M15": 353,
+      "M5": 282,
+      "M1": 89,
+      "H4": 76,
+      "D1": 26
     }
   },
   "siblings_only": {
