@@ -603,6 +603,16 @@ def docket_memo_stamp(G) -> str:
     files += [DESK / "research" / n for n in ("frontier_identity.py", "h1_source.py",
                                               "mt5_session.py", "judge_docket_order.py")]
     parts.append(f"platform:{os.name}")
+    if files and files[0].name == "universe.json":
+        # UNIVERSE.JSON BY WHAT THE PARTITION READS, NOT BY ITS MTIME (2026-11-10). It is
+        # rewritten every hour (universe_registry, via hourly_cycle and seven other organs) and
+        # its mtime voided the memo each time: every run re-decided 1.65M cells, hit the hard stop
+        # in docket_load and never saved the memo (box: 3,338-3,480 s in docket_load on 11-02).
+        # The sealed partition reads only the symbol set (canonical_symbol, membership) and each
+        # row's `tradeable` flag (symbol_is_tradeable); spreads, swaps and stamps change no
+        # outcome, so they no longer move the stamp.
+        parts.append("universe:" + universe_projection(files[0]))
+        files = files[1:]
     for f in files:
         try:
             st = f.stat()
@@ -616,6 +626,26 @@ def docket_memo_stamp(G) -> str:
             names = []
         parts.append("parquets:" + hashlib.sha1("\n".join(names).encode()).hexdigest())
     return hashlib.sha1("|".join(parts).encode()).hexdigest()
+
+
+def universe_projection(path: Path) -> str:
+    """A digest of the registry fields `partition_at_economic_prior` reads: the symbol set and
+    which symbols are flagged `tradeable: false`. Unreadable -> its mtime and size, as before."""
+    import hashlib
+
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        try:
+            st = path.stat()
+            return f"stat:{st.st_mtime_ns}:{st.st_size}"
+        except OSError:
+            return "absent"
+    rows = doc if isinstance(doc, dict) else {}
+    keys = sorted(str(k) for k in rows)
+    closed = sorted(str(k) for k, r in rows.items()
+                    if isinstance(r, dict) and r.get("tradeable") is False)
+    return hashlib.sha1(("\n".join(keys) + "\x00" + "\n".join(closed)).encode()).hexdigest()
 
 
 def load_docket_memo(G, now: float | None = None) -> tuple[dict, dict]:
@@ -1719,7 +1749,37 @@ def _apply_blas_switch() -> dict:
                 "why": f"UNMEASURED: switch unreadable ({type(exc).__name__}: {exc})"[:300]}
 
 
-def _cli_main() -> int:
+def _open_own_log(argv: list[str]) -> str | None:
+    """`--log PATH`: this process writes its own log, appending, instead of a cmd `>>` redirect.
+
+    MEASURED 2026-11-10: an orphaned warmer held the task's `>> MT5-CacheWarm.log` handle for
+    eight days and cmd refused every later run before python started (Last Result 1). Opened
+    here, a held file can cost only that file: the run falls back to MT5-CacheWarm.<pid>.log
+    beside it and says so in both places it can.
+    """
+    if "--log" not in argv:
+        return None
+    i = argv.index("--log")
+    if i + 1 >= len(argv):
+        return None
+    path = Path(argv[i + 1])
+    if not path.is_absolute():
+        path = DESK / path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fh = path.open("a", encoding="utf-8", buffering=1)
+    except OSError as exc:
+        held = f"{path.name} could not be opened ({type(exc).__name__}: {exc})"
+        path = path.with_name(f"{path.stem}.{os.getpid()}{path.suffix}")
+        fh = path.open("a", encoding="utf-8", buffering=1)
+        fh.write(f"LOG FALLBACK: {held}; this run logs here\n")
+    sys.stdout = sys.stderr = fh
+    return str(path)
+
+
+def _cli_main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    log = _open_own_log(argv)
     # BEFORE ANY IMPORT THAT LOADS NUMPY: BLAS reads its thread count once, at load.
     _BLAS.update(_apply_blas_switch())
     print(f"  blas threads: {'single (proof holds)' if _BLAS.get('active') else 'default'} -- "
@@ -1733,6 +1793,14 @@ def _cli_main() -> int:
     # the whole process and a run can never outlive its hourly trigger.
     start = time.time()
     start_watchdog(start)
+    if log:
+        print(f"  log: {log}", flush=True)
+    with contextlib.suppress(Exception):
+        from research.warm_reaper import reap
+        reaped = reap(by="warm_gauntlet_cache")
+        if reaped.get("rows"):
+            print(f"  reaper: {reaped.get('reaped')} orphaned warmer(s) ended, "
+                  f"{reaped.get('failed')} failed, {reaped.get('spared')} spared", flush=True)
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(start))
     print(f"CacheWarm START pid={os.getpid()} at {stamp} budget={BUDGET_SEC:.0f}s "
           f"hard_stop=+{BUDGET_SEC + GRACE_SEC:.0f}s", flush=True)
