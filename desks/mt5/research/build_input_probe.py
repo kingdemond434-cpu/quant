@@ -381,7 +381,7 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
         ctx = ctx or _Pass()
     except Exception as exc:                       # never costs the pass: name nothing
         return {}, {"schema": SCHEMA, "status": UNMEASURED,
-                    "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+                    "why": type(exc).__name__}   # the type only: JUDGE_COVERAGE.json publishes it
     banned_set = set(banned)
     for row in rows:
         family = str(row.get("family") or "")

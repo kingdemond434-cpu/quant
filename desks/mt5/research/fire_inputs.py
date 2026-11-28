@@ -171,7 +171,8 @@ def probe(sym: str, family: str, params: dict[str, Any] | None = None,
         _paths()
         out = _probe_cot(sym) if family == "cot_positioning" else _probe_event(sym)
     except Exception as exc:
-        out = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+        # The type only: this `why` rides into judge_coverage's pass, whose report is published.
+        out = {"status": UNMEASURED, "why": type(exc).__name__}
     if memo is not None:
         memo[key] = out
     return out

@@ -721,7 +721,8 @@ def culture_pass(docket: list[dict[str, Any]], *, dry_run: bool = False) -> dict
             import culture_orthogonality as co  # type: ignore[import-not-found,no-redef]
         cdoc = co.run(docket=docket, dry_run=dry_run)
     except Exception as exc:
-        return {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        # The type only: this block is published in OCCUPANCY_MAP.json.
+        return {"status": "ERROR", "why": type(exc).__name__}
     return {"status": cdoc.get("status"), "why": cdoc.get("why"),
             "pair_counts": cdoc.get("pair_counts"), "k_eff_survivors": cdoc.get("k_eff_survivors"),
             "merge_groups": len(cdoc.get("merge_groups") or []),

@@ -179,7 +179,8 @@ def symbol_deltas(exposure: Mapping[str, float], nominal: float, symbols: Iterab
                 x1[j] += d
                 n1.append(exposure_neff(nom + 1.0, x1, corr))
         except ValueError as exc:
-            out[sym] = {"status": "UNMEASURED", "delta_k": None, "why": str(exc)[:160]}
+            # The type only: `symbol_deltas` is published in DOCKET_KEFF_ORDER.json.
+            out[sym] = {"status": "UNMEASURED", "delta_k": None, "why": type(exc).__name__}
             continue
         others = [i for i in range(len(names)) if i != j]
         rho = (float(np.mean(np.abs(corr[j, others]))) if others else None)
