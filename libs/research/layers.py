@@ -697,6 +697,7 @@ LEG_LAYER: dict[str, str] = {
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
+    "pass_question_evidence": "meta",
     "six_event_trace": "meta",
 }
 
