@@ -763,6 +763,188 @@ def venue_heat_cap() -> tuple[float | None, str]:
     return _acct.venue_heat_cap(acc, BASE.parent.parent)
 
 
+# ---------------------------------------------------------------- THE ACCOUNT BREAKERS
+# (mt5desk.account_breaker; BACKLOG 2026-10-13, the control room's diagrams.) Every pass reads the
+# account once, before anything is managed or placed: a declared prop account's daily-loss breaker
+# trips at the venue's own line less a MEASURED buffer and flattens for the rest of the venue day;
+# the disconnect breaker holds new orders while the terminal has no broker connection and, after
+# a lost heartbeat, until the restart reconcile has answered OK. Both hold the order door shut on
+# NEW risk only (`order_door.register_open_gate`), so no lane in this process can open past them.
+from mt5desk import account_breaker as _brk  # noqa: E402
+
+#: This pass's verdict and reading (None until the first pass of this process has read them).
+_BRK_VERDICT: _brk.Verdict | None = None
+_BRK_READING: _brk.Reading | None = None
+#: Why the breakers refuse new risk this pass ("" when they do not), for the lanes' decision rows.
+_BRK_BLOCK_WHY = ""
+#: The rails each breaker bills its refusals and trips under (mt5desk.fusion_rails).
+BRK_RAIL_DAILY = "account_daily_breaker"
+BRK_RAIL_DISCONNECT = "disconnect_breaker"
+
+
+def _raw_mt5() -> object:
+    """The terminal module without the door: the breakers READ through it, and a gate asked from
+    inside the door must not re-enter the door."""
+    return getattr(mt5, "door_raw", mt5)
+
+
+def _breaker_bill(rail: str, dedupe: str, raw: object, req: dict | None, why: str) -> None:
+    """One missed-growth line per refusal key on the rails ledger. Never raises."""
+    try:
+        from mt5desk import fusion_rails as _fr
+        fields: dict = {"why": why[:300]}
+        if req is not None:
+            legs = _brk.order_legs(raw, req)
+            fields.update({"symbol": req.get("symbol"), "lot": req.get("volume"),
+                           "comment": req.get("comment")})
+            if legs.stop_bound != float("inf"):
+                fields["missed_growth_risk_usd"] = round(legs.stop_bound, 2)
+        _fr.line_once(rail, dedupe, **fields)
+    except Exception as exc:
+        log(f"account breaker: {rail} line not written ({type(exc).__name__}: {exc})")
+
+
+def account_breaker_gate(raw: object, req) -> str | None:
+    """The door's survival gate on every NEW order (see `order_door.register_open_gate`)."""
+    global _BRK_READING
+    v = _BRK_VERDICT
+    req = dict(req)
+    tag = str(req.get("comment") or req.get("symbol") or "?")
+    if v is None:
+        why = "the account breakers have not read the account in this process"
+        _breaker_bill(BRK_RAIL_DISCONNECT, f"unread/{tag}", raw, req, why)
+        return why
+    try:
+        ti = raw.terminal_info()  # type: ignore[attr-defined]
+    except Exception as exc:
+        ti, _ = None, exc
+    if ti is None or getattr(ti, "connected", True) is False:
+        why = "disconnect breaker: the terminal has no broker connection"
+        _breaker_bill(BRK_RAIL_DISCONNECT, f"{v.day}/conn/{tag}", raw, req, why)
+        return why
+    if not v.connected or v.reconcile_required:
+        why = f"disconnect breaker: {v.why or 'the venue is not reconciled since the gap'}"
+        _breaker_bill(BRK_RAIL_DISCONNECT, f"{v.day}/reconcile/{tag}", raw, req, why)
+        return why
+    if v.tripped or not v.account_ok:
+        why = f"account daily-loss breaker: {v.why}"
+        _breaker_bill(BRK_RAIL_DAILY, f"{v.day}/held/{tag}", raw, req, why)
+        return why
+    reading = _BRK_READING
+    if reading is None or time.time() - reading.t > v.gap_threshold_s:
+        # The pass has run longer than the interval the buffer was measured for: read again.
+        reading = _brk.read_account(raw)
+        _BRK_READING = reading
+        if not reading.ok:
+            why = f"disconnect breaker: {reading.why}"
+            _breaker_bill(BRK_RAIL_DISCONNECT, f"{v.day}/reread/{tag}", raw, req, why)
+            return why
+    why_p = _brk.projected_refusal(v, reading, _brk.order_legs(raw, req))
+    if why_p:
+        why = f"account daily-loss breaker: {why_p}"
+        _breaker_bill(BRK_RAIL_DAILY, f"{v.day}/zone/{tag}", raw, req, why)
+        return why
+    return None
+
+
+def account_breaker_pass(st: dict) -> _brk.Verdict | None:
+    """Read the account, run both breakers, persist their state, flatten a tripped prop account
+    and install the door gate. Never raises: a breaker that cannot run holds new risk (the gate
+    refuses with no verdict) and leaves open positions to their stops and management."""
+    global _BRK_VERDICT, _BRK_READING, _BRK_BLOCK_WHY
+    _door.register_open_gate("account_breaker", account_breaker_gate)
+    raw = _raw_mt5()
+    try:
+        now_dt = datetime.now(tz=UTC)
+        reading = _brk.read_account(raw, now_dt)
+        try:
+            acc = _prov.current_account(raw.account_info())  # type: ignore[attr-defined]
+        except Exception:
+            acc = None
+        rule, initial, rule_why = _brk.rule_for_connected(acc, BASE.parent.parent)
+        state = _brk.load_state()
+        derived = None
+        if rule is not None and reading.ok and reading.balance is not None:
+            day = _brk.venue_day(now_dt, rule.day_tz, rule.day_roll_hour)
+            derived = _brk.day_start_balance(raw, reading.balance, day, rule.day_tz,
+                                             rule.day_roll_hour, now_dt)
+        # The initial balance, MEASURED from the deal history's first deposit (the declared
+        # figure overrides it), cached per account once found: the history is only re-read
+        # while it has not yielded one.
+        measured_initial = None
+        if rule is not None and reading.ok:
+            who = _acct.reason_label(acc)
+            cached = state.get("initial_measured")
+            if isinstance(cached, dict) and cached.get("account") == who \
+                    and isinstance(cached.get("value"), (int, float)):
+                measured_initial = float(cached["value"])
+            else:
+                measured_initial = _brk.initial_balance(raw, now_dt)
+                if measured_initial is not None:
+                    state["initial_measured"] = {"account": who, "value": measured_initial,
+                                                 "at": now_dt.isoformat(timespec="seconds")}
+        v = _brk.evaluate(state, reading, rule, initial, rule_why,
+                          derived_start_balance=derived, measured_initial=measured_initial,
+                          confirm=lambda: _brk.read_account(raw))
+        if v.applicable and v.initial is None and state.get("initial_unmeasured_day") != v.day:
+            state["initial_unmeasured_day"] = v.day
+            log(f"account breaker: initial balance {v.initial_source}; orders are not held "
+                f"for it")
+        state["verdict"] = v.as_dict()
+        state["checked_at"] = now_dt.isoformat(timespec="seconds")
+        _brk.save_state(state)
+    except Exception as exc:
+        _BRK_VERDICT, _BRK_READING = None, None
+        _BRK_BLOCK_WHY = f"account breakers unreadable ({type(exc).__name__}: {exc})"
+        log(f"ACCOUNT BREAKER FAILED: {_BRK_BLOCK_WHY}; no new orders this pass, open "
+            f"positions keep their stops and management")
+        return None
+    _BRK_VERDICT, _BRK_READING = v, reading
+    _BRK_BLOCK_WHY = "" if v.new_risk_ok else v.why
+    if v.newly_tripped:
+        log(f"ACCOUNT DAILY-LOSS BREAKER TRIPPED: {v.why} -- flattening for the venue day")
+        _breaker_bill(BRK_RAIL_DAILY, f"{v.day}/trip", raw, None, v.why)
+    if v.tripped and v.flatten_symbols:
+        for sym in v.flatten_symbols:
+            try:
+                cancel_pending(st, sym)
+                close_positions(st, sym)
+            except Exception as exc:
+                log(f"account breaker: flatten of {sym} failed ({type(exc).__name__}: {exc}); "
+                    f"retried next pass")
+    elif not v.new_risk_ok:
+        log(f"account breakers hold new risk: {v.why}")
+    return v
+
+
+def account_breaker_reconciled(verdict: object) -> None:
+    """The restart reconcile answered `verdict`; an OK lifts the disconnect breaker's hold."""
+    global _BRK_BLOCK_WHY
+    v = _BRK_VERDICT
+    if v is None or not v.reconcile_required:
+        return
+    try:
+        state = _brk.load_state()
+        if _brk.note_reconcile(state, verdict):
+            _brk.save_state(state)
+            v.reconcile_required = False
+            _BRK_BLOCK_WHY = "" if v.new_risk_ok else v.why
+            log("disconnect breaker: the venue reconciled OK; new orders resume")
+        else:
+            log(f"disconnect breaker: reconcile answered {verdict!r}; new orders still held")
+    except Exception as exc:
+        log(f"disconnect breaker: reconcile not recorded ({type(exc).__name__}: {exc}); "
+            f"new orders still held")
+
+
+def account_breaker_new_risk() -> tuple[bool, str]:
+    """(may this pass open new risk, why) by the account breakers."""
+    v = _BRK_VERDICT
+    if v is None:
+        return False, _BRK_BLOCK_WHY or "account breakers have not read the account"
+    return v.new_risk_ok, ("" if v.new_risk_ok else v.why)
+
+
 def regime_hibernate(sleeves: list[dict]) -> set[str]:
     """Gateway names of sleeves flagged 'hibernate' in data/regime_state.json (writer:
     research/regime_monitor.py). Auto-kill: no new brackets until a human re-admits the sleeve
@@ -4932,6 +5114,7 @@ def main() -> None:
     if not connect():
         return
     st = load_state()
+    account_breaker_pass(st)
     tick = mt5.symbol_info_tick("XAUUSD")
     if tick is None:
         log("no tick; market likely closed")
@@ -5019,13 +5202,18 @@ def main() -> None:
     # MAGIC is read, the order door's in-doubt sends are settled against it (so a send that
     # timed out last pass and landed is never sent twice), and a position holding with no stop
     # gets its placement stop back. Never raises; an unreadable venue is recorded UNMEASURED.
+    # THIS pass's verdict only: a reconcile that raised leaves last pass's row in `st`, and an
+    # old OK must never lift the disconnect breaker's hold.
+    _rr_verdict: object = None
     try:
         st["restart_reconcile"] = _door.restart_reconcile(
             mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
             log=log)
+        _rr_verdict = (st["restart_reconcile"] or {}).get("verdict")
     except Exception as exc:
         log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
             f"checks still stand")
+    account_breaker_reconciled(_rr_verdict)
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether
@@ -5073,6 +5261,12 @@ def main() -> None:
     if not _dm_ok:
         NEW_RISK_OK = False
         log(f"{_dm_why} -- managing open positions only")
+    # THE ACCOUNT BREAKERS (account_breaker_pass above): a tripped or unmeasurable prop account,
+    # a lost broker connection, or a heartbeat gap not yet reconciled holds new risk.
+    _brk_ok, _brk_why = account_breaker_new_risk()
+    if not _brk_ok:
+        NEW_RISK_OK = False
+        log(f"{_brk_why} -- managing open positions only")
     # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): while a release is being adopted or rolled
     # back, and until it passes its health check, no lane takes new risk; management above has
     # run. A veto, so one missed-growth line per hold per day on the rails ledger.
@@ -5714,13 +5908,14 @@ def main() -> None:
             if not NEW_RISK_OK:
                 # The bracket is computed and written as a not-taken decision, so the ledger
                 # shows what the sealed code would have placed while the running code could not.
-                log(f"[{s['name']}] bracket NOT placed: "
-                    f"{'the daily-loss rail' if _dl_down else 'release identity'} refuses new "
-                    f"risk")
+                _who = ("the daily-loss rail" if _dl_down else
+                        "the account breakers" if _BRK_BLOCK_WHY else "release identity")
+                log(f"[{s['name']}] bracket NOT placed: {_who} refuses new risk")
                 try:
                     _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
                                      price=None, sl=None, tp=None, taken=False,
                                      reason=("fusion_daily_loss" if _dl_down
+                                             else "account_breaker" if _BRK_BLOCK_WHY
                                              else "release_identity_refused"), detail=spec)
                 except Exception as exc:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
