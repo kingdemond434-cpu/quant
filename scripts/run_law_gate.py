@@ -34,6 +34,7 @@ enforcement itself).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
@@ -840,6 +841,72 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     return reaped
 
 
+#: The caller's own sparse settings. The private HEAD checkout must never change them (Desk health
+#: 2026-11-11: after a push from a sparse worktree, that worktree's config.worktree read
+#: core.sparseCheckout=false and `git status` listed 42,402 intelligence/** files as deleted -- one
+#: `git add -A` from committing them). Snapshotted before the checkout, compared after, restored
+#: and REPORTED if anything moved, whatever git version or path did it.
+_CALLER_SPARSE_KEYS = ("core.sparseCheckout", "core.sparseCheckoutCone", "index.sparse")
+
+
+#: THE MECHANISM (Desk health 2026-11-11, reproduced on git 2.43): git runs the pre-push hook with
+#: GIT_DIR set to the CALLER's worktree git dir. `git -C <private> sparse-checkout disable` honours
+#: an inherited GIT_DIR over -C, so it rewrote the caller's config.worktree, not the private one's.
+#: Every command aimed at the private checkout -- and the HEAD gate re-exec'd inside it, whose
+#: fences run git too -- gets an environment with no repository-locating variable.
+_GIT_LOCATORS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+                 "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_PREFIX")
+
+
+def _private_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """os.environ without the variables that would point git back at the caller's repository."""
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_LOCATORS}
+    env.update(extra or {})
+    return env
+
+
+def _caller_sparse_state(root: Path) -> dict[str, str | None]:
+    """{key: value or None} for the caller's per-worktree sparse keys, plus its pattern file."""
+    state: dict[str, str | None] = {}
+    for key in _CALLER_SPARSE_KEYS:
+        r = subprocess.run(["git", "config", "--worktree", "--get", key], cwd=root,
+                           capture_output=True, text=True, timeout=10)
+        state[key] = r.stdout.strip() if r.returncode == 0 else None
+    r = subprocess.run(["git", "rev-parse", "--git-path", "info/sparse-checkout"], cwd=root,
+                       capture_output=True, text=True, timeout=10)
+    pat = (root / r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else None
+    try:
+        state["info/sparse-checkout"] = pat.read_text("utf-8") if pat and pat.is_file() else None
+    except OSError:
+        state["info/sparse-checkout"] = None
+    state["_pattern_path"] = str(pat) if pat else None
+    return state
+
+
+def _restore_caller_sparse(root: Path, before: dict[str, str | None]) -> list[str]:
+    """Put back any caller sparse setting that moved; name each one. Empty when nothing moved."""
+    after = _caller_sparse_state(root)
+    moved = [k for k in (*_CALLER_SPARSE_KEYS, "info/sparse-checkout") if before[k] != after[k]]
+    if not moved:
+        return []
+    for key in _CALLER_SPARSE_KEYS:
+        if key not in moved:
+            continue
+        cmd = (["git", "config", "--worktree", key, str(before[key])] if before[key] is not None
+               else ["git", "config", "--worktree", "--unset", key])
+        subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=10)
+    pat = before.get("_pattern_path")
+    if "info/sparse-checkout" in moved and pat and before["info/sparse-checkout"] is not None:
+        with contextlib.suppress(OSError):
+            Path(pat).write_text(str(before["info/sparse-checkout"]), "utf-8")
+    if before["core.sparseCheckout"] == "true":
+        # re-apply the patterns to the caller's index and files, so nothing reads as deleted
+        subprocess.run(["git", "sparse-checkout", "reapply"], cwd=root, capture_output=True,
+                       text=True, timeout=300)
+    return [f"caller-sparse-restored: the HEAD checkout changed this worktree's {', '.join(moved)}"
+            " -- put back; nothing in this worktree was committed"]
+
+
 def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     """(where to run, what that place IS, why it is not HEAD). A pristine checkout when dirty.
 
@@ -862,8 +929,26 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     if not dirt and sparse.stdout.strip() != "true":
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
+    caller_sparse = _caller_sparse_state(root)
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
+    restored: list[str] = []
+    try:
+        where, subject, why = _head_checkout(root, tmp, wt, dirt)
+    finally:
+        # Even when the checkout raises: a caller left flipped is the defect itself (Auditor).
+        restored = _restore_caller_sparse(root, caller_sparse)
+        if restored:
+            print("law gate: " + restored[0], file=sys.stderr)
+    # A repair, not a breach: the verdict still stands, and its subject names what was put back.
+    if restored:
+        subject = f"{subject}; {restored[0]}"
+    return where, subject, why
+
+
+def _head_checkout(root: Path, tmp: Path, wt: Path,
+                   dirt: list[str]) -> tuple[Path, str, list[str]]:
+    """The private detached HEAD checkout itself; _at_head guards the caller around it."""
     try:
         # HEAD now contains 49,295 files / 3.8GB on the trading host. Parallel
         # checkout preserves the full tree and the existing 300-second budget.
@@ -873,13 +958,20 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
                           cwd=root, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
+        # Every later command runs with -C wt. If wt is not its own worktree top level, git would
+        # walk UP and act on whatever repository encloses it -- possibly the caller's. Refuse.
+        top = subprocess.run(["git", "-C", str(wt), "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True, timeout=30, env=_private_env())
+        if top.returncode != 0 or Path(top.stdout.strip()).resolve() != wt.resolve():
+            raise OSError(f"private checkout is not its own worktree ({top.stdout.strip()!r})")
         # Git copies the caller's sparse-checkout settings into a new worktree.
         # A law verdict must cover all committed policy/evidence files, including
         # paths intentionally absent from an operator's source-only checkout.
         # Disable sparsity only in this private HEAD checkout; never in the caller.
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "sparse-checkout", "disable"],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=_private_env())
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
         # Individually skipped files (for example a seal added with --sparse)
@@ -888,7 +980,8 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "restore", "--source=HEAD", "--worktree",
                            "--ignore-skip-worktree-bits", "--", "."],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=_private_env())
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:
@@ -924,8 +1017,8 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
-                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
+                env = _private_env({"QUANT_LAWGATE_IN_PLACE": "1",
+                                    "QUANT_LAWGATE_SOURCE_VIEW": "1"})
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)
