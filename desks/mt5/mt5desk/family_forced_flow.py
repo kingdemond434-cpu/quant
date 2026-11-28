@@ -105,6 +105,7 @@ FORCED_FLOW_DEFAULTS: dict[str, Any] = {
     "ttl_bars": 12,
     "symbol": "",
     "clock": "bars",
+    "event_prefix": "",
 }
 
 
@@ -157,8 +158,13 @@ def _calendar_module() -> Any:
     return forced_flow_calendar
 
 
-def _rows_from_disk(kind: str, lo: date, hi: date) -> list[dict[str, Any]] | None:
-    """Calendar rows of `kind` dated in [lo, hi] from the artifact, or None if unreadable."""
+def _rows_from_disk(kind: str, lo: date, hi: date, prefix: str = ""
+                    ) -> list[dict[str, Any]] | None:
+    """Calendar rows of `kind` dated in [lo, hi] from the artifact, or None if unreadable.
+
+    `prefix`, when given, keeps only rows whose `name` starts with it (2026-11-11, B11): one
+    holiday region of the `holiday_liquidity` kind, so a Lunar New Year cell is not a blend of
+    US, UK and Japanese closures. Empty -- the default -- keeps every row, exactly as before."""
     try:
         doc = json.loads(CALENDAR_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -170,6 +176,8 @@ def _rows_from_disk(kind: str, lo: date, hi: date) -> list[dict[str, Any]] | Non
     for row in rows:
         if not isinstance(row, dict) or str(row.get("kind", "")) != kind:
             continue
+        if prefix and not str(row.get("name", "")).startswith(prefix):
+            continue
         try:
             when = date.fromisoformat(str(row.get("date", "")))
         except ValueError:
@@ -179,7 +187,7 @@ def _rows_from_disk(kind: str, lo: date, hi: date) -> list[dict[str, Any]] | Non
     return out
 
 
-def _rows_computed(kind: str, lo: date, hi: date) -> list[dict[str, Any]]:
+def _rows_computed(kind: str, lo: date, hi: date, prefix: str = "") -> list[dict[str, Any]]:
     module = _calendar_module()
     if module is None:
         return []
@@ -187,11 +195,12 @@ def _rows_computed(kind: str, lo: date, hi: date) -> list[dict[str, Any]]:
         rows = module.events(lo, hi)
     except (ValueError, TypeError):                  # pragma: no cover - defensive
         return []
-    return [e.to_json() for e in rows if e.kind == kind]
+    return [e.to_json() for e in rows
+            if e.kind == kind and (not prefix or e.name.startswith(prefix))]
 
 
-def calendar_windows(kind: str, lo: date, hi: date) -> list[tuple[pd.Timestamp, pd.Timestamp,
-                                                                 tuple[str, ...]]]:
+def calendar_windows(kind: str, lo: date, hi: date, prefix: str = ""
+                     ) -> list[tuple[pd.Timestamp, pd.Timestamp, tuple[str, ...]]]:
     """(window_start, window_end, instruments) in UTC for every `kind` event dated in [lo, hi].
 
     THE ARTIFACT IS PREFERRED AND THE RULE IS THE FALLBACK, not the other way round, because the
@@ -199,9 +208,9 @@ def calendar_windows(kind: str, lo: date, hi: date) -> list[tuple[pd.Timestamp, 
     absent the rules produce the same rows from nothing -- which is the whole reason the calendar
     is computed rather than fetched -- so a missing file costs reproducibility, not signals.
     """
-    rows = _rows_from_disk(kind, lo, hi)
+    rows = _rows_from_disk(kind, lo, hi, prefix)
     if not rows:
-        rows = _rows_computed(kind, lo, hi)
+        rows = _rows_computed(kind, lo, hi, prefix)
     out: list[tuple[pd.Timestamp, pd.Timestamp, tuple[str, ...]]] = []
     for row in rows:
         try:
@@ -249,6 +258,7 @@ def family_forced_flow(
     ttl_bars: int = 12,
     symbol: str = "",
     clock: str = "bars",
+    event_prefix: str = "",
 ) -> list[Signal]:
     """Signals inside the window around a dated forced-flow event. Price-only, next-open entries.
 
@@ -263,6 +273,9 @@ def family_forced_flow(
     because `mt5desk.family_call.signals` passes `side=-1` for a short cell and OMITS it
     entirely for a long one; a keyword-only or defaultless `side` would break one of those two
     call shapes, and that asymmetry is load-bearing for every clock already running.
+
+    `event_prefix` narrows the kind to events whose calendar `name` starts with it -- one holiday
+    region of `holiday_liquidity` (`hk_lny_`, `jp_holiday_`). Empty keeps every event of the kind.
 
     `symbol` narrows the calendar to events that name it. Left empty, every event of the kind is
     used: a caller who does not say which instrument the bars are cannot be told which events
@@ -287,7 +300,7 @@ def family_forced_flow(
     # sample being silently absent.
     lo = (index[0] - pd.Timedelta(minutes=window_before_min + step)).date() - timedelta(days=1)
     hi = (index[-1] + pd.Timedelta(minutes=window_after_min + step)).date() + timedelta(days=1)
-    windows = calendar_windows(str(event_kind), lo, hi)
+    windows = calendar_windows(str(event_kind), lo, hi, str(event_prefix or ""))
     if not windows:
         return []
 

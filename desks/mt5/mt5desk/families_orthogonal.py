@@ -817,6 +817,7 @@ def family_overnight_gap_decay(
     stop_atr: float = 1.5,
     rr: float = 1.0,
     ttl_bars: int = 8,
+    handoff: str = "",
 ) -> list[Signal]:
     """Fade the OVERNIGHT component specifically -- a different return than the intraday one.
 
@@ -824,7 +825,16 @@ def family_overnight_gap_decay(
     liquidity provision, position squaring) and have different statistical properties. Fading an
     outsized overnight gap is therefore a distinct bet from anything an intraday range family
     holds: it is closed before the session the breakout book trades even begins.
+
+    `handoff` (B20, 2026-11-11) re-anchors the SAME claim to a session handoff instead of the
+    broker day's first bar. Left empty -- the default, and what every existing certificate, clock
+    and `.asia` sleeve carries -- the body below runs exactly as it always has. Set to a key of
+    `HANDOFF_WINDOWS`, the gap is the incoming region's own overnight: from its previous cash
+    close to its cash open, on its local wall clock (see `_handoff_gap_decay`).
     """
+    if handoff:
+        return _handoff_gap_decay(df, str(handoff), gap_atr=gap_atr, atr_n=atr_n,
+                                  stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
     d = _h1(df)
     atr = _atr(d, atr_n)
     signals: list[Signal] = []
@@ -848,6 +858,96 @@ def family_overnight_gap_decay(
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * abs(gap) * rr, ttl_bars=ttl_bars,
                               tag="overnight_gap_decay", trigger=None, wait_bars=1))
+    return signals
+
+
+#: SESSION HANDOFFS (B20, approved 2026-10-13). The gap-decay family's claim -- the liquidity
+#: provider who absorbed a gap printed in thin books is paid as it decays -- read at the moment a
+#: region's own participants arrive: the gap THEY see is the move since their own last cash close.
+#: Asia->Europe is London's overnight (the US afternoon plus the Asia session) seen at the London
+#: open; Europe->US is New York's (Asia plus the European morning), seen at the NYSE open. Each is
+#: (zone, cash open, cash close) on the LOCAL WALL CLOCK, converted per date with zoneinfo the way
+#: `forced_flow_calendar.local_utc` does, then into the bars' broker frame by
+#: `libs.research.bar_clock` -- which refuses rather than guesses, so a date whose bar clock is
+#: unmeasured is dropped, never placed on a guessed bar.
+HANDOFF_WINDOWS: dict[str, tuple[str, tuple[int, int], tuple[int, int]]] = {
+    "asia_europe": ("Europe/London", (8, 0), (16, 30)),
+    "europe_us": ("America/New_York", (9, 30), (16, 0)),
+}
+
+
+def _handoff_gap_decay(df: pd.DataFrame, handoff: str, *, gap_atr: float, atr_n: int,
+                       stop_atr: float, rr: float, ttl_bars: int) -> list[Signal]:
+    """Fade the incoming region's overnight gap at its cash open.
+
+    reference  the close of the last bar that ENDED at or before the previous business day's
+               local cash close, so it was printed before the gap it anchors;
+    open price the open of the bar that STARTS at the local open when one does, else the close of
+               the bar holding the open instant -- in both cases a price the market had printed by
+               the signal bar's close; the engine fills at the next open (`wait_bars=1`).
+    An unknown handoff, an unconvertible stamp or a reference with no bar near it emits nothing.
+    """
+    spec = HANDOFF_WINDOWS.get(handoff)
+    if spec is None:
+        return []
+    from datetime import UTC as _UTC
+    from datetime import date as _date
+    from datetime import datetime as _dt
+    from datetime import time as _time
+    from datetime import timedelta as _td
+    from zoneinfo import ZoneInfo
+
+    from mt5desk.families import bar_minutes
+
+    from libs.research import bar_clock as _bar_clock
+
+    d = _h1(df)
+    if len(d) <= atr_n + 2:
+        return []
+    zone_name, (oh, om), (ch, cm) = spec
+    zone = ZoneInfo(zone_name)
+    step = pd.Timedelta(minutes=bar_minutes(d) or 60)
+    idx = d.index
+    a_atr = _atr(d, atr_n).to_numpy()
+    a_open = d["open"].to_numpy()
+    a_close = d["close"].to_numpy()
+
+    def _bar(day: _date, hh: int, mm: int) -> pd.Timestamp | None:
+        utc = _dt.combine(day, _time(hh, mm), tzinfo=zone).astimezone(_UTC)
+        moved, _status, _why = _bar_clock.to_bar_time(utc)
+        return None if moved is None else pd.Timestamp(moved)
+
+    signals: list[Signal] = []
+    today: _date = idx[0].date()
+    last: _date = idx[-1].date()
+    while today <= last:
+        this_day, today = today, today + _td(days=1)
+        if this_day.weekday() >= 5:
+            continue
+        prev = this_day - _td(days=1)
+        while prev.weekday() >= 5:
+            prev -= _td(days=1)
+        ob = _bar(this_day, oh, om)
+        rb = _bar(prev, ch, cm)
+        if ob is None or rb is None:
+            continue                      # bar clock unmeasured here: dropped, never guessed
+        r = int(idx.searchsorted(rb - step, side="right")) - 1
+        k = int(idx.searchsorted(ob, side="right")) - 1
+        if r < 0 or k <= r or k < atr_n or k >= len(d) - 1:
+            continue
+        if idx[k] <= ob - step or rb - (idx[r] + step) > 2 * step:
+            continue                      # no bar holds the open, or none near the reference
+        px = float(a_open[k]) if idx[k] == ob else float(a_close[k])
+        a = float(a_atr[k])
+        if not (np.isfinite(a) and a > 0 and np.isfinite(px)):
+            continue
+        gap = px - float(a_close[r])
+        if not np.isfinite(gap) or abs(gap) < gap_atr * a:
+            continue
+        side = -1 if gap > 0 else 1       # fade it back toward the region's own last close
+        signals.append(Signal(time=idx[k], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * abs(gap) * rr, ttl_bars=ttl_bars,
+                              tag=f"overnight_gap_decay.{handoff}", trigger=None, wait_bars=1))
     return signals
 
 
