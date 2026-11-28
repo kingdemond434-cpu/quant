@@ -196,10 +196,10 @@ def test_the_gateway_honours_a_measured_envelope_above_the_constant() -> None:
 
 def test_the_gateway_honours_a_measured_envelope_below_the_constant() -> None:
     cap, why = live_heat_ceiling({"envelope": {"survival": {"status": MEASURED,
-                                                            "why": "ruin at 22%"},
-                                               "operative_ceiling": 0.21}})
-    assert cap == pytest.approx(0.21)
-    assert "BELOW" in why and "ruin at 22%" in why
+                                                            "why": "ruin at 16%"},
+                                               "operative_ceiling": 0.15}})
+    assert cap == pytest.approx(0.15)
+    assert "BELOW" in why and "ruin at 16%" in why
 
 
 def test_the_gateway_never_deploys_a_heat_nobody_sampled() -> None:

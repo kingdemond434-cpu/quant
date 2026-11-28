@@ -119,7 +119,7 @@ INVARIANTS: tuple[dict[str, Any], ...] = (
         "id": "PI-5",
         "invariant": "heat-floor-never-breached",
         "law": "GROWTH_GOVERNANCE + LAWS 2a: 20% floor, flat, 24/7; the resolved heat is FILLED, "
-               "never reported short; growth is free above it to the 30% ceiling. The one "
+               "never reported short; growth is free above it to the measured bar (no cap). The one "
                "declared exception is the objective's own catastrophe constraint (L1.23, sealed).",
         "subject": "desks/mt5/research/heat_policy.py:520 resolve",
         "level": "PROPERTY",

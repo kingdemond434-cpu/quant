@@ -83,8 +83,15 @@ Source reputation is a prior, never proof.
   constant says why: `HEAT_HARD_CEILING = 0.30` was never a round number somebody liked. It
   records a measurement from 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix, where
   the robust score ran +0.00133/day at the free optimum, +0.00072 at 20%, +0.00011 at 25% and
-  **negative at 30%**. On that book, 30% already destroyed wealth. It survives as the recorded
+  **negative at 30%**. On that book, 30% already destroyed wealth. It survived as the recorded
   FALLBACK for when the curve cannot be read.
+* **No cap; the fallback is 20% (principal, 2026-10-29: remove the 30% heat cap, "no cap",
+  fallback 20%).** From 2026-11-11 every sizing path that cannot MEASURE a bar falls back to the
+  20% floor, not 30%: `decision_core.MAX_HEAT_CEILING = HEAT_TARGET` and
+  `pf_allocator.HEAT_UNMEASURED_FALLBACK = HEAT_TARGET`. Every measured bar is honoured in both
+  directions with no constant above it (the gateway's slide and floor fill are no longer clipped
+  at 30% either); an unmeasured desk runs the 20% floor. `HEAT_HARD_CEILING = 0.30` survives only
+  in the sealed config and the signed state fence until those are re-signed.
 * Three properties keep the measured bound on the aggression side of gambling:
   **never past the last measured point** (42% must be sampled before 42% can be deployed — the
   bound follows evidence, never extrapolation); **never where growth has turned** (the bound is

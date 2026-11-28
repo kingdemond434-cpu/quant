@@ -269,7 +269,7 @@ def test_a_capped_book_left_under_the_floor_is_filled_and_the_note_names_the_fil
     assert note is not None
     assert "deferring ['C']" in note and "admitting 2 at 25.0%" in note
     assert note.endswith(f"; filled to the {dc.HEAT_TARGET:.0%} floor with ['B'] "
-                         f"(ceiling {max(dc.MAX_HEAT_CEILING, dc.HEAT_TARGET):.0%})")
+                         "(no cap: nearest the floor)")
 
 
 # =========================================================================== the stampers

@@ -47,7 +47,7 @@ if str(_DESK) not in sys.path:
 #: reason that module states: research code on Linux could not import the gateway, so a second
 #: literal here would be the drift the single-source test fences.
 from mt5desk.gateway_config_fallback import (  # noqa: E402
-    HEAT_HARD_CEILING,
+    HEAT_HARD_CEILING,  # noqa: F401  -- re-exported; read by the signed fences, never by sizing
     HEAT_TARGET,
     Q_OPT,
 )
@@ -219,7 +219,13 @@ _HEAT_BASE_LEGS = 3
 #: constant is what holds when none of them can be read. It still binds the slide, it still binds
 #: `heat_budget`'s derivation, and it is still the answer to every doubt -- it is simply no longer
 #: the answer when the desk has a better one.
-MAX_HEAT_CEILING = HEAT_HARD_CEILING
+#:
+#: NO CAP; 20% WHEN UNMEASURED (principal, 2026-10-29: remove the 30% heat cap, "no cap", fallback
+#: 20%). This is now the UNMEASURED fallback and nothing else: every bar this pass MEASURED is
+#: honoured in both directions (`live_heat_ceiling`), and when nothing was measured the desk runs
+#: the 20% floor itself. HEAT_HARD_CEILING keeps its recorded 0.30 in the sealed config, read by the
+#: signed fences only; no sizing path here reads it.
+MAX_HEAT_CEILING = HEAT_TARGET
 
 #: How stale the allocator's book may be before the gateway stops believing its heat number. One
 #: hour, read on the FILE's mtime: every allocator pass rewrites reports/pf_allocation.json --
@@ -1503,6 +1509,12 @@ def heat_budget(k_eff: float | None = None) -> float:
     # More independent bets survive more total heat at the SAME drawdown: portfolio drawdown for
     # N sleeves at heat H scales roughly as H/sqrt(k_eff), so holding drawdown fixed lets H grow
     # with sqrt(k_eff). Breadth is paid for with measured orthogonality.
+    #
+    # NO CAP, FALLBACK 20% (principal, 2026-10-29). This derivation is the gateway's path when the
+    # allocator has NOT measured the book, and MAX_HEAT_CEILING is now that 20% fallback, so the
+    # min() below holds the derived budget flat at 20% whatever breadth is claimed. Breadth still
+    # buys heat where it is measured against growth and survival: the allocator's
+    # `heat_policy.effective_ceiling`. The scaling line is kept so the derivation stays visible.
     scaled = base * math.sqrt(float(k_eff) / _HEAT_BASE_KEFF)
     return float(min(max(scaled, base), MAX_HEAT_CEILING))
 
@@ -1549,8 +1561,8 @@ def live_heat_ceiling(heat: dict) -> tuple[float, str]:
          thin surface, an unreadable one, or one that violates its own smallest book -- and an
          unmeasured survival bar is not a licence, it is a missing measurement.
       3. The operative ceiling is finite, positive, and at least the constant. A measured bar
-         BELOW 0.30 binds through the `min` below, which is the direction this change makes more
-         common: a thin book is now held tighter than the constant ever held it.
+         below the 20% fallback binds through the `min` below: a thin book is held tighter than the
+         fallback.
       4. Nothing above `ABSOLUTE_SIM_MAX`. The desk may not deploy a heat its own worlds never
          sampled, whatever the artifact claims.
 
@@ -2020,7 +2032,13 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # at MAX_HEAT_CEILING. Clamping again at the constant here would have silently undone the
     # first of those -- a measured 38% budget trimmed back to 30% by a line whose only job was to
     # bound the slide. So the constant still bounds the SLIDE and never the budget it is added to.
-    limit = min(budget + HEAT_SLIDE, max(MAX_HEAT_CEILING, budget))
+    #
+    # NO CAP (principal, 2026-10-29: remove the 30% cap, fallback 20%). MAX_HEAT_CEILING is now the
+    # 20% UNMEASURED fallback, so `max(MAX_HEAT_CEILING, budget)` would have turned the slide off
+    # for every budget at or above the floor and admitted LESS than the old 30% line did. The slide
+    # is a rounding tolerance on a budget that is already bounded (measured envelope, or the 20%
+    # derivation), so it is no longer clipped by any constant.
+    limit = budget + HEAT_SLIDE
 
     # THE VENUE'S OWN BAR, WHICH IS NOT A BUDGET (principal, 2026-09-09: "we tune only our prop
     # firm side for the prop firm n keep 20 percent heat rule fr the main only"). Everything
@@ -2079,7 +2097,13 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # the limit was already allowed to reach, so this can never deploy past a bar the desk had
     # not already sanctioned. It only ever ADDS exposure, and only while the book is short of the
     # minimum it is required to keep at work.
-    ceiling = max(MAX_HEAT_CEILING, budget)
+    # NO CAP ON THE FILL EITHER (principal, 2026-10-29: no cap, fallback 20%). The old bound on
+    # the UNMEASURED fill (`solved is None`) was the 30% constant. There the principal's answer is
+    # now 20%, so the bound is the floor itself read as a target: a leg is taken only while it
+    # moves the book no further from the floor (`closer` below), i.e. the overshoot past 20% is
+    # never larger than the shortfall it cures. No constant is involved; a solved budget still
+    # fills only to `limit`, and the venue's daily-loss bar below still binds both.
+    ceiling = math.inf
     if vcap is not None:
         # The venue's daily-loss bar is not a growth argument and nothing overrides it, so it
         # bounds the fill exactly as it bounds the limit. A venue that declares no daily limit
@@ -2102,7 +2126,10 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     if used < fill_to - 1e-12 and deferred_rows:
         still: list[tuple[dict, float]] = []
         for s, q in deferred_rows:
-            if used >= fill_to - 1e-12 or used + q > fill_bound + 1e-12:
+            # Ties fund the leg: idle capital is the failure the floor exists to stop.
+            closer = (used + q - fill_to) <= (fill_to - used) + 1e-12
+            if (used >= fill_to - 1e-12 or used + q > fill_bound + 1e-12
+                    or (solved is None and not closer)):
                 still.append((s, q))
                 continue
             admitted.append(s)
@@ -2121,7 +2148,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # the usual one.
     bound_by = (f"VENUE bar {vcap:.2%} [{vwhy}]" if vcap is not None and vcap <= limit
                 else f"budget {budget:.1%} + {HEAT_SLIDE:.1%} slide, "
-                     f"ceiling {MAX_HEAT_CEILING:.0%}")
+                     f"no cap ({MAX_HEAT_CEILING:.0%} only when unmeasured)")
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
             f"exceed {limit:.1%} ({bound_by}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
@@ -2130,7 +2157,8 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         # SAY WHICH LEGS THE FLOOR BOUGHT, not just that a cap ran. A book that was lifted to its
         # minimum and one that was trimmed to a budget read identically without this.
         note += (f"; filled to the {HEAT_TARGET:.0%} floor with {filled} "
-                 f"(ceiling {ceiling:.0%})")
+                 + ("(no cap: nearest the floor)" if not math.isfinite(ceiling)
+                    else f"(venue ceiling {ceiling:.0%})"))
     return admitted, note
 
 
