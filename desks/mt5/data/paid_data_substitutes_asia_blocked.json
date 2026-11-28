@@ -60,16 +60,16 @@
   {
    "class": "satellite (port / AIS activity)",
    "paid": "China MOT weekly port cargo and container throughput [cn_mot_port_weekly]",
-   "free": "IMF PortWatch daily port calls [imf_portwatch_ports]",
+   "free": "",
    "region": "CN",
    "measure": "container_10k_teu",
    "frequency": "weekly",
-   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=imf_portwatch_ports",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
    "terms": "to_confirm",
    "blocked_because": "MOT disclaimer bars commercial verbatim reprint but grants no reuse licence; no robots.txt",
-   "unsubstituted_because": "candidate(s) imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
-   "substitute_check": "imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
-   "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "unsubstituted_because": "its only candidate, imf_portwatch_ports, went to_confirm on 2026-11-13 (the IMF terms pages conflict), so no UNVERIFIED free stand-in remains; a candidate is COVERED only at corr >= 0.5 with n reported",
+   "substitute_check": "",
+   "evidence": ""
   },
   {
    "class": "gold premium",
@@ -84,6 +84,34 @@
    "unsubstituted_because": "candidate(s) in_gold_imports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "in_gold_imports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1"
+  },
+  {
+   "class": "",
+   "paid": "IMF PortWatch daily chokepoint transits [imf_portwatch_chokepoints]",
+   "free": "",
+   "region": "GLOBAL",
+   "measure": "strait_of_hormuz_transits",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "IMF terms pages conflict on commercial reuse and automated download (read 2026-11-13); written permission needed",
+   "unsubstituted_because": "no free chokepoint-transit panel with confirmed terms covers Hormuz or Bab el-Mandeb; Norway's open AIS (NLOD) sees only the northern lanes and is not offered as an UNVERIFIED stand-in; a candidate is COVERED only at corr >= 0.5 with n reported",
+   "substitute_check": "",
+   "evidence": ""
+  },
+  {
+   "class": "",
+   "paid": "IMF PortWatch daily port calls [imf_portwatch_ports]",
+   "free": "",
+   "region": "GLOBAL",
+   "measure": "port_hedland_portcalls",
+   "frequency": "daily",
+   "status": "BLOCKED_ON_TERMS:to_confirm",
+   "terms": "to_confirm",
+   "blocked_because": "IMF terms pages conflict on commercial reuse and automated download (read 2026-11-13); written permission needed",
+   "unsubstituted_because": "no free port-call panel with confirmed terms covers Shanghai, Ningbo, Port Hedland and Singapore; kr_mof_container_teu covers Korea only and is not offered as UNVERIFIED stand-in for them; a candidate is COVERED only at corr >= 0.5 with n reported",
+   "substitute_check": "",
+   "evidence": ""
   },
   {
    "class": "card",
@@ -116,16 +144,16 @@
   {
    "class": "satellite (port / AIS activity)",
    "paid": "Busan Port Authority monthly container throughput [kr_busan_port]",
-   "free": "MOF import/export container TEU by month (Korea, data.go.kr) [kr_mof_container_teu]; IMF PortWatch daily port calls [imf_portwatch_ports]",
+   "free": "MOF import/export container TEU by month (Korea, data.go.kr) [kr_mof_container_teu]",
    "region": "KR",
    "measure": "container_yoy",
    "frequency": "monthly",
-   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu,imf_portwatch_ports",
+   "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu",
    "terms": "to_confirm",
    "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
-   "unsubstituted_because": "candidate(s) kr_mof_container_teu, imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
-   "substitute_check": "kr_mof_container_teu: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED); imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
-   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "unsubstituted_because": "candidate(s) kr_mof_container_teu UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
+   "substitute_check": "kr_mof_container_teu: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
+   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do"
   },
   {
    "class": "card",
@@ -266,37 +294,6 @@
     "cn_baidu_migration",
     "cn_holiday_spend",
     "cn_maoyan_box_office"
-   ]
-  },
-  {
-   "id": "asia_imf_portwatch_ports",
-   "name": "IMF PortWatch daily port calls",
-   "publisher_type": "statistics_office_or_central_bank",
-   "url": "https://www.imf.org/external/terms.htm",
-   "endpoint": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query",
-   "classes": [
-    "macro"
-   ],
-   "region": "GLOBAL",
-   "frequency": "daily",
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "en"
-   ],
-   "instruments": [
-    "AUDUSD"
-   ],
-   "participant_structure": "physical_flow",
-   "licence": "IMF PortWatch open data (free, attribution required)",
-   "terms": "confirmed",
-   "terms_quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
-   "credit": "Source: International Monetary Fund (IMF PortWatch).",
-   "consumer": "desks/mt5/research/alt_proxies.py",
-   "owner": "asia_gap_thread",
-   "substitutes_for_blocked": [
-    "cn_mot_port_weekly",
-    "kr_busan_port"
    ]
   },
   {
