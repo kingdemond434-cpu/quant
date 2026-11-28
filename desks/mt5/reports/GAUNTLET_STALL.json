@@ -399,6 +399,25 @@
     "last_progress_utc": "2026-11-27T05:28:42+00:00",
     "idle_s": 0.0
    }
+  },
+  {
+   "kind": "SLOW",
+   "reason": "phase_deadline:merge_and_publish",
+   "detail": "phase merge_and_publish ran 191343s, past its 172800s SLOW threshold (3x the longest measured wall); the tree is progressing (last 0s ago): left running",
+   "slow_utc": "2026-11-28T02:53:30+00:00",
+   "pid": 18528,
+   "phase": "merge_and_publish",
+   "shard": null,
+   "progress": {
+    "beat_utc": "2026-11-28T02:53:17+00:00",
+    "tree": {
+     "procs": 1,
+     "rss_mb": 1228.1,
+     "cpu_s": 10241.7
+    },
+    "last_progress_utc": "2026-11-28T02:53:17+00:00",
+    "idle_s": 0.0
+   }
   }
  ],
  "missed_growth": [
@@ -527,20 +546,20 @@
  "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
  "slow": {
   "kind": "SLOW",
-  "reason": "run_deadline",
-  "detail": "the run passed its 172800s SLOW threshold in phase merge_and_publish; the tree is progressing (last 0s ago): left running",
-  "slow_utc": "2026-11-27T05:28:58+00:00",
+  "reason": "phase_deadline:merge_and_publish",
+  "detail": "phase merge_and_publish ran 191343s, past its 172800s SLOW threshold (3x the longest measured wall); the tree is progressing (last 0s ago): left running",
+  "slow_utc": "2026-11-28T02:53:30+00:00",
   "pid": 18528,
   "phase": "merge_and_publish",
   "shard": null,
   "progress": {
-   "beat_utc": "2026-11-27T05:28:42+00:00",
+   "beat_utc": "2026-11-28T02:53:17+00:00",
    "tree": {
     "procs": 1,
-    "rss_mb": 2095.3,
-    "cpu_s": 8851.5
+    "rss_mb": 1228.1,
+    "cpu_s": 10241.7
    },
-   "last_progress_utc": "2026-11-27T05:28:42+00:00",
+   "last_progress_utc": "2026-11-28T02:53:17+00:00",
    "idle_s": 0.0
   }
  }
