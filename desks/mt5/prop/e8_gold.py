@@ -337,6 +337,205 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
     return out
 
 
+#: THE SESSION PROBE (zuck 2026-11-26 22:34Z, project chat): "the London and the afternoon go
+#: strategy should also directly go live ... if it doesn't do well, we just retire it quickly, or
+#: like put it on forward, demoting it". This lifts the principal's own 2026-10-20 pin
+#: (`decision_core.GOLD_ASIA_ONLY_ZERO`, "gold asia only") on E8 alone -- Fusion keeps it -- at a
+#: FILL-PROVEN shrink of the code ceiling, `E8_CERT_CEILING * n / (n + 50)`, where n is each
+#: window's MEASURED live record on the MT5 account (module docstring: london_am 7 trades +52 EUR,
+#: afternoon 5 trades +10). SAME SYMBOL IS NOT THE SAME BET: each window is sized on its own n,
+#: never on gold_asia's.
+#:
+#: Precedence: a VOID cert book still sizes every window at 0 (audit r6 must-fix 1 stands); a
+#: certified number above 0 for the window beats the probe; the probe replaces only the pin and a
+#: cert-book 0.0 / absence for these two windows. DEMOTION IS AUTOMATIC AND LATCHED: once a probed
+#: window has SESSION_PROBE_DEMOTE_STOPS protective-stop exits in the journal inside
+#: SESSION_PROBE_DEMOTE_DAYS since its probe started, it goes back to the pin (forward only) and
+#: stays there until a certified number for it reaches the cert book. A journal that is present
+#: but unreadable opens no probe (UNMEASURED, L1.28a). Revert: create data/GOLD_SESSION_PROBE_OFF.
+#: Every probed pass bills the shrink below the ceiling as rail `session_probe_shrink`.
+SESSION_PROBE_PRIOR_N: dict[str, int] = {"london_am": 7, "afternoon": 5}
+SESSION_PROBE_HALF_N = 50
+SESSION_PROBE_DEMOTE_STOPS = 5
+SESSION_PROBE_DEMOTE_DAYS = 14
+SESSION_PROBE_OFF = DESK / "data" / "GOLD_SESSION_PROBE_OFF"
+SESSION_PROBE_STATE = DESK / "data" / "GOLD_SESSION_PROBE_STATE.json"
+
+
+#: THE E8 SPEED LIFT (risk-autonomy ruling 2026-11-14, governance/risk-autonomy-ruling-2026-11-14:
+#: prop accounts maximise speed x pass rate, via Audit CLEAR, journalled, reversible). E8 Pro's
+#: Monte Carlo (reports/one_pipe/E8_CEILING_MC_2026-11-26.json, 4000 paths, measured gold rho
+#: 0.03; plus the re-buy sim of 11-26): with ONE gold window carrying the book, 0.0075 per trade
+#: beats 0.006 on E[log(1 + paid/10k)] at +0.2R (0.606 vs 0.552) and on days-to-payout counting a
+#: re-buy at >= +0.1R; with three windows stacked at full size it does not (the 2.5% daily limit
+#: and the 2%/day profit cap). So asia is lifted to E8_SPEED_RISK only while the OTHER windows'
+#: summed risk this pass is at most E8_SPEED_OTHERS_MAX (the session probe's scale); once
+#: london_am / afternoon carry real size the lift drops back to the code ceiling by itself and
+#: the drop is billed (rail `e8_speed_lift_drop`). It never revives a 0 and never lifts a window
+#: the cert book did not size. Revert: data/E8_SPEED_LIFT_OFF. Prior value: E8_CERT_CEILING 0.006.
+E8_SPEED_RISK = 0.0075
+E8_SPEED_OTHERS_MAX = 0.0015
+E8_SPEED_LIFT_OFF = DESK / "data" / "E8_SPEED_LIFT_OFF"
+#: THE SUMMED GOLD CAP, IN CODE (Audit condition (c), 2026-11-26): asia + london_am + afternoon
+#: may never sum above this with the lift on. 0.009 + the bracket slip (DEFAULT_SLIP_POINTS on a
+#: ~1R stop is < 0.5R per window) stays far inside E8 Pro's 2.5% daily limit, which the one guard
+#: and the bracket-floor fit still enforce on the measured room every pass.
+E8_GOLD_SUM_MAX = 0.009
+
+
+def e8_speed_lift(kelly: dict[str, float], sources: dict[str, str], *, ceiling: float,
+                  off: Path | None = None) -> tuple[float | None, dict[str, Any]]:
+    """(the lifted asia fraction, or None for no lift; the published block). Pure but for the
+    marker read."""
+    off = off if off is not None else E8_SPEED_LIFT_OFF
+    asia = float(kelly.get("asia") or 0.0)
+    others = round(sum(float(v or 0.0) for k, v in kelly.items()
+                       if k in ("london_am", "afternoon")), 6)
+    doc: dict[str, Any] = {"risk": E8_SPEED_RISK, "prior": ceiling, "others_risk": others,
+                           "others_max": E8_SPEED_OTHERS_MAX}
+    try:
+        if off.exists():
+            return None, {**doc, "status": "OFF", "why": f"revert marker {off.name} present"}
+    except OSError:
+        return None, {**doc, "status": "OFF", "why": "revert marker unreadable"}
+    if not asia > 0 or sources.get("asia") != "cert_book":
+        return None, {**doc, "status": "NOT_SIZED",
+                      "why": "asia is not sized by the cert book this pass; nothing to lift"}
+    if asia < float(ceiling) - 1e-12:
+        # AUDIT MF1 on 0b17a9f245: the evidence moves the CEILING 0.006 -> 0.0075. A book that
+        # sizes asia below the ceiling has its own reason; the lift never overrides it.
+        return None, {**doc, "status": "NOT_AT_CEILING",
+                      "why": (f"the cert book sizes asia at {asia:g}, below the ceiling "
+                              f"{float(ceiling):g}; unchanged")}
+    if others > E8_SPEED_OTHERS_MAX + 1e-12 or E8_SPEED_RISK + others > E8_GOLD_SUM_MAX + 1e-12:
+        return None, {**doc, "status": "DROPPED",
+                      "why": (f"london_am + afternoon carry {others:g} (limit "
+                              f"{E8_SPEED_OTHERS_MAX:g}, summed cap {E8_GOLD_SUM_MAX:g}); "
+                              f"asia stays at {min(asia, ceiling):g}")}
+    return max(asia, E8_SPEED_RISK), {**doc, "status": "LIFTED"}
+
+
+def session_probe_frac(n: int, ceiling: float) -> float:
+    """The probe's risk fraction: `ceiling * n / (n + SESSION_PROBE_HALF_N)`, 0 for n <= 0. Pure."""
+    n = int(n)
+    if n <= 0 or not (ceiling > 0):
+        return 0.0
+    return round(float(ceiling) * n / (n + SESSION_PROBE_HALF_N), 6)
+
+
+def probe_stop_count(window: str, *, since: datetime, path: Path | None = None) -> int | None:
+    """Protective-stop exits of `window` in the stop-exit journal at or after `since`, or None
+    when the journal exists but cannot be read. An absent journal is 0: the lane creates it on
+    its first stop exit, so absence is the journal's own record of none."""
+    p = path if path is not None else STOP_EXITS
+    if not p.exists():
+        return 0
+    try:
+        text = p.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    k = 0
+    for ln in text.splitlines():
+        try:
+            r = json.loads(ln)
+            if str(r.get("window") or "") != window:
+                continue
+            at = datetime.fromisoformat(str(r["at"]))
+        except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        if at >= since:
+            k += 1
+    return k
+
+
+def session_probe(*, now: datetime, cert_void: bool, cert: dict[str, float] | None,
+                  pinned: set[str] | dict[str, float], ceiling: float,
+                  off: Path | None = None, state_path: Path | None = None,
+                  stops_path: Path | None = None) -> tuple[dict[str, float], dict[str, Any]]:
+    """({window: probe risk fraction} for the windows the probe opens this pass, the published
+    block). Never raises; any failure opens nothing and says why."""
+    off = off if off is not None else SESSION_PROBE_OFF
+    state_path = state_path if state_path is not None else SESSION_PROBE_STATE
+    doc: dict[str, Any] = {"enabled": True, "windows": {},
+                           "rule": (f"E8_CERT_CEILING * n/(n+{SESSION_PROBE_HALF_N}); demoted at "
+                                    f"{SESSION_PROBE_DEMOTE_STOPS} stop exits in "
+                                    f"{SESSION_PROBE_DEMOTE_DAYS}d")}
+    out: dict[str, float] = {}
+    try:
+        if off.exists():
+            doc.update(enabled=False, why=f"revert marker {off.name} present")
+            return out, doc
+        if cert_void:
+            doc.update(enabled=False, why="the cert book is void: no window is sized")
+            return out, doc
+        state: dict[str, Any] = {}
+        if state_path.exists():
+            try:
+                raw = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                doc.update(enabled=False, why=f"{state_path.name} unreadable: UNMEASURED")
+                return out, doc
+            state = raw if isinstance(raw, dict) else {}
+        wins = state.setdefault("windows", {})
+        changed = False
+        for w, n in SESSION_PROBE_PRIOR_N.items():
+            row: dict[str, Any] = {"n_prior": n}
+            doc["windows"][w] = row
+            if w not in pinned:
+                row["status"] = "NOT_PINNED"
+                continue
+            if float((cert or {}).get(w) or 0.0) > 0:
+                row["status"] = "CERTIFIED"
+                continue
+            ws = wins.setdefault(w, {})
+            if ws.get("demoted_at"):
+                row.update(status="DEMOTED", demoted_at=ws["demoted_at"], stops=ws.get("stops"))
+                continue
+            if not ws.get("started_at"):
+                ws["started_at"] = now.isoformat(timespec="seconds")
+                changed = True
+            started = datetime.fromisoformat(str(ws["started_at"]))
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=UTC)
+            since = max(started, now - timedelta(days=SESSION_PROBE_DEMOTE_DAYS))
+            stops = probe_stop_count(w, since=since, path=stops_path)
+            if stops is None:
+                row.update(started_at=ws["started_at"], stops=None, status="UNMEASURED")
+                continue
+            # MONOTONE (Audit nit): a journal deleted or truncated before a demotion never resets
+            # the count; the state keeps the most stops ever seen for this probe.
+            if stops > int(ws.get("max_stops") or 0):
+                ws["max_stops"] = stops
+                changed = True
+            stops = max(stops, int(ws.get("max_stops") or 0))
+            row.update(started_at=ws["started_at"], stops=stops)
+            if stops >= SESSION_PROBE_DEMOTE_STOPS:
+                ws.update(demoted_at=now.isoformat(timespec="seconds"), stops=stops)
+                changed = True
+                row.update(status="DEMOTED", demoted_at=ws["demoted_at"])
+                continue
+            frac = min(session_probe_frac(n, ceiling), float(ceiling))
+            if frac > 0:
+                out[w] = frac
+                row.update(status="LIVE", risk_frac=frac)
+            else:
+                row["status"] = "ZERO"
+        if changed:
+            try:
+                state_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp = state_path.with_suffix(".tmp")
+                tmp.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
+                tmp.replace(state_path)
+            except OSError as exc:
+                doc["state_write"] = type(exc).__name__
+    except Exception as exc:
+        doc.update(enabled=False, why=f"probe failed closed ({type(exc).__name__})")
+        return {}, doc
+    return out, doc
+
+
 def e8_account_check(venue: Any) -> tuple[bool, str]:
     """(may new E8 gold risk go out, why). The E8 declaration (`cross_account.expected_key("e8")`,
     read from E8_ACCOUNT.json) must be a valid key -- not absent, not the `invalid:` sentinel an
@@ -2262,7 +2461,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
     from mt5desk.decision_core import PRINCIPAL_ZERO
     pinned = cert_gold_windows(dict.fromkeys(PRINCIPAL_ZERO["e8"], 0.0))
-    kelly = {**(kelly or {}), **pinned}
+    # THE SESSION PROBE replaces the pin (and a cert-book 0.0 / absence) for london_am and
+    # afternoon on E8 at a fill-proven shrink; a demoted window keeps the pin. See SESSION_PROBE_*.
+    from mt5desk.decision_core import E8_CERT_CEILING as _probe_ceiling
+    probe, probe_doc = session_probe(now=now, cert_void=_cert_raw is None, cert=cert,
+                                     pinned=set(pinned), ceiling=_probe_ceiling)
+    for _w in probe:
+        pinned.pop(_w, None)
+        absent.pop(_w, None)
+    kelly = {**(kelly or {}), **pinned, **probe}
     # THE CODE CEILING (r7.1, decision_core.E8_CERT_CEILING, principal pin): every window is
     # min(book, 0.006) whatever the book says -- a stale enabled book at 0.01 places at 0.006,
     # and the cut is billed `e8_cert_ceiling` at placement. Raised only by a principal edit.
@@ -2286,6 +2493,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
     # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
     sources = window_sources(_solve, cert, absent, pinned, void)
+    for _w in probe:
+        sources[_w] = "session_probe"
+    doc["session_probe"] = probe_doc
+    _lift, lift_doc = e8_speed_lift(kelly or {}, sources, ceiling=E8_CERT_CEILING)
+    if _lift is not None:
+        kelly = {**(kelly or {}), "asia": _lift}
+        sources["asia"] = "e8_speed_lift"
+        ceilinged.pop("asia", None)
+    doc["e8_speed_lift"] = lift_doc
     doc.update({"equity": equity if equity_ok else None,
                 "equity_status": "MEASURED" if equity_ok else "UNMEASURED",
                 "risk_usd": round(risk_usd, 2) if equity_ok else None,
@@ -2493,7 +2709,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         frac, _ = window_risk(name, kelly)
         frac_src = sources.get(name, "RISK_FRAC")
         if name in pinned or name in absent or name in void:
-            why = ("principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
+            _pw = (probe_doc.get("windows") or {}).get(name) or {}
+            why = (f"session probe {_pw['status']} ({_pw.get('stops')} stop exits); the "
+                   "principal zero stands (decision_core.GOLD_ASIA_ONLY_ZERO); no order"
+                   if name in pinned and _pw.get("status") in ("DEMOTED", "UNMEASURED")
+                   else "principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
                    "decision_core.GOLD_ASIA_ONLY_ZERO); no order" if name in pinned
                    else void[name] if name in void else absent[name])
             doc["skipped"].append({"window": name, "why": why})
@@ -2551,6 +2771,27 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                          "status": "RAIL_BLOCKED", "rail": "e8_account_undeclared", "why": why,
                          "missed_growth_risk_usd": round(equity * frac, 2), "armed": True})
             continue
+        if name == "asia" and lift_doc.get("status") == "DROPPED" \
+                and _billed.get("e8_speed_lift_drop/asia") != today:
+            # MISSED GROWTH (Rule 1): the speed lift stood down because the other windows trade.
+            _billed["e8_speed_lift_drop/asia"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                     "status": "CAPPED", "rail": "e8_speed_lift_drop", "why": lift_doc["why"],
+                     "risk_frac": frac, "lift": E8_SPEED_RISK,
+                     "missed_growth_risk_usd": round(equity * max(E8_SPEED_RISK - frac, 0.0), 2),
+                     "armed": bool(armed)})
+        if frac_src == "session_probe" and _billed.get(f"session_probe_shrink/{name}") != today:
+            # MISSED GROWTH (Rule 1): the probe's fill-proven shrink below the code ceiling.
+            _billed[f"session_probe_shrink/{name}"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                     "status": "CAPPED", "rail": "session_probe_shrink",
+                     "why": (f"session probe sizes {name} at {frac:g} "
+                             f"(E8_CERT_CEILING x n/(n+{SESSION_PROBE_HALF_N}), "
+                             f"n={SESSION_PROBE_PRIOR_N.get(name)})"),
+                     "risk_frac": frac, "ceiling": E8_CERT_CEILING,
+                     "missed_growth_risk_usd": round(equity * max(E8_CERT_CEILING - frac, 0.0),
+                                                     2),
+                     "armed": bool(armed)})
         if name in ceilinged and _billed.get(f"e8_cert_ceiling/{name}") != today:
             _billed[f"e8_cert_ceiling/{name}"] = today
             _record({"at": now.isoformat(timespec="seconds"), "window": name,
