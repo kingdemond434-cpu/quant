@@ -636,3 +636,7 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# preregistration.spec_index's incremental index sidecar (2026-11-11): box-local, derived from
+# the append-only ledger beside it and rebuilt from byte 0 whenever it cannot be trusted.
+desks/mt5/data/preregistrations.jsonl.spec_index.json
+desks/mt5/data/preregistrations.jsonl.spec_index.json.*.tmp
