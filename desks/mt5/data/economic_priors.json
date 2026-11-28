@@ -1,0 +1,5 @@
+{
+ "schema": "economic_priors/1",
+ "doc": "Six-field EconomicPrior per family (libs/validation/economic_prior.py): mechanism (structural|behavioral|risk_premium|liquidity), why_it_works, why_it_might_fail, why_overfit, why_decay, how_detect_decay, what_replaces_it. Read by desks/mt5/research/frontier_identity.py at gate 1. A family off the 2026-11-18 grandfather roster needs a complete entry here (or on the cell) to pass; desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json lists what is owed.",
+ "families": {}
+}

@@ -1139,6 +1139,39 @@ def published_e8_gold_lines() -> dict[str, Any]:
             "n": sum(x["n"] for x in out), "lines": sorted(out, key=lambda x: -x["n"])}
 
 
+#: GATE 1'S SIX-FIELD ECONOMIC PRIOR (frontier_identity.economic_prior). It registers no rail (the
+#: register is sealed), so research/economic_prior_backfill.py publishes its line hourly on its
+#: own report: the docket rows and forward clocks the requirement vetoes (LIVE) or would veto
+#: (SHADOW, the default), and the forward-clock evidence that moves the switch.
+ECONOMIC_PRIOR = BASE / "reports" / "ECONOMIC_PRIOR_BACKFILL.json"
+ECONOMIC_PRIOR_MAX_AGE_H = 6.0
+
+
+def published_economic_prior_lines() -> dict[str, Any]:
+    """The economic-prior requirement's own two-sided line. Absent or stale is UNMEASURED, never
+    a zero; the verdict is the report's (EARNS_ITS_PLACE / COSTS_GROWTH / UNMEASURED on the
+    forward clocks), because only that report has compared the two groups."""
+    doc = _json(ECONOMIC_PRIOR)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/ECONOMIC_PRIOR_BACKFILL.json on this host: the hourly "
+                       "prior_backfill leg has not written one"}
+    try:
+        age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(
+            str(doc.get("generated_at")))).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    if not age_h <= ECONOMIC_PRIOR_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": lines,
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the economic-prior report is older than {ECONOMIC_PRIOR_MAX_AGE_H:g}h"}
+    v = str((lines[-1] if lines else {}).get("verdict") or UNMEASURED)
+    return {"verdict": v if v in (EARNS, COSTS, UNMEASURED) else UNMEASURED,
+            "source": "reports/ECONOMIC_PRIOR_BACKFILL.json", "age_h": round(age_h, 2),
+            "mode": (doc.get("mode") or {}).get("mode"), "lines": lines}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1272,7 +1305,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
-                                    "e8_gold_rails": published_e8_gold_lines()},
+                                    "e8_gold_rails": published_e8_gold_lines(),
+                                    "economic_prior_six_field":
+                                        published_economic_prior_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

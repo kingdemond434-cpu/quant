@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
 #: The chart every historical cell was hunted on, and the one whose name stays unwritten.
@@ -118,16 +119,208 @@ def docket_cell_id(row: dict[str, Any]) -> str:
     return cell_id(docket_cell(row))
 
 
+#: THE SIX-FIELD ECONOMIC PRIOR (H3: why an edge exists, and why it persists). A bare NAMED tag
+#: says only that some producer believed a mechanism existed; it does not say WHAT the mechanism
+#: is, why it might fail, why it might be overfit, why it might decay, how decay is seen, or what
+#: replaces it. `libs.validation.economic_prior.EconomicPrior` is that artifact. This module now
+#: asks for it on the judge path, and records which fields are missing when it is absent.
+#:
+#: WHERE A CELL'S PRIOR COMES FROM, in order: the cell's own `economic_prior` mapping, then the
+#: family's entry in `desks/mt5/data/economic_priors.json`. The family file exists because the
+#: sealed judge (`external_gauntlet`) builds its cells from a fixed list of docket fields, so a
+#: per-row prior never reaches this function on that path. A mechanism is a property of the
+#: family, so the family is where it is written once.
+PRIOR_REGISTRY_PATH = Path(__file__).resolve().parents[1] / "data" / "economic_priors.json"
+
+PRIOR_COMPLETE = "PRIOR_COMPLETE"
+PRIOR_INCOMPLETE = "PRIOR_INCOMPLETE"
+GRANDFATHERED_UNMEASURED = "GRANDFATHERED_UNMEASURED"
+STATISTICAL_ONLY = "STATISTICAL_ONLY"
+
+#: The six answers of `libs.validation.economic_prior.REQUIRED_FIELDS`, restated here so this
+#: module never imports `libs.validation` at import time: the gateway imports frontier_identity
+#: for `cell_id`, and the validation package (pydantic and every gate) has no business in that
+#: process. The validator itself is imported lazily, inside `prior_missing`, on the judge path
+#: only. `test_economic_prior_six_field` pins the two tuples equal.
+REQUIRED_FIELDS: tuple[str, ...] = (
+    "why_it_works", "why_it_might_fail", "why_overfit", "why_decay", "how_detect_decay",
+    "what_replaces_it",
+)
+
+#: Every field an `EconomicPrior` must carry, `mechanism` first.
+PRIOR_FIELDS: tuple[str, ...] = ("mechanism", *REQUIRED_FIELDS)
+
+#: THE SWITCH. Gate 1's six-field requirement RECORDS by default and binds only on evidence.
+#: SHADOW: a PRIOR_INCOMPLETE cell passes gate 1 with the verdict and its missing fields recorded
+#: (`binding: False`); nothing is vetoed. LIVE: it fails gate 1. OFF: the requirement is not
+#: applied at all (the verdict still names the missing fields, as GRANDFATHERED_UNMEASURED does).
+#: `research/economic_prior_backfill.py` moves SHADOW <-> LIVE across the pre-declared bars
+#: on the forward exp_r of the clocks it would refuse (mean + 2 SE < 0 promotes, mean - 1 SE > 0
+#: demotes, >= 10 such clocks); `"pinned": true`
+#: freezes the mode. Rule 1: a veto must first prove it raises robust forward E[log W].
+PRIOR_MODE_PATH = Path(__file__).resolve().parents[1] / "data" / "ECONOMIC_PRIOR_MODE.json"
+PRIOR_MODES = ("SHADOW", "LIVE", "OFF")
+DEFAULT_PRIOR_MODE = "SHADOW"
+
+#: THE GRANDFATHER ROSTER, FROZEN 2026-11-18. Measured that day on the live branch's own data:
+#: 0 of 57,538 docket rows, 0 of 58 certificates and 0 of 26 STANDBY sleeves carried a six-field
+#: prior, and no family had one written. Requiring it of them at once would have stopped 100% of
+#: the docket at gate 1 -- a cut in research breadth by fiat, which growth governance forbids.
+#: So the requirement reaches NEW mechanisms only: a family absent from this list must arrive with
+#: its six fields or be recorded PRIOR_INCOMPLETE -- which, while the switch is SHADOW, still
+#: passes gate 1 and is counted as owed. A family on it keeps passing exactly as it did,
+#: and its verdict reads GRANDFATHERED_UNMEASURED with the missing fields named, so the debt is
+#: visible (`research/economic_prior_backfill.py` reports it hourly) and never silent.
+#:
+#: The list is the union of every family the desk could reach that day: the four constructor
+#: populations (FAMILY_REGISTRY, `family_*` functions, ORTHOGONAL_FAMILIES, hunt16), the axis
+#: registry's FAMILY_TABLE, every `family` in data/hypotheses/*.json, the certificates and the
+#: sleeve registries. It is code, not a data file, on purpose: a roster anyone can append to is a
+#: way round the rule. It only ever shrinks, as families gain a complete prior.
+GRANDFATHERED_FAMILIES: frozenset[str] = frozenset({
+    "adx_channel_hybrid", "ae_latent", "alt_conditioned", "alt_release_drift",
+    "alt_series_momentum", "analyst_cross_market_lead", "analyst_revision_drift",
+    "anti_donchian_breakout", "anti_three_bar_momentum", "asia_meanrev", "asia_momentum",
+    "attention_ts", "calendar_month", "carry", "carry+overnight_gap_decay",
+    "carry+session_range_breakout", "carry_risk_off", "clock_transition", "comex_settlement",
+    "correlation_regime", "cot_change_fade", "cot_change_momentum", "cot_comm_follow",
+    "cot_net_fade", "cot_positioning", "crisis_only_class_defensive", "cross_asset_residual",
+    "cross_sectional", "cross_sectional_class_carry", "cross_sectional_class_low_vol",
+    "cross_sectional_class_momentum", "cross_sectional_class_reversal",
+    "cross_sectional_class_value", "d1_inside", "d1_swing_break", "dav_abc_structure",
+    "dav_bb_meanrev", "dav_breakout_fakeout", "dav_ema_trend_pullback", "dav_fakeout_reverse",
+    "dav_hull_trend", "dav_keltner_break", "dav_macd_qqe", "dav_momentum_cont",
+    "dav_range_filter_adx", "dav_rsi_div_rev", "dav_squeeze_expansion", "dav_supertrend_trail",
+    "dav_t3_trend", "dip_atr_shock", "dip_pullback_pct", "dip_rsi_reclaim", "discovered",
+    "dow_effect", "drawdown_conditional", "ema_crossover", "engulfing_reversal", "ensemble",
+    "entry_conditioned", "event_reaction", "execution_state", "exit_operated",
+    "exogenous_conditioner", "failed_breakout", "forced_flow", "formula", "fx_fixing_reversal",
+    "generic", "gnn_propagation", "gold_dxy_shock", "h4_momentum", "hedging_demand_close",
+    "htf_anchor_trend", "hunt16_cell", "ict_fvg", "joint_genome", "jump", "lead_lag",
+    "lead_lag_class_catchup", "level_breakout", "liquidity_gamma_reversal", "liquidity_regime",
+    "london_close_momentum", "london_ny_breakout", "lvc_asia_london", "macro_conditional",
+    "macro_gold_yield", "macro_swing", "mass_screen_carry", "mass_screen_clock",
+    "mass_screen_cond", "mass_screen_lead", "mass_screen_thresh", "mean_reversion_bollinger",
+    "mean_reversion_rsi", "moat_spread_window", "momentum_basic", "momentum_volgate", "monday_gap",
+    "month_end_rebalance", "multi_speed_trend", "opening_range", "orderflow_imbalance",
+    "overnight_drift", "overnight_gap_decay", "overnight_gap_decay+session_range_breakout",
+    "pca_residual", "pin_bar_reversal", "pullback_entry", "range_reversion", "regime_disagreement",
+    "regime_split", "regime_transition", "relative_value", "retail_overlap_reversal", "rocket_ts",
+    "seasonal_window", "session_handoff", "session_range_breakout", "sig_path", "sma_crossover",
+    "spread_state", "style_premia", "trend_ma_cross", "triangle", "turn_of_month",
+    "usd_session_shock", "vol_mean_reversion", "vol_transition", "volatility_squeeze",
+    "volume_spike", "world_macro_state",
+})
+
+_REGISTRY_CACHE: dict[str, Any] = {}
+
+
+def _family_priors() -> dict[str, Any]:
+    """The family prior file, read once per process. Unreadable or absent reads as empty."""
+    if "families" not in _REGISTRY_CACHE:
+        fams: dict[str, Any] = {}
+        try:
+            doc = json.loads(PRIOR_REGISTRY_PATH.read_text("utf-8"))
+            raw = doc.get("families") if isinstance(doc, dict) else None
+            if isinstance(raw, dict):
+                fams = {str(k): v for k, v in raw.items() if isinstance(v, dict)}
+        except (OSError, ValueError):
+            fams = {}
+        _REGISTRY_CACHE["families"] = fams
+    out: dict[str, Any] = _REGISTRY_CACHE["families"]
+    return out
+
+
+def prior_for(cell: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+    """The six-field prior this cell is judged with, and where it came from."""
+    own = cell.get("economic_prior")
+    if isinstance(own, dict) and own:
+        return own, "cell"
+    fam = str(cell.get("family") or "")
+    reg = _family_priors().get(fam)
+    if reg:
+        return reg, "family_registry"
+    return None, None
+
+
+def prior_mode() -> str:
+    """The switch's mode, read once per process. Absent or unreadable is SHADOW (records only)."""
+    if "mode" not in _REGISTRY_CACHE:
+        mode = DEFAULT_PRIOR_MODE
+        try:
+            doc = json.loads(PRIOR_MODE_PATH.read_text("utf-8"))
+            if isinstance(doc, dict) and str(doc.get("mode") or "").upper() in PRIOR_MODES:
+                mode = str(doc["mode"]).upper()
+        except (OSError, ValueError):
+            mode = DEFAULT_PRIOR_MODE
+        _REGISTRY_CACHE["mode"] = mode
+    out: str = _REGISTRY_CACHE["mode"]
+    return out
+
+
+def prior_missing(prior: dict[str, Any] | None) -> list[str]:
+    """Which of the seven `EconomicPrior` fields are absent or blank; [] when it is complete."""
+    if not prior:
+        return list(PRIOR_FIELDS)
+    from libs.validation.economic_prior import economic_prior_gate  # lazy: see REQUIRED_FIELDS
+    gate = economic_prior_gate(prior)
+    return [] if gate.passed else list(gate.missing)
+
+
+def is_grandfathered(family: str) -> bool:
+    return family in GRANDFATHERED_FAMILIES
+
+
 def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
-    """Fail closed for unconstrained statistical finds; named mechanisms remain hypotheses."""
+    """Gate 1. Statistical finds fail closed; a NAMED cell needs the six-field EconomicPrior.
+
+    Verdicts, each recorded on the stage and never dropped:
+      * STATISTICAL_ONLY          -- no mechanism at all; fails, as it always has.
+      * PRIOR_COMPLETE            -- NAMED, and the prior validates as an EconomicPrior; passes.
+      * PRIOR_INCOMPLETE          -- NAMED, a family outside the grandfather roster, and the
+                                     prior is absent or short. Recorded with the missing fields
+                                     named; it PASSES while the switch is SHADOW (the default)
+                                     or OFF and fails only once evidence has flipped it LIVE.
+      * GRANDFATHERED_UNMEASURED  -- NAMED, a family on the 2026-11-18 roster with no complete
+                                     prior yet; passes as before, with the missing fields named.
+    """
     status = str(cell.get("mechanism_status") or "")
     if not status:
-        status = "STATISTICAL_ONLY" if cell.get("family") == "discovered" else "NAMED"
-    passed = status == "NAMED"
-    return {
+        status = STATISTICAL_ONLY if cell.get("family") == "discovered" else "NAMED"
+    named = status == "NAMED"
+    note = str(cell.get("mechanism_note") or "")
+    if not named:
+        return {
+            "passed": False,
+            "message": note or "statistical discovery has no economic prior",
+            "mechanism_status": status,
+            "verdict": STATISTICAL_ONLY,
+            "missing": list(PRIOR_FIELDS),
+            "prior_source": None,
+        }
+    prior, source = prior_for(cell)
+    missing = prior_missing(prior)
+    family = str(cell.get("family") or "")
+    if not missing:
+        verdict, passed = PRIOR_COMPLETE, True
+        message = note or "six-field economic prior complete"
+    elif is_grandfathered(family):
+        verdict, passed = GRANDFATHERED_UNMEASURED, True
+        message = note or "named registered family"
+    else:
+        mode = prior_mode()
+        verdict, passed = PRIOR_INCOMPLETE, mode != "LIVE"
+        message = (f"family {family!r} is not on the 2026-11-18 grandfather roster and its "
+                   f"economic prior is missing {missing}"
+                   + ("" if mode == "LIVE" else f" (recorded, not binding: switch {mode})"))
+    out = {
         "passed": passed,
-        "message": str(cell.get("mechanism_note") or (
-            "named registered family" if passed else "statistical discovery has no economic prior"
-        )),
+        "message": message,
         "mechanism_status": status,
+        "verdict": verdict,
+        "missing": missing,
+        "prior_source": source,
     }
+    if verdict == PRIOR_INCOMPLETE:
+        out["binding"] = not passed
+    return out
