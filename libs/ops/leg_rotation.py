@@ -125,6 +125,10 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # RETAIL CROWD POSITIONING (2026-11-03): every source publishes a now-snapshot and none
+    # serves history, so an hour rotated out is an hour of data that can never be recorded --
+    # the same irreversibility as `record_tape`. Light HTTP, capped at 240 s, BELOW_NORMAL.
+    "retail_crowd",
     # CHEAP FENCES THAT GATE MONEY OR HEALTH, PINNED (2026-11-05, overlay 27d "pin cheap readers
     # (<60 s) that gate money or promotion"). With always-run cost above the 2640 s core budget,
     # greedy admission had no room left, so these sat in LEG_ROTATION's never_run/outside_window
