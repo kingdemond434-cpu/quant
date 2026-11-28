@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "terms_record_gap": {
+   "hypothesis": "Publishing every pass how many of the desk's fetches went to hosts with no reviewed-terms record, with the hosts ranked by volume, lets the act-6 gap be closed highest volume first, so the share of fetch volume on unrecorded hosts falls pass over pass instead of staying unmeasured.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "totals.to_unrecorded_hosts",
+    "better": "down",
+    "organ": "report:TERMS_RECORD_GAP.json"
+   },
+   "falsifier": {
+    "metric": "totals.to_unrecorded_hosts",
+    "op": ">=",
+    "threshold": 1,
+    "after": "14 days on the trading box with the queue published and no host ever leaving it: the measurement is read by no one and the gap it names never shrinks"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

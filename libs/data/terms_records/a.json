@@ -1,0 +1,77 @@
+{
+ "records": {
+  "antad.net": {
+   "host": "antad.net",
+   "verdict": "forbids",
+   "terms_url": "https://antad.net/admin/wp-content/uploads/2024/10/terminos-y-condiciones-de-uso.pdf",
+   "date_read": "2026-09-30",
+   "quote": "El usuario sólo podrá imprimir y/o copiar cualquier información contenida o publicada en el sitio web www.antad.net exclusivamente para uso personal",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://antad.net/admin/wp-content/uploads/2024/10/terminos-y-condiciones-de-uso.pdf",
+     "date_read": "2026-09-30",
+     "quote": "El usuario sólo podrá imprimir y/o copiar cualquier información contenida o publicada en el sitio web www.antad.net exclusivamente para uso personal",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_antad_sss",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "archive.org": {
+   "host": "archive.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-14",
+   "quote": "archive.org: terms refuse automated collection (ruling 2026-11-14)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-14",
+     "quote": "archive.org: terms refuse automated collection (ruling 2026-11-14)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "archive.org"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research purposes only",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "archive.org"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research purposes only (source=wayback, terms=scholarship_research_only)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "archive.org"
+     }
+    }
+   ]
+  }
+ }
+}

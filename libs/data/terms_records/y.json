@@ -1,0 +1,194 @@
+{
+ "records": {
+  "yahoo.com": {
+   "host": "yahoo.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Yahoo terms s2(d)(9) refuse automated collection without express prior permission",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Yahoo terms s2(d)(9) refuse automated collection without express prior permission",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "yahoo.com"
+     }
+    }
+   ]
+  },
+  "yahooapis.com": {
+   "host": "yahooapis.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Yahoo: the same terms cover its API host",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Yahoo: the same terms cover its API host",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "yahooapis.com"
+     }
+    }
+   ]
+  },
+  "youtu.be": {
+   "host": "youtu.be",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtu.be"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "youtu.be"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "youtu.be"
+     }
+    }
+   ]
+  },
+  "youtube-nocookie.com": {
+   "host": "youtube-nocookie.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtube-nocookie.com"
+     }
+    }
+   ]
+  },
+  "youtube.com": {
+   "host": "youtube.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtube.com"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "youtube.com"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "youtube.com"
+     }
+    }
+   ]
+  },
+  "ytimg.com": {
+   "host": "ytimg.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "ytimg.com"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "records": {
+  "reddit.com": {
+   "host": "reddit.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+   "recorded_by": "desks/mt5/data/credential_registry.json vars (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+     "quote_kind": "recorded_reading",
+     "source_label": "machine_use_allowed=false",
+     "source": {
+      "file": "desks/mt5/data/credential_registry.json",
+      "object": "vars",
+      "index": 1,
+      "field": "terms",
+      "row_id": "REDDIT_CLIENT_ID"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+     "quote_kind": "recorded_reading",
+     "source_label": "machine_use_allowed=false",
+     "source": {
+      "file": "desks/mt5/data/credential_registry.json",
+      "object": "vars",
+      "index": 2,
+      "field": "terms",
+      "row_id": "REDDIT_SECRET"
+     }
+    }
+   ]
+  }
+ }
+}

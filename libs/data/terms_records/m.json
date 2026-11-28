@@ -1,0 +1,52 @@
+{
+ "records": {
+  "mct.gov.cn": {
+   "host": "mct.gov.cn",
+   "verdict": "forbids",
+   "terms_url": "https://www.mct.gov.cn/dbdh/mzsm/201902/t20190202_837199.html",
+   "date_read": "2026-09-30",
+   "quote": "任何单位和个人未经文化和旅游部信息中心书面授权不得转载、链接、转贴或以其他方式复制发表。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.mct.gov.cn/dbdh/mzsm/201902/t20190202_837199.html",
+     "date_read": "2026-09-30",
+     "quote": "任何单位和个人未经文化和旅游部信息中心书面授权不得转载、链接、转贴或以其他方式复制发表。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_holiday_spend",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "meti.go.jp": {
+   "host": "meti.go.jp",
+   "verdict": "permits",
+   "terms_url": "https://www.meti.go.jp/main/rules.html",
+   "date_read": "2026-09-30",
+   "quote": "経済産業省ウェブサイトで掲載・発信している情報の著作権は、特記されていない限り経済産業省に帰属し、権利表記の記載がない限り『公共データ利用規約（第1.0版）』（PDL1.0）に準拠した利用条件の下で、利用することができます。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.meti.go.jp/main/rules.html",
+     "date_read": "2026-09-30",
+     "quote": "経済産業省ウェブサイトで掲載・発信している情報の著作権は、特記されていない限り経済産業省に帰属し、権利表記の記載がない限り『公共データ利用規約（第1.0版）』（PDL1.0）に準拠した利用条件の下で、利用することができます。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_meti_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

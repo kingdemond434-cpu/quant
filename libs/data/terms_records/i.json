@@ -1,0 +1,91 @@
+{
+ "records": {
+  "imf.org": {
+   "host": "imf.org",
+   "verdict": "permits",
+   "terms_url": "https://www.imf.org/external/terms.htm",
+   "date_read": "2026-09-30",
+   "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "date_read": "2026-09-30",
+     "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "imf_portwatch_ports",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "date_read": "2026-09-30",
+     "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "imf_portwatch_chokepoints",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "ine.cn": {
+   "host": "ine.cn",
+   "verdict": "unreadable",
+   "terms_url": "https://www.ine.cn/disclaimer/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: the host serves a slider-captcha WAF page to the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.ine.cn/disclaimer/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: the host serves a slider-captcha WAF page to the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 18,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_ine"
+     }
+    }
+   ]
+  },
+  "inegi.org.mx": {
+   "host": "inegi.org.mx",
+   "verdict": "permits",
+   "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+   "date_read": "2026-09-30",
+   "quote": "Puede explotar comercialmente la información, utilizándola como insumo para generar otros productos o servicios. / Debe otorgar los créditos correspondientes al INEGI como autor",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+     "date_read": "2026-09-30",
+     "quote": "Puede explotar comercialmente la información, utilizándola como insumo para generar otros productos o servicios. / Debe otorgar los créditos correspondientes al INEGI como autor",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_inegi_emec",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

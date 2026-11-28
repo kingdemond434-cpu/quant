@@ -875,6 +875,35 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE TERMS-RECORD GAP (2026-11-17, LAWS 5e act 6; Governance ruling 2026-11-17 23:50Z).
+        # Hourly leg `terms_record_gap`, core plan. It reads fetch-volume artifacts already on
+        # disk and the reviewed-terms registry, and publishes how many fetches went to hosts
+        # with no record, plus the ranked backfill queue. Its seeder's freshness is checked every
+        # pass, so the seeder is part of its code. The queue's reader is the session that reads
+        # each host's terms and adds its record; no organ gates on either report.
+        ComponentSpec(
+            component_id="executable:desks/mt5/research/terms_record_gap.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/research/terms_record_gap.py",
+                        "libs/data/terms_records.py", "scripts/seed_terms_records.py"),
+            inputs=("libs/data/terms_records/",
+                    "desks/mt5/data/intelligence/world/frontier.json",
+                    "desks/mt5/data/intelligence/blocked_sources.json",
+                    "desks/mt5/data/deep_forest_claims.jsonl",
+                    "desks/mt5/data/deep_forest_datasets.jsonl",
+                    "desks/mt5/data/mined_sources.jsonl",
+                    "desks/mt5/data/news_captures.jsonl"),
+            outputs=("desks/mt5/reports/TERMS_RECORD_GAP.json",
+                     "desks/mt5/reports/TERMS_BACKFILL_QUEUE.json"),
+            consumers=("session:terms_backfill (reads TERMS_BACKFILL_QUEUE.json host by host "
+                       "and adds each record to libs/data/terms_records/)",),
+            cadence_s=3600, timeout_s=120, progress_metric="totals.to_unrecorded_hosts",
+            expected_artifact_schema="desks/mt5/reports/TERMS_RECORD_GAP.json",
+            owner="department:data", restart_action="restart:resident:dept_data",
+            criticality="optional", resource_budget={"budget_s": 120},
+            schedule="hourly_cycle:terms_record_gap", artifact_class="hourly",
+            notes=("a measurement of a defect, never a permission; no network; changes no fetch "
+                   "path (step 4 of the act-6 plan is not taken here)")),
         # THE CHINESE-MODEL RESEARCH ENSEMBLE (2026-11-17, #1242). Run by the MT5-DeepSeek task
         # right after the DeepSeek cycle (ops/run_deepseek_windows.ps1). Its discoveries enter the
         # same compiler every seat feeds; the report is its per-model, per-provider record.

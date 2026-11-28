@@ -1,0 +1,90 @@
+{
+ "records": {
+  "e-stat.go.jp": {
+   "host": "e-stat.go.jp",
+   "verdict": "permits",
+   "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+   "date_read": "2026-09-30",
+   "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+     "date_read": "2026-09-30",
+     "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_estat_immigration",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+     "date_read": "2026-09-30",
+     "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_tokyo_cpi",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "earthdata.nasa.gov": {
+   "host": "earthdata.nasa.gov",
+   "verdict": "permits",
+   "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+   "date_read": "2026-09-30",
+   "quote": "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+     "date_read": "2026-09-30",
+     "quote": "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_firms_industrial",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "eia.gov": {
+   "host": "eia.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+   "date_read": "2026-10-06",
+   "quote": "U.S. government publications are in the public domain and are not subject to copyright protection. [...] You may use and/or distribute any of our data, files, databases, reports, graphs, charts, and other information products that are on our website or that you receive through our email distribution service.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+     "date_read": "2026-10-06",
+     "quote": "U.S. government publications are in the public domain and are not subject to copyright protection. [...] You may use and/or distribute any of our data, files, databases, reports, graphs, charts, and other information products that are on our website or that you receive through our email distribution service.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 4,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

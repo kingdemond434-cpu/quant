@@ -1,0 +1,28 @@
+{
+ "records": {
+  "home.treasury.gov": {
+   "host": "home.treasury.gov",
+   "verdict": "unreadable",
+   "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+   "date_read": "2026-10-06",
+   "quote": "(none found: the site-policies page and the linked privacy policy carry no copyright, public-domain or reuse sentence, and /subfooter/site-policies-and-notices/copyright-and-use-information returns 404)",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+     "date_read": "2026-10-06",
+     "quote": "(none found: the site-policies page and the linked privacy policy carry no copyright, public-domain or reuse sentence, and /subfooter/site-policies-and-notices/copyright-and-use-information returns 404)",
+     "quote_kind": "not_readable_note",
+     "source_label": "HELD",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 5,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

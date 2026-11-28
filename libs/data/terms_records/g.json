@@ -1,0 +1,99 @@
+{
+ "records": {
+  "gdeltproject.org": {
+   "host": "gdeltproject.org",
+   "verdict": "permits",
+   "terms_url": "https://gdeltproject.org/about.html",
+   "date_read": "2026-09-30",
+   "quote": "all datasets released by the GDELT Project are available for unlimited and unrestricted use for any academic, commercial, or governmental use of any kind without fee.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://gdeltproject.org/about.html",
+     "date_read": "2026-09-30",
+     "quote": "all datasets released by the GDELT Project are available for unlimited and unrestricted use for any academic, commercial, or governmental use of any kind without fee.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "gdelt_events_country",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "genport.newsystock.com": {
+   "host": "genport.newsystock.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "genport.newsystock.com"
+     }
+    }
+   ]
+  },
+  "gfex.com.cn": {
+   "host": "gfex.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.gfex.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: TLS hostname mismatch on the sandbox's robots.txt fetch)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.gfex.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: TLS hostname mismatch on the sandbox's robots.txt fetch)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 21,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_gfex"
+     }
+    }
+   ]
+  },
+  "googlevideo.com": {
+   "host": "googlevideo.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+   "recorded_by": "libs/research/public_strategy_hunter.py TERMS_REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "googlevideo.com"
+     }
+    }
+   ]
+  }
+ }
+}
