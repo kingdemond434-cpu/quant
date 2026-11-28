@@ -256,6 +256,8 @@ def nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
 # --------------------------------------------------------------------------- the broker registry
 DESK = Path(__file__).resolve().parents[3]
 UNIVERSE_JSON: Path = DESK / "data" / "universe" / "universe.json"
+#: The hourly `kr_options_state` leg's artifact (`_main` below): the USDKRW expiry state.
+OUT: Path = DESK / "reports" / "KR_OPTIONS_STATE.json"
 #: The broker's own classes for a single name. No pack may name one as executable (two-lane
 #: order, 2026-09-06).
 EQUITY_CLASSES: frozenset[str] = frozenset({"equities", "equity", "shares", "share cfd"})
@@ -641,6 +643,146 @@ def kr_expiry_dates(year: int) -> dict[str, Any]:
                     "day; this function reports the collision and refuses to guess the roll"}
 
 
+# ------------------------------------------------------------------- the USDKRW expiry state
+#: The cycle phases `usdkrw_expiry_state` can return, in precedence order.
+EXPIRY_PHASES: tuple[str, ...] = ("EXPIRY_DAY_QUAD", "EXPIRY_DAY", "EXPIRY_WEEK_QUAD",
+                                  "EXPIRY_WEEK", "POST_EXPIRY", "NEUTRAL")
+
+#: The one symbol this state conditions. KOSPI200 is not in the broker's registry, so the expiry
+#: reaches the book only through the won: foreign index-futures books hedged in USDKRW unwind or
+#: roll around the settlement auction. It is a STATE (a conditioner), never a cell on an index.
+EXPIRY_STATE_SYMBOLS: tuple[str, ...] = ("USDKRW",)
+
+#: KRX retail options flow (build check row 111), fenced on KRX's own terms. Read 2026-11-18 at
+#: https://data.krx.co.kr/templets/mdc/disclaimer_p1.jsp. The investor-type options series lives
+#: only on data.krx.co.kr (the Open API needs a key and a login, which the desk does not use).
+KRX_RETAIL_OPTIONS_FLOW_FENCE: dict[str, Any] = {
+    "id": "krx_retail_options_flow",
+    "name": "KRX 옵션 투자자별 거래실적 -- KOSPI200 options net buy by investor type (개인)",
+    "status": "TERMS_BLOCKED",
+    "terms_url": "https://data.krx.co.kr/templets/mdc/disclaimer_p1.jsp",
+    "terms_read_at": "2026-11-18",
+    "clause": ("No information and data owned by KRX, in whole or in part, may be reproduced, "
+               "transmitted digitally, distributed to a third party, and published or "
+               "broadcast, without the prior permission of KRX."),
+    "purpose_clause": ("FOR THE PURPOSE OF IMPROVING AVAILABILITY OF INFORMATION FOR "
+                       "INVESTMENT, NOT FOR TRADING."),
+    "robots": ("https://data.krx.co.kr/robots.txt could not be read on 2026-11-18 (the fetch "
+               "failed). An unread robots file never permits, and the terms refuse anyway"),
+    "prior_fence": "#1169 fenced the Korean early-exports press route on robots intent",
+    "missed_growth": ("retail options positioning never conditions USDKRW around expiry, so "
+                      "the 동학개미 options-crowding regime is unobserved. Value UNMEASURED: no "
+                      "series exists to price it. Unblock with KRX's written permission or a "
+                      "licensed redistribution"),
+}
+
+
+def _kr_open(d: date) -> bool | None:
+    """True when KRX trades on `d`, False when closed, None when that year is untabulated."""
+    if d.weekday() >= 5:
+        return False
+    table = holidays(d.year)
+    if not table:
+        return None
+    return d.isoformat() not in table
+
+
+def kospi200_expiry(year: int, month: int) -> dict[str, Any]:
+    """One month's KOSPI200 options expiry: the second Thursday, or the preceding KRX business
+    day when that Thursday is closed (the same roll `libs/regime/event_state` applies).
+
+    A year whose closure table is untabulated keeps the nominal date and says so in
+    `calendar`, rather than pretending a weekday-only calendar is the KRX one."""
+    nominal = nth_weekday(year, month, 3, 2)
+    d = nominal
+    calendar = "TABULATED"
+    while True:
+        is_open = _kr_open(d)
+        if is_open is None:
+            d, calendar = nominal, "UNTABULATED"
+            break
+        if is_open:
+            break
+        d = date.fromordinal(d.toordinal() - 1)
+    return {"date": d, "nominal": nominal, "rolled": d != nominal,
+            "quadruple_witching": month in (3, 6, 9, 12), "calendar": calendar}
+
+
+def _kr_business_days_between(a: date, b: date) -> int | None:
+    """KRX business days in (a, b]; None if any year in the span is untabulated."""
+    n = 0
+    d = a
+    while d < b:
+        d = date.fromordinal(d.toordinal() + 1)
+        is_open = _kr_open(d)
+        if is_open is None:
+            return None
+        n += int(is_open)
+    return n
+
+
+def usdkrw_expiry_state(asof: date) -> dict[str, Any]:
+    """Where `asof` sits in the KOSPI200 options expiry cycle, as a USDKRW-only state.
+
+    Calendar-derivable, so nothing is fetched. Phases, in precedence order: EXPIRY_DAY(_QUAD) on
+    the settlement day itself; EXPIRY_WEEK(_QUAD) in the four KRX sessions before it;
+    POST_EXPIRY on the first KRX session after it; NEUTRAL otherwise. A span crossing an
+    untabulated year reads UNMEASURED for the session counts, never a guess."""
+    y, m = asof.year, asof.month
+    this = kospi200_expiry(y, m)
+    if this["date"] >= asof:
+        nxt = this
+        prev = kospi200_expiry(y - (m == 1), 12 if m == 1 else m - 1)
+    else:
+        prev = this
+        nxt = kospi200_expiry(y + (m == 12), 1 if m == 12 else m + 1)
+    to_next = _kr_business_days_between(asof, nxt["date"])
+    since_prev = _kr_business_days_between(prev["date"], asof)
+    quad = "_QUAD" if nxt["quadruple_witching"] else ""
+    if asof == nxt["date"]:
+        phase = "EXPIRY_DAY" + quad
+    elif to_next is not None and 1 <= to_next <= 4:
+        phase = "EXPIRY_WEEK" + quad
+    elif since_prev == 1 and _kr_open(asof):
+        phase = "POST_EXPIRY"
+    elif to_next is None or since_prev is None:
+        phase = "UNMEASURED"
+    else:
+        phase = "NEUTRAL"
+    return {"asof": asof.isoformat(), "symbols": EXPIRY_STATE_SYMBOLS, "phase": phase,
+            "next_expiry": nxt["date"].isoformat(), "next_nominal": nxt["nominal"].isoformat(),
+            "next_rolled": nxt["rolled"], "next_quadruple_witching": nxt["quadruple_witching"],
+            "prev_expiry": prev["date"].isoformat(),
+            "kr_sessions_to_next": to_next if to_next is not None else "UNMEASURED",
+            "kr_sessions_since_prev": since_prev if since_prev is not None else "UNMEASURED",
+            "calendar": ("TABULATED" if nxt["calendar"] == prev["calendar"] == "TABULATED"
+                         else "UNTABULATED"),
+            "settlement_window_utc": "06:20-06:30 (KOSPI200 closing call auction)"}
+
+
+def kr_options_state_report(now: Any = None) -> dict[str, Any]:
+    """The hourly artifact: today's USDKRW expiry state, the next twelve expiries, and the
+    retail-options-flow fence. Pure calendar arithmetic plus a recorded terms reading."""
+    from datetime import UTC, datetime
+    now = now or datetime.now(UTC)
+    today = now.date()
+    upcoming: list[dict[str, Any]] = []
+    y, m = today.year, today.month
+    for _ in range(12):
+        e = kospi200_expiry(y, m)
+        if e["date"] >= today:
+            upcoming.append({"date": e["date"].isoformat(), "rolled": e["rolled"],
+                             "quadruple_witching": e["quadruple_witching"],
+                             "calendar": e["calendar"]})
+        y, m = (y + (m == 12), 1 if m == 12 else m + 1)
+    return {"organ": "kr_options_state", "generated_at": now.isoformat(timespec="seconds"),
+            "country": CODE, "symbols": EXPIRY_STATE_SYMBOLS,
+            "state": usdkrw_expiry_state(today), "upcoming_expiries": upcoming,
+            "retail_options_flow": KRX_RETAIL_OPTIONS_FLOW_FENCE,
+            "fetched": 0,
+            "use": "conditioner state for USDKRW only; mints no cell and sizes nothing"}
+
+
 # --------------------------------------------------------------------------- positioning
 POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
     {"id": "krx_investor_flows",
@@ -756,6 +898,11 @@ TERMINOLOGY: dict[str, tuple[str, ...]] = {
 #: SOURCE_CLASSES' crawlable rows and surfaced in the `source_graph` layer, because the edges a
 #: graph deliberately does not traverse are part of the graph.
 REFUSED_SOURCES: tuple[dict[str, str], ...] = (
+    {"ground": ("KRX market data (data.krx.co.kr), including the retail options flow by "
+                "investor type"),
+     "why": "KRX terms: no data may be reproduced or transmitted digitally without KRX's prior "
+            "permission, and it is provided NOT FOR TRADING (read 2026-11-18). "
+            "KRX_RETAIL_OPTIONS_FLOW_FENCE holds the verbatim clause"},
     {"ground": "Korean crypto-exchange order books, venue APIs and venue-native feeds",
      "why": "MT5 universe mandate (2026-08-18): no crypto-exchange ground is ever hunted again. "
             "The kimchi-premium observable is taken from public commentary and regulatory "
@@ -2328,3 +2475,22 @@ def instrument_report(path: Any = None) -> dict[str, Any]:
             "absent_from_universe": tuple(split["absent"]),
             "transmission_targets": TRANSMISSION_TARGETS,
             "named_absent_instruments": ABSENT_INSTRUMENTS}
+
+
+def _main(argv: Sequence[str] | None = None) -> int:
+    import argparse
+    import os
+    ap = argparse.ArgumentParser(description="Write the USDKRW KOSPI200-expiry state.")
+    ap.add_argument("--out", type=Path, default=OUT)
+    args = ap.parse_args(argv)
+    doc = kr_options_state_report()
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = args.out.with_suffix(args.out.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, args.out)
+    print(json.dumps({"phase": doc["state"]["phase"], "next": doc["state"]["next_expiry"]}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())

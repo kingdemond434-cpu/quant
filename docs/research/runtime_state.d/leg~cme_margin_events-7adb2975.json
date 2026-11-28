@@ -1,0 +1,38 @@
+{
+ "organ": "leg:cme_margin_events",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/cme_margin_events.py"
+ ],
+ "clock": "hourly_cycle:cme_margin_events",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/CME_MARGIN_EVENTS.json",
+ "artifact_declared": "desks/mt5/reports/CME_MARGIN_EVENTS.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 16,
+ "artifact_bytes": 3228,
+ "artifact_sha256": "f2d1441f029086945cf3d05fa7bd1e09f00f8d6303689f73c2686c91ba25a37a",
+ "summary": {
+  "status": "TERMS_BLOCKED",
+  "verdict": "TERMS_BLOCKED: 0 cells, a gap and not a zero"
+ },
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-18T05:36:24+00:00",
+ "only_missing": {
+  "at": "2026-11-18T05:36:24+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

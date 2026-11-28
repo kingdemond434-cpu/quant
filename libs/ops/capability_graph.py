@@ -933,6 +933,12 @@ NODES: tuple[Node, ...] = (
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
     # and publishes a judgement that is, today, read by a person only (see HUMAN_READ).
+    # Terms-fenced event states (build check rows 126, 111). Neither has a code reader yet:
+    # family_forced_flow (money path) and the USDKRW conditioner are the named follow-ups.
+    Node("cme_margin_events", "desks/mt5/research/cme_margin_events.py",
+         writes=("desks/mt5/reports/CME_MARGIN_EVENTS.json",)),
+    Node("kr_options_state", "desks/mt5/research/countries/kr/pack.py",
+         writes=("desks/mt5/reports/KR_OPTIONS_STATE.json",)),
     Node("srb_uncorrelated_sweep", "desks/mt5/research/srb_uncorrelated_sweep.py",
          writes=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",),
          reads=("desks/mt5/data/sleeves.json", "desks/mt5/data/universe/universe.json")),
@@ -951,6 +957,9 @@ HUMAN_READ = frozenset({
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+    # The CME margin fence and the USDKRW expiry state: read by a person until family_forced_flow
+    # and a USDKRW conditioner declare themselves as readers.
+    "desks/mt5/reports/CME_MARGIN_EVENTS.json", "desks/mt5/reports/KR_OPTIONS_STATE.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
