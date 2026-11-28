@@ -1270,7 +1270,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "vocabulary_proposer",
-    "unseen_frontier", "contradiction_miner",
+    "unseen_frontier", "contradiction_miner", "residual_anomaly_scan",
     "source_registry", "queue_census",
     # THE BOOK'S RESIDUAL AND THE GATES' COUNTERFACTUALS (2026-09-30): ledger reads plus a
     # bounded build of the few conditioned cells a BH-corrected finding names; before
@@ -2310,6 +2310,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "specialist_cell": 1_000,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
+    # Stops itself at --budget-s 240 (85% of it regressing, family exposures within 60%) and
+    # writes; measured 6.6 s for 32 symbols on the build box. The cap sits above its own stop.
+    "residual_anomaly_scan": 330,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -4437,6 +4440,12 @@ def main() -> None:
     # instrument's direction or regime donate the follow / fade pair that settles it.
     ctm = _costed("contradiction_miner", lambda: _producer("contradiction_miner",
                                                             "research/contradiction_miner.py"))
+    # THE UNKNOWN-UNKNOWN LANE (build check row 20, 2026-11-18): each hypothesis-lane symbol's
+    # hourly return regressed on the market, its peer class and every price-only family's
+    # position (causal betas); recurring residual patterns no family explains are donated to
+    # data/intelligence/residual_scan/. Report and donation only: nothing in sizing reads it.
+    ras = _costed("residual_anomaly_scan", lambda: _producer(
+        "residual_anomaly_scan", "research/residual_anomaly_scan.py", "--budget-s", "240"))
     bld = _costed("breadth_ladder", lambda: _producer("breadth_ladder",
                                                        "research/breadth_ladder.py"))
     ffc = _costed("forced_flow_calendar", lambda: _producer("forced_flow_calendar",
@@ -6579,7 +6588,7 @@ def main() -> None:
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_search": rsr, "residual_queue": rsq,
                     "vocabulary_proposer": vcp, "unseen_frontier": usf,
-                    "contradiction_miner": ctm,
+                    "contradiction_miner": ctm, "residual_anomaly_scan": ras,
                     "attribution_reconcile": atr,
                     "macro_state_engine": mse,
                     "research_artifacts": rart,

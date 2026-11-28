@@ -293,6 +293,7 @@ LEG_LAYER: dict[str, str] = {
     "artifact_chain": "meta", "residual_queue": "information",
     "residual_search": "information", "unseen_frontier": "information",
     "vocabulary_proposer": "information", "contradiction_miner": "information",
+    "residual_anomaly_scan": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",

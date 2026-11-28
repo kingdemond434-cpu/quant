@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "residual_anomaly_scan": {
+   "hypothesis": "Removing the market, peer-class and every registered price-only family's position from each symbol's hourly return leaves residual structure (persistence, after-shock drift, clock drift, co-movement) that recurs across both halves of the sample and survives its own multiplicity charge, and donating it gives the gauntlet cells no named-mechanism generator would have proposed.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "cells_donated",
+    "better": "up",
+    "organ": "report:UNEXPLAINED_RESIDUALS.json"
+   },
+   "falsifier": {
+    "metric": "cells_donated",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no residual pattern recurs and clears its deflated t, so after the families are removed the desk's own bars hold nothing the scan can name"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
