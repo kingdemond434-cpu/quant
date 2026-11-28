@@ -89,6 +89,18 @@ def _family_table() -> dict[str, Any]:
             out[name[len("family_"):]] = getattr(families, name)
     for name, fn in fo.ORTHOGONAL_FAMILIES.items():
         out.setdefault(str(name), fn)
+    # `getattr(families, "family_<name>")` -- the gauntlet's FIRST lookup -- also reaches the
+    # hunt16 constructors through the module's `__getattr__`, which `dir()` never lists. Read
+    # through `dir()` alone, every dav_* family was NO_IMPLEMENTATION here while the gauntlet
+    # built it fine, and the breadth sweep set all of them aside (2026-11-03).
+    try:
+        from mt5desk.executables import hunt16_families
+        for name in hunt16_families():
+            fn = getattr(families, f"family_{name}", None)
+            if callable(fn):
+                out.setdefault(str(name), fn)
+    except Exception:
+        pass
     return out
 
 

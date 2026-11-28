@@ -284,7 +284,8 @@ def make_candidate(model: str, row: dict[str, Any], *, panel: Sequence[str],
     # held-out outcomes, which would withhold this seat from the independent-discovery count.
     evidence = {k: row.get(k) for k in ("n_independent", "gross_per_trade", "net_per_trade",
                                         "cost_frac", "t_gross", "t_deflated_sweep",
-                                        "n_tests_sweep")}
+                                        "n_tests_sweep", "clears_cost")}
+    evidence["proposer_screen"] = "PROPOSED" if row.get("proposed") else "NOT_PROPOSED"
     evidence.update({"tests_attempted": tests_run, "effective_trials": round(n_effective, 3),
                      "model_config": _config_key(model, cfg)})
     c = pc.candidate(spec["source"], sym, spec["family"], params, mechanism=mech, title=title,
@@ -338,6 +339,14 @@ def _trial_id(panel_name: str, panel_syms: Sequence[str], sym: str, ck: str, z: 
         tag = hashlib.sha1(",".join(sorted(panel_syms)).encode()).hexdigest()[:8]
         head = f"{head}:p{tag}"
     return f"{head}:{ck}:z{z}"
+
+
+def _strongest_per_cell(rows: list[dict]) -> list[dict]:
+    """One row per cell at its strongest screened deflated t, proposed or not."""
+    best: dict[str, dict] = {}
+    for r in sorted(rows, key=lambda x: -x["t_deflated_sweep"]):
+        best.setdefault(str(r["cell"]), r)
+    return sorted(best.values(), key=lambda x: -x["t_deflated_sweep"])
 
 
 def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], *,
@@ -408,12 +417,20 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
     rows = _redeflate(rows, attempted)
     census = TL.census(trials)
     proposals = pc.best_per_cell(rows)
+    # EVERY SCREENED CELL GOES TO THE JUDGE (2026-11-03). Donating only `proposals` meant the five
+    # learned families reached the docket from nothing at all (JUDGE_COVERAGE
+    # `unmined_live_families`): the miner's own deflated screen was a second judge in front of
+    # the real one. Each cell still ships once, at its strongest screened row, carrying its
+    # `proposed` verdict and the full sweep width; the gauntlet's own gates decide it.
+    # Kept here, not as a knob on `proposer_common.best_per_cell`: that module is in the money-path
+    # closure and replay-shadow sends any new knob on it to the manual path.
+    cells = _strongest_per_cell(rows)
     return {"model": model, "source": spec["source"], "family": spec["family"],
             "panel": panel_syms, "panel_name": panel_name, "configs": configs,
             "tests_attempted": attempted,
             "tests_screened": len(rows), "effective_trials": round(census.n_effective, 3),
             "trial_census": census.to_dict(), "skipped": skipped, "rows": rows,
-            "proposals": proposals, "_trials": trials}
+            "proposals": proposals, "cells": cells, "_trials": trials}
 
 
 # ================================================================ the indirect door: axes
@@ -659,8 +676,9 @@ def run(budget_s: float = BUDGET_S,
         trials = res.pop("_trials")
         cands = [make_candidate(model, r, panel=res["panel"], tests_run=res["tests_attempted"],
                                 n_effective=res["effective_trials"])
-                 for r in res["proposals"]]
+                 for r in res.get("cells", res["proposals"])]
         res["candidates"] = len(cands)
+        res["screen_proposed"] = len(res["proposals"])
         # The discovery file charges only trials no earlier run charged: today's re-run of
         # yesterday's grid adds nothing to the desk's trial count.
         seen = _ledger_trial_ids(trials_path or TRIALS)

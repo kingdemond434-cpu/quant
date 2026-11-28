@@ -260,6 +260,17 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
             names[str(name)] = fn
     for name, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
         names.setdefault(str(name), fn)
+    # THE THIRD POPULATION (2026-11-03). `live_family_names` and `discovery_compiler` both read
+    # FAMILY_REGISTRY, the orthogonal set AND hunt16; this read only the first two, so the
+    # fourteen dav_* families -- executable on bars alone through the same `resolve_family` the
+    # gauntlet uses -- were never swept, and seven of them reached the docket from nothing at all
+    # (JUDGE_COVERAGE `unmined_live_families`). Only a converter keyword could mint one.
+    try:
+        from mt5desk.executables import hunt16_families
+        for name, fn in hunt16_families().items():
+            names.setdefault(str(name), fn)
+    except Exception:
+        pass
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
