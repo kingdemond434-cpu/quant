@@ -216,12 +216,132 @@ def test_no_fresh_deployable_book_trades_nothing(world, change: str) -> None:
     assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
 
 
-def test_gold_is_never_this_lanes(world) -> None:
+def _gold_book(key: str) -> list:
     spec = dict(SPEC, symbol="XAUUSD")
     sleeves, _ = fx.book_sleeves({"generated_at": NOW.isoformat(), "deployable": True,
-                                  "specs": {"XAUUSD_x_asia": spec}},
-                                 {"XAUUSD_x_asia": 0.003}, NOW)
-    assert sleeves == []
+                                  "specs": {key: spec}, "executable": {key: 0.003}},
+                                 {key: 0.003}, NOW)
+    return sleeves
+
+
+def test_a_certified_gold_sleeve_is_this_lanes_and_the_followers_copy_never(world) -> None:
+    """2026-11-18 (every account fills every market day): a certified XAUUSD sleeve the allocator
+    funds trades here; the follower's gold_asia copy stays the follower's."""
+    assert [k for k, _, _ in _gold_book("XAUUSD_x_asia")] == ["XAUUSD_x_asia"]
+    assert _gold_book("gold_asia") == []
+
+
+def test_the_gold_revert_switch_makes_gold_the_followers_alone(world, monkeypatch) -> None:
+    monkeypatch.setattr(fx, "GOLD_SLEEVES", False)
+    assert _gold_book("XAUUSD_x_asia") == []
+
+
+GOLD_KEY = "XAUUSD_session_range_breakout_asia"
+
+
+@pytest.fixture
+def gold_world(world, monkeypatch) -> SimpleNamespace:
+    """The world with one funded certified GOLD sleeve and a recording gold direction lock."""
+    world.cert.write_text(json.dumps({"enabled": True, "excluded": {},
+                                      "ftmo": {"gold_asia": 0.002, GOLD_KEY: 0.003}}))
+    fx.ALLOCATOR.write_text(json.dumps({
+        "generated_at": NOW.isoformat(), "deployable": True, "status": "OK",
+        "specs": {GOLD_KEY: dict(SPEC, symbol="XAUUSD", key="external.XAUUSD.srb")},
+        "executable": {"gold_asia": 0.002, GOLD_KEY: 0.003}}))
+    calls: dict[str, list] = {"gate": [], "sync": []}
+    verdict = {"v": fx._oco.Verdict(True, "agrees", "oco")}
+    monkeypatch.setattr(fx._oco, "mt5_oco_key", lambda mt5: "k" * 32)
+
+    def sync(lane, key, rows, *, date, holder):
+        calls["sync"].append((lane, holder))
+        return {"published": True}
+
+    def gate(lane, side, *, key, date, now=None):
+        calls["gate"].append((lane, side, date))
+        return verdict["v"]
+    monkeypatch.setattr(fx._oco, "sync_lane", sync)
+    monkeypatch.setattr(fx._oco, "gate", gate)
+    world.gold = calls
+    world.verdict = verdict
+    return world
+
+
+def test_a_gold_sleeve_passes_the_gold_direction_lock_and_claims_after_the_send(
+        gold_world) -> None:
+    """Audit MF1 on #1323: every gold leg runs gold_oco (republish, gate, claim after send)."""
+    doc = fx.run(gold_world.mt5, armed=True, now=NOW)
+    (req,) = gold_world.mt5.sent
+    assert req["symbol"] == "XAUUSD"
+    assert [g[0] for g in gold_world.gold["gate"]] == ["ftmo"]
+    holders = [h for _, h in gold_world.gold["sync"]]
+    assert holders == [f"ftmo_executor:{GOLD_KEY}", f"ftmo_executor:{GOLD_KEY}:sent"]
+    assert doc["sleeves"][-1]["gold_oco_republished"] is True
+
+
+def test_the_gold_lock_refusing_sends_nothing_and_bills_its_rail(gold_world) -> None:
+    gold_world.verdict["v"] = fx._oco.Verdict(
+        False, "gold OCO fallback: no E8 fill yet; this lane places nothing", "fallback")
+    doc = fx.run(gold_world.mt5, armed=True, now=NOW)
+    assert gold_world.mt5.sent == []
+    (row,) = [r for r in doc["sleeves"] if r.get("key", r.get("sleeve")) == GOLD_KEY
+              or r.get("rail") == fx._oco.RAIL]
+    assert row["status"] == "RAIL_BLOCKED" and row["rail"] == fx._oco.RAIL
+    assert "missed_growth_risk_usd" in row
+
+
+def test_an_unnamed_account_places_no_gold(gold_world, monkeypatch) -> None:
+    def boom(mt5):
+        raise fx._oco.IdentityUnavailable("no key")
+    monkeypatch.setattr(fx._oco, "mt5_oco_key", boom)
+    doc = fx.run(gold_world.mt5, armed=True, now=NOW)
+    assert gold_world.mt5.sent == [] and doc["sleeves"][-1]["rail"] == fx._oco.RAIL
+
+
+def test_a_non_gold_sleeve_never_touches_the_gold_lock(world, monkeypatch) -> None:
+    monkeypatch.setattr(fx._oco, "gate", lambda *a, **k: 1 / 0)
+    monkeypatch.setattr(fx._oco, "sync_lane", lambda *a, **k: 1 / 0)
+    fx.run(world.mt5, armed=True, now=NOW)
+    assert [r["symbol"] for r in world.mt5.sent] == ["AUDNZD"]
+
+
+def test_a_gold_position_against_the_days_direction_is_flattened(gold_world, monkeypatch) -> None:
+    """gold_oco rule 7: this lane's own gold fill against the day's direction closes at once."""
+    gold_world.mt5.positions.append(SimpleNamespace(
+        ticket=81, symbol="XAUUSD", type=1, magic=fx.MAGIC, volume=0.1, price_open=1.1,
+        sl=1.2, tp=1.0, comment="FX6H1|x", time=int(gold_world.mt5.tick_epoch)))   # a short
+    monkeypatch.setattr(fx._oco, "day_entry", lambda d: (
+        {"direction": "long", "first_fill_lane": "e8"}, None))
+    doc = fx.run(gold_world.mt5, armed=True, now=NOW)
+    closes = [r for r in gold_world.mt5.sent if r.get("position") == 81]
+    assert closes, doc.get("actions")
+    assert any("against today's gold direction" in a for a in doc["alerts"])
+
+
+def test_an_unreadable_direction_state_flattens_nothing(gold_world, monkeypatch) -> None:
+    gold_world.mt5.positions.append(SimpleNamespace(
+        ticket=82, symbol="XAUUSD", type=1, magic=fx.MAGIC, volume=0.1, price_open=1.1,
+        sl=1.2, tp=1.0, comment="FX6H1|x", time=int(gold_world.mt5.tick_epoch)))
+    monkeypatch.setattr(fx._oco, "day_entry", lambda d: (None, "torn"))
+    fx.run(gold_world.mt5, armed=True, now=NOW)
+    assert not [r for r in gold_world.mt5.sent if r.get("position") == 82]
+
+
+def test_the_two_gold_switches_move_together() -> None:
+    import prop_challenge_allocator as pca
+    assert fx.GOLD_SLEEVES == ("XAUUSD" not in pca.EXECUTOR_SKIP_SYMBOLS)
+    assert pca.FTMO_EXECUTABLE <= fx._FOLLOWER_KEYS
+
+
+def test_a_gold_sleeve_never_opens_on_top_of_the_followers_gold(world) -> None:
+    """One position per symbol, whatever its magic: a follower (or hand) XAUUSD position blocks
+    the sleeve (`ALREADY_OPEN`), so the two lanes never stack or face each other."""
+    from prop import ftmo_follower
+    world.mt5.positions.append(SimpleNamespace(
+        ticket=9, symbol="AUDNZD", type=0, magic=ftmo_follower.MAGIC, volume=0.5,
+        price_open=1.1, sl=1.09, tp=1.12, comment="follower"))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    assert [r["status"] for r in doc["sleeves"]] == ["ALREADY_OPEN"], doc["sleeves"]
 
 
 def test_a_server_off_the_broker_clock_reads_no_signal(world) -> None:
@@ -271,12 +391,13 @@ def test_the_allocator_lays_non_gold_sleeves_into_the_ftmo_block_and_zeroes_drop
                                                     "OLD_x_asia": 0.0}
 
 
-def test_the_allocator_marks_a_non_gold_spec_executable_and_gold_windows_not() -> None:
+def test_the_allocator_marks_every_spec_executable_and_a_specless_key_not() -> None:
     import prop_challenge_allocator as pca
     specs = {KEY: SPEC, "XAUUSD_x_london": dict(SPEC, symbol="XAUUSD")}
     assert pca.executor_runs(KEY, specs)
     assert pca.executor_runs("gold_asia", specs)
-    assert not pca.executor_runs("XAUUSD_x_london", specs)
+    assert pca.executor_runs("XAUUSD_x_london", specs)          # a certified gold sleeve
+    assert not pca.executor_runs("gold_london_am", specs)        # a gateway window, no spec
     assert not pca.executor_runs("EURUSD_y_asia", specs)
 
 

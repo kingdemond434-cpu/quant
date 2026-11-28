@@ -1217,6 +1217,17 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
                                              f"({against}); this lane never opens the other way"),
               today=today, now=now, alert=True)
         return
+    # ONE GOLD POSITION ON THE ACCOUNT (audit MF2 on #1323): since 2026-11-18 the sleeve executor
+    # trades certified gold sleeves here too, and its own refusal reads every magic. This lane
+    # never adds a second, same-side gold position on top of another lane's -- the stack would be
+    # 0.009 plus the sleeve's fraction, sized by nobody.
+    stacked = [int(getattr(x, "ticket", 0) or 0) for x in [*positions, *orders]
+               if int(getattr(x, "magic", 0) or 0) != MAGIC]
+    if stacked:
+        _skip(doc, st, "gold_already_open", (f"FTMO already holds or rests gold from another lane "
+                                             f"({stacked}); one gold position per account"),
+              today=today, now=now)
+        return
     end = window_end_hour(WINDOW)
     if hour >= CANCEL_HOUR or (end is not None and hour >= end):
         _skip(doc, st, "session_over", "the asia window's session is over", today=today, now=now)
@@ -1254,6 +1265,13 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         _skip(doc, st, "opposite_exposure", (f"FTMO holds or rests gold against E8's {side} "
                                              f"({against}); this lane never opens the other way"),
               today=today, now=now, alert=True)
+        return
+    stacked = [int(getattr(x, "ticket", 0) or 0) for x in [*live_pos, *live_ord]
+               if int(getattr(x, "magic", 0) or 0) != MAGIC]
+    if stacked:
+        _skip(doc, st, "gold_already_open", (f"FTMO already holds or rests gold from another lane "
+                                             f"({stacked}) under the lock; one gold position per "
+                                             f"account"), today=today, now=now)
         return
     resync = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
                             holder="ftmo_follower:place")
