@@ -3962,6 +3962,13 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # RELEASE-CALENDAR GROUNDS (2026-11-18): a human-readable view of
+    # desks/mt5/data/release_calendar_grounds.json, the per-region terms verdicts. Terminal: the
+    # JSON is the declaration the organ reads, and the hourly leg `release_calendar_states`
+    # reports every route's live status in desks/mt5/reports/RELEASE_CALENDAR_STATES.json.
+    "docs/research/RELEASE_CALENDAR_GROUNDS.md":
+        "VIEW OF desks/mt5/data/release_calendar_grounds.json; live route verdicts are "
+        "RELEASE_CALENDAR_STATES.json (leg release_calendar_states)",
     # THE FIRM ROLE MAP (zuck 2026-11-18): a human-readable view of libs/research/
     # firm_lanes_roster.json. Terminal: the roster JSON is the declaration, and the hourly leg
     # `firm_lanes` measures every lane in desks/mt5/reports/FIRM_LANES.json, so the table cannot
