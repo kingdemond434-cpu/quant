@@ -36,8 +36,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  trusted-eval:
+  # THE FAST LANE (zuck 2026-11-17: "strip all checks of anything that doesn't touch live money ...
+  # forever"). The base's .github/scripts/fast_lane.py reads the PR's paths against the BASE's
+  # money closure (never the PR's code). On a fast PR every step of the heavy jobs below is
+  # skipped and the job reports under a "(fast lane: not run)" name, so the gate can never read it
+  # as the real check; `smoke` is the one job such a PR needs. A push, a dispatch, any read error,
+  # or a base without the classifier is never fast.
+  lane:
     if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      fast: ${{ steps.lane.outputs.fast }}
+    steps:
+      - name: The base (the classifier and the money closure come from it, never from the PR)
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fast lane? (no money path, no release or box machinery, no check)
+        id: lane
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          no() { echo "fast=false" >> "$GITHUB_OUTPUT"; echo "not fast: $1"; exit 0; }
+          case "$EVENT" in pull_request|pull_request_target) ;; *) no "$EVENT run" ;; esac
+          [ "$SAME_REPO" = true ] || no "a fork"
+          # A DRAFT runs the smoke check only. 500+ open drafts each ran the ~40 min suite,
+          # the release gates and trusted-eval on every push, and that queue (301 runs,
+          # 2026-11-17) is what starved the PRs that were ready. Marking it ready fires
+          # ready_for_review, which re-runs this lane and the full checks on the same head;
+          # nothing merges a draft, and a skipped check carries the "(... not run)" name.
+          # The draft state is read LIVE, never from the event: when the gate marks a CLEARed
+          # draft ready with its own token (which starts no run) it RE-RUNS these runs, and a
+          # re-run carries the old payload (#1240 audit MF1). Unreadable reads as not a draft,
+          # so the full checks run rather than wait.
+          DRAFT=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .draft 2>/dev/null || echo false)
+          if [ "$DRAFT" = true ]; then
+            echo "fast=true" >> "$GITHUB_OUTPUT"; echo "a draft: full checks wait for ready"; exit 0
+          fi
+          [ -f .github/scripts/fast_lane.py ] || no "the base has no classifier"
+          git fetch -q --no-tags origin "$HEAD" || no "the head could not be fetched"
+          python -I .github/scripts/fast_lane.py --base "$BASE" --head "$HEAD" \
+            --github-output "$GITHUB_OUTPUT" || no "the classifier failed"
+
+  trusted-eval:
+    # a fast PR changes no check, no release machinery and no money path (fast_lane.py, the
+    # base's): the base's suites have nothing of it to judge
+    needs: [lane]
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && needs.lane.outputs.fast != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
