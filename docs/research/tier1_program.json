@@ -9318,6 +9318,38 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "HAWKES1",
+   "item": "Tick-arrival intensity (Hawkes self-excitation) as a vol-burst state: per-symbol exponential-kernel Hawkes fit on every complete broker hour of the tick tape, branching ratio and intensity z published and registered as exogenous_conditioner cells",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:hawkes_state",
+   "artifact": "desks/mt5/reports/HAWKES_STATE.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/hawkes_state/; mt5desk/family_exogenous_conditioner.py reads data/lake/series/hawkes_<SYM>.csv",
+   "evidence": [
+    "desks/mt5/research/hawkes_state.py:1-30 what it measures and the no-lookahead contract (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "TDA1",
+   "item": "Topological regime/fragility cells: persistence-landscape norms of the cross-asset hourly return cloud (ripser adapter; exact H0 spanning-tree fallback), fragility z published and registered as exogenous_conditioner cells",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:tda_state",
+   "artifact": "desks/mt5/reports/TDA_STATE.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/tda_state/; mt5desk/family_exogenous_conditioner.py reads data/lake/series/tda_fragility.csv",
+   "evidence": [
+    "desks/mt5/research/tda_state.py:1-30 what it measures and the no-lookahead contract (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
