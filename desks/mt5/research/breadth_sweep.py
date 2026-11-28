@@ -534,6 +534,24 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
     }, "breadth_sweep", now=datetime.fromisoformat(now))
 
 
+CLUSTER_FLOOR_STATS: dict = {}
+
+
+def _with_cluster_floor(rows: list[dict], cap: int) -> list[dict]:
+    """The participant-structure cluster floor (row 103) applied to a capped run. An absent or
+    UNMEASURED report leaves the order exactly as it was."""
+    try:
+        import participant_structure as ps
+        members, floor = ps.cluster_floor()
+        rows, stats = ps.order_with_floor(rows, cap, members, floor)
+    except Exception as exc:
+        stats = {"why": (f"participant_structure unavailable ({type(exc).__name__}): "
+                         "order unchanged")}
+    CLUSTER_FLOOR_STATS.clear()
+    CLUSTER_FLOOR_STATS.update(stats)
+    return rows
+
+
 def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
     """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
     most-intraday-first), so a daily clock cannot grow the docket without bound and one run
@@ -559,6 +577,9 @@ def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
                           sort_keys=True, default=str)
 
     seen = {key(r) for r in docket if isinstance(r, dict)}
+    # ROW 103: the retail-heavy cluster's own exploration floor. When the cap binds, its unseen
+    # rows are pulled inside the cap up to the floor -- reorder, never filter.
+    new = _with_cluster_floor([r for r in new if key(r) not in seen], max_new)
     add = []
     for row in new:
         ident = key(row)
@@ -622,6 +643,7 @@ def main(argv: list[str] | None = None) -> int:
     added, total = apply(new)
     write_report(new, syms, added, total)
     print(f"  merged {added} new cell(s); docket now {total} row(s)")
+    print(f"  cluster floor: {CLUSTER_FLOOR_STATS.get('why')}")
     if not added:
         print("  (all already present -- the sweep is idempotent on the executable spec)")
     return 0

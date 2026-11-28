@@ -340,6 +340,36 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "policy_doc_nlp": {
+   "hypothesis": "Official PBOC, CSRC, SAFE, BOK, MAS, BOJ, RBI and SARB statements scored for hawkish or dovish language in their own language give dated tone states for the FX pairs and indices each body moves, which conditioner cells can test; every source passes terms, holds and robots first, so the lane produces states only from sources whose owners allow it.",
+   "metric": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "counts.new_event_states",
+    "better": "up",
+    "organ": "report:POLICY_DOC_NLP.json"
+   },
+   "falsifier": {
+    "metric": "counts.fetched",
+    "op": "<=",
+    "threshold": 0,
+    "after": "30 days on the trading box with every source still fenced on terms, robots or a hold: the lane produces nothing, and its sources belong on the fence list rather than on an hourly clock"
+   }
+  },
+  "participant_structure": {
+   "hypothesis": "Tagging symbols by the small-trader share of their COT positions separates a retail-heavy cluster from the institutional majors, and giving that cluster its own exploration floor in the breadth sweep keeps it from being starved when the per-run cap binds, so the retail-heavy markets are explored at least at their population share.",
+   "metric": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "n_members",
+    "better": "up",
+    "organ": "report:PARTICIPANT_STRUCTURE.json"
+   },
+   "falsifier": {
+    "metric": "n_measured",
+    "op": "<",
+    "threshold": 3,
+    "after": "14 days on the trading box: fewer than three symbols carry a fresh COT reading, so no cluster can be drawn and the floor never exists"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

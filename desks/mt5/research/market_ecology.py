@@ -419,6 +419,26 @@ def _edge_decay() -> dict[str, Any]:
                       "edge is private, or was never there.")}
 
 
+def _participant_structure(per_symbol: dict[str, Any]) -> dict[str, Any]:
+    """Row 103: the retail-heavy cluster from `participant_structure` (small-trader share of
+    COT positions), and which of this pass's symbols carry which tag. UNMEASURED when absent."""
+    try:
+        import participant_structure as ps
+        doc = ps.load()
+    except Exception as exc:                                   # pragma: no cover - import context
+        return {"status": "UNMEASURED", "why": f"participant_structure unavailable ({exc})"}
+    if not doc:
+        return {"status": "UNMEASURED", "why": "PARTICIPANT_STRUCTURE.json not written yet"}
+    tags = doc.get("tags") or {}
+    by_tag: dict[str, list[str]] = {}
+    for sym in per_symbol:
+        by_tag.setdefault(str(tags.get(sym, "UNMEASURED")), []).append(sym)
+    return {"status": doc.get("status", "UNMEASURED"), "at": doc.get("at"),
+            "cluster": doc.get("cluster"), "members": doc.get("members") or [],
+            "exploration_floor": (doc.get("exploration_floor") or {}).get("floor"),
+            "this_pass_by_tag": {k: sorted(v) for k, v in sorted(by_tag.items())}}
+
+
 def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     try:
@@ -473,6 +493,7 @@ def build() -> dict[str, Any]:
                                  "participant": v.get("participant"),
                                  "effect": v.get("chi2_10bins"), "p": "<0.05 (chi2 vs uniform)"})
     detected.sort(key=lambda r: str(r["participant_class"]))
+    participants = _participant_structure(per_symbol)
 
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -482,11 +503,14 @@ def build() -> dict[str, Any]:
         "detected": detected,
         "n_detected": len(detected),
         "edge_decay": _edge_decay(),
+        "participant_structure": participants,
         "unmeasured_participants": {
-            "retail_crowding": ("needs positioning data. The COT and macro axes are empty on this "
-                                "box, so there is nothing to read a crowd off. The round-number "
-                                "magnet is a WEAK proxy for resting retail orders and is not the "
-                                "same measurement."),
+            "retail_crowding": (
+                "needs positioning data. The round-number magnet is a WEAK proxy for resting "
+                "retail orders and is not the same measurement."
+                if participants.get("status") != "MEASURED" else
+                "the small-trader share of COT positions tags each symbol "
+                "(participant_structure); the retail crowd feed itself stays unmeasured"),
             "producer_hedging": ("needs commercial positioning -- the COT commercial series -- "
                                  "which is the same empty axis."),
             "own_size_impact": ("belongs to F21 and needs fills at different sizes. The live book "
