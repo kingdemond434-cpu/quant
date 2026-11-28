@@ -693,7 +693,7 @@ sources:
   kind: mechanics
 - id: sg_port_throughput
   name: 'SingStat sea cargo: Singapore container throughput'
-  url: https://tablebuilder.singstat.gov.sg/api/table/tabledata/M650631
+  url: https://tablebuilder.singstat.gov.sg/api/table/tabledata/M651101
   region: SG
   language: en
   cadence: monthly

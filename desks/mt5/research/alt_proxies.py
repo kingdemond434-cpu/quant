@@ -2448,7 +2448,7 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
     Source(
         id="sg_port_throughput", name="SingStat sea cargo: Singapore container throughput",
         url=("https://tablebuilder.singstat.gov.sg/api/table/tabledata/"
-             + os.environ.get("ALT_SINGSTAT_PORT_TABLE", "M650631")),
+             + os.environ.get("ALT_SINGSTAT_PORT_TABLE", "M651101")),
         region="SG", language="en", cadence="monthly", parse=parse_singstat_port,
         rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly",
         instruments={"USDSGD": -1, "SGDJPY": 1, "CHINAH": 1},
@@ -2538,7 +2538,11 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "holiday shifts against the 364-day comparison"),
         crowding_prior="low", substitutes_for=_FOOT,
         note=("stands in for cn_baidu_migration, cn_holiday_spend (with cn_nbs_retail) and, at "
-              "class level only, cn_maoyan_box_office; one CSV, whole history, keyless")),
+              "class level only, cn_maoyan_box_office; one CSV, whole history, keyless. Table "
+              "moved 2026-11-11: M650631 is 404; M651101 'Sea Cargo And Shipping Statistics, "
+              "Monthly' (MPA) is the current table, found by the TableBuilder resourceid search "
+              "and read 200 with the same Data.row[].columns shape (overridable "
+              "ALT_SINGSTAT_PORT_TABLE)")),
     Source(
         id="br_bcb_payments", name="BCB monthly retail payments (Pix, cards, boletos), Brazil",
         url=("https://olinda.bcb.gov.br/olinda/servico/MPV_DadosAbertos/versao/v1/odata/"
@@ -3396,6 +3400,38 @@ def _redact(url: str, src: Source) -> str:
     return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
+#: A MALFORMED-REQUEST REPLY NAMES ITS OWN CAUSE. HTTP 400/422 bodies from OData and REST APIs
+#: say which parameter they rejected (measured 2026-11-11: br_bcb_payments read only "HTTP 400 Bad
+#: Request" on the box, and nobody could tell a renamed entity from an over-limit $top). The first
+#: 200 characters of such a reply go into the error, redacted. Refusals (401/403/429/451) are not
+#: read: they stop, and their body is not evidence anyone needs.
+_DIAGNOSABLE = {400, 422}
+
+
+def _exc_body(exc: BaseException) -> bytes:
+    """An HTTP error's body, read ONCE and kept on the exception. Its stream can be read only
+    once, and two readers need it: `_error_body` (the diagnosis) and `_stop_seconds` (Banxico's
+    `secondsToReset` on a quota 400). Without the cache whichever ran second saw b"" and the
+    quota stop was silently lost."""
+    cached = getattr(exc, "_quant_body", None)
+    if isinstance(cached, bytes):
+        return cached
+    raw = b""
+    with contextlib.suppress(Exception):
+        raw = exc.read(4096) if hasattr(exc, "read") else b""  # type: ignore[attr-defined]
+    with contextlib.suppress(Exception):
+        exc._quant_body = raw  # type: ignore[attr-defined]
+    return raw or b""
+
+
+def _error_body(exc: BaseException, src: Source) -> str:
+    if getattr(exc, "code", None) not in _DIAGNOSABLE:
+        return ""
+    raw = _exc_body(exc)[:2048]
+    text = " ".join(raw.decode("utf-8", "replace").split())[:200] if raw else ""
+    return f" | body: {_redact(text, src)}" if text else ""
+
+
 def http_get(url: str, headers: dict[str, str] | None = None,
              secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
     from libs.data.keyed_sources import keyed_opener
@@ -4243,7 +4279,7 @@ def _stop_seconds(exc: BaseException) -> int | None:
         secs = int(float(str(exc.headers.get("Bmx-secondsToReset"))))
     if secs is None:
         with contextlib.suppress(Exception):
-            text = exc.read(4096).decode("utf-8", "replace")
+            text = _exc_body(exc).decode("utf-8", "replace")
             m = re.search(r'"secondsToReset"\s*:\s*"?(\d+)', text)
             secs = int(m.group(1)) if m else None
     if exc.code == 400:
@@ -4320,7 +4356,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
-                errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}"
+                              + _error_body(exc, src))
                 stop = _stop_seconds(exc) if src.key_header else None
                 if stop is not None:
                     # A refusal or an exhausted quota is a STOP, never something to retry into.

@@ -835,6 +835,24 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     assert "asia_za_statssa_retail" not in lib
 
 
+def test_a_400_reply_names_its_cause_and_a_refusal_body_is_never_read() -> None:
+    src = A.BY_ID["br_bcb_payments"]
+    bad = urllib.error.HTTPError("u", 400, "Bad Request", None,  # type: ignore[arg-type]
+                                 io.BytesIO(b'{"error": {"message": "$top  too large"}}'))
+    assert "$top too large" in A._error_body(bad, src)
+    refused = urllib.error.HTTPError("u", 403, "Forbidden", None,  # type: ignore[arg-type]
+                                     io.BytesIO(b"secret page"))
+    assert A._error_body(refused, src) == ""
+    assert A._error_body(ValueError("x"), src) == ""
+
+
+def test_singstat_reads_the_current_monthly_sea_cargo_table() -> None:
+    import os
+
+    url = A.BY_ID["sg_port_throughput"].url
+    assert url.endswith("/M651101") or "ALT_SINGSTAT_PORT_TABLE" in os.environ
+
+
 # ================================================================ Banxico SIE (keyed header)
 def _http_error(code: int, body: bytes, headers: dict[str, str] | None = None) -> Exception:
     import email.message
@@ -984,3 +1002,16 @@ def test_stop_seconds_reads_the_reset_and_ignores_ordinary_errors() -> None:
     assert A._stop_seconds(_http_error(404, b"")) is None
     assert A._stop_seconds(OSError("down")) is None
     assert A._stop_seconds(_http_error(400, b'{"secondsToReset": 999999}')) == 86400
+
+
+def test_a_quota_400_is_both_diagnosed_and_a_stop_from_one_body_read() -> None:
+    """The merge of #921 with LIVE gave one HTTPError body two readers: the 400/422 diagnosis
+    and Banxico's quota stop. The body stream reads once; both must see it, in either order."""
+    src = A.BY_ID["mx_banxico_sie"]
+    body = b'{"error": {"mensaje": "limite"}, "secondsToReset": 240}'
+    exc = _http_error(400, body)
+    assert "limite" in A._error_body(exc, src)              # the diagnosis reads it first
+    assert A._stop_seconds(exc) == 300                      # and the stop still sees the reset
+    exc = _http_error(400, body)
+    assert A._stop_seconds(exc) == 300                      # the other order
+    assert "secondsToReset" in A._error_body(exc, src)
