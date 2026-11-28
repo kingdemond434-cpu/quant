@@ -1076,6 +1076,33 @@ def to_str(expr: Expr) -> str:
     return f"{op}({inner})"
 
 
+def coerce_expr(expr: Any) -> Any:
+    """Every spelling a stored tree arrives in, back to the prefix list `is_valid` reads.
+
+    Three spellings reach `family_formula` from the docket and the forward clocks: the prefix
+    list itself, the rendered call `to_str` writes ("neg(delta(spread, 3))"), and the list's own
+    Python repr ("['neg', ['delta', 'spread', 3]]") that a str() of the params produced.
+    The repr form was read as a bare terminal name, failed `is_valid` and fired NOTHING --
+    measured 2026-11-05 on a GBPCHF formula certificate (CLOCK_LAW). A bare terminal ("close")
+    is returned unchanged; an unparseable string is returned unchanged and stays invalid."""
+    if not isinstance(expr, str):
+        return expr
+    text = expr.strip()
+    if text.startswith("[") and text.endswith("]"):
+        import ast
+        try:
+            got = ast.literal_eval(text)
+        except (ValueError, SyntaxError):
+            return expr
+        return got if isinstance(got, list) else expr
+    if "(" in text:
+        try:
+            return from_str(text)
+        except ValueError:
+            return expr
+    return expr
+
+
 def from_str(text: str) -> Expr:
     """The inverse of `to_str`: "zscore(sub(close, open), 20)" -> the prefix list. Numbers come
     back as int (or float); everything else is a terminal name. Raises ValueError on a string

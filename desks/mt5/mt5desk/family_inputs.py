@@ -222,10 +222,15 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             try:
                 from mt5desk.economic_drivers import ROLES
 
-                from libs.research.alpha_grammar import DRIVER_TERMINALS, terminals_in
+                from libs.research.alpha_grammar import (
+                    DRIVER_TERMINALS,
+                    coerce_expr,
+                    terminals_in,
+                )
             except ImportError as exc:
                 return None, f"alpha grammar unavailable: {exc}"
-            need = [t for t in terminals_in(call.get("expr")) if t in DRIVER_TERMINALS]
+            need = [t for t in terminals_in(coerce_expr(call.get("expr")))
+                    if t in DRIVER_TERMINALS]
             drivers: dict[str, Any] = {}
             for t in need:
                 for cand in ROLES.get(t.upper(), ()):
