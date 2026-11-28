@@ -4,6 +4,16 @@ Two rules, applied everywhere, now and in future. They are enforced by
 `scripts/check_growth_governance.py` at every law-gate boundary (organ spawn, push, CI, hourly)
 and by `scripts/check_heat_floor_wiring.py` on the box.
 
+> **SUPERSEDED IN PART (principal, restated 2026-11-13 18:46Z): THERE IS NO 20% HEAT FLOOR.**
+> *"We already talked abt the 20% mate n abandoned it n growth optimum is our thing."* Sizing is
+> growth-optimal: `H_actual = clip(H*_robust, 0, measured_ceiling(curve))`, subject to survival.
+> With no validated edge the optimal book is cash, and cash is allowed. Every line below that calls
+> 20% a floor, a mandate or a minimum is HISTORY, kept so the reasoning stays auditable. Rules 1
+> and 2, the measured ceiling, two-sided modifiers and the missed-growth ledger all still bind.
+> Live code still enforces the old floor until its removal PR lands (pf_allocator `mandate=True`,
+> decision_core's fallback top-up to `HEAT_TARGET`, check_growth_governance G1,
+> check_heat_floor_wiring.py).
+
 > **Rule 1.** Every risk reduction mechanism must prove that it increases robust forward E[log W].
 >
 > **Rule 2.** Every strong opportunity must be allowed to increase capital above normal when the evidence supports it.
@@ -70,7 +80,7 @@ Source reputation is a prior, never proof.
 
 ## The heat law, as wired
 
-* The utilisation floor is **20% (HEAT_TARGET), flat, 24/7**, and it is a STANDING MANDATE. It
+* ~~The utilisation floor is **20% (HEAT_TARGET), flat, 24/7**, and it is a STANDING MANDATE.~~ ABANDONED (see banner). It
   does not ramp with readiness; readiness is measured and reported, never gating.
 * **The fixed 30% ceiling was REMOVED on 2026-09-05 by principal order** — *"if growth optimum
   permits 32 35 40 45 wtv in future w new edges etc it can use those w 20 as minimum floor"*. The
@@ -134,7 +144,7 @@ got less.
 | Component | Timid failure | Watcher |
 |---|---|---|
 | static heat cap | same cap regardless of opportunity | the cap IS the opportunity: `heat_policy.measured_ceiling` reads it off the growth curve each pass; `hard_ceiling` rail billed |
-| the 20% floor itself | a mandate that quietly costs growth | `heat_accounting` prices it every pass (`growth_cost_of_floor_per_day/_per_year`) |
+| ~~the 20% floor itself~~ (abandoned) | a mandate that quietly costs growth | `heat_accounting` prices it every pass (`growth_cost_of_floor_per_day/_per_year`) |
 | state shrinkage | shrinks a real emerging edge | `state_shrinkage` rail, admission t-stats |
 | hard vetoes | binary where sizing would do | vetoes replayed by `counterfactual_markout`, billed |
 | factor concentration | estimate uncertainty blocks | `factor_k_floor` rail |
@@ -143,7 +153,7 @@ got less.
 | cost stress | 2x cost used live | live allocation charges measured cost only (`cost_stress` rail) |
 | all gates must pass | one weak gate blocks | gate value measured in the funnel; graveyard model |
 | fixed fractional Kelly | tiny fraction despite evidence | posterior sizing on worlds; Kelly surface reported |
-| cash preference | thresholds too hard | `floor_mandate` rail: 20% is deployed 24/7 |
+| cash preference | thresholds too hard | growth optimum decides; cash is allowed with no validated edge (the `floor_mandate` rail is retired with the floor) |
 
 ### Accidental timidity found and removed (2026-09-04)
 

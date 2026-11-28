@@ -38,12 +38,16 @@ That is the whole objective function — not Sharpe, not a smooth equity curve, 
 trades". Drawdown enters only through future geometric wealth and survivability. Two bounds sit
 on it, and they are asymmetric on purpose:
 
-- **A 20% gross-heat floor is a STANDING MANDATE** — capital is at work 24/7, and the floor does
-  not ramp with readiness. Its growth cost is *measured every pass*, never assumed:
-  `heat_policy.heat_accounting` writes what the floor gave up, per day and per year, whenever the
-  floor was the binding constraint.
+- **There is no heat floor.** The 20% gross-heat floor of 2026-09-02 was abandoned by the
+  principal (restated 2026-11-13: "we ... abandoned it n growth optimum is our thing"). Sizing is
+  growth-optimal: maximise robust E[log W] subject to survival. When no validated edge exists, the
+  growth-optimal book is cash, and cash is allowed.
+  *Transition, stated so nobody reads this as done:* until the code change lands, live code still
+  floors at 20% (`pf_allocator` calls `heat_policy.resolve(mandate=True)`, `decision_core` tops a
+  fallback book up to `HEAT_TARGET`, and `check_growth_governance` G1 plus the sealed
+  `check_heat_floor_wiring.py` require it). Those are being removed in a separate PR.
 - **There is no fixed ceiling.** The old 30% cap was removed on 2026-09-05 by principal order.
-  The bound above the floor is read off the measured growth curve each pass
+  The bound on heat is read off the measured growth curve each pass
   (`desks/mt5/research/heat_policy.measured_ceiling`) and moves both ways — above 30% when new
   edges support it, below 30% when the opportunity set is thin. It is never set past the last
   heat actually sampled, never past the point where growth turns over, and an unreadable curve
@@ -58,7 +62,7 @@ This is a production-grade quantitative desk running on MetaTrader 5 (Fusion Mar
 - **Autonomous research pipeline**: hypothesis generation → statistical gauntlet (10 gates) → forward shadow → promotion → live trading
 - **Statistical rigor**: DSR, PBO/CSCV, SPA, CPCV, walk-forward, cost stress, genuine lockbox holdout
 - **Forward evidence architecture**: source-provenanced bars, no-data distinction, proxy authority separation
-- **Risk engineering**: per-symbol risk units, floor-aware lot sizing, forward authority ramp (CANARY states), and a heat budget bounded by a ceiling *measured from the growth curve* rather than decreed (see the objective below)
+- **Risk engineering**: per-symbol risk units, venue-minimum-aware lot sizing, forward authority ramp (CANARY states), and a heat budget bounded by a ceiling *measured from the growth curve* rather than decreed (see the objective below)
 - **AI governance**: vault memory, law gates, promotion protocol, supervisor, registry, constitutional fences
 - **Multi-brain deployment**: VPS + local development, Git-based state transport (code branch + mt5-state branch)
 
@@ -130,8 +134,8 @@ Layered YAML + environment variables (`QP_` prefix). Secrets via `QP_SECRET_` pr
 **Start here, in this order:**
 
 1. `docs/LAWS.md` — canonical law. Where a doc and a law disagree, the law wins.
-2. `docs/GROWTH_GOVERNANCE.md` — the risk mandate: the objective, the 20% floor, the measured
-   ceiling, and what every rail costs in growth.
+2. `docs/GROWTH_GOVERNANCE.md` — the risk mandate: the objective (growth-optimal, no floor), the
+   measured ceiling, and what every rail costs in growth.
 3. `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — binding promotion rules
    (`desks/mt5/UNIVERSAL_PROMOTION_PROTOCOL.md` for the MT5-specific ones).
 4. `CLAUDE.md` / `AGENTS.md` — agent orientation and governance.
