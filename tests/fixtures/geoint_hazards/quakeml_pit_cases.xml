@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:catalog="http://anss.org/xmlns/catalog/0.1" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+<eventParameters publicID="quakeml:fixture">
+<!-- UPGRADED: first reported M5.8, raised to M6.2 three hours later. Reviewed (today) = 6.2. -->
+<event catalog:eventsource="us" catalog:eventid="up0001" publicID="quakeml:fixture/up0001">
+<origin publicID="o:up"><time><value>2024-04-02T23:58:00Z</value></time><longitude><value>121.6</value></longitude><latitude><value>23.8</value></latitude></origin>
+<magnitude publicID="m:up:1"><mag><value>5.8</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2024-04-03T00:15:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:up:2"><mag><value>6.2</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2024-04-03T03:00:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:up</preferredOriginID><preferredMagnitudeID>m:up:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- DOWNGRADED: first reported M6.1, cut to M5.7. Reviewed (today) = 5.7. -->
+<event catalog:eventsource="us" catalog:eventid="dn0001" publicID="quakeml:fixture/dn0001">
+<origin publicID="o:dn"><time><value>2024-01-01T07:10:00Z</value></time><longitude><value>137.2</value></longitude><latitude><value>37.5</value></latitude></origin>
+<magnitude publicID="m:dn:1"><mag><value>6.1</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2024-01-01T07:30:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:dn:2"><mag><value>5.7</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2024-01-02T10:00:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:dn</preferredOriginID><preferredMagnitudeID>m:dn:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- NO CREATION TIME, M6.1: inside the margin, so the first sighting is unknowable -> dropped. -->
+<event catalog:eventsource="us" catalog:eventid="nt0001" publicID="quakeml:fixture/nt0001">
+<origin publicID="o:nt1"><time><value>2015-09-16T22:54:00Z</value></time><longitude><value>-71.7</value></longitude><latitude><value>-31.6</value></latitude></origin>
+<magnitude publicID="m:nt1"><mag><value>6.1</value></mag></magnitude>
+<preferredOriginID>o:nt1</preferredOriginID><preferredMagnitudeID>m:nt1</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- NO CREATION TIME, M6.6: over the margin -> admitted at origin + slack, basis "margin". -->
+<event catalog:eventsource="us" catalog:eventid="nt0002" publicID="quakeml:fixture/nt0002">
+<origin publicID="o:nt2"><time><value>2015-09-17T04:10:00Z</value></time><longitude><value>-71.4</value></longitude><latitude><value>-31.2</value></latitude></origin>
+<magnitude publicID="m:nt2"><mag><value>6.6</value></mag></magnitude>
+<preferredOriginID>o:nt2</preferredOriginID><preferredMagnitudeID>m:nt2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- Outside every box (mid-Atlantic): never a member whatever its magnitude. -->
+<event catalog:eventsource="us" catalog:eventid="ob0001" publicID="quakeml:fixture/ob0001">
+<origin publicID="o:ob"><time><value>2020-01-01T00:00:00Z</value></time><longitude><value>-30.0</value></longitude><latitude><value>10.0</value></latitude></origin>
+<magnitude publicID="m:ob"><mag><value>7.0</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2020-01-01T00:10:00Z</creationTime></creationInfo></magnitude>
+<type>earthquake</type>
+</event>
+<!-- FOREIGN AGENCY: JMA's Ml 6.1 beside the preferred us Mww 5.8 -> never times an entry. -->
+<event catalog:eventsource="us" catalog:eventid="fa0001" publicID="quakeml:fixture/fa0001">
+<origin publicID="o:fa"><time><value>2024-05-01T10:00:00Z</value></time><longitude><value>140.1</value></longitude><latitude><value>36.0</value></latitude></origin>
+<magnitude publicID="m:fa:1"><mag><value>6.1</value></mag><type>ml</type><creationInfo><agencyID>jma</agencyID><creationTime>2024-05-01T10:05:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:fa:2"><mag><value>5.8</value></mag><type>mww</type><creationInfo><agencyID>us</agencyID><creationTime>2024-05-01T10:40:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:fa</preferredOriginID><preferredMagnitudeID>m:fa:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- OWN mb 6.0 at origin+12m, later revised to Mww 5.8: enters at origin+slack (never earlier),
+     on a non-preferred type, and is counted as such. -->
+<event catalog:eventsource="us" catalog:eventid="mb0001" publicID="quakeml:fixture/mb0001">
+<origin publicID="o:mb"><time><value>2024-06-01T12:00:00Z</value></time><longitude><value>121.5</value></longitude><latitude><value>23.5</value></latitude></origin>
+<magnitude publicID="m:mb:1"><mag><value>6.0</value></mag><type>mb</type><creationInfo><agencyID>us</agencyID><creationTime>2024-06-01T12:12:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:mb:2"><mag><value>5.8</value></mag><type>Mww</type><creationInfo><agencyID>us</agencyID><creationTime>2024-06-01T13:30:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:mb</preferredOriginID><preferredMagnitudeID>m:mb:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- MIXED: a timed own M5.6 plus an untimed preferred M6.5 -> the margin admits it. -->
+<event catalog:eventsource="us" catalog:eventid="mx0001" publicID="quakeml:fixture/mx0001">
+<origin publicID="o:mx"><time><value>2016-11-24T18:43:00Z</value></time><longitude><value>-72.0</value></longitude><latitude><value>-33.0</value></latitude></origin>
+<magnitude publicID="m:mx:1"><mag><value>5.6</value></mag><creationInfo><agencyID>us</agencyID><creationTime>2016-11-24T18:55:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:mx:2"><mag><value>6.5</value></mag></magnitude>
+<preferredOriginID>o:mx</preferredOriginID><preferredMagnitudeID>m:mx:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+<!-- LATE FOREIGN PREFERRED: own M5.9 at +5m, JMA preferred M6.5 created at +2d -> margin, at +2d. -->
+<event catalog:eventsource="us" catalog:eventid="lf0001" publicID="quakeml:fixture/lf0001">
+<origin publicID="o:lf"><time><value>2024-08-08T07:42:00Z</value></time><longitude><value>131.7</value></longitude><latitude><value>31.7</value></latitude></origin>
+<magnitude publicID="m:lf:1"><mag><value>5.9</value></mag><type>mww</type><creationInfo><agencyID>us</agencyID><creationTime>2024-08-08T07:47:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:lf:2"><mag><value>6.5</value></mag><type>mjma</type><creationInfo><agencyID>jma</agencyID><creationTime>2024-08-10T07:42:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:lf</preferredOriginID><preferredMagnitudeID>m:lf:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+</eventParameters>
+</q:quakeml>

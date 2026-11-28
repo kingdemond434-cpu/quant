@@ -236,6 +236,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- options-implied state
     "implied_vol": "options_implied",
     "gamma_exposure": "options_implied",
+    "fx_expiry_pin": "options_implied",
     # -- execution and entry alpha
     "entry_alpha": "execution_entry",
     "execution_alpha": "execution_entry",
@@ -244,6 +245,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "news_reaction": "news_reaction",
     "analyst_revision_drift": "news_reaction",
     "alt_release_drift": "news_reaction",
+    "hazard_shock": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",

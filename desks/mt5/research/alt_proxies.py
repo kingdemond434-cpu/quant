@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import csv
 import functools
 import gzip
 import hashlib
@@ -81,6 +82,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
@@ -574,6 +576,88 @@ def parse_pib_trade(body: bytes, ctx: Ctx) -> list[Obs]:
             continue
         seen.add(key)
         out.append(Obs(f"{key}_imports_usd_bn", period, x, pub))
+    return out
+
+
+# Swiss customs (BAZG) monthly exports by tariff number and country. The OGD bulk file's exact
+# header is UNCONFIRMED (the source is HELD on terms and was never fetched), so columns are found
+# by header words in German, French or English, and the file may arrive zipped or as a CSV.
+BAZG_GOLD, BAZG_SILVER = "7108", "7106"
+#: Destination ISO2 -> series suffix. Asia is the physical-demand corridor; GB is the London vault.
+BAZG_DEST = {"CN": "cn", "HK": "hk", "IN": "in", "GB": "uk", "SG": "sg", "TH": "th", "TR": "tr",
+             "AE": "ae", "US": "us"}
+BAZG_ASIA = ("CN", "HK", "IN", "SG", "TH")
+_BAZG_COLS: dict[str, tuple[str, ...]] = {
+    "tariff": ("tarifnummer", "tn8", "tn", "tariff", "tariff_number", "numero_tarif", "tarif"),
+    "country": ("land", "land_iso", "country", "country_iso", "pays", "iso", "laendercode"),
+    "year": ("jahr", "year", "annee", "année"),
+    "month": ("monat", "month", "mois"),
+    "period": ("periode", "period", "zeitraum", "datum", "date"),
+    "mass": ("eigenmasse", "masse", "mass", "gewicht", "weight", "kg", "masse_kg", "mass_kg"),
+}
+
+
+def _bazg_rows(body: bytes) -> list[dict[str, str]]:
+    raw = body
+    if raw[:2] == b"PK":
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                names = [n for n in z.namelist() if n.lower().endswith((".csv", ".txt"))]
+                if not names:
+                    return []
+                raw = z.read(names[0])
+        except (zipfile.BadZipFile, KeyError, OSError):
+            return []
+    text = raw.decode("utf-8-sig", errors="replace")
+    first = text.split("\n", 1)[0]
+    delim = ";" if first.count(";") > first.count(",") else ("\t" if "\t" in first else ",")
+    return [{str(k or "").strip().lower(): str(v or "").strip() for k, v in r.items()}
+            for r in csv.DictReader(io.StringIO(text), delimiter=delim)]
+
+
+def _bazg_get(row: dict[str, str], field_name: str) -> str:
+    for want in _BAZG_COLS[field_name]:
+        if want in row and row[want] != "":
+            return row[want]
+    return ""
+
+
+def parse_bazg_exports(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Monthly gold (7108) and silver (7106) EXPORTS by destination, in tonnes, plus Asia's share
+    of the gold total. A month whose total is zero or missing yields no share (UNMEASURED)."""
+    agg: dict[tuple[str, date], float] = {}
+    for r in _bazg_rows(body):
+        tn = re.sub(r"\D", "", _bazg_get(r, "tariff"))
+        metal = "gold" if tn.startswith(BAZG_GOLD) else "silver" if tn.startswith(BAZG_SILVER) \
+            else None
+        if metal is None:
+            continue
+        y, m = _bazg_get(r, "year"), _bazg_get(r, "month")
+        if not (y and m):
+            pm = re.match(r"(\d{4})\D?(\d{1,2})", _bazg_get(r, "period"))
+            y, m = (pm.group(1), pm.group(2)) if pm else ("", "")
+        try:
+            period = _month_end(int(y), int(m))
+        except ValueError:
+            continue
+        kg = _num(_bazg_get(r, "mass").replace("'", "").replace(" ", ""))
+        if kg is None:
+            continue
+        iso = _bazg_get(r, "country").upper()[:2]
+        agg[(f"{metal}_total", period)] = agg.get((f"{metal}_total", period), 0.0) + kg
+        if iso in BAZG_DEST:
+            k = (f"{metal}_{BAZG_DEST[iso]}", period)
+            agg[k] = agg.get(k, 0.0) + kg
+        if metal == "gold" and iso in BAZG_ASIA:
+            agg[("gold_asia", period)] = agg.get(("gold_asia", period), 0.0) + kg
+    out: list[Obs] = []
+    for (key, period), kg in sorted(agg.items(), key=lambda kv: (kv[0][1], kv[0][0])):
+        metal, dest = key.split("_", 1)
+        out.append(Obs(f"{metal}_exp_{dest}_t", period, round(kg / 1000.0, 6)))
+    for (key, period), kg in agg.items():
+        if key == "gold_total" and kg > 0:
+            asia = agg.get(("gold_asia", period), 0.0)
+            out.append(Obs("gold_exp_asia_share", period, round(asia / kg, 6)))
     return out
 
 
@@ -1985,8 +2069,12 @@ SOURCES: tuple[Source, ...] = (
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
-        instruments={"XTIUSD": -1, "XBRUSD": -1},
-        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits"),
+        # N4 (2026-10-14): the transit anomaly also feeds gold (a chokepoint shock is a
+        # risk-off bid) and USDJPY (yen repatriation on the same shock). Priors only: a PASSING
+        # release-gain test's measured IC sign replaces them wherever a cell is minted.
+        instruments={"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1, "USDJPY": 1},
+        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
+                       "suez_canal_transits", "malacca_strait_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
                    "moves before any inventory report"),
         payer="short-dated crude holders pricing weekly inventories",
@@ -2033,6 +2121,32 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="ch_bazg_gold_exports",
+        name="Swiss gold and silver exports by destination (BAZG monthly customs, 7108/7106)",
+        url=("https://www.bazg.admin.ch/dam/bazg/de/dokumente/abgaben/aussenhandelstatistik/"
+             "diffusion/Daten/Waren/OGD_EXP_TN_M.zip.download.zip/OGD_EXP_TN_M.zip"),
+        region="CH", language="de", cadence="monthly", parse=parse_bazg_exports,
+        rule=_lag_rule(25, 9, weekday=True), transform="anomaly_monthly",
+        instruments={"XAUUSD": 1, "XAGUSD": 1},
+        series_instruments={"silver": {"XAGUSD": 1}, "gold_exp_uk": {"XAUUSD": -1}},
+        signal_series=("gold_exp_asia_share", "gold_exp_uk_t", "gold_exp_cn_t", "gold_exp_in_t",
+                       "silver_exp_total_t"),
+        mechanism=("two-thirds of world gold refining sits in four Swiss plants: where the "
+                   "refined bars go each month (to Shanghai, Hong Kong and India, or back to the "
+                   "London vaults) is the physical market's direction, printed by customs"),
+        payer="paper-gold holders pricing real yields and the dollar while bars move East",
+        constraint=("refining and shipping run on a monthly logistics cycle; Asian import quotas "
+                    "and duties bind physical demand, not the futures tape"),
+        licence=("BAZG Swiss foreign-trade statistics: free use, source mandatory, commercial "
+                 "use only with BAZG permission (HELD until that permission is on file)"),
+        source_culture="CH/de", participant_structure=("physical_flow", "settlement_constrained"),
+        failure_mode_hypothesis=("fails when flows are price-driven rather than demand-driven "
+                                 "(a London ETF unwind shipping bars East moves the print on "
+                                 "the same price move), and around Indian duty changes"),
+        crowding_prior="low", vintage="current",
+        note=("monthly print; the bulk file serves the latest revised vintage, so a first "
+              "fetch is backfill. HELD on terms (commercial use needs BAZG permission)")),
     Source(
         id="mx_banxico_sie", name="Banxico SIE: international reserves and FX-commission series",
         url=("https://www.banxico.org.mx/SieAPIRest/service/v1/series/{ids}/datos/"
@@ -2774,6 +2888,10 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    "ch_bazg_gold_exports": ("to_confirm", "BAZG: 'Freie Nutzung. Quellenangabe ist Pflicht. "
+                             "Kommerzielle Nutzung nur mit Bewilligung des Datenlieferanten "
+                             "zulässig.' A trading desk's use is commercial: HELD until BAZG's "
+                             "written permission is on file (audit 2026-10-13)"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -3056,6 +3174,29 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "imf_portwatch_ports": {**_IMF_EV},
     "imf_portwatch_chokepoints": {**_IMF_EV},
+    "ch_bazg_gold_exports": {
+        "terms_url": ("https://www.bazg.admin.ch/de/"
+                      "schweizerische-aussenhandelsstatistik-aktuelle-daten"),
+        "terms_quote": ("Freie Nutzung. Quellenangabe ist Pflicht. Kommerzielle Nutzung nur mit "
+                        "Bewilligung des Datenlieferanten zulässig."),
+        "catalogue_url": ("https://opendata.swiss/en/dataset/"
+                          "schweizerische-exporte-und-importe-nach-tarifnummer-und-land-"
+                          "monatliche-daten-ab-1988"),
+        "catalogue_quote": ("Swiss exports and imports are available since 1988 on a monthly "
+                            "basis. [...] Since 2012: including gold and silver bullions as well "
+                            "as coins."),
+        "portal_terms_url": "https://opendata.swiss/en/terms-of-use",
+        "portal_terms_quote": ("Open use. Must provide the source. Use for commercial purposes "
+                               "requires permission of the data owner."),
+        "federal_notice_url": "https://www.admin.ch/gov/de/start/rechtliches.html",
+        "federal_notice_quote": ("Für die Reproduktion jeglicher Elemente ist die schriftliche "
+                                 "Zustimmung der Urheberrechtsträger im Voraus einzuholen."),
+        "judgement": ("free use is granted, commercial use needs BAZG's permission, and a "
+                      "trading desk's use is commercial: FAIL CLOSED, never fetched. Unblock: "
+                      "BAZG's written Bewilligung recorded here, then TERMS -> confirmed"),
+        "robots": "not read: a HELD source is not fetched",
+        "credit": "Source: Federal Office for Customs and Border Security (BAZG), Swiss-Impex",
+        "checked_at": "2026-10-13"},
     "in_gold_imports": {
         "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
         "terms_quote": ("Material featured on this website may be reproduced free of charge and "
@@ -3199,6 +3340,18 @@ NO_SUBSTITUTE: dict[str, str] = {
                 "requires written permission); COVERED only at corr >= 0.5 with n reported"),
 }
 
+#: Sources blocked on their OWN terms (not paid originals) that no substitute stands in for: the
+#: reason and the substitute are recorded, never left implicit (GD audit 2026-10-14). These are
+#: not part of SUBSTITUTED_BY / NO_SUBSTITUTE, which hold the paid originals under the #152 law.
+HELD_NO_SUBSTITUTE: dict[str, dict[str, str]] = {
+    "ch_bazg_gold_exports": {
+        "reason": ("terms: commercial use requires permission -- BAZG 'Kommerzielle Nutzung nur "
+                   "mit Bewilligung des Datenlieferanten zulässig'; a trading desk's use is "
+                   "commercial and no Bewilligung is on file"),
+        "substitute": "none: UNMEASURED",
+        "unblock": "a written Bewilligung from BAZG recorded in TERMS_EVIDENCE",
+    },
+}
 
 def substitute_check(blocked: str, sub: str,
                      measured: dict[str, dict[str, dict[str, Any]]] | None = None

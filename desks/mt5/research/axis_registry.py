@@ -221,6 +221,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
+    # FX option-expiry pinning (2026-10-13): dealers' gamma hedges at a large printed strike pull
+    # spot to it into the 10:00 NY cut. The strike ladder is positioning data, not price.
+    "gamma_hedging_state positioning market": "fx_expiry_pin",
+    # Natural-hazard shocks (2026-10-14): a public quake/storm notice forces holders of the named
+    # physical exposure to hedge before the damage is measured.
+    "volatility_shock event market": "hazard_shock",
     "inventory_shock microstructure market": "volume_spike",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec

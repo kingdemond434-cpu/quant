@@ -1,0 +1,48 @@
+{
+ "activeStorms": [
+  {
+   "id": "al052026",
+   "binNumber": "AT5",
+   "name": "Erin",
+   "classification": "HU",
+   "intensity": "85",
+   "pressure": "975",
+   "latitudeNumeric": 24.5,
+   "longitudeNumeric": -88.0,
+   "lastUpdate": "2026-10-13T21:00:00.000Z",
+   "trackCone": {
+    "advNum": "012",
+    "issuance": "2026-10-13T21:00:00.000Z",
+    "fileUpdateTime": "2026-10-13T20:51:00.000Z",
+    "kmzFile": "https://www.nhc.noaa.gov/storm_graphics/api/AL052026_CONE_latest.kmz",
+    "zipFile": "https://www.nhc.noaa.gov/storm_graphics/api/AL052026_012adv_CONE.zip"
+   }
+  },
+  {
+   "id": "al062026",
+   "binNumber": "AT1",
+   "name": "Fay",
+   "classification": "TS",
+   "intensity": "45",
+   "latitudeNumeric": 30.0,
+   "longitudeNumeric": -50.0,
+   "trackCone": {
+    "advNum": "003",
+    "issuance": "2026-10-13T21:00:00.000Z",
+    "kmzFile": "https://www.nhc.noaa.gov/storm_graphics/api/AL062026_CONE_latest.kmz"
+   }
+  },
+  {
+   "id": "ep052026",
+   "binNumber": "EP5",
+   "name": "Simon",
+   "classification": "HU",
+   "intensity": "90",
+   "trackCone": {
+    "advNum": "020",
+    "issuance": "2026-10-13T21:00:00.000Z",
+    "kmzFile": "https://www.nhc.noaa.gov/storm_graphics/api/EP052026_CONE_latest.kmz"
+   }
+  }
+ ]
+}

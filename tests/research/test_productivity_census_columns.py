@@ -527,3 +527,20 @@ def test_dropping_the_coverage_block_after_it_existed_is_a_regression(
     verdict = fence.check()
     assert verdict["failures"] and "REGRESSION" in verdict["failures"][0]
     assert verdict["coverage"]["verdict"] == "UNMEASURED"
+
+
+def test_a_leg_row_reads_the_ledger_under_the_legs_bare_name_once(
+        census_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The compute ledger names a leg's run by its bare name; the `leg:` roster row must find it,
+    and a bare row of the same stem must not count the same hours a second time."""
+    monkeypatch.setattr(pc, "measure_compute", lambda _d: {
+        "available": True, "why": "", "hours": {"alt_proxies": {"hours": 0.5, "runs": 7}},
+        "window_days": 7.0, "n_runs_priced": 1})
+    _roster(census_env, [
+        {"producer": "leg:alt_proxies", "kind": "leg", "clock": "hourly_cycle:alt_proxies"},
+        {"producer": "alt_proxies", "kind": "executable", "clock": None},
+    ])
+    _registry(census_env / "alpha_registry.sqlite", [])
+    rows = {r["key"]: r for r in pc.build()["producers"]}
+    assert rows["leg:alt_proxies"]["compute_hours_ledger"] == pytest.approx(0.5)
+    assert rows["alt_proxies"]["compute_hours_ledger"] == 0.0
