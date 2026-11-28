@@ -9318,6 +9318,22 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "EXTIME1",
+   "item": "Execution timing: the cheapest fill minute inside each live sleeve's own placing hour, from sub-hour bars on disk, net of the edge decay a later fill forgoes (report only; H1-only symbols read UNMEASURED)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:execution_timing",
+   "artifact": "desks/mt5/reports/EXECUTION_TIMING.json",
+   "consumer": "none yet by design: a person reads it (HUMAN_READ in libs/ops/capability_graph.py); its decision reader is the entry-timing follow-up",
+   "evidence": [
+    "desks/mt5/research/execution_timing.py:1-35 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
