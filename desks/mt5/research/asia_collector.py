@@ -57,6 +57,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -68,6 +69,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
+SCOUTED = BASE / "data" / "llm_lab" / "scouted_sources.json"
 from libs.ops import token_refresh as _token_refresh  # noqa: E402
 
 VAULT = BASE / "data" / "lake" / "vault"
@@ -252,6 +254,61 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
     return False, "robots.txt Disallow covers this path: not fetched"
 
 
+#: Terms values under which a MODEL-NAMED (scouted) source may be fetched on a schedule.
+SCOUT_TERMS_OK = frozenset({"confirmed"})
+SCOUT_PORTS = frozenset({None, 80, 443})
+
+
+def scouted_admissible(rows: list[dict[str, Any]], public_url: Callable[[str], str],
+                       robots: Callable[[str], tuple[bool, str]] | None = None,
+                       ) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """The scouted rows this pass may collect, and why each other one is held.
+
+    A SCOUTED ROW IS A MODEL'S SUGGESTION, NOT A DECLARED SOURCE (audit of 538cb964, SF9). It
+    used to be fetched hourly with `terms: "to_confirm"`, its robots.txt read only once at scout
+    time, and any port. Now it is collected only once its terms are confirmed (unconfirmed terms
+    stay fail-closed), on a standard port, at a host that still resolves public, and only while
+    its robots.txt -- re-read every pass -- allows the URL. Declared registry rows are unchanged.
+    """
+    check = robots or (lambda u: _robots_allows(u, "quant-desk-source-scout/1.0"))
+    ok: list[dict[str, Any]] = []
+    held: dict[str, str] = {}
+    for s in rows:
+        sid, url = str(s.get("id")), str(s.get("url") or "")
+        try:
+            port = urllib.parse.urlsplit(url).port
+        except ValueError:
+            port = -1
+        if str(s.get("terms") or "") not in SCOUT_TERMS_OK:
+            held[sid] = f"terms {s.get('terms') or 'unstated'}: unconfirmed terms stay closed"
+        elif port not in SCOUT_PORTS:
+            held[sid] = f"non-standard port {port}"
+        elif public_url(url):
+            held[sid] = f"host no longer public: {public_url(url)}"
+        else:
+            allowed, why = check(url)
+            if not allowed or "unreadable" in why:
+                held[sid] = f"robots.txt: {why or 'disallows this URL'}"
+            else:
+                ok.append(s)
+    return ok, held
+
+
+def scout_lane_idle(admitted: list[dict[str, Any]], held: dict[str, str]) -> str:
+    """A RED line when the scouted lane collected nothing because no row's terms are confirmed
+    (audit SF5 on 37bb136b4). Nothing in the desk confirms a scouted row's terms today, so a
+    lane that only admits confirmed rows is IDLE, and idle is a defect (III.16), never quiet."""
+    if admitted or not held:
+        return ""
+    terms = sum(1 for why in held.values() if why.startswith("terms "))
+    if terms < len(held):
+        return ""
+    return (f"SCOUTED LANE IDLE (III.16): {terms} scouted source(s) held, every one for "
+            f"unconfirmed terms, and no organ confirms a scouted row's terms -- a person (or "
+            f"a terms-confirmation step) must set `terms: confirmed` on the row for it to be "
+            f"collected")
+
+
 def _vault(source_id: str, body: bytes, url: str, ctype: str,
            attribution: str = "", private: bool = False) -> dict[str, Any]:
     """Write the raw bytes under their content hash. Never overwrites, never deletes."""
@@ -427,6 +484,31 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+class _PublicOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """A model-scouted URL may redirect only to another public host (audit should-fix on #332):
+    `urlopen` follows redirects, so a public page that 302s to 169.254.169.254 would otherwise
+    skip the host check made at ingest."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        from libs.ops.public_host import public_url
+        why = public_url(newurl)
+        if why:
+            raise urllib.error.URLError(f"redirect refused: {why}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open(req: urllib.request.Request, src: dict[str, Any], timeout: float) -> Any:
+    if src.get("origin") != "llm_source_scout":
+        return urllib.request.urlopen(req, timeout=timeout, context=_TLS)
+    from libs.ops.public_host import public_url
+    why = public_url(req.full_url)          # re-resolved at fetch time, not trusted from ingest
+    if why:
+        raise urllib.error.URLError(f"refused: {why}")
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_TLS),
+                                         _PublicOnlyRedirects())
+    return opener.open(req, timeout=timeout)
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -526,7 +608,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
               if _key else None)
     try:
-        with (opener.open(req, timeout=timeout) if opener else
+        with (_open(req, src, timeout) if src.get("origin") == "llm_source_scout"
+              else opener.open(req, timeout=timeout) if opener else
               urllib.request.urlopen(req, timeout=timeout, context=_TLS)) as r:
             hop = redirected_off_limits(url, r.geturl())
             if hop:                       # redirected into an off-limits ground: body unread
@@ -698,6 +781,25 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = _read(REGISTRY, {})
     sources = [s for s in (registry.get("sources") or []) if isinstance(s, dict)]
+    # SCOUTED SOURCES (llm_lab role S, 2026-10-13): official public rows a model named and one
+    # polite probe reached. They join as plane `llm_scout`, collected exactly like a declared row.
+    known = {str(s.get("id")) for s in sources}
+    scouted = _read(SCOUTED, {})
+    # The host is re-checked here, not trusted from the probe: a name that resolved public when
+    # scouted may resolve private now (audit must-fix 8).
+    if str(BASE.parents[1]) not in sys.path:
+        sys.path.insert(0, str(BASE.parents[1]))    # the repo root, for libs/
+    from libs.ops.public_host import public_url
+    admitted, held = scouted_admissible(
+        [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
+         and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known], public_url)
+    sources += admitted
+    if held:
+        print(f"asia collector: {len(held)} scouted source(s) held: "
+              + "; ".join(f"{k} {v}" for k, v in sorted(held.items())[:8]))
+    scout_red = scout_lane_idle(admitted, held)
+    if scout_red:
+        print(f"ASIA COLLECTOR RED: {scout_red}")
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "
@@ -798,7 +900,9 @@ def main(argv: list[str] | None = None) -> int:
 
     _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)
-    doc = report_doc(rows, len(sources), census)
+    doc = report_doc(rows, len(sources), census,
+                     {"admitted": len(admitted), "held": dict(sorted(held.items())[:50]),
+                      **({"red": scout_red} if scout_red else {})})
     _write_atomic(OUT, json.dumps(doc, indent=1))
     return _print_summary(rows, sources, census)
 
@@ -817,7 +921,7 @@ def public_row(rec: dict[str, Any]) -> dict[str, Any]:
 
 
 def report_doc(rows: list[dict[str, Any]], n_sources: int,
-               census: Counter[str]) -> dict[str, Any]:
+               census: Counter[str], scouted: dict[str, Any] | None = None) -> dict[str, Any]:
     """The collector's report. Private-use rows carry counts and status only, and their series
     paths are never listed: the report must be safe on a tracked path."""
     return {
@@ -827,6 +931,7 @@ def report_doc(rows: list[dict[str, Any]], n_sources: int,
                 "the 90th source is not blocked on the day it is added."),
         "n_sources": n_sources, "n_attempted": len(rows),
         "census": dict(census),
+        "scouted": scouted if scouted is not None else {"admitted": 0, "held": {}},
         "n_private_use": sum(1 for r in rows if r.get("private_use")),
         "series_written": [r["parse"]["path"] for r in rows
                            if not r.get("private_use")

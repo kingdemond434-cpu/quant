@@ -775,6 +775,11 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # THE LOOK-AHEAD GUARD RIDES ONTO THE CANDIDATE (2026-10-13). A model-proposed cell names
+        # the first date whose data is evidence (`llm_lab.lookahead_guard`); dropping it here
+        # would let the history the model was trained on read as an out-of-sample result.
+        **({"lookahead_guard": row["lookahead_guard"]}
+           if isinstance(row.get("lookahead_guard"), dict) else {}),
         # AND THE DONOR'S STANDING (2026-09-30). A moat-exchange donation carries the registry
         # row's campaign id and source id, and for a paid-substitute cell the validation lane:
         # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and

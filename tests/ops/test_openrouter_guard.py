@@ -1,7 +1,7 @@
 """NO OPENROUTER CREDIT CAN BE SPENT UNLESS THE PRINCIPAL SWITCHES PAID ON.
 
   * a request naming a model without `:free` is refused before it leaves, on every path that
-    posts: the guard itself, `llm_seat`, and every file that builds a
+    posts: the guard itself, `llm_seat`, `free_chain`, and every file that builds a
     `/chat/completions` request (a fence, so a new caller cannot skip it);
   * a pinned paid id on an OpenRouter seat is replaced by the best free id, never sent;
   * QUANT_LLM_LAB_PAID=1 is the only way past, and other providers' hosts are untouched;
@@ -17,6 +17,7 @@ from typing import Any
 
 import pytest
 
+from libs.ops import free_chain as fc
 from libs.ops import llm_seat
 from libs.ops import openrouter_guard as g
 
@@ -74,6 +75,12 @@ def test_llm_seat_post_refuses_before_the_wire(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(urllib.request, "urlopen", _no_network)
     body, err = llm_seat._post(OR, "k", json.dumps({"model": "openai/gpt-6"}).encode(),
                                timeout=1)
+    assert body == {} and err and "openrouter_guard" in err
+
+
+def test_free_chain_request_refuses_before_the_wire(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+    body, err = fc._request(OR, "k", {"model": "openai/gpt-6"}, 1)
     assert body == {} and err and "openrouter_guard" in err
 
 
@@ -139,12 +146,83 @@ def test_unreachable_key_info_is_unmeasured_not_zero() -> None:
     assert g.daily_limit(cached_only=True) is None
 
 
-def test_seat_budget_scales_with_the_measured_limit(tmp_path: Path,
-                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+def test_budgets_scale_with_the_measured_limit(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
     monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
+    monkeypatch.setattr(fc, "CONFIG", tmp_path / "providers.json")
     assert llm_seat.free_daily_max() == llm_seat.DEFAULT_FREE_DAILY_MAX   # UNMEASURED
     g.key_info(refresh=True, fetch=lambda u: {"data": {"is_free_tier": True}})
     assert llm_seat.free_daily_max() < 50
+    assert next(p for p in fc.providers() if p.name == "openrouter_free").daily_cap == 50
     g.key_info(refresh=True, fetch=lambda u: {"data": {"is_free_tier": False}})
     assert 900 < llm_seat.free_daily_max() < 1000
+    assert next(p for p in fc.providers() if p.name == "openrouter_free").daily_cap == 1000
+
+
+def test_a_model_hint_cannot_skip_the_free_filter(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit must-fix 3: a hinted model is tried only if the free catalogue lists it."""
+    monkeypatch.setattr(fc, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(fc, "CONFIG", tmp_path / "providers.json")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "")
+    sent: list[str] = []
+
+    def fake(url: str, key: str, payload: Any, timeout: float) -> tuple[dict, str | None]:
+        if url.endswith("/models"):
+            return {"data": [{"id": "openai/gpt-6", "pricing": {"prompt": "1",
+                                                                "completion": "1"}},
+                             {"id": "qwen/qwen3:free"}]}, None
+        sent.append(str(payload.get("model")))
+        return {"choices": [{"message": {"content": "ok"}}]}, None
+
+    monkeypatch.setattr(fc, "_request", fake)
+    monkeypatch.setattr(fc, "providers", lambda: [p for p in fc.DEFAULTS
+                                                  if p.name == "openrouter_free"])
+    reply = fc.chat("s", "u", model_hint="openrouter_free:openai/gpt-6", timeout=5)
+    assert "openai/gpt-6" not in sent and reply.model == "qwen/qwen3:free"
+
+
+def test_default_deny_covers_every_openrouter_post() -> None:
+    """Follow-up to #353's audit: not only /completions -- any OpenRouter request with a body."""
+    assert g.refusal("https://openrouter.ai/api/v1/images/generations",
+                     {"model": "openai/gpt-image-2"})
+    assert g.refusal("https://openrouter.ai/api/v1/auth/keys", {"name": "new"})
+    assert g.refusal("https://openrouter.ai/api/v1/models", b"{}"), "a body is never a read"
+    # A billable path is never a read, even bodiless and even under /models/ (audit MF3 on
+    # #332: .../models/x/chat/completions passed here and was refused on live).
+    assert g.refusal("https://openrouter.ai/api/v1/models/x/chat/completions", None)
+    assert g.refusal("https://openrouter.ai/api/v1/chat/completions", None)
+    for read in ("/models", "/key", "/credits", "/models/qwen/qwen3:free/endpoints"):
+        assert g.refusal("https://openrouter.ai/api/v1" + read, None) is None
+
+
+def test_the_wire_backstop_catches_a_url_built_in_pieces(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A caller the source fence cannot see is still stopped at urlopen itself."""
+    reached: list[str] = []
+    monkeypatch.setattr(g, "_ORIG_URLOPEN", lambda *a, **k: reached.append("sent"))
+    monkeypatch.setattr(urllib.request, "urlopen", g._guarded_urlopen)
+    host = "".join(["open", "router", ".ai"])
+    req = urllib.request.Request(f"https://{host}/api/v1/chat/" + "completions",
+                                 data=json.dumps({"model": "openai/gpt-6"}).encode())
+    with pytest.raises(g.PaidModelRefused):
+        urllib.request.urlopen(req, timeout=1)
+    with pytest.raises(g.PaidModelRefused):
+        urllib.request.urlopen(f"https://{host}/api/v1/chat/completions",
+                               json.dumps({"model": "x/y"}).encode())
+    urllib.request.urlopen(f"https://{host}/api/v1/models")
+    assert reached == ["sent"]
+
+
+def test_importing_the_guard_installs_the_backstop() -> None:
+    import importlib
+    importlib.reload(g)
+    assert getattr(urllib.request.urlopen, "_openrouter_guard", False)
+    # A reload must keep the function it wraps (CI 2026-10-13: it became None and every later
+    # urlopen in the worker raised "'NoneType' object is not callable").
+    assert callable(g._ORIG_URLOPEN) and not getattr(g._ORIG_URLOPEN, "_openrouter_guard", False)
+
+
+def test_the_account_file_never_reaches_the_public_repo() -> None:
+    assert "desks/mt5/data/llm_lab/openrouter_key.json" in (ROOT / ".gitignore").read_text()
