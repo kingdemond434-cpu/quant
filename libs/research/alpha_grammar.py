@@ -202,6 +202,102 @@ CANON_ALPHA101_IDS: dict[str, str] = {
 }
 
 
+# --------------------------------------------------------------------------- input fill era
+#: THE LEADING FILL ERA OF THE BROKER'S `spread` COLUMN (box read 2026-11-10,
+#: input_column_fill_boundary over 102 M30/H1 files). History before the venue began recording
+#: quotes carries a FILLED value: one constant (93 files, ending 2020-12-11), or a constant that
+#: changes each year (8 H1 files back to 2002-2012), or a few constants (12 H1 crosses, 74-87% of
+#: the era on the first one). A formula reading that era trades the fill's steps, not a market
+#: fact; on AUDSGD the certified edge vanished when the fill was treated as missing. The era is
+#: the leading stretch made of runs of one held POSITIVE value at least FILL_RUN_DAYS of bars
+#: long, with no more than that many bars of anything else between them. It ends at the first
+#: such stretch of quotes, so a later held run (EURSGD and XAUUSD, 2024-26) never moves it:
+#: those are published as SUSPECT_CONSTANT_RUN by `input_fill_report` and left as they are,
+#: judged neither way.
+#: tick_volume was clean in all 102 files and is not touched.
+FILL_RUN_DAYS = 5
+#: The floor on the run length, in bars, whatever the chart.
+FILL_RUN_FLOOR = 48
+
+
+def fill_run_bars(index: Any) -> int:
+    """Bars in FILL_RUN_DAYS trading days on this frame's own chart (median bar spacing);
+    FILL_RUN_FLOOR when the index carries no readable spacing."""
+    try:
+        t = pd.DatetimeIndex(pd.to_datetime(index, utc=True, errors="coerce")).dropna()
+        gaps = np.asarray((t[1:] - t[:-1]).total_seconds(), dtype=float) / 60.0
+        minutes = float(np.median(gaps[gaps > 0])) if (gaps > 0).any() else 0.0
+    except Exception:
+        minutes = 0.0
+    if not np.isfinite(minutes) or minutes <= 0:
+        return FILL_RUN_FLOOR
+    return max(FILL_RUN_FLOOR, int(FILL_RUN_DAYS * 1440 // minutes))
+
+
+def _value_runs(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(start, length) of every maximal run of one value (NaN never joins a run)."""
+    if x.size == 0:
+        return np.array([], int), np.array([], int)
+    same = (x[1:] == x[:-1])
+    cut = np.flatnonzero(~same) + 1
+    st = np.concatenate(([0], cut))
+    return st, np.diff(np.concatenate((st, [x.size])))
+
+
+def leading_fill_end(values: Any, run_bars: int) -> int:
+    """Index of the first bar after the leading fill era; 0 when the column opens on quotes.
+
+    Walks the long runs (>= run_bars) in order and extends the era over each one that starts no
+    more than run_bars bars after the era's current end. The first longer stretch of anything
+    else ends the era for good."""
+    x = pd.to_numeric(pd.Series(values), errors="coerce").to_numpy(dtype=float)
+    st, ln = _value_runs(x)
+    end = 0
+    for s, n in zip(st.tolist(), ln.tolist(), strict=True):
+        # A FILL IS A POSITIVE CONSTANT. A held 0 is the venue not recording the spread, which
+        # is a different defect (box dry run 2026-11-10: on H4, 0-runs chained every few days
+        # carried AUDJPY's "era" to 2025-04-16); it never extends the era and is published as
+        # SUSPECT_CONSTANT_RUN like any later held value.
+        if n < run_bars or not x[s] > 0:
+            continue
+        if s - end > run_bars:
+            break
+        end = s + n
+    return int(end)
+
+
+def input_fill_report(raw: pd.DataFrame, column: str = "spread") -> dict[str, Any]:
+    """The fill era of one file's column and every SUSPECT_CONSTANT_RUN after it, by bar time.
+
+    A suspect run is a run of one value at least `run_bars` long after the era: a quote held
+    for days or a feed fill, which only a tick tape can say. It is published, not masked."""
+    if column not in raw.columns:
+        return {"column": column, "status": "NO_COLUMN"}
+    x = pd.to_numeric(raw[column], errors="coerce").to_numpy(dtype=float)
+    idx = pd.DatetimeIndex(pd.to_datetime(raw.index, utc=True, errors="coerce"))
+    r = fill_run_bars(raw.index)
+    b = leading_fill_end(x, r)
+    st, ln = _value_runs(x[b:])
+    suspect = [{"kind": "SUSPECT_CONSTANT_RUN", "value": float(x[b + s]),
+                "start": str(idx[b + s]), "end": str(idx[b + s + n - 1]), "bars": int(n)}
+               for s, n in zip(st.tolist(), ln.tolist(), strict=True)
+               if n >= r and np.isfinite(x[b + s])]
+    return {"column": column, "bars": int(x.size), "run_bars": r, "fill_end_index": b,
+            "fill_end_time": str(idx[b]) if 0 < b < x.size else None,
+            "whole_column_held": bool(x.size and b >= x.size),
+            "suspect_constant_runs": suspect}
+
+
+def mask_leading_fill(s: pd.Series) -> pd.Series:
+    """`s` with its leading fill era set to NaN (undefined to a formula, never a zero). A column
+    held at one value from first bar to last is returned as it is: no quote anywhere to keep."""
+    b = leading_fill_end(s.to_numpy(), fill_run_bars(s.index))
+    if 0 < b < len(s):
+        s = s.copy()
+        s.iloc[:b] = np.nan
+    return s
+
+
 # --------------------------------------------------------------------------- frames
 def terminal_frames(bars: pd.DataFrame, raw: pd.DataFrame | None = None,
                     drivers: dict[str, pd.DataFrame] | None = None,
@@ -238,6 +334,8 @@ def terminal_frames(bars: pd.DataFrame, raw: pd.DataFrame | None = None,
     for col, name in (("spread", "spread"), ("tick_volume", "activity")):
         if col in src.columns:
             s = src[col].astype(float)
+            if col == "spread":
+                s = mask_leading_fill(s)       # the fill era is undefined, not a value
             if src is not bars:
                 s.index = pd.DatetimeIndex(pd.to_datetime(s.index, utc=True, errors="coerce"))
                 s = s.reindex(idx).ffill()
