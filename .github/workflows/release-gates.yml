@@ -200,6 +200,11 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 200
+    # actions: read lists this PR's earlier release-gates runs for the reuse step below
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
     steps:
       # the base only: the PR's code never runs in the reviewer's job. LIVE'S TIP, NOT THE EVENT'S
       # BASE SHA, for a PR into LIVE (2026-11-03): a re-run replays the original event, so with
@@ -219,10 +224,28 @@ jobs:
         with:
           python-version: "3.11"
 
+      # THE SAME CHANGE IS READ ONCE (2026-11-18): every screen runs on this head, then an
+      # earlier head of this PR with the same change (patch-id style key) whose own job here
+      # succeeded within 7 days is reused, and the download and models below are skipped. A
+      # miss or any error falls through to the full review; this step never fails the job, even
+      # when the base's script predates --reuse-only (it runs from LIVE's tip, not the PR).
+      - name: Reuse this change's earlier review
+        id: reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python -I ops/release/independent_review.py --reuse-only
+          --repo "${{ github.repository }}"
+          --pr "${{ github.event.pull_request.number }}"
+          --head "${{ github.event.pull_request.head.sha }}"
+          --base-sha "${{ github.event.pull_request.base.sha }}"
+          || echo "reuse: not checked (exit $?); the review runs"
+
       # A failure here is not a verdict: the review below finds no pinned model and queues.
       # #457 audit MF1: no install script and no sudo. The release archive runs only when its
       # sha256 matches the PROTECTED pin, and the server runs as the runner user.
       - name: Serve the pinned open-weight reviewers on this runner
+        if: steps.reuse.outputs.hit != 'true'
         continue-on-error: true
         timeout-minutes: 30
         env:
@@ -251,6 +274,7 @@ jobs:
           done
 
       - name: Review the whole diff
+        if: steps.reuse.outputs.hit != 'true'
         env:
           OPENROUTER_FREE_KEY: ${{ secrets.OPENROUTER_FREE_KEY }}
           GEMINI_FREE_KEY: ${{ secrets.GEMINI_FREE_KEY }}
