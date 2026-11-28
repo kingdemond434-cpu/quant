@@ -814,7 +814,35 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
     {"ground": "single-name mainland equity hypothesis mining",
      "why": "two-lane order (2026-09-06): single names are traded on news and never hunted for "
             "statistical hypotheses"},
+    {"ground": "SSE market statistics for limit-breadth (sse.com.cn)",
+     "why": "TERMS_BLOCKED, read 2026-11-18: the SSE 法律声明 s3 allows only non-commercial "
+            "browsing and downloading and names 电子抓取系统 among the restricted uses. Verbatim "
+            "clause in research/cn_hk_structural_state.FENCES"},
+    {"ground": "HKEX Stock Connect daily statistics (hkex.com.hk)",
+     "why": "TERMS_BLOCKED, read 2026-11-18: HKEX Terms of Use s5 forbid any bot, scraper or "
+            "programmatic access. Verbatim clause in research/cn_hk_structural_state.FENCES"},
 )
+
+#: THE STRUCTURAL STATE THIS PACK FEEDS (build-check row 107, 2026-11-18). The fix gap and the
+#: band edge are built from the BIS republication of the PBOC-reported parity, because CFETS is
+#: refused on terms (#250) and the PBOC site's terms are unread (robots refuses the fetch agent).
+#: The Golden Week cells come from this pack's own closure table. Limit-breadth is fenced on the
+#: SSE's terms and is named here, not built.
+STRUCTURAL_STATE: dict[str, Any] = {
+    "organ": "desks/mt5/research/cn_hk_structural_state.py",
+    "report": "desks/mt5/reports/CN_HK_STRUCTURAL_STATE.json",
+    "series": {
+        "cn_parity_dev": "USDCNH before the 09:15 fix minus the central parity (pips, %), the "
+                         "deviation as a share of the +/-2% band, and a signed band-edge level",
+        "cn_golden_week": "trading days to and since the National Day block, the next closure's "
+                          "length, and the mainland-shut weekday flag (from HOLIDAYS_RULE)"},
+    "targets": ("USDCNH", "HK50", "CHINAH"),
+    "unquoted": {"CN50": "the account's MT5 registry carries no China A50 symbol; CHINAH is "
+                         "the mainland-exposed index it does quote"},
+    "fenced": {"limit_breadth": "TERMS_BLOCKED (SSE); SZSE TO_CONFIRM",
+               "pboc_central_parity": "HELD: terms unread, robots refuses the fetch agent",
+               "cfets_central_parity": "TERMS_BLOCKED (#250)"},
+}
 
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("cn_official", "The PBOC, CFETS, SAFE, the statistics bureau and customs",
@@ -995,6 +1023,21 @@ DATASETS: tuple[dict[str, Any], ...] = (
             mechanism_families=("fixing", "policy_guidance", "band"),
             how_to_fetch="chinamoney.com.cn, published 09:15 Beijing = 01:15 UTC, fifteen "
                          "minutes before the onshore market opens"),
+    dataset("bis_republished_central_parity",
+            source="BIS WS_XRU D.CN.CNY.A -- the PBOC-reported daily USD/CNY rate, republished",
+            coverage="the daily USD/CNY central parity, joined to USDCNH before the fix as the "
+                     "fix gap and band-edge state (research/cn_hk_structural_state.py)",
+            frequency="daily",
+            publication_lag_days=0.06,
+            revisions="none",
+            licence="BIS terms of permitted use: unrestricted with citation (read 2026-11-11)",
+            history_from="2015-08",
+            pit_feasible=True,
+            assets=("USDCNH", "HK50", "CHINAH"),
+            mechanism_families=("fixing", "band", "policy_guidance"),
+            how_to_fetch="stats.bis.org SDMX CSV, at most every 20 h, robots read under the "
+                         "organ's own UA. The value is public at 01:15 UTC on its day; the BIS "
+                         "delivers it days later, which limits live freshness, not the stamp"),
     dataset("cfets_onshore_close",
             source="CFETS 收盘价",
             coverage="the 16:30 Beijing onshore closing rate that feeds the next day's fix",

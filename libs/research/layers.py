@@ -628,6 +628,8 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # China/HK fix gap, band edge and closure calendar as stamped series and cells: information.
+    "cn_hk_structural_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     "asia_github": "information",

@@ -758,6 +758,19 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "root": "hkex.com.hk", "licence": "free, public",
      "note": "Unaffected by the 2024-08-19 northbound disclosure change, which makes the Hong "
              "Kong half of the link the better-instrumented one."},
+    {"id": "connect_daily_net_flows",
+     "name": "Stock Connect daily northbound and southbound net flows -- TERMS_BLOCKED",
+     "covers": "net buying through the Connect link each day, as a PIT flow state for HK50, "
+               "CHINAH and USDCNH (build-check row 108)",
+     "frequency": "daily", "lag": "after the Hong Kong close",
+     "root": "hkex.com.hk", "licence": "TERMS_BLOCKED for automated use",
+     "terms_status": "TERMS_BLOCKED",
+     "note": "Read 2026-11-18: HKEX Terms of Use s5 forbid 'any \"robot\", \"bot\", "
+             "\"spider\", \"scraper\" or other automated device' and 'any programmatic, "
+             "scripted or other mechanical means to access this Website or any Information', "
+             "and allow personal use only. Nothing is fetched. The fence, verbatim, and the state "
+             "this row would feed are in research/cn_hk_structural_state.py (FENCES, report "
+             "reports/CN_HK_STRUCTURAL_STATE.json)."},
     {"id": "hkma_monetary_base",
      "name": "HKMA Monetary Base components and Exchange Fund Bills and Notes outstanding",
      "covers": "certificates of indebtedness, notes in circulation, the Aggregate Balance and "
@@ -823,6 +836,9 @@ REFUSED_SOURCES: tuple[dict[str, str], ...] = (
      "why": "MT5 universe mandate (2026-08-18): no crypto-exchange ground is ever hunted again"},
     {"ground": "paywalled vendor terminal content and its redistribution",
      "why": "licence; the desk holds no redistribution right"},
+    {"ground": "HKEX website data by automated means, Stock Connect statistics included",
+     "why": "TERMS_BLOCKED, read 2026-11-18: HKEX Terms of Use s5 forbid bots, scrapers and "
+            "any programmatic access, and permit personal use only"},
     {"ground": "single-name Hong Kong equity hypothesis mining",
      "why": "two-lane order (2026-09-06): single names are traded on news and never hunted for "
             "statistical hypotheses"},
