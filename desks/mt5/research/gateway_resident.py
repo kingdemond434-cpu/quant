@@ -324,12 +324,112 @@ def _release_at_start() -> str | None:
         return None
 
 
+#: A HOLDER THAT STOPPED PASSING IS NOT A RESIDENT (2026-11-18). Measured on the box's own
+#: published process_health: MT5-GatewayResident returned 0 every ten minutes from 2026-10-30
+#: 19:50 UTC onward while gateway_state.json aged past 26,000 minutes. A copy that holds the slot
+#: but never finishes a pass makes every keep-alive tick read "another resident holds the slot"
+#: and exit 0, so the task looked healthy for eighteen days with no gateway passing at all.
+#:
+#: THE TEST IS THE RESIDENT'S OWN PASS STAMP, NOT gateway_state.json. A paused gateway
+#: (data/GATEWAY_PAUSED) returns before it writes its state, but the resident still stamps
+#: `last_pass_at` in GATEWAY_LOADED.json after every pass, so a PAUSED loop is fresh here and is
+#: never touched. Only a holder whose stamp (or, before its first pass, its start) is older than
+#: this is replaced. No stamp at all is UNMEASURED and nothing is ended.
+STUCK_AFTER_S = float(os.environ.get("GATEWAY_STUCK_AFTER_S", "1800"))
+#: Exit code of a tick that found a stuck holder it could not replace, so the task stops reading
+#: OK and process_health / never_stale see it.
+EXIT_STUCK = 3
+
+
+def holder_stuck(now: datetime | None = None, stamp: Path | None = None,
+                 stuck_after_s: float | None = None) -> tuple[bool, int | None, str]:
+    """(stuck, holder pid, why) from the holder's own load stamp."""
+    now = now or datetime.now(UTC)
+    limit = STUCK_AFTER_S if stuck_after_s is None else stuck_after_s
+    try:
+        doc = json.loads((stamp or LOADED).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False, None, "no readable load stamp: UNMEASURED, nothing is ended"
+    if not isinstance(doc, dict):
+        return False, None, "load stamp is not an object: UNMEASURED, nothing is ended"
+    ref = max((str(v) for v in (doc.get("last_pass_at"), doc.get("last_attempt_at")) if v),
+              default=None) or doc.get("started_at")
+    try:
+        at = datetime.fromisoformat(str(ref))
+        pid = int(doc.get("pid"))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return False, None, "load stamp has no pid or time: UNMEASURED, nothing is ended"
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age = (now - at).total_seconds()
+    which = ("last pass" if doc.get("last_pass_at") or doc.get("last_attempt_at")
+             else "start (no pass yet)")
+    if age <= limit:
+        return False, pid, f"holder pid {pid}: {which} {age:.0f}s ago, inside {limit:.0f}s"
+    return True, pid, f"holder pid {pid}: {which} {age:.0f}s ago, past {limit:.0f}s"
+
+
+def _take_over(pid: int) -> tuple[bool, str]:
+    """End the stuck holder, only if that pid is really a gateway resident."""
+    try:
+        import psutil
+    except Exception as exc:
+        return False, f"psutil unavailable ({type(exc).__name__}); nothing ended"
+    try:
+        proc = psutil.Process(pid)
+        argv = [a.replace("\\", "/").rsplit("/", 1)[-1].lower() for a in proc.cmdline()]
+    except Exception as exc:
+        return False, f"pid {pid} not readable ({type(exc).__name__}); nothing ended"
+    if "gateway_resident.py" not in argv or pid == os.getpid():
+        return False, f"pid {pid} is not a gateway resident; nothing ended"
+    try:
+        proc.terminate()
+        try:
+            proc.wait(timeout=30)
+        except psutil.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=30)
+    except Exception as exc:
+        return False, f"pid {pid} could not be ended ({type(exc).__name__}: {exc})"
+    return True, f"pid {pid} ended"
+
+
+def _log(msg: str) -> None:
+    print(msg, flush=True)
+    with contextlib.suppress(Exception):
+        from mt5desk import gateway as _gw
+        _gw.log(msg)
+
+
+def claim_or_take_over() -> tuple[object | None, int]:
+    """The slot, or (None, exit code): 0 while a healthy holder runs, EXIT_STUCK when a stuck
+    holder could not be replaced."""
+    handle = _claim_singleton()
+    if handle is not None:
+        return handle, 0
+    stuck, pid, why = holder_stuck()
+    if not stuck or pid is None:
+        print(f"another resident gateway already holds the slot; exiting ({why})")
+        return None, 0
+    ended, how = _take_over(pid)
+    _log(f"RESIDENT: STUCK HOLDER -- {why}; takeover: {how}")
+    if not ended:
+        return None, EXIT_STUCK
+    for _ in range(10):
+        handle = _claim_singleton()
+        if handle is not None:
+            _log(f"RESIDENT: took the slot from stuck pid {pid}")
+            return handle, 0
+        time.sleep(1)
+    _log(f"RESIDENT: stuck pid {pid} ended but the slot is still held; the next tick retries")
+    return None, EXIT_STUCK
+
+
 def main() -> int:
     global _HANDLE
-    handle = _claim_singleton()
+    handle, code = claim_or_take_over()
     if handle is None:
-        print("another resident gateway already holds the slot; exiting")
-        return 0
+        return code
     _HANDLE = handle
     identity: dict[str, object] = {"pid": os.getpid(), "started_at": datetime.now(UTC).isoformat(),
                                    "release_sha": _release_at_start()}
@@ -344,6 +444,7 @@ def main() -> int:
         pass
 
     passes = 0
+    last_ok: str | None = None
     while True:
         started = time.monotonic()
         passes += 1
@@ -368,10 +469,17 @@ def main() -> int:
             return 0
         try:
             run_gateway_loop.main()
-            _stamp_loaded(identity, last_pass_at=datetime.now(UTC).isoformat())
+            last_ok = datetime.now(UTC).isoformat()
+            _stamp_loaded(identity, last_pass_at=last_ok)
         except Exception as exc:
             # A failed pass is one missed look, not a dead gateway. The failure is already logged
             # by the pass itself; swallowing it here is what keeps the next bar reachable.
+            # The attempt is stamped too, so a loop that is RUNNING but erroring is never taken
+            # for a stuck one and killed every tick (audit SF, 2026-11-18): a restart cannot fix
+            # an exception, and process_health still calls it STALE on gateway_state.json.
+            _stamp_loaded(identity, last_pass_at=last_ok,
+                          last_attempt_at=datetime.now(UTC).isoformat(),
+                          last_error=type(exc).__name__)
             try:
                 from mt5desk import gateway
                 gateway.log(f"RESIDENT: pass raised {type(exc).__name__}: {exc}")
