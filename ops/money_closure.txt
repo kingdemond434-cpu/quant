@@ -73,6 +73,7 @@ desks/mt5/prop/__init__.py
 desks/mt5/prop/e8_book.py
 desks/mt5/prop/e8_evidence.py
 desks/mt5/prop/e8_executor.py
+desks/mt5/prop/e8_fills.py
 desks/mt5/prop/e8_gold.py
 desks/mt5/prop/e8_gold_slip.py
 desks/mt5/prop/e8_guard.py
