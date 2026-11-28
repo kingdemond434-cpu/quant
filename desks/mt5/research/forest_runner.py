@@ -483,7 +483,9 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
             res.note("country_lab", f"{UNMEASURED}: {type(exc).__name__}: {str(exc)[:120]}")
         try:
             from libs.research import polyglot as pg
-            for lang in run.spec.languages:
+            # An EVOLVING forest's search vocabulary is its own mission (below), not the
+            # polyglot tables: those would re-seed it with the same fixed terms every pass.
+            for lang in () if run.spec.evolving else run.spec.languages:
                 for layer in LAYERS:
                     with contextlib.suppress(Exception):
                         got = pg.native_queries(lang, layer, limit=6)
@@ -501,6 +503,21 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
                              f"hide the gap instead of naming it")
         except Exception as exc:
             res.note("polyglot", f"{UNMEASURED}: {type(exc).__name__}: {str(exc)[:120]}")
+        if run.spec.evolving:
+            # THE EVOLVING MISSION (libs/research/mission_evolution): this forest's query terms
+            # are the head of its own version log, rewritten every pass from what it yielded.
+            from libs.research import mission_evolution as ME
+            head = ME.head(F.mission_log(run.forest, DESK))
+            if head is None:
+                res.note("evolving_mission", f"{UNMEASURED}: no mission version yet at "
+                                             f"{F.mission_log(run.forest, DESK)}; the miner "
+                                             f"seeds it on its first pass")
+            else:
+                ranked = sorted(head.terms.items(), key=lambda kv: (-kv[1], kv[0]))
+                seeds.extend({"country": run.forest, "layer": "evolving_mission", "query": t,
+                              "languages": list(run.spec.languages), "domain": "mission",
+                              "weight": w} for t, w in ranked[:MAX_PER_ROLE])
+                used.append(f"mission:{head.version}:g{head.generation}")
         if not seeds:
             for layer, terms in F.MANDATE_SEEDS.items():
                 seeds.extend({"country": run.forest, "layer": layer, "query": t,
@@ -684,6 +701,14 @@ def _region_claims(run: Run, limit: int = MAX_PER_ROLE * 4) -> list[dict[str, An
     want_r = {str(c).lower() for c in (*run.spec.grounds, *run.spec.countries)}
     want_l = {str(x).lower() for x in run.spec.languages}
     out: list[dict[str, Any]] = []
+    if run.spec.claims_ledger:
+        # A FOREST WITH ITS OWN LEDGER reads that ledger only (forests.Forest.claims_ledger): a
+        # broad language list must not sweep up every other forest's claims.
+        for row in reversed(_jsonl_tail(DESK / run.spec.claims_ledger)):
+            out.append(row)
+            if len(out) >= limit:
+                break
+        return out
     # NEWEST FIRST. The tail is read oldest-first and cut at `limit`, so the claims this very
     # pass mined (appended last) were the ones never carried forward; the dedup chain makes a
     # re-read of an old claim an edge, so reading new-to-old loses nothing.
@@ -708,6 +733,9 @@ def _mine_grounds(run: Run, res: RoleResult, budget_s: float) -> None:
     below (newest first). Its budget is never below the role's own slice and never past the
     pass's end; a failure is this role's note, never the pass's.
     """
+    if run.spec.miner:
+        _run_own_miner(run, res, budget_s)
+        return
     names = [str(g.get("name")) for g in _grounds(run) if g.get("name")]
     if not names:
         res.note("ground_mining", f"{UNMEASURED}: no deep-forest ground carries region "
@@ -737,6 +765,34 @@ def _mine_grounds(run: Run, res: RoleResult, budget_s: float) -> None:
         "productive": doc.get("productive"), "claims_new": doc.get("claims_new"),
         "datasets_new": doc.get("datasets_new"), "tasks_queued": doc.get("tasks_queued"),
         "network": doc.get("network"), "fetch": doc.get("fetch_stats")}
+
+
+def _run_own_miner(run: Run, res: RoleResult, budget_s: float) -> None:
+    """A forest whose ground is not a deep-forest ground names its OWN miner
+    (`forests.Forest.miner`, e.g. the onion lane's `onion_forest`). It is called exactly where
+    `deep_forest_miner` would be, with the same budget rule, and its failure is this role's note.
+    """
+    pass_s = float(run.allocation.budget_s)
+    mine_s = min(max(float(budget_s), pass_s * MINE_SHARE_OF_PASS - run.elapsed()),
+                 pass_s * 0.9 - run.elapsed())
+    if mine_s < 10.0:
+        res.note("own_miner", f"{UNMEASURED}: {mine_s:.0f}s left in the pass, below one read")
+        return
+    name = Path(run.spec.miner).stem
+    try:
+        mod = importlib.import_module(f"research.{name}")
+        doc = mod.run(budget_s=mine_s, write=True)
+    except Exception as exc:
+        res.note("own_miner", f"{UNMEASURED}: {name} failed {type(exc).__name__}: "
+                              f"{str(exc)[:160]}")
+        return
+    res.detail["own_miner"] = {
+        "miner": run.spec.miner, "budget_s": round(mine_s, 1),
+        "claims_new": (doc.get("claims") or {}).get("new"),
+        "status": (doc.get("tor") or {}).get("status"),
+        "mission_version": (doc.get("mission") or {}).get("version")}
+    for line in (doc.get("missed_growth") or [])[:4]:
+        res.note("own_miner", str(line)[:240])
 
 
 def role_practitioner(run: Run, res: RoleResult, budget_s: float) -> None:
@@ -776,7 +832,11 @@ def role_practitioner(run: Run, res: RoleResult, budget_s: float) -> None:
                             "language": row.get("language"), "region": row.get("region"),
                             "published_time": row.get("published_time"),
                             "available_time": row.get("available_time"),
-                            "claimed_performance": row.get("claimed_performance")},
+                            "claimed_performance": row.get("claimed_performance"),
+                            # rumour / MNPI tags ride when the forest's miner set them
+                            **{k: row[k] for k in ("claim_type", "claimed_leak", "mnpi_risk",
+                                                   "exclude_share_cfd", "first_seen")
+                               if k in row}},
                    why="a claim a crowd believes is a crowding feature whether or not it is true")
         for g in grounds[:MAX_PER_ROLE]:
             if time.monotonic() > deadline:

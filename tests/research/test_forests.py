@@ -1,4 +1,4 @@
-"""The forest federation registry: the seventeen civilizations, the eleven roles, the tasks, and
+"""The forest federation registry: the eighteen civilizations, the eleven roles, the tasks, and
 the allocation contract -- including the two things the allocator is not allowed to do."""
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ EXPECTED_IDS = {
     "japan", "korea", "china", "russia_cis", "south_asia", "asean", "oceania", "europe",
     "north_america", "latam", "mena", "africa",
     "global_macro", "global_web", "global_academic_code", "global_physical_data",
-    "global_market_data",
+    "global_market_data", "onion",
 }
 
 
 def test_the_federation_is_exactly_the_declared_forests() -> None:
     assert set(F.FORESTS) == EXPECTED_IDS
     assert {f.id for f in F.REGIONAL_FORESTS} | {f.id for f in F.GLOBAL_FORESTS} == EXPECTED_IDS
-    assert len(F.REGIONAL_FORESTS) == 12 and len(F.GLOBAL_FORESTS) == 5
+    assert len(F.REGIONAL_FORESTS) == 12 and len(F.GLOBAL_FORESTS) == 6
     for fid, f in F.FORESTS.items():
         assert f.id == fid and f.name and f.mission
         assert f.kind in ("regional", "global")
@@ -151,7 +151,7 @@ def test_role_plan_funds_all_eleven_scout_first_and_never_below_the_floor() -> N
 
 def test_census_names_the_rule_it_is_a_census_of() -> None:
     doc = F.census()
-    assert doc["n_forests"] == 17 and doc["n_regional"] == 12 and doc["n_global"] == 5
+    assert doc["n_forests"] == 18 and doc["n_regional"] == 12 and doc["n_global"] == 6
     assert doc["roles"] == list(F.ROLES)
     assert doc["n_countries"] > 40
     assert "ja" in doc["languages"] and "ko" in doc["languages"] and "zh" in doc["languages"]
