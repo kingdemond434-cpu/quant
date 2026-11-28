@@ -214,3 +214,43 @@ def test_an_absent_canonical_lane_is_unmeasured_not_empty(monkeypatch: Any,
     rows, why = tf.canonical_parents()
     assert rows == []
     assert "UNMEASURED" in why
+
+
+# ------------------------------------------------------------ horizon lane (idea 279)
+def test_canonical_parents_carry_the_certified_params(monkeypatch: Any, tmp_path: Path) -> None:
+    """The re-mint is the rule that certified, not the family at its defaults."""
+    import json
+    p = tmp_path / "s.json"
+    p.write_text(json.dumps({"survivors": {"K": {"shadow_spec": {
+        "symbol": "XAUUSD", "family": "session_range_breakout", "selector": "asia",
+        "params": {"rr": 1.5, "wait_bars": 12}}}}}), encoding="utf-8")
+    monkeypatch.setattr(tf, "SURVIVORS", p)
+    rows, _ = tf.canonical_parents()
+    assert rows[0]["params"] == {"rr": 1.5, "wait_bars": 12, "selector": "asia"}
+
+
+def test_every_horizon_but_the_parents_own_is_minted_and_charged(monkeypatch: Any) -> None:
+    """Only the time exit changes; no horizon is pre-selected, so every one is a charged trial."""
+    seen: list[dict[str, Any]] = []
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate",
+                        lambda **kw: (seen.append(kw), ("C", True))[1])
+    parent = {"lane": "canonical", "parent": "P", "symbol": "XAUUSD",
+              "family": "session_range_breakout", "params": {"rr": 1.5, "ttl_bars": 8},
+              "session": "asia", "regime": "", "parent_chart": "H1", "mechanism": "m"}
+    res = tf.mint_horizons(parent, dry_run=False)
+    assert res["knob"] == "ttl_bars"
+    assert sorted(k["params"]["ttl_bars"] for k in seen) == [1, 2, 4, 24, 72]
+    assert all(k["params"]["rr"] == 1.5 and k["chart"] == "H1" for k in seen)
+    assert all(k["origin"] == "horizon_fanout" and k["parent_ids"] == ["P"] for k in seen)
+    assert tf.charge_trials(res["trials"])["n_raw"] == res["emitted"] == 5
+
+
+def test_carry_varies_hold_bars_and_a_banned_family_is_never_minted() -> None:
+    carry = {"lane": "canonical", "parent": "C", "symbol": "CHFNOK", "family": "carry",
+             "params": {"input_symbol": "CHFNOK"}, "parent_chart": "H1", "mechanism": "m"}
+    res = tf.mint_horizons(carry, dry_run=True)
+    assert res["knob"] == "hold_bars" and res["emitted"] == len(tf.HORIZONS)
+    banned = dict(carry, family="discovered", params={"horizon": 1})
+    res = tf.mint_horizons(banned, dry_run=True)
+    assert res["emitted"] == 0 and res["skipped"] == "banned family"
