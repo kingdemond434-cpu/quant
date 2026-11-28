@@ -157,8 +157,8 @@ TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/m
 # along while this line said UNDECLARED/NONE. install_vol_archive_task.ps1 registers it ALONE, because
 # re-running install_tape_tasks.ps1 restarts the 24/7 tick recorder (2026-11-13).
 TASK name="MT5-VolArchive"         trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/vol_archive.py"     installer="desks/mt5/scripts/install_vol_archive_task.ps1" lane="data"
-TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="NONE" lane="data"
-TASK name="MT5-MoatSilver"         trigger="every 1 hour, at :23"            runs="desks/mt5/moat/moat_silver.py"      installer="NONE" lane="data"
+TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="data"
+TASK name="MT5-MoatSilver"         trigger="every 1 hour, at :23"            runs="desks/mt5/moat/moat_silver.py"      installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="data"
 TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/mt5/moat/moat_miner.py"       installer="desks/mt5/scripts/install_moat_miner_task.ps1" lane="data"
 # Named by install_moat_miner_task.ps1 as the tape recorder's watchdog. Its own installer is not
 # in this repo, which is exactly the class of gap this manifest exists to make countable.

@@ -78,8 +78,9 @@ _NOT_A_DECLARATION = ("data/", "reports/", "desks/mt5/data/", "desks/mt5/reports
                       "backups/", "web/", "tests/", "scratch/")
 
 #: Manifested tasks whose trigger this repo does not know. RATCHET: it may fall, never rise.
-#: Fourteen today -- the five `stall_watch` heals with no installer, plus the deadman, the vol
-#: archive, the moat trio and several data and ops tasks. Each one is a five-minute job on the box (`Get-ScheduledTask
+#: Four on 2026-11-11 (fourteen at birth). The vol archive's trigger and installer were always in
+#: `recorders/install_tape_tasks.ps1` and the moat recorder's and silver's in
+#: `Install-QuantWindows.ps1`; the manifest had simply not linked them. Each remaining one is a five-minute job on the box (`Get-ScheduledTask
 #: -TaskName <name> | Select -Expand Triggers`) that turns a guess into a fact, and until then this
 #: number is the honest measure of how much of the box cannot be rebuilt from here.
 #: 2026-11-13: 14 -> 1. MT5-VolArchive, MT5-GoldHourSweep, MT5-CertHygiene and MT5-DashMirror had
@@ -91,7 +92,9 @@ MAX_UNDECLARED = 1
 #: Measured 2026-11-13 after six installers landed (MT5-AllocatorPulse, MT5-VolArchive,
 #: MT5-PrivateNetAudit, MT5-GoldHourSweep, MT5-CertHygiene; MT5-DashMirror stays NONE because it belongs
 #: to the mirror box and must never be registered on the trading box): 79 -> 74.
-MAX_NO_INSTALLER = 74
+#: 2026-11-18 (#892): MT5-MoatRecorder and MT5-MoatSilver point at Install-QuantWindows.ps1, which
+#: registers both by name: 74 -> 72.
+MAX_NO_INSTALLER = 72
 
 #: An installer must NAME the task it registers -- a manifest line pointing at a real file that
 #: registers something else is NONE wearing a path. MT5Hourly.cmd is the one wrapper that
