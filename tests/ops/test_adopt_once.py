@@ -87,3 +87,22 @@ def test_a_guard_root_must_be_released_before_it_runs_anything() -> None:
     )
     assert "+refs/heads/production:refs/remotes/origin/production" in ONCE
     assert 'merge-base --is-ancestor $sha "refs/remotes/origin/production"' in ONCE
+
+
+def test_adopt_once_arms_the_gate_registry_notices_without_secrets_or_tasks() -> None:
+    """Step 7 (2026-11-18): the box gate sends its veto notice with QUANT_REGISTRY_NOTIFY and
+    counts it only on exit 0, so unset means no registry CLEAR can merge. adopt_once sets it at
+    user scope for the gate task's account, then sends one test notice, whatever step 5 decided."""
+    fn = ONCE[ONCE.index("function Arm-RegistryNotify {") : ONCE.index("\nArm-RegistryNotify\n")]
+    assert '$name = "QUANT_REGISTRY_NOTIFY"' in fn
+    assert 'Join-Path $QuantRoot "libs\\ops\\send_alert.py"' in fn
+    assert 'Get-ScheduledTask -TaskName "Quant-WorkflowGate"' in fn and "Principal.UserId" in fn
+    assert '[Environment]::SetEnvironmentVariable($name, $cmd, "User")' in fn
+    assert '"Machine"' not in fn  # never machine-wide
+    assert "ShortPath" in fn  # the gate splits the command with shlex: no spaces in it
+    assert "catch {" in fn  # never fatal to the adoption
+    # armed after the adopter ran and before any final verdict
+    call = ONCE.index("\nArm-RegistryNotify\n")
+    assert ONCE.index("$rc = $LASTEXITCODE") < call < ONCE.index('Finish 0 "DONE: the box adopted')
+    for never in ("Register-ScheduledTask", "Set-ScheduledTask", "secrets", "Get-Content"):
+        assert never not in fn, never
