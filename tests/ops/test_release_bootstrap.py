@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -510,3 +511,86 @@ def test_root_merge_refuses_a_ruleset_a_person_already_bypasses() -> None:
     with pytest.raises(RuntimeError, match="already lets a person"):
         bg.root_merge(hub, "o/r", 650, "a" * 40)
     assert hub.during == []
+
+
+# --- LIVE's writers are converted, observed (check_ruleset.writer_problems) ------------------
+
+_APPS = {"quant-state-publisher[bot]", "quant-merger[bot]"}
+_NOW = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
+_CONV = _NOW - timedelta(minutes=90)
+
+
+def _ev(kind: str, who: str, mins_ago: float, after: str = "a" * 40) -> dict[str, Any]:
+    at = (_NOW - timedelta(minutes=mins_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"activity_type": kind, "actor": {"login": who}, "timestamp": at,
+            "before": "b" * 40, "after": after}
+
+
+def _judge(events: list[dict[str, Any]], files: dict[str, list[str] | None] | None = None,
+           conv: Any = _CONV) -> tuple[list[str], dict[str, int]]:
+    pub = _load("boot_publish", ROOT / "ops/release/publisher/publish.py")
+    files = files or {}
+    return cr.writer_problems(events, lambda b, a: files.get(a, ["desks/mt5/data/x.json"]),
+                              _APPS, conv, _NOW, pub.publishable)
+
+
+def test_converted_writers_pass_and_the_counts_are_printed() -> None:
+    ev = [_ev("push", "kingdemond434-cpu", 60 * 30),            # box state, before conversion
+          _ev("pr_merge", "kingdemond434-cpu", 60 * 20),        # a merge before: ruleset's job
+          _ev("push", "quant-state-publisher[bot]", 30),
+          _ev("pr_merge", "quant-merger[bot]", 20),
+          _ev("push", "zuck", 60 * 80)]                         # outside the 72h window
+    bad, n = _judge(ev)
+    assert bad == []
+    assert n == {"events": 5, "person_pushes_72h": 1, "uncarried_pushes_72h": 0,
+                 "person_writes_since": 0, "app_pushes_since": 1}
+
+
+def test_a_person_pushing_rows_no_app_carries_is_a_writer_not_converted() -> None:
+    sha = "c" * 40
+    bad, n = _judge([_ev("push", "kingdemond434-cpu", 60 * 40, sha),
+                     _ev("push", "quant-state-publisher[bot]", 30)],
+                    {sha: ["desks/mt5/data/ADOPT_CLEARS.jsonl", "reports/audit/x.md"]})
+    assert n["uncarried_pushes_72h"] == 1
+    assert len(bad) == 1 and "not converted" in bad[0] and "ADOPT_CLEARS" in bad[0]
+    code = "d" * 40
+    bad, _ = _judge([_ev("push", "kingdemond434-cpu", 60 * 5, code),
+                     _ev("push", "quant-state-publisher[bot]", 30)],
+                    {code: ["desks/mt5/mt5desk/sizer.py"]})
+    assert any("not converted" in b for b in bad)
+
+
+def test_any_person_write_after_the_conversion_refuses_merges_included() -> None:
+    for kind in ("push", "pr_merge", "force_push"):
+        bad, n = _judge([_ev(kind, "kingdemond434-cpu", 10),
+                         _ev("push", "quant-state-publisher[bot]", 30)])
+        assert n["person_writes_since"] == 1
+        assert any("after the conversion" in b for b in bad), kind
+
+
+def test_too_short_a_watch_or_a_silent_publisher_refuses() -> None:
+    bad, _ = _judge([_ev("push", "quant-state-publisher[bot]", 5)],
+                    conv=_NOW - timedelta(minutes=20))
+    assert any("min watched" in b for b in bad)
+    bad, _ = _judge([])
+    assert bad == ["the state App has not pushed LIVE since the conversion"]
+    bad, _ = _judge([_ev("push", "quant-state-publisher[bot]", 30)], conv=None)
+    assert any("--converted-at" in b for b in bad)
+
+
+def test_what_cannot_be_read_refuses() -> None:
+    sha = "e" * 40
+    bad, _ = _judge([_ev("push", "kingdemond434-cpu", 600, sha),
+                     _ev("push", "quant-state-publisher[bot]", 30)], {sha: None})
+    assert any("cannot be read" in b for b in bad)
+    bad, _ = _judge([{"activity_type": "push", "actor": {"login": "x"}, "timestamp": "nope"},
+                     _ev("push", "quant-state-publisher[bot]", 30)])
+    assert any("activity row cannot be read" in b for b in bad)
+
+
+def test_the_check_runs_from_main_and_needs_both_app_logins(monkeypatch: Any) -> None:
+    monkeypatch.setattr(cr, "_gh", lambda p: (_ for _ in ()).throw(RuntimeError("offline")))
+    monkeypatch.setattr(cr, "_gh_rows", lambda p: [])
+    rc = cr.main(["--repo", "o/r", "--state-login", "s[bot]", "--converted-at",
+                  "2026-11-20T10:00:00Z"])
+    assert rc == 1

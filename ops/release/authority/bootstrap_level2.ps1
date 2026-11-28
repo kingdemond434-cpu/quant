@@ -184,9 +184,33 @@ $probe = (Py (Join-Path $Here "mint_app_token.py") --app-id $mergerId --key "C:\
 if ($LASTEXITCODE -ne 0 -or -not $probe) { throw "the merger cannot mint a token; enforcement NOT applied" }
 $probe = $null
 Write-Host "   publisher pass clean; merger token mints; gate and sign train use it from their next pass"
+# The writers converted now. Kept across re-runs, so a resumed sitting keeps its watch window.
+$convFile = Join-Path $Work "converted_at.txt"
+if (-not (Test-Path -LiteralPath $convFile)) {
+    (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") | Set-Content -LiteralPath $convFile -Encoding ASCII
+}
+$convertedAt = (Get-Content -Raw -LiteralPath $convFile).Trim()
+$mergerSlug = (Get-Content -Raw (Join-Path $Work "merger.json") | ConvertFrom-Json).slug
+$writers = @("--state-login", "$stateSlug[bot]", "--merger-login", "$mergerSlug[bot]", "--converted-at", $convertedAt)
 
 Step "7/8  The two rulesets: checked, applied, read back from GitHub"
-Py (Join-Path $Here "bootstrap_github.py") --repo $Repo rulesets --state-app-id $stateId --apply
+# check_ruleset.writer_problems: every person-made LIVE push in 72h is one the state App now
+# carries, and nobody but the two Apps has written LIVE for 60 min since $convertedAt. Checked
+# every 10 min (each check reads ~200 pushes' paths; faster would spend the API budget). A writer
+# that is not converted cannot become converted by waiting, so that stops the step at once.
+$end = (Get-Date).AddMinutes(150)
+while ($true) {
+    $said = (Py (Join-Path $Here "bootstrap_github.py") --repo $Repo rulesets --state-app-id $stateId @writers 2>&1 | Out-String)
+    $rc = $LASTEXITCODE
+    Write-Host $said
+    if ($rc -eq 0) { break }
+    if ($said -match 'not converted|after the conversion|cannot be read|could not read') {
+        throw "a LIVE writer is not converted (see above). Nothing was applied."
+    }
+    if ((Get-Date) -gt $end) { throw "Timed out waiting for 60 quiet minutes on LIVE. Nothing was applied; run the same command again to continue." }
+    Start-Sleep -Seconds 600
+}
+Py (Join-Path $Here "bootstrap_github.py") --repo $Repo rulesets --state-app-id $stateId --apply @writers
 if ($LASTEXITCODE -ne 0) { throw "the rulesets were not confirmed active (see above)." }
 # The authority must see it too, with its OWN token (it needs Administration: read for the bypass
 # list). Until it does, the gate and merger simply stay ROOT: safe, and said so here.

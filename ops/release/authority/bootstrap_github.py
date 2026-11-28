@@ -250,6 +250,9 @@ def main(argv: list[str] | None = None) -> int:
     rs = sub.add_parser("rulesets")
     rs.add_argument("--state-app-id", type=int, required=True)
     rs.add_argument("--apply", action="store_true")
+    rs.add_argument("--state-login", default="", help="the state App's bot login")
+    rs.add_argument("--merger-login", default="", help="the merger App's bot login")
+    rs.add_argument("--converted-at", default="", help="UTC time the box writers converted")
     m = sub.add_parser("root-merge")
     m.add_argument("--pr", type=int, required=True)
     mc = sub.add_parser("merged-cleared")
@@ -289,7 +292,11 @@ def main(argv: list[str] | None = None) -> int:
         lp, mp = Path(d) / "live.json", Path(d) / "master.json"
         lp.write_text(json.dumps(live), encoding="utf-8")
         mp.write_text(json.dumps(master), encoding="utf-8")
-        rc = _load("check_ruleset").main(["--repo", a.repo, str(lp), "--master", str(mp)])
+        writers = [x for f, v in (("--state-login", a.state_login),
+                                  ("--merger-login", a.merger_login),
+                                  ("--converted-at", a.converted_at)) if v for x in (f, v)]
+        rc = _load("check_ruleset").main(["--repo", a.repo, str(lp), "--master", str(mp),
+                                          *writers])
     if rc != 0:
         print("NOTHING APPLIED: the checker refused.")
         return 1
