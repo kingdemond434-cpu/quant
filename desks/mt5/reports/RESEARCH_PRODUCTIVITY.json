@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-28T00:40:13.433142+00:00",
+ "generated_utc": "2026-11-28T08:57:52.027611+00:00",
  "stages": {
   "intake": {
-   "files": 64110,
-   "files_7d": 2582,
+   "files": 64202,
+   "files_7d": 2525,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 756,
-   "decided_total": 71346,
+   "queued": 720,
+   "decided_total": 71401,
    "backlog": 0
   },
   "judged": {
@@ -52,11 +52,11 @@
    "forward_eligible_certificates": 13452,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
-   "clock_rows": 1023,
-   "clocks_ticked_24h": 1006,
-   "clocks_ticked_7d": 1007,
-   "last_tick": "2026-11-28T00:18:34+00:00",
-   "engine_silent_hours": 0.4,
+   "clock_rows": 1026,
+   "clocks_ticked_24h": 1008,
+   "clocks_ticked_7d": 1010,
+   "last_tick": "2026-11-28T08:57:34+00:00",
+   "engine_silent_hours": 0.0,
    "n_certificates": 13452,
    "n_enrolled": 1027,
    "n_accruing": 444,
@@ -67,7 +67,7 @@
    "blocked_by_status": {
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-11-27T13:43:05+00:00"
+   "census_at": "2026-11-28T02:22:43+00:00"
   },
   "recommendations": {
    "total": 784,
