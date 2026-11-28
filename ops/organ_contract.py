@@ -416,6 +416,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/MERGE_PIPELINE.json", 45,
         "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
         "heartbeat; owned by Quant-WorkflowGate, not a task of its own"),
+    # PASS WATCH (2026-11-18): ops/pass_watch.py rides MT5-ProcessHealth's half-hourly clock
+    # (ops/run_process_health.cmd). The hourly pass reads only this file unless its flag is set,
+    # so a PASS_WATCH.json that stops refreshing would silence the pass: 90 min = three runs.
+    "MT5-ProcessHealth (pass watch)": (
+        "desks/mt5/reports/PASS_WATCH.json", 90,
+        "the hourly pass's numeric checks, no LLM: flag only on change or UNMEASURED"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),

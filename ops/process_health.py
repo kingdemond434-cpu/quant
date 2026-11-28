@@ -946,7 +946,40 @@ def build() -> dict[str, Any]:
         "scheduler_timeouts": list(TIMEOUTS),
         "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
         "processes": rows,
+        # PASS WATCH (2026-11-18): ops/pass_watch.py's last verdict, carried on this already-
+        # published report so the hourly pass reads one file off-box and goes deeper only when
+        # `flag` is set. It runs right after this script (run_process_health.cmd), so it is up to
+        # one run (30 min) behind; its own `at` says how old.
+        "pass_watch": _pass_watch(),
     }
+
+
+PASS_WATCH_MAX_AGE_MIN = 90
+
+
+def _pass_watch() -> dict[str, Any]:
+    """{at, flag, reasons} from desks/mt5/reports/PASS_WATCH.json; UNMEASURED when unreadable."""
+    try:
+        doc = json.loads((OUT.parent / "PASS_WATCH.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+    if not isinstance(doc, dict):
+        return {"status": "UNMEASURED", "why": "not an object"}
+    reasons = [str(r)[:300] for r in (doc.get("reasons") or [])][:20]
+    # A watcher that stopped running must never read as "nothing changed": an old or unreadable
+    # `at` is STALE with the flag raised, so the pass looks closer.
+    try:
+        at = datetime.fromisoformat(str(doc.get("at")).replace("Z", "+00:00"))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_min = (datetime.now(tz=UTC) - at).total_seconds() / 60.0
+    except ValueError:
+        age_min = None
+    if age_min is None or age_min > PASS_WATCH_MAX_AGE_MIN:
+        why = "unreadable at" if age_min is None else f"{age_min:.0f} min old"
+        return {"status": "STALE", "at": doc.get("at"), "flag": True,
+                "reasons": [f"STALE: PASS_WATCH.json {why} (max {PASS_WATCH_MAX_AGE_MIN})"]}
+    return {"status": "OK", "at": doc.get("at"), "flag": bool(doc.get("flag")), "reasons": reasons}
 
 
 def _rank(doc: dict[str, Any] | None) -> int:
