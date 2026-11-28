@@ -1,0 +1,3 @@
+{"status": "OK", "generated_at": "2026-11-11T09:45:00+00:00", "phase": "phase1",
+ "initial_balance": 100000.0, "balance": 99666.38, "equity": 99627.86,
+ "open_positions": [{"symbol": "EURUSD", "side": "long", "volume": 1.25, "profit": -38.52}]}
