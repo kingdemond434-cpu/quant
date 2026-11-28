@@ -929,3 +929,68 @@ def test_prescreen_trial_rows_is_identity_based_and_bounded() -> None:
     assert jc.prescreen_trial_rows([a], [dict(a)]) == [{"family": "x", "cell": "A"}]
     assert jc.prescreen_trial_rows([a, b, c], [], room=1) == [{"family": "x", "cell": "A"}]
     assert jc.prescreen_trial_rows([a, b, c], [], room=0) == []
+
+
+# ------------------------------------------------- world_macro_state: one series by its key
+
+def _world_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, keys: dict | None):
+    """A tmp world dataset store; `keys=None` leaves it with no key index at all."""
+    from research import world_dataset_hunter as W
+    store = tmp_path / "world_datasets"
+    monkeypatch.setattr(W, "STORE", store)
+    monkeypatch.setattr(W, "OBS", store / "obs")
+    monkeypatch.setattr(W, "KEYS", store / "keys.json")
+    W._keys_at.cache_clear()
+    W._frame_at.cache_clear()
+    if keys is not None:
+        store.mkdir(parents=True, exist_ok=True)
+        (store / "keys.json").write_text(json.dumps(keys), "utf-8")
+    return W
+
+
+def _world_series(W, provider: str, dataset: str, code: str) -> None:
+    per = pd.period_range("2015-01", "2024-12", freq="M")
+    rng = np.random.default_rng(3)
+    frame = pd.DataFrame({
+        "series_code": code, "period": per.astype(str),
+        "value": rng.normal(size=len(per)).cumsum(),
+        "available_time": (per.to_timestamp(how="end") + pd.Timedelta(days=15)).tz_localize("UTC"),
+        "first_seen_utc": pd.Timestamp("2024-12-31", tz="UTC")})
+    path = W.dataset_path(provider, dataset)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_parquet(path)
+    W._frame_at.cache_clear()
+
+
+WORLD_PARAMS = {"z_obs": 24, "z_lo": 0.5, "z_hi": 99.0, "direction": "long", "hold_bars": 24}
+
+
+def test_an_unheld_world_series_is_named_and_the_sealed_builder_refuses_it(
+        uni, tmp_path, monkeypatch) -> None:
+    W = _world_store(tmp_path, monkeypatch, keys={"wkey1": ["prov", "ds", "X1"]})
+    row = _row("EURUSD", "world_macro_state", {"series_key": "wkey1", **WORLD_PARAMS})
+    got = P.probe_row(P._Pass(), row)
+    assert got["status"] == P.MISSING, got
+    assert [P.label(i) for i in got["missing"]] == ["world_series:wkey1"]
+    assert P.present("world_series:wkey1", P._Pass()) is False
+    cell = P._Pass().docket_cell(row)
+    assert G.build_cell(cell["sym"], cell["family"], cell["params"], {}) is None
+    assert "WorldSeriesUnavailable" in str(G.LAST_BUILD_FAILURE), G.LAST_BUILD_FAILURE
+    # the series arriving turns the answer PRESENT and the parked row re-admissible
+    _world_series(W, "prov", "ds", "X1")
+    ctx = P._Pass()
+    assert P.all_present(["world_series:wkey1"], ctx)
+    assert P.probe_row(ctx, row)["status"] == P.PRESENT
+    built = G.build_cell(cell["sym"], cell["family"], cell["params"], {})
+    assert built is not None, G.LAST_BUILD_FAILURE
+
+
+def test_a_store_with_no_key_index_is_unmeasured_never_every_series_missing(
+        uni, tmp_path, monkeypatch) -> None:
+    _world_store(tmp_path, monkeypatch, keys=None)
+    row = _row("EURUSD", "world_macro_state", {"series_key": "wkey1", **WORLD_PARAMS})
+    got = P.probe_row(P._Pass(), row)
+    assert got["status"] == P.UNMEASURED and "cannot settle" in got["why"], got
+    assert P.present("world_series:wkey1", P._Pass()) is True      # fail open, as naming does
+    unnamed = _row("EURUSD", "world_macro_state", {"series_key": "", **WORLD_PARAMS})
+    assert P.probe_row(P._Pass(), unnamed)["status"] == P.UNMEASURED

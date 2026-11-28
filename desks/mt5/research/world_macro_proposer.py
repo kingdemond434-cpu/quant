@@ -30,7 +30,10 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mt5desk.family_world_macro import family_world_macro_state  # noqa: E402
+from mt5desk.family_world_macro import (  # noqa: E402
+    WorldSeriesUnavailable,
+    family_world_macro_state,
+)
 
 from research import proposer_common as pc  # noqa: E402
 from research import world_dataset_hunter as W  # noqa: E402
@@ -88,6 +91,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     rows: list[dict[str, Any]] = []
     swept: list[str] = []
     skipped: dict[str, str] = {}
+    unheld: dict[str, int] = {}
     for sym in order:
         if time.monotonic() - t0 > budget_s:
             break
@@ -103,12 +107,21 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
             continue
         unf = pc.artifact_hours(d)
         for key in W.exposed_keys(sym, now=now, doc=doc):
+            if W.raw_world_series(key) is None:
+                # EXPOSED BUT NOT HELD (the exposure names a key whose parquet is gone): named,
+                # never screened, so the family's refusal is not taken for a dead series.
+                unheld[key] = unheld.get(key, 0) + 1
+                continue
             for lo, hi in BANDS:
                 for direction in DIRECTIONS:
                     for hold in HOLDS:
                         params = {"series_key": key, "z_obs": Z_OBS, "z_lo": lo, "z_hi": hi,
                                   "direction": direction, "hold_bars": hold}
-                        sig = family_world_macro_state(d, **params)
+                        try:
+                            sig = family_world_macro_state(d, **params)
+                        except WorldSeriesUnavailable:
+                            unheld[key] = unheld.get(key, 0) + 1
+                            continue
                         sc = pc.screen(d, sig, cost, unf)
                         if sc is None:
                             continue
@@ -140,7 +153,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
                 "donated": len(cands) if donated else 0, "donation_path": str(donated or ""),
                 "donation_refusals": dict(pc.LAST_DONATION) if donated is None and cands
                 else None,
-                "skipped": skipped, "elapsed_s": round(time.monotonic() - t0, 1),
+                "skipped": skipped, "exposed_keys_not_held": len(unheld),
+                "elapsed_s": round(time.monotonic() - t0, 1),
                 "proposals": proposals[:50]})
     W.write_json(REPORT, rep)
     return rep

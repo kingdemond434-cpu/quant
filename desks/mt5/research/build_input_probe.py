@@ -26,7 +26,10 @@ must refuse because an input it loads by name is ABSENT on this host, and nothin
     (that loader has no terminal fallback: `if not path.exists(): return None`);
   * an execution_state symbol absent from a NON-EMPTY published microstructure surface map;
   * a raw-COT family on a symbol with no COT mapping (`load_cot` raises KeyError) or whose
-    mapped COT file is absent.
+    mapped COT file is absent;
+  * a `world_macro_state` cell whose `series_key` the world dataset store on this host cannot
+    resolve (the family raises `WorldSeriesUnavailable`). A store with no `keys.json` at all is
+    UNMEASURED, never "every series is missing".
 
 `judge_coverage` parks each named cell in the unrunnable bank as `build_input_missing`, with the
 inputs it lacks, and re-admits it the pass every named input is present again (or after
@@ -83,13 +86,16 @@ PRESENT = "PRESENT"
 UNMEASURED = "UNMEASURED"
 
 PEER_FAMILIES = ("relative_value", "correlation_regime")
+#: The family that loads one world series by `series_key` from the world dataset hunter's store.
+WORLD_FAMILY = "world_macro_state"
 FACTOR_FAMILIES = ("cross_asset_residual", "pca_residual")
 LEG_KEYS = ("leg_b_symbol", "leg_c_symbol")
 RAW_COT_FAMILIES = ("cot_net_fade", "cot_change_fade", "cot_change_momentum", "cot_comm_follow")
 #: The sources `legacy_inputs` accepts for a raw-COT family; any other is its own refusal.
 RAW_COT_SOURCES = (None, "cftc_legacy", "cot_legacy", "raw_cot")
 PROBED: frozenset[str] = frozenset({*PEER_FAMILIES, *FACTOR_FAMILIES, "triangle", "lead_lag",
-                                    "execution_state", "usd_session_shock", *RAW_COT_FAMILIES})
+                                    "execution_state", "usd_session_shock", *RAW_COT_FAMILIES,
+                                    WORLD_FAMILY})
 #: Bank reasons the probe may restate with the exact input: the judge's own generic build failure
 #: and its own earlier naming. Every other reason in the bank is the judge's word and stands.
 RESTATABLE = frozenset({"build_failed", REASON})
@@ -141,6 +147,28 @@ class _Pass:
             hit = self._stat[key] = path.exists()
         return hit
 
+    def world_store(self) -> Any:
+        """The world dataset hunter module when its key index exists on this host, else None."""
+        if not hasattr(self, "_world"):
+            try:
+                from research import world_dataset_hunter as wdh
+                self._world = wdh if wdh.KEYS.exists() else None
+            except Exception:
+                self._world = None
+        return self._world
+
+    def world_held(self, key: str) -> bool:
+        """Does this host's store resolve `key` to a non-empty series? Once per key per pass."""
+        memo = self._stat.get(f"world:{key}")
+        if memo is None:
+            wdh = self.world_store()
+            try:
+                memo = wdh is not None and wdh.raw_world_series(key) is not None
+            except Exception:
+                memo = False
+            self._stat[f"world:{key}"] = memo
+        return memo
+
     def bars_item(self, symbol: str, tf: str) -> dict[str, Any] | None:
         """The bar file `orthogonal_sweep._bars(symbol, tf)` reads, when it is absent."""
         sym, chart = str(symbol), str(tf).upper()
@@ -164,6 +192,8 @@ def label(item: dict[str, Any]) -> str:
         return f"cot_mapping:{item.get('symbol')}"
     if kind == "cot_file":
         return f"cot_file:{item.get('file')}"
+    if kind == "world_series":
+        return f"world_series:{item.get('key')}"
     return kind or "unknown"
 
 
@@ -178,6 +208,8 @@ def parse_label(text: str) -> dict[str, Any] | None:
         return {"kind": kind, "symbol": rest}
     if kind == "cot_file":
         return {"kind": "cot_file", "file": rest}
+    if kind == "world_series":
+        return {"kind": "world_series", "key": rest}
     return None
 
 
@@ -248,6 +280,13 @@ def missing_inputs(ctx: _Pass, sym: str, family: str, params: dict[str, Any],
         if ctx.exists(ctx.cot._COT / name):
             return []
         return [{"kind": "cot_file", "file": name, "symbol": sym}]
+    if family == WORLD_FAMILY:
+        key = params.get("series_key")
+        if not isinstance(key, str) or not key.strip():
+            return None                     # the family's own [] on an unnamed series
+        if ctx.world_store() is None:
+            return None                     # no key index at all: UNMEASURED, never "all lack it"
+        return [] if ctx.world_held(key) else [{"kind": "world_series", "key": key}]
     return None
 
 
@@ -321,6 +360,9 @@ def present(item: dict[str, Any] | str, ctx: _Pass | None = None) -> bool:
         return str(item.get("symbol") or "") in ctx.cot._SYMBOL_SLUG
     if kind == "cot_file":
         return bool((ctx.cot._COT / str(item.get("file") or "")).exists())
+    if kind == "world_series":
+        # No key index at all says nothing about this key: fail open, as naming does.
+        return ctx.world_store() is None or ctx.world_held(str(item.get("key") or ""))
     return True
 
 
