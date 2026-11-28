@@ -50,7 +50,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -156,11 +156,19 @@ def journal_replay(data: Path = DATA) -> dict[str, Any]:
                         "time_reversals": back, "_rows": rows}
     intents = stores.get("order_intents", {}).get("_rows") or []
     deals = stores.get("live_ledger", {}).get("_rows") or []
-    ids = [str(r.get("intent_id")) for r in intents if r.get("intent_id")]
     deal_ids = [str(r.get("deal")) for r in deals if r.get("deal") is not None]
-    dup_intents = len(ids) - len(set(ids))
     dup_deals = len(deal_ids) - len(set(deal_ids))
     accepted = [r for r in intents if int(r.get("retcode") or 0) in DONE_RETCODES]
+    # A DUPLICATE IS TWO ACCEPTED ORDERS UNDER ONE INTENT (2026-11-05). The journal also logs
+    # each REJECTED attempt under the intent it served -- measured on the box: intent
+    # 3728c2b2741c7cc3 (2026-09-16 01:21:29) has its 10009 fill and, 1.6 ms later, a 10016
+    # invalid-stops attempt with ticket 0. That is one order and one refused try, not a double
+    # entry, yet counting every row's id failed this drill every day since. Accepted ids are the
+    # fail condition; rows that share an id with a rejected try are counted and shown, never hidden.
+    acc_ids = [str(r.get("intent_id")) for r in accepted if r.get("intent_id")]
+    dup_intents = len(acc_ids) - len(set(acc_ids))
+    all_ids = [str(r.get("intent_id")) for r in intents if r.get("intent_id")]
+    shared = sorted(k for k, n in Counter(all_ids).items() if n > 1)
     closed_positions = {str(r.get("position_id")) for r in deals if r.get("position_id")}
     closed_orders = {str(r.get("entry_order")) for r in deals if r.get("entry_order")}
     open_by_journal = sorted(str(r.get("ticket")) for r in accepted
@@ -179,6 +187,8 @@ def journal_replay(data: Path = DATA) -> dict[str, Any]:
         "stores": stores,
         "intents": len(intents), "accepted": len(accepted), "closing_deals": len(deals),
         "duplicate_intent_ids": dup_intents, "duplicate_deals": dup_deals,
+        "intent_ids_with_rejected_retries": len(shared),
+        "retried_intent_ids": shared[:20],
         "open_by_replay": len(open_by_journal), "open_tickets_by_replay": open_by_journal[:50],
         "open_by_gateway_state": gw_open,
         "status": ("UNMEASURED" if "order_intents" not in present or
