@@ -29,7 +29,7 @@ first paused pass. Eleven days of readings, all of them the same snapshot.
 
 That snapshot cannot reach five of the rail's seven rails AT ALL:
 
-    EQUITY_FLOOR     fires -- on equity 266.01, frozen on 10-30, re-affirmed 170 times a day
+    EQUITY_FLOOR     fires -- on <frozen equity>, frozen on 10-30, re-affirmed 170 times a day
     DAILY_LOSS       the opening-balance arm needs day_start_equity.date == today's broker day;
                      the frozen file says 2026-10-30, so it can never match again
     MARGIN           needs `margin_free`, A KEY gateway_state.json HAS NEVER CARRIED -> 0.0 ->
