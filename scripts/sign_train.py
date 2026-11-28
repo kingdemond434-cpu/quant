@@ -28,6 +28,35 @@ the first 12 hex of each new hash. It signs with the existing `check_immutable_e
 --sign-files --by <signer>`, so the manifest format has one writer.
 
 On any failed check both files are restored to HEAD and the exit code is non-zero.
+
+A PR HEAD, NOT LIVE (2026-11-11, Desk health's read reports/box_reads/sign_train_pr_head_read).
+CI's law gate refuses any unsigned sealed byte, so a sealed change never reaches LIVE unsigned
+and a train that signs only LIVE's head never has anything to sign. `--root <checkout>` signs a
+PR head instead, with every guard of that read:
+
+    python scripts/sign_train.py --list-heads                       # heads LIVE's rows name
+    python scripts/sign_train.py --write-carrier <one-tip bundle>   # a seal carrier, as data
+    python scripts/sign_train.py --root <pr checkout> --target <40-hex PR head>
+
+  G1  This file and check_immutable_evaluator.py run from LIVE's checkout (this file's own
+      tree). The PR checkout is DATA: read and hashed, never imported, never executed. A PR
+      that changes the train's own files (the manifest, quantbench.py, this file, the
+      evaluator) is refused: those are a change for audit, not a re-sign.
+  G2  No pytest at the PR head. QB-002 is checked statically by LIVE's code: quantbench.py is
+      parsed (ast, never imported), every *_SEAL_ROTATION "from" is kept, a moved file's "to"
+      is its new full sha256 with this signer, and the manifest pins exactly those bytes.
+  G3  The head is chosen by LIVE: a CLEAR row in SEAL_CLEARS.jsonl AS COMMITTED ON LIVE (proven
+      append-only there) whose `head` field is the exact 40-hex PR head. The PR's own copy of
+      the record is never read.
+  G4  The moved files at the head are EXACTLY the paths of that head's rows, byte for byte.
+      DENIED, NO_ROTATION, no --expect and no --principal all still hold.
+  G6  The train's own files at the head are byte-identical to LIVE's current ones, so the sign
+      starts from LIVE's manifest and can never drop a newer manifest row. (Not "the head
+      contains LIVE": the CLEAR row naming the head lands on LIVE AFTER the head, so no cleared
+      head could ever contain it -- the same deadlock again. The gate merges LIVE into the sign
+      PR as for any other, and a clean merge-in keeps its CLEAR by patch-id.)
+  G7  One single-parent commit on the head, touching exactly the manifest and quantbench.py,
+      made with hooks off (core.hooksPath -> an empty folder, so no PR file runs as a hook).
 """
 
 from __future__ import annotations
@@ -132,19 +161,22 @@ def _git(*args: str) -> str:
     ).stdout.strip()
 
 
+def _git_in(cwd: Path, *args: str) -> str:
+    return subprocess.run(
+        ("git", *args), cwd=cwd, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
 REPORT = re.compile(r"(/mnt/project-files/)?reports/audit/\S+\.md")
 HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
-def parse_clears(text: str) -> dict[str, set[str]]:
-    """{path: {sha256 the audit cleared}} from SEAL_CLEARS.jsonl text, failing closed.
+HEX40 = re.compile(r"[0-9a-f]{40}")
 
-    Every non-blank line must be a well-formed row, or the whole record is refused (ValueError):
-    a garbled line is not a quiet "no". Any HOLD for a path's sha256 outranks every CLEAR for it,
-    whichever came first.
-    """
-    cleared: dict[str, set[str]] = {}
-    held: dict[str, set[str]] = {}
+
+def _rows(text: str) -> list[dict[str, Any]]:
+    """Every row of SEAL_CLEARS.jsonl text, validated, failing closed (ValueError)."""
+    rows = []
     for n, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
@@ -168,9 +200,60 @@ def parse_clears(text: str) -> dict[str, set[str]]:
             not isinstance(report_sha, str) or not HEX64.fullmatch(report_sha)
         ):
             raise ValueError(f"{SEAL_CLEARS}:{n} report_sha256 is not 64 lower-case hex")
-        (cleared if verdict == "CLEAR" else held).setdefault(path, set()).add(sha)
+        # `head` (2026-11-11, G3): the exact PR head the audit cleared these bytes AT. Optional,
+        # but when present it must be a full 40-hex commit, or the whole record is refused.
+        if "head" in row and (not isinstance(row["head"], str) or not HEX40.fullmatch(row["head"])):
+            raise ValueError(f"{SEAL_CLEARS}:{n} head is not a 40-hex lower-case commit")
+        rows.append(row)
+    return rows
+
+
+def parse_clears(text: str) -> dict[str, set[str]]:
+    """{path: {sha256 the audit cleared}} from SEAL_CLEARS.jsonl text, failing closed.
+
+    Every non-blank line must be a well-formed row, or the whole record is refused (ValueError):
+    a garbled line is not a quiet "no". Any HOLD for a path's sha256 outranks every CLEAR for it,
+    whichever came first.
+    """
+    cleared: dict[str, set[str]] = {}
+    held: dict[str, set[str]] = {}
+    for row in _rows(text):
+        (cleared if row["verdict"] == "CLEAR" else held).setdefault(row["path"], set()).add(
+            row["sha256"]
+        )
     out = {p: shas - held.get(p, set()) for p, shas in cleared.items()}
     return {p: shas for p, shas in out.items() if shas}
+
+
+def heads_named(text: str) -> list[str]:
+    """The PR heads LIVE's record names in a CLEAR row, oldest first, each once (G3)."""
+    out: list[str] = []
+    for row in _rows(text):
+        h = row.get("head")
+        if row["verdict"] == "CLEAR" and h and h not in out:
+            out.append(h)
+    return out
+
+
+def head_clears(text: str, head: str) -> dict[str, str]:
+    """{path: sha256} the audit cleared AT `head` (G3), failing closed.
+
+    Only rows whose `head` is exactly this head count. A HOLD outranks: a HOLD row for this
+    head and path, or any HOLD for that path's exact bytes (with or without a head), drops the
+    path. Two CLEAR rows for one head and path naming different bytes are refused (ValueError):
+    the train never guesses which bytes the audit meant.
+    """
+    rows = _rows(text)
+    held_bytes = {(r["path"], r["sha256"]) for r in rows if r["verdict"] == "HOLD"}
+    held_here = {r["path"] for r in rows if r["verdict"] == "HOLD" and r.get("head") == head}
+    out: dict[str, str] = {}
+    for r in rows:
+        if r["verdict"] != "CLEAR" or r.get("head") != head:
+            continue
+        if r["path"] in out and out[r["path"]] != r["sha256"]:
+            raise ValueError(f"two CLEAR rows for {r['path']} at {head[:12]} name different bytes")
+        out[r["path"]] = r["sha256"]
+    return {p: sha for p, sha in out.items() if p not in held_here and (p, sha) not in held_bytes}
 
 
 def append_only_problems(versions: list[bytes]) -> list[str]:
@@ -251,6 +334,454 @@ def _commit_holds(head: str, moved: dict[str, str], commit: str = "HEAD") -> boo
     return all(sha in bench for rel, sha in moved.items() if rel in ROTATIONS)
 
 
+# ------------------------------------------------------------------ a PR head (--root)
+#: The train's own files: a PR that changes one is a change for audit, never a re-sign (G1).
+TRAIN_OWNED = (
+    MANIFEST,
+    QUANTBENCH,
+    "scripts/sign_train.py",
+    "scripts/check_immutable_evaluator.py",
+)
+SEALED_NAME = "SEALED"
+
+
+def _constants(src: str) -> dict[str, Any]:
+    """quantbench.py's SEALED tuple and *_SEAL_ROTATION dicts, read by ast (never imported)."""
+    import ast
+
+    out: dict[str, Any] = {}
+    for node in ast.parse(src).body:
+        if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
+            continue
+        name = getattr(node.targets[0], "id", None)
+        if isinstance(name, str) and (name == SEALED_NAME or name in ROTATIONS.values()):
+            out[name] = ast.literal_eval(node.value)
+    return out
+
+
+def static_qb002(
+    before_src: str, after_src: str, moved: dict[str, str], signer: str, manifest: dict[str, Any]
+) -> list[str]:
+    """Why QB-002 would not read green after the sign; empty when it would (G2).
+
+    The same rule as quantbench.probe_sealed_files, read statically from LIVE's code: each
+    rotation keeps its "from"; a moved file's rotation names its new full sha256 and this
+    signer, and the manifest pins those bytes under that signer; nothing else changes.
+    """
+    try:
+        b, a = _constants(before_src), _constants(after_src)
+    except (SyntaxError, ValueError) as exc:
+        return [f"quantbench.py constants unreadable: {exc}"]
+    problems = []
+    if b.get(SEALED_NAME) != a.get(SEALED_NAME):
+        problems.append("the SEALED tuple changed")
+    files = manifest.get("files") or {}
+    for rel, name in ROTATIONS.items():
+        rb, ra = b.get(name), a.get(name)
+        if not (isinstance(rb, dict) and isinstance(ra, dict)):
+            problems.append(f"{name} is missing")
+            continue
+        if ra.get("from") != rb.get("from") or ra.get("path") != rel or rb.get("path") != rel:
+            problems.append(f'{name} lost its path or its "from"')
+        if rel in moved:
+            if ra.get("to") != moved[rel] or ra.get("signed_by") != signer:
+                problems.append(f"{name} does not name {moved[rel][:16]} by {signer}")
+            if manifest.get("signed_by") != signer or files.get(rel) != moved[rel][:16]:
+                problems.append(f"the manifest does not pin {rel} at {moved[rel][:16]} by {signer}")
+        elif ra != rb:
+            problems.append(f"{name} changed though {rel} did not move")
+    for rel in b.get(SEALED_NAME) or ():
+        if rel in moved and rel not in ROTATIONS:
+            problems.append(f"{rel} is in QB-002's SEALED but has no rotation constant")
+    return problems
+
+
+def _evaluator() -> Any:
+    """LIVE's check_immutable_evaluator, loaded from this file's own tree (G1)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_live_evaluator", ROOT / "scripts" / "check_immutable_evaluator.py"
+    )
+    if not (spec and spec.loader):
+        raise ValueError("LIVE's check_immutable_evaluator.py cannot be loaded")
+    mod = importlib.util.module_from_spec(spec)
+    sys.dont_write_bytecode = True  # LIVE's checkout stays exactly as fetched
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _sign_files_at(root: Path, signer: str) -> int:
+    """LIVE's own `--sign-files`, pointed at the PR checkout: the manifest keeps one writer."""
+    mod = _evaluator()
+    mod.ROOT = root
+    mod.MANIFEST = root / MANIFEST
+    saved = sys.argv
+    sys.argv = ["check_immutable_evaluator.py", "--sign-files", "--by", signer]
+    try:
+        return int(mod.main())
+    finally:
+        sys.argv = saved
+
+
+def _hashes_at(root: Path) -> dict[str, str]:
+    mod = _evaluator()
+    mod.ROOT = root
+    return dict(mod._hashes())
+
+
+def _is_ancestor(cwd: Path, a: str, b: str) -> bool:
+    r = subprocess.run(("git", "merge-base", "--is-ancestor", a, b), cwd=cwd, check=False)
+    return r.returncode == 0
+
+
+def train_commit_problems(cwd: Path, head: str, commit: str) -> list[str]:
+    """Why `commit` is not exactly a train commit on `head`; empty when it is (G7, G8).
+
+    One single-parent commit whose parent is `head`, touching exactly the manifest and
+    quantbench.py. A gate can call this to carry a CLEAR of `head` to `commit`.
+    """
+    problems = []
+    parents = _git_in(cwd, "rev-list", "--parents", "-n", "1", commit).split()
+    if parents[1:] != [head]:
+        problems.append(f"{commit[:12]} is not one single-parent commit on {head[:12]}")
+    touched = sorted(_git_in(cwd, "diff", "--name-only", head, commit).splitlines())
+    if touched != sorted((MANIFEST, QUANTBENCH)):
+        problems.append(f"{commit[:12]} touches {touched}, not exactly the two seal files")
+    return problems
+
+
+def sign_root(root: Path, target: str, live_head: str) -> int:
+    """Sign the PR head checked out at `root` from LIVE's record and LIVE's code (G1-G7)."""
+    root = root.resolve()
+    if root == ROOT or ROOT in root.parents or root in ROOT.parents:
+        print("REFUSED: --root must be a checkout separate from LIVE's")
+        return 2
+    if not HEX40.fullmatch(target):
+        print("REFUSED: --root needs the full 40-hex --target")
+        return 2
+    head = _git_in(root, "rev-parse", "HEAD")
+    if head != target:
+        print(f"REFUSED: {root} is at {head[:12]}, not the named target {target[:12]}")
+        return 2
+    if _git_in(root, "status", "--porcelain", "--untracked-files=no"):
+        print(f"REFUSED: {root} has local edits")
+        return 2
+    owned = _git_in(root, "diff", "--name-only", live_head, head, "--", *TRAIN_OWNED)
+    if owned:
+        print(f"REFUSED: the PR changes the train's own files: {owned.split()}")
+        return 2
+    try:
+        rows = head_clears(_committed_clears(live_head), head)
+    except ValueError as exc:
+        print(f"REFUSED: {exc}")
+        return 2
+    before = json.loads((root / MANIFEST).read_text("utf-8"))
+    moved = moved_files(before, root)
+    if not moved:
+        print("nothing to sign: every sealed file at the head matches the manifest")
+        return 0
+    blocked = [p for p in moved if p in NO_ROTATION]
+    if blocked:
+        print(f"REFUSED: {blocked} moved but has no QB-002 rotation constant")
+        return 2
+    problems = binding_problems(moved, rows)
+    if problems:
+        print("REFUSED:\n  " + "\n  ".join(problems))
+        return 2
+
+    signer = AUDITOR
+    names = ", ".join(sorted(moved))
+    bench_before = (root / QUANTBENCH).read_text("utf-8")
+    done = False
+    try:
+        src = bench_before
+        for rel, sha in moved.items():
+            if rel in ROTATIONS:
+                src = repin(src, ROTATIONS[rel], sha, signer)
+        (root / QUANTBENCH).write_text(src, "utf-8")
+        if _sign_files_at(root, signer) != 0:
+            print("FAILED: --sign-files refused")
+            return 1
+        after = json.loads((root / MANIFEST).read_text("utf-8"))
+        resigned = {
+            p
+            for p, d in (after.get("files") or {}).items()
+            if (before.get("files") or {}).get(p) != d
+        }
+        if resigned != set(moved):
+            print(f"FAILED: the sign touched {sorted(resigned)}, not the bound {sorted(moved)}")
+            return 1
+        if (after.get("files") or {}) != _hashes_at(root):
+            print("FAILED: the manifest does not pin the bytes at the head")
+            return 1
+        bad = static_qb002(bench_before, src, moved, signer, after)
+        if bad:
+            print("FAILED: QB-002 would not read green:\n  " + "\n  ".join(bad))
+            return 1
+        hooks = root.parent / f"{root.name}.nohooks"
+        hooks.mkdir(exist_ok=True)
+        for leftover in hooks.iterdir():
+            print(f"FAILED: the empty hooks folder holds {leftover.name}")
+            return 1
+        r = subprocess.run(
+            (
+                "git", "-c", f"core.hooksPath={hooks.as_posix()}", "commit", "-q", "-m",
+                f"Sign train at {head[:12]} by {signer}: {names}\n\n"
+                "File-only re-sign of IMMUTABLE_MANIFEST plus QB-002 re-pin, same commit, made "
+                "by LIVE's sign_train.py from LIVE's SEAL_CLEARS rows for this exact head.",
+                "--", MANIFEST, QUANTBENCH,
+            ),
+            cwd=root,
+            check=False,
+        )  # fmt: skip
+        if r.returncode != 0:
+            print("FAILED: commit refused")
+            return 1
+        mine = _git_in(root, "rev-parse", "HEAD")
+        bad = train_commit_problems(root, head, mine)
+        if bad:
+            print("FAILED: " + "; ".join(bad))
+            _git_in(root, "reset", "-q", "--hard", head)
+            done = True
+            return 1
+        done = True
+    finally:
+        if not done:
+            _git_in(root, "checkout", "HEAD", "--", MANIFEST, QUANTBENCH)
+            print("manifest and quantbench.py restored at the head")
+    print(f"signed {len(moved)} file(s) at {head[:12]}: {names}")
+    return 0
+
+
+# ------------------------------------------------------------------ seal carriers
+#: A CLEARED HEAD THAT NO BRANCH CAN HOLD (2026-11-11, Auditor ruling 13:12Z). The pre-push law
+#: gate refuses unsigned sealed bytes from every clone, so a cleared head H can never reach a
+#: branch for the train to find. A CARRIER does: a branch commits H as a git bundle (one tip, H)
+#: plus `git format-patch` of H, here. The bytes are inert data in the tree, the law fence
+#: (scripts/check_seal_clears.py) judges the carrier itself on every push, the leg re-checks it
+#: with LIVE's code before G1-G10 run unchanged, and the carrier never merges: under CI the same
+#: fence refuses any tree that holds one, so LIVE never does.
+CARRIERS = "desks/mt5/data/seal_carriers"
+CARRIER_NAME = re.compile(r"([0-9a-f]{40})\.(bundle|patch)")
+#: `git format-patch` pinned so two hosts produce the same bytes for the same commit.
+_PATCH_ARGS = (
+    "-c", "core.quotePath=true", "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false",
+    "-c", "diff.relative=false", "-c", "diff.algorithm=myers", "-c", "diff.renames=false",
+    "-c", "format.signature=", "-c", "i18n.logOutputEncoding=UTF-8",
+    "format-patch", "-1", "--stdout", "-p", "--no-signature", "--full-index", "--binary",
+    "--no-renames", "-U3", "--encoding=UTF-8",
+)  # fmt: skip
+
+
+def carrier_patch(cwd: Path, head: str) -> bytes:
+    """The exact bytes a carrier's <H>.patch must hold."""
+    return subprocess.run(
+        ("git", *_PATCH_ARGS, head), cwd=cwd, capture_output=True, check=True
+    ).stdout
+
+
+def carrier_heads(names: list[str]) -> tuple[list[str], list[str]]:
+    """(heads with both files, problems) from the file names in the carriers folder."""
+    seen: dict[str, set[str]] = {}
+    problems = []
+    for n in sorted(names):
+        m = CARRIER_NAME.fullmatch(n)
+        if not m:
+            problems.append(f"{CARRIERS}/{n} is not <40-hex>.bundle or <40-hex>.patch")
+            continue
+        seen.setdefault(m.group(1), set()).add(m.group(2))
+    for h, kinds in seen.items():
+        if kinds != {"bundle", "patch"}:
+            problems.append(f"{CARRIERS}/{h}: wants both .bundle and .patch, has {sorted(kinds)}")
+    return sorted(h for h, kinds in seen.items() if kinds == {"bundle", "patch"}), problems
+
+
+def _objects_dir(cwd: Path) -> Path:
+    common = Path(_git_in(cwd, "rev-parse", "--git-common-dir"))
+    return (common if common.is_absolute() else (cwd / common)).resolve() / "objects"
+
+
+def carrier_problems(
+    cwd: Path,
+    bundle: bytes,
+    patch: bytes,
+    head: str,
+    live: str,
+    clears_text: str,
+    keep: Path | None = None,
+) -> list[str]:
+    """Why this carrier of `head` is refused; empty when every condition holds.
+
+    1. The bundle has exactly one tip, and it is `head`; `head` has one parent, an ancestor of
+       `live`. 2. SEAL_CLEARS rows (LIVE's, `clears_text`) name `head`, and the sealed paths
+       `head` changes are exactly those rows, each blob's full sha256 equal to its row (G4,
+       DENIED and NO_ROTATION too); the train's own files are untouched. 3. The patch is
+       byte-identical to `git format-patch` of `head`. The bundle is unpacked into a scratch
+       repository borrowing `cwd`'s objects, so `cwd` gains nothing unless `keep` is given:
+       then `head` is fetched into `cwd` as refs/carriers/<head> once every check holds.
+    """
+    import shutil
+    import tempfile
+
+    if not HEX40.fullmatch(head):
+        return [f"{head!r} is not a 40-hex head"]
+    tmp = Path(tempfile.mkdtemp(prefix="seal-carrier-"))
+    try:
+        bfile = tmp / f"{head}.bundle"
+        bfile.write_bytes(bundle)
+        heads = subprocess.run(
+            ("git", "bundle", "list-heads", str(bfile)),
+            cwd=cwd, capture_output=True, text=True, check=False,
+        )  # fmt: skip
+        tips = [ln.split() for ln in heads.stdout.splitlines() if ln.strip()]
+        if heads.returncode != 0 or len(tips) != 1 or tips[0][0] != head or len(tips[0]) != 2:
+            return [f"the bundle must hold exactly one tip, {head[:12]}: {heads.stdout.strip()!r}"]
+        repo = tmp / "repo"
+        nohooks = tmp / "nohooks"  # no git call here runs a hook, in the scratch repo or `keep`
+        nohooks.mkdir()
+        hooks_off = f"core.hooksPath={nohooks.as_posix()}"
+        _git_in(tmp, "-c", hooks_off, "init", "-q", "--bare", str(repo))
+        (repo / "objects" / "info" / "alternates").write_text(
+            str(_objects_dir(cwd)) + "\n", "utf-8"
+        )
+        got = subprocess.run(
+            ("git", "-c", hooks_off, "fetch", "-q", "--no-tags", str(bfile),
+             f"{tips[0][1]}:refs/carrier"),
+            cwd=repo, capture_output=True, text=True, check=False,
+        )  # fmt: skip
+        if got.returncode != 0:
+            return [
+                f"the bundle does not unpack here (is its parent on LIVE?): {got.stderr.strip()}"
+            ]
+        if _git_in(repo, "rev-parse", "refs/carrier") != head:
+            return ["the bundle's tip is not the named head"]
+        parents = _git_in(repo, "rev-list", "--parents", "-n", "1", head).split()[1:]
+        if len(parents) != 1:
+            return [f"{head[:12]} has {len(parents)} parents, not one"]
+        if not _is_ancestor(repo, parents[0], live):
+            return [
+                f"{head[:12]}'s parent {parents[0][:12]} is not an ancestor of LIVE {live[:12]}"
+            ]
+        problems = []
+        changed = _git_in(
+            repo, "diff", "--name-only", "--no-renames", parents[0], head
+        ).splitlines()
+        owned = sorted(set(changed) & set(TRAIN_OWNED))
+        if owned:
+            problems.append(f"{head[:12]} changes the train's own files: {owned}")
+        sealed = json.loads(_git_in(repo, "show", f"{live}:{MANIFEST}")).get("files") or {}
+        moved = {}
+        for rel in changed:
+            if rel not in sealed:
+                continue
+            blob = subprocess.run(
+                ("git", "cat-file", "blob", f"{head}:{rel}"), cwd=repo, capture_output=True,
+                check=False,
+            )  # fmt: skip
+            moved[rel] = (
+                hashlib.sha256(blob.stdout.replace(b"\r\n", b"\n")).hexdigest()
+                if blob.returncode == 0
+                else "<absent>"
+            )
+        if not moved:
+            problems.append(f"{head[:12]} moves no sealed file: nothing to carry")
+        problems += [f"{p} has no QB-002 rotation constant" for p in moved if p in NO_ROTATION]
+        try:
+            rows = head_clears(clears_text, head)
+        except ValueError as exc:
+            return [str(exc)]
+        if not rows:
+            problems.append(f"no SEAL_CLEARS row on LIVE names head {head[:12]}")
+        problems += binding_problems(moved, rows)
+        if carrier_patch(repo, head) != patch:
+            problems.append(f"{head}.patch is not byte-identical to `git format-patch` of the head")
+        if not problems and keep is not None:
+            r = subprocess.run(
+                ("git", "-c", hooks_off, "fetch", "-q", "--no-tags", str(bfile),
+                 f"{tips[0][1]}:refs/carriers/{head}"),
+                cwd=keep, capture_output=True, text=True, check=False,
+            )  # fmt: skip
+            if r.returncode != 0:
+                problems.append(f"the checked carrier could not be fetched: {r.stderr.strip()}")
+        return problems
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def make_carrier(bundle_file: Path) -> str:
+    """Write CARRIERS/<H>.bundle and <H>.patch into this tree from a one-tip bundle; returns H.
+
+    The writer of a carrier, so its patch is made by the same pinned `git format-patch` the
+    fence compares against. It does not judge the carrier: the push fence does that.
+    """
+    import shutil
+    import tempfile
+
+    out = _git("bundle", "list-heads", str(bundle_file)).splitlines()
+    tips = [ln.split() for ln in out if ln.strip()]
+    if len(tips) != 1 or len(tips[0]) != 2 or not HEX40.fullmatch(tips[0][0]):
+        raise ValueError(f"the bundle must hold exactly one tip: {out}")
+    head, ref = tips[0]
+    tmp = Path(tempfile.mkdtemp(prefix="seal-carrier-"))
+    try:
+        nohooks = tmp / "nohooks"
+        nohooks.mkdir()
+        hooks_off = f"core.hooksPath={nohooks.as_posix()}"
+        repo = tmp / "repo"
+        _git_in(tmp, "-c", hooks_off, "init", "-q", "--bare", str(repo))
+        (repo / "objects" / "info" / "alternates").write_text(
+            str(_objects_dir(ROOT)) + "\n", "utf-8"
+        )
+        _git_in(repo, "-c", hooks_off, "fetch", "-q", "--no-tags", str(bundle_file.resolve()),
+                f"{ref}:refs/carrier")  # fmt: skip
+        patch = carrier_patch(repo, head)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    folder = ROOT / CARRIERS
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"{head}.bundle").write_bytes(bundle_file.read_bytes())
+    (folder / f"{head}.patch").write_bytes(patch)
+    return head
+
+
+def carrier_at(commit: str, live: str) -> tuple[str | None, list[str]]:
+    """The leg's re-check of the carrier committed at `commit` (LIVE's code, LIVE's proven
+    record): (head, problems). On success `head` is fetched as refs/carriers/<head>."""
+    names = [
+        Path(n).name
+        for n in _git("ls-tree", "--name-only", f"{commit}:{CARRIERS}").splitlines()
+        if n.strip()
+    ]
+    heads, problems = carrier_heads(names)
+    if problems or len(heads) != 1:
+        return None, problems or [f"a carrier commit holds exactly one head, not {len(heads)}"]
+    head = heads[0]
+
+    def blob(ext: str) -> bytes:
+        return subprocess.run(
+            ("git", "cat-file", "blob", f"{commit}:{CARRIERS}/{head}.{ext}"),
+            cwd=ROOT, capture_output=True, check=True,
+        ).stdout  # fmt: skip
+
+    try:
+        clears = _committed_clears(live)
+    except ValueError as exc:
+        return None, [str(exc)]
+    bad = carrier_problems(ROOT, blob("bundle"), blob("patch"), head, live, clears, keep=ROOT)
+    return (None, bad) if bad else (head, [])
+
+
+def list_heads(live_head: str) -> list[str]:
+    """PR heads LIVE's record clears that LIVE does not already contain (G3)."""
+    text = _committed_clears(live_head)
+    out = []
+    for h in heads_named(text):
+        if head_clears(text, h) and not _is_ancestor(ROOT, h, live_head):
+            out.append(h)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--target", required=True, help="the audited commit being signed")
@@ -267,7 +798,60 @@ def main(argv: list[str] | None = None) -> int:
         help="sign as the principal at a terminal (--expect + type-back) instead of the audit",
     )
     ap.add_argument("--push", action="store_true", help="push the signed commit as a branch")
+    ap.add_argument(
+        "--root",
+        type=Path,
+        help="sign the PR head checked out here (data only) from LIVE's rows and LIVE's code",
+    )
+    ap.add_argument(
+        "--list-heads",
+        action="store_true",
+        help="print the PR heads LIVE's SEAL_CLEARS rows clear, one per line",
+    )
+    if argv is None:
+        argv = sys.argv[1:]
+    if "--write-carrier" in argv:
+        i = argv.index("--write-carrier")
+        try:
+            h = make_carrier(Path(argv[i + 1]))
+        except (IndexError, ValueError, subprocess.CalledProcessError) as exc:
+            print(f"REFUSED: {exc}")
+            return 2
+        print(
+            f"wrote {CARRIERS}/{h}.bundle and .patch; commit them on claude/seal-carrier-{h[:12]}"
+        )
+        return 0
+    if "--carrier" in argv:
+        i = argv.index("--carrier")
+        commit = argv[i + 1] if i + 1 < len(argv) else ""
+        if not HEX40.fullmatch(commit):
+            print("REFUSED: --carrier wants the carrier branch's 40-hex tip")
+            return 2
+        head, bad = carrier_at(commit, _git("rev-parse", "HEAD"))
+        if head is None:
+            print("REFUSED: carrier at " + commit[:12] + ":\n  " + "\n  ".join(bad))
+            return 2
+        print(head)
+        return 0
+    if "--list-heads" in argv:
+        live = _git("rev-parse", "HEAD")
+        try:
+            heads = list_heads(live)
+        except ValueError as exc:
+            print(f"REFUSED: {exc}")
+            return 2
+        for h in heads:
+            print(h)
+        return 0
     a = ap.parse_args(argv)
+    if a.root is not None:
+        if a.principal or a.expect or a.push:
+            print("REFUSED: --root signs by the audit alone: no --principal, --expect or --push")
+            return 2
+        if _git("status", "--porcelain", "--untracked-files=no"):
+            print("REFUSED: LIVE's checkout has local edits")
+            return 2
+        return sign_root(a.root, a.target.lower(), _git("rev-parse", "HEAD"))
 
     head = _git("rev-parse", "HEAD")
     if not head.startswith(a.target.lower()) or len(a.target) < 7:

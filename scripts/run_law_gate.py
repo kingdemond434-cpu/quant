@@ -176,7 +176,9 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # THE AUTO-SIGN'S CLEAR RECORD (D-20261027-003, principal sign removed 2026-10-27).
     # scripts/sign_train.py signs sealed judge bytes only on a CLEAR row in SEAL_CLEARS.jsonl;
     # this runs the train's own parser and append-only check so a garbled row or a dropped HOLD
-    # fails the push that commits it. A shallow clone reads UNMEASURED and passes.
+    # fails the push that commits it. A shallow clone reads UNMEASURED and passes. It also judges
+    # every SEAL CARRIER in the tree (Auditor ruling 2026-11-11 13:12Z), and under CI fails any
+    # carrier at all, so one can never merge and LIVE never holds one.
     ("check_seal_clears.py", ()),
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
     # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
