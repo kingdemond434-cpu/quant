@@ -760,7 +760,42 @@ def _is_tmpfs(path: Path) -> bool:
     return fstype == "tmpfs"
 
 
-def _checkout_base() -> Path:
+# Variables that pin git to a repository, index or work tree regardless of `-C` and `cwd`.
+# Git exports GIT_DIR (and in a linked worktree GIT_COMMON_DIR/GIT_INDEX_FILE paths) into every
+# hook it runs, so inside the pre-push hook `git -C <private checkout> ...` still reads and
+# WRITES THE PUSHER'S repository: `sparse-checkout disable` turned the caller's sparsity off and
+# `restore --ignore-skip-worktree-bits` cleared its skip-worktree bits, after which ~42k
+# desks/mt5/data/intelligence files showed as deleted in the pusher's tree (Finish paused,
+# 2026-11-17) -- one `git add -A` away from deleting box state on origin.
+_GIT_LOCATION_VARS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+                      "GIT_PREFIX", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+                      "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_DISCOVERY_ACROSS_FILESYSTEM")
+
+
+def _private_env(**extra: str) -> dict[str, str]:
+    """os.environ minus every variable that would point git at the CALLER's repository, so a
+    command run in the private HEAD checkout acts on that checkout and nothing else."""
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_LOCATION_VARS}
+    env.update(extra)
+    return env
+
+
+def _head_bytes(root: Path) -> int:
+    """Bytes a full checkout of HEAD writes (blob sizes from `git ls-tree -l`); 0 if unknown."""
+    try:
+        r = subprocess.run(["git", "ls-tree", "-r", "-l", "--full-tree", "HEAD"], cwd=root,
+                           capture_output=True, text=True, timeout=120, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    total = 0
+    for line in r.stdout.splitlines():
+        parts = line.split(None, 4)
+        if len(parts) > 3 and parts[3].isdigit():
+            total += int(parts[3])
+    return total
+
+
+def _checkout_base(need: int = 0) -> Path:
     """Where a HEAD checkout is allocated: DISK, never RAM.
 
     THE DEFECT THIS CLOSES (gap-fixer 2026-08-29). `_reap_stale_checkouts` below already knows
@@ -776,15 +811,36 @@ def _checkout_base() -> Path:
     and is the mass-deletion launder R0423 names), and is verified not to be a tmpfs itself
     before it is used. Any failure -- no HOME, unwritable, or itself in RAM -- falls back to
     `tempfile.gettempdir()`, which is exactly today's behaviour, so this can only improve.
+
+    WHEN THE DISK CANNOT HOLD IT (2026-11-17). HEAD is ~3.7 GB now and the checkout died with
+    "unable to write file" whenever free disk was under ~4 GB; the hand workaround was
+    TMPDIR/XDG_CACHE_HOME=/dev/shm. With `need` (bytes of the tree, plus 10%) the disk base is
+    kept while it has room, and only when it does not is the first candidate that DOES have room
+    used: `tempfile.gettempdir()`, then /dev/shm. If none has room the disk base stands and the
+    failure is reported, exactly as before.
     """
     try:
         base = Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "quant-lawgate"
         if _is_tmpfs(base.parent if not base.exists() else base):
-            return Path(tempfile.gettempdir())
-        base.mkdir(parents=True, exist_ok=True)
+            base = Path(tempfile.gettempdir())
+        else:
+            base.mkdir(parents=True, exist_ok=True)
     except (OSError, RuntimeError):
-        return Path(tempfile.gettempdir())
+        base = Path(tempfile.gettempdir())
+    if need <= 0 or _free(base) >= need:
+        return base
+    for alt in (Path(tempfile.gettempdir()), Path("/dev/shm")):  # noqa: S108 - mkdtemp under it
+        if alt != base and alt.is_dir() and os.access(alt, os.W_OK) and _free(alt) >= need:
+            return alt
     return base
+
+
+def _free(path: Path) -> int:
+    """Free bytes on `path`'s filesystem; 0 when unreadable (never picks an unknown place)."""
+    try:
+        return shutil.disk_usage(path).free
+    except OSError:
+        return 0
 
 
 def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
@@ -816,7 +872,7 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     # allocates under gettempdir() -- and every orphan that predates the move lives there too.
     # Sweeping only the new base would strand exactly the pile this relocation exists to stop.
     candidates: list[Path] = []
-    for base in {_checkout_base(), Path(tempfile.gettempdir())}:
+    for base in {_checkout_base(), Path(tempfile.gettempdir()), Path("/dev/shm")}:  # noqa: S108
         try:
             candidates.extend(base.glob("lawgate-head-*"))
         except OSError:
@@ -862,7 +918,8 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     if not dirt and sparse.stdout.strip() != "true":
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
-    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
+    need = int(_head_bytes(root) * 1.1)
+    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base(need)))
     wt = tmp / "t"
     try:
         # HEAD now contains 49,295 files / 3.8GB on the trading host. Parallel
@@ -876,10 +933,13 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         # Git copies the caller's sparse-checkout settings into a new worktree.
         # A law verdict must cover all committed policy/evidence files, including
         # paths intentionally absent from an operator's source-only checkout.
-        # Disable sparsity only in this private HEAD checkout; never in the caller.
+        # Disable sparsity only in this private HEAD checkout; never in the caller. Both calls
+        # run in the checkout with the caller's GIT_DIR & co. removed (_private_env): with them
+        # inherited, as inside a hook, `-C` does not move git off the caller's repository.
+        own = _private_env()
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "sparse-checkout", "disable"],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=wt, env=own, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
         # Individually skipped files (for example a seal added with --sparse)
@@ -888,7 +948,7 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "restore", "--source=HEAD", "--worktree",
                            "--ignore-skip-worktree-bits", "--", "."],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=wt, env=own, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:
@@ -924,8 +984,7 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
-                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
+                env = _private_env(QUANT_LAWGATE_IN_PLACE="1", QUANT_LAWGATE_SOURCE_VIEW="1")
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)
