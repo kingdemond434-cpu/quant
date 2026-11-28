@@ -4,6 +4,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # TODAY-GUARD (2026-08-25): one real dig per day; chain and scattered timers cannot double-run.
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
@@ -79,7 +81,7 @@ mkdir -p data/.digs
 echo "started=$(date -u +%FT%TZ) pid=$$ log=$LOG" > "$RUNMARK"
 
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
-claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+scoped_claude frontier_miner "$LOG" "${BRAIN_EFFORT:-low}" < <(dig_prompt "ops/frontier_${REGION}_prompt.txt")
 _rc=$?
 echo "=== frontier-$REGION exit $_rc at $(date -u) ===" >> "$LOG"
 # Cleared ONLY on a clean return from the dig. A non-zero exit is still a finished attempt for

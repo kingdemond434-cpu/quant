@@ -10,6 +10,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
 # holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
@@ -54,9 +56,7 @@ if ! brain_auth_check; then
 fi
 echo "=== brain-hunter start $(date -u) ===" >> "$LOG"
 if [ "$CONTROLLER" = "claude" ]; then
-    claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" \
-        -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions \
-        >> "$LOG" 2>&1
+    scoped_claude brain_hunter "$LOG" "${BRAIN_EFFORT:-low}" < <(dig_prompt ops/brain_hunter_prompt.txt)
     RC=$?
 else
     { printf '%s\n\n' "$_DOCTRINE"; dig_prompt ops/brain_hunter_prompt.txt; } \
