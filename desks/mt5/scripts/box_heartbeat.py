@@ -23,12 +23,17 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
     silent     `reports/SILENT_ORGANS.json` fence RED (a NEW silent organ or an escalation) or
                UNMEASURED (an input unreadable, stale or existence-only), or the census older
                than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
+    adopt_lag  `reports/RELEASE_LAG.json` (desks/mt5/scripts/release_lag.py, re-measured here at
+               most every 15 min) not GREEN: a green release unadopted past 3h (BEHIND), LIVE
+               code no green release has covered for 24h (NO_GREEN_RELEASE), or no reading
+               (UNMEASURED) -- 2026-11-03: the box sat five days on the 10-29 release, silent.
+               Pages on joining, on a changed kind, and once a day while it lasts
 
 All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
-whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
-armed there; unarmed is recorded, never silent). A failing check does not stop the ping: `/fail`
-is itself a ping, so "the box is alive and something on it is wrong" and "the box is gone" stay
-two different pages.
+whenever a check JOINS the failing set (or the silent fence names a new organ), one page through
+`libs.ops.alert_channels.send_all` (whatever is armed there; unarmed is recorded, never silent).
+A failing check does not stop the ping: `/fail` is itself a ping, so "the box is alive and
+something on it is wrong" and "the box is gone" stay two different pages.
 
 CREDENTIAL. The check's ping URL, in `data/secrets/box_heartbeat_url.json` (`{"url":
 "https://hc-ping.com/<uuid>"}`), a SEPARATE check from the VPS's `heartbeat_url.json` so the two
@@ -93,7 +98,8 @@ def _age_min(p: Path, now: float) -> float | None:
 
 
 def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
-            disk_free_gb: float | None = None) -> dict[str, Any]:
+            disk_free_gb: float | None = None,
+            adopt_lag: dict[str, Any] | None = None) -> dict[str, Any]:
     """Every check's reading and whether it fails. A beat that does not exist FAILS: absence is
     not health (L1.28a)."""
     t = now if now is not None else time.time()
@@ -126,6 +132,7 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
                       "min_gb": DISK_MIN_GB,
                       "fail": disk_free_gb is None or disk_free_gb < DISK_MIN_GB}
     checks["silent"] = silent_check(t)
+    checks["adopt_lag"] = adopt_lag if adopt_lag is not None else adopt_lag_check(t)
     failing = sorted(k for k, v in checks.items() if v["fail"])
     return {"at": dt.isoformat(timespec="seconds"), "checks": checks, "failing": failing,
             "verdict": "FAIL" if failing else "OK"}
@@ -147,6 +154,42 @@ def silent_check(now: float, path: Path | None = None) -> dict[str, Any]:
                      or fence in ("RED", "UNMEASURED"))}
 
 
+def adopt_lag_check(now: float) -> dict[str, Any]:
+    """Refresh the release-lag report (bounded, throttled) and judge it. NEVER RAISES: a module
+    that cannot load is an UNMEASURED failing check, never a pass."""
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import release_lag
+        release_lag.refresh(now)
+        return release_lag.check(now)
+    except Exception as exc:
+        return {"verdict": "UNMEASURED", "kind": "UNMEASURED",
+                "reason": f"release_lag unreadable: {type(exc).__name__}", "fail": True}
+
+
+#: A release-lag failure that persists is paged again once per this many hours.
+ADOPT_LAG_REPAGE_H = 24.0
+
+
+def _adopt_lag_repage(doc: dict[str, Any], prev: dict[str, Any], now: float) -> bool:
+    """The adopt_lag check pages again while it is still failing when its KIND changed (BEHIND
+    -> NO_GREEN_RELEASE, ...) or its last page is a day old. Never on every 5-minute pass."""
+    lag = doc["checks"].get("adopt_lag") or {}
+    if "adopt_lag" not in doc["failing"]:
+        return False
+    last = prev.get("adopt_lag_paged") if isinstance(prev.get("adopt_lag_paged"), dict) else {}
+    if not last:
+        return True                        # failing and never paged (a dry run saw it join)
+    if str(last.get("kind")) != str(lag.get("kind")):
+        return True
+    try:
+        return now - float(last.get("t")) >= ADOPT_LAG_REPAGE_H * 3600
+    except (TypeError, ValueError):
+        return True
+
+
 def _url(paths: tuple[Path, ...] = SECRETS) -> str:
     for p in paths:
         with contextlib.suppress(OSError, ValueError, AttributeError):
@@ -164,8 +207,9 @@ def _ping(url: str, body: str, fail: bool) -> str:
 
 
 def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = SECRETS,
-        reading: dict[str, Any] | None = None) -> dict[str, Any]:
-    doc = reading or measure()
+        reading: dict[str, Any] | None = None, now: float | None = None) -> dict[str, Any]:
+    t_now = time.time() if now is None else now
+    doc = reading or measure(t_now)
     prev: dict[str, Any] = {}
     with contextlib.suppress(OSError, ValueError):
         prev = json.loads(out.read_text("utf-8"))
@@ -202,6 +246,9 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     newly = doc["verdict"] == "FAIL" and (bool(set(doc["failing"]) - prev_failing)
                                           or ("silent" in doc["failing"]
                                               and bool(now_new - prev_new)))
+    newly = newly or _adopt_lag_repage(doc, prev, t_now)
+    # The adopt_lag page clock rides this report: carried while failing, cleared on recovery.
+    lag_paged = prev.get("adopt_lag_paged") if "adopt_lag" in doc["failing"] else None
     doc["paged"] = None
     if newly and not dry_run:
         try:
@@ -210,6 +257,9 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
+        if "adopt_lag" in doc["failing"]:
+            lag_paged = {"t": t_now, "kind": (doc["checks"].get("adopt_lag") or {}).get("kind")}
+    doc["adopt_lag_paged"] = lag_paged
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")
                     else doc["at"])
     out.parent.mkdir(parents=True, exist_ok=True)

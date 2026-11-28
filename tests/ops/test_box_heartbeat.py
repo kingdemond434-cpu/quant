@@ -16,6 +16,14 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
 import box_heartbeat as hb  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _green_release_lag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests judge the other checks; the release-lag check has its own file
+    (tests/ops/test_release_lag.py) and must not read this checkout's git refs here."""
+    monkeypatch.setattr(hb, "adopt_lag_check",
+                        lambda now: {"verdict": "GREEN", "kind": "GREEN", "fail": False})
+
+
 def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: float,
            fence: str = "GREEN") -> None:
     g, w, s = tmp / "DESK_STALE.json", tmp / "stall_watch.json", tmp / "SILENT_ORGANS.json"
