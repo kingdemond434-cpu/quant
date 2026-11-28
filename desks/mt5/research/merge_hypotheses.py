@@ -18,6 +18,7 @@ discovered reaches the gauntlet; the gauntlet decides, using its own sealed cons
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -740,6 +741,43 @@ def _lease(path: Path) -> None:
         pass
 
 
+#: Where an intake pass that did not publish the coverage table says so (judge_coverage.FAULT_NAME,
+#: beside judge_coverage.REPORT). Named here because the import that failed is judge_coverage.
+COVERAGE_REPORT = BASE / "reports" / "JUDGE_COVERAGE.json"
+COVERAGE_FAULT = COVERAGE_REPORT.with_name("JUDGE_COVERAGE_FAULT.json")
+
+
+def write_coverage_unavailable(why: str, *, now: datetime | None = None) -> Path | None:
+    """Record that judge_coverage could not run at all (an import-time UNAVAILABLE).
+
+    The same record `judge_coverage.write_fault` writes, so `check_judge_coverage
+    --require-state` fails on it and the next publishing pass deletes it. `why` is the
+    exception's TYPE only. Best-effort: a fault while recording it never costs the docket.
+    """
+    t = now or datetime.now(tz=UTC)
+    try:
+        prior = json.loads(COVERAGE_REPORT.read_text("utf-8"))
+    except (OSError, ValueError):
+        prior = None
+    doc = {"at": t.isoformat(timespec="seconds"), "verdict": "UNAVAILABLE",
+           "why": str(why)[:2000], "report": COVERAGE_REPORT.name,
+           "report_at": prior.get("at") if isinstance(prior, dict) else None,
+           "report_untouched": True,
+           "rule": ("judge_coverage could not be imported, so no coverage table was built; the "
+                    "report keeps the `at` of the last pass that published, and the next "
+                    "publishing pass deletes this file in its own commit")}
+    tmp = COVERAGE_FAULT.with_name(f"{COVERAGE_FAULT.name}.tmp-{os.getpid()}")
+    try:
+        COVERAGE_FAULT.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(tmp, COVERAGE_FAULT)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return None
+    return COVERAGE_FAULT
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -1142,7 +1180,14 @@ def main() -> int:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
         rows_out, coverage = order_docket(rows_out)
+        if not coverage.get("families"):
+            print(f"   judge coverage NOT published ({coverage.get('verdict')}: "
+                  f"{coverage.get('why')}) -- JUDGE_COVERAGE.json keeps its last `at`")
     except Exception as exc:
+        coverage = {"verdict": "UNAVAILABLE", "why": type(exc).__name__}
+        # order_docket records its own faults; one that could not even be imported cannot, so
+        # the record is written here, where the fence reads it.
+        write_coverage_unavailable(type(exc).__name__)
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")
         if judged:
@@ -1317,6 +1362,13 @@ def main() -> int:
                                   "every prefix of the docket is family-balanced"),
                         "families_ordered": len({str(r.get("family")) for r in rows_out}),
                         "applied": bool(coverage.get("families")),
+                        # WHY NOT, when not (2026-10-29): an order_docket fault used to reach
+                        # this report as `applied: false` and nothing else, and the coverage
+                        # table stayed frozen at its last `at` with no reason anywhere durable.
+                        "coverage_verdict": (None if coverage.get("families")
+                                             else (coverage.get("verdict") or "UNAVAILABLE")),
+                        "coverage_why": (None if coverage.get("families")
+                                         else coverage.get("why")),
                         "fallback_basis": "judgements already spent per docket row, least first",
                         "coverage": {k: (coverage.get("totals") or {}).get(k) for k in
                                      ("families_with_backlog", "families_queued",

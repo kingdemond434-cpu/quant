@@ -109,6 +109,11 @@ REPORT = REPORTS / "JUDGE_COVERAGE.json"
 #: Written ONLY by a pass that stopped at its budget, and cleared by the next completed pass's
 #: commit. It never touches REPORT, which keeps its own `at` and ages out under the fence's lease.
 TIMEOUT_REPORT = REPORTS / "JUDGE_COVERAGE_TIMEOUT.json"
+#: Written by an intake pass (`order_docket`, the report's writer of record) that ended WITHOUT
+#: publishing the table -- a fault, or a build with no families -- and cleared by the next pass
+#: that does publish. It sits next to REPORT (named, not a module constant, so a test that
+#: redirects REPORT redirects it too) and never touches REPORT itself.
+FAULT_NAME = "JUDGE_COVERAGE_FAULT.json"
 #: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
 OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
@@ -4344,6 +4349,47 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         return _order_docket(rows, publish=publish, now=now)
 
 
+def fault_path() -> Path:
+    """Where an unpublished intake pass says so: beside whatever REPORT currently is."""
+    return REPORT.with_name(FAULT_NAME)
+
+
+def write_fault(verdict: str, why: str, *, now: datetime | None = None,
+                report_untouched: bool = True) -> Path | None:
+    """THE TABLE WAS NOT REWRITTEN, AND THAT IS NOW A RECORD, NOT A PRINT (2026-10-29).
+
+    `merge_hypotheses` calls `order_docket` as the report's writer of record, and the hourly leg
+    only re-reads what it published (`--reuse-fresh`). When `order_docket` faulted -- or built a
+    table with no families -- it returned the rows as they arrived and left JUDGE_COVERAGE.json
+    exactly as the last good pass wrote it. The only trace was a stdout line in the merge's log,
+    and merge_report.json dropped the reason (`applied: false`, every coverage key None). On the
+    box the report then carried `at` 2026-10-27T17:33Z for two days while every other signal
+    said the intake was running. This artifact names the pass, its verdict and its reason, next
+    to the report it did NOT rewrite; `check_judge_coverage --require-state` fails on it.
+    `why` is a fixed phrase or an exception's TYPE, never its text (the rule of this module).
+    Best-effort by construction: a fault while recording the fault never costs the docket.
+    `report_untouched` is False when the pass failed AFTER its commit point: the report may
+    then carry this pass's writes, and the record must not vouch for it being the old table.
+    """
+    t = now or datetime.now(tz=UTC)
+    target = fault_path()
+    prior = _read(REPORT)
+    doc = {"at": t.isoformat(timespec="seconds"), "verdict": verdict, "why": str(why)[:2000],
+           "report": REPORT.name,
+           "report_at": prior.get("at") if isinstance(prior, dict) else None,
+           "report_untouched": bool(report_untouched),
+           "rule": ("an intake pass that does not publish the coverage table says so here; the "
+                    "report keeps the `at` of the last pass that did, and the next publishing "
+                    "pass deletes this file in its own commit")}
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Atomic, and leaves no `.tmp-<pid>` sibling behind when the rename fails.
+        _atomic_write_text(target, json.dumps(doc, indent=1, default=str))
+    except OSError:
+        return None
+    return target
+
+
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
@@ -4372,6 +4418,9 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             if _txn is not None:
                 commit_reached = True
                 _txn.commit()
+            if publish:
+                write_fault("EMPTY", "build() returned no families, so the coverage table was "
+                                     "not rewritten", now=now)
             return entry_rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
@@ -4506,6 +4555,9 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
+        if publish:
+            write_fault("FAULT", why=type(exc).__name__, now=now,
+                        report_untouched=not commit_reached)
         return entry_rows, {"verdict": "UNMEASURED", "why": type(exc).__name__}
 
 
@@ -4550,8 +4602,9 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
     txn.put_text(target, json.dumps(doc, indent=1, default=str))
     if report is None:
-        # A completed pass clears the previous timeout's artifact in the same commit.
+        # A completed pass clears the previous timeout's and fault's artifacts in the same commit.
         txn.delete(TIMEOUT_REPORT)
+        txn.delete(fault_path())
     fams = doc.get("families") or {}
     state = {
         "at": doc.get("at"),
@@ -4883,6 +4936,7 @@ __all__ = [
     "family_breadth",
     "family_priors",
     "family_value",
+    "fault_path",
     "grid_cell",
     "judge_seconds_per_cell",
     "judged_index",
@@ -4900,6 +4954,7 @@ __all__ = [
     "update_unrunnable_bank",
     "variant_split",
     "write",
+    "write_fault",
 ]
 
 
