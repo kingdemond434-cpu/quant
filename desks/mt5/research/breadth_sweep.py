@@ -45,6 +45,9 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
 CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: The judge's own coverage report: `unmined_live_families` and `realised_pass_rate` (each
+#: family's posterior on its pass rate) order the sweep's families (`family_yield_rank`).
+JUDGE_COVERAGE = DESK / "reports" / "JUDGE_COVERAGE.json"
 
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
@@ -260,6 +263,23 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
             names[str(name)] = fn
     for name, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
         names.setdefault(str(name), fn)
+    # THE THIRD POPULATION (2026-10-14). `families.live_family_names` -- the set the judge's
+    # coverage report is built from -- includes `run_hunt16.FAMILIES`, and this sweep did not:
+    # nine dav_* families sat in JUDGE_COVERAGE with 0 mined and 0 queued because the only door
+    # they had was a keyword match in donated prose. All fourteen take (bars, side) alone, so they
+    # are swept at defaults exactly like every other price-only family. An import failure adds
+    # nothing and removes nothing.
+    IMPORT_BLOCKED.pop("hunt16_families", None)
+    try:
+        from mt5desk.executables import hunt16_families
+        for name, fn in hunt16_families().items():
+            if callable(fn):
+                names.setdefault(str(name), fn)
+    except Exception as exc:
+        # Recorded BY TYPE NAME ONLY (never the text, which can carry paths or values) and
+        # published in the report's `blocked` list: a population that silently failed to import
+        # is a breadth the sweep cannot claim (L1.28a), not a quiet zero.
+        IMPORT_BLOCKED["hunt16_families"] = type(exc).__name__
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
@@ -311,6 +331,8 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
 #: What the last `cells()` call set aside as UNTESTABLE, by `family|chart|verdict`, and why. A
 #: count the report publishes -- a refusal only the sweep knows about is one nobody acts on.
 LAST_SET_ASIDE: dict[str, dict[str, Any]] = {}
+#: populations whose import failed on the last `default_families()` call: {source: type name}
+IMPORT_BLOCKED: dict[str, str] = {}
 REPORT = DESK / "reports" / "BREADTH_SWEEP.json"
 
 
@@ -362,8 +384,97 @@ def _certified_family_counts() -> dict[str, int]:
     return counts
 
 
-def _orthogonal_key() -> Any:
-    """Spend a capped merge on intraday, under-certified families, then least-judged pairs.
+def judge_coverage_age(path: Path | None = None,
+                       now: datetime | None = None) -> dict[str, Any]:
+    """How old the JUDGE_COVERAGE.json that `family_yield_rank` orders by is, stamped into the
+    sweep report. The ranking reads the file whatever its age, so the report must say which
+    reading it acted on: `generated_at` (or the report's own `at`) and its age in hours. An
+    absent, unreadable or unstamped report is UNMEASURED by name, never a fresh one."""
+    p = path or JUDGE_COVERAGE
+    out: dict[str, Any] = {"path": p.name, "generated_at": None, "age_hours": None,
+                           "status": "UNMEASURED"}
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        out["why"] = f"unreadable ({type(exc).__name__})"
+        return out
+    stamp = (doc.get("generated_at") or doc.get("at")) if isinstance(doc, dict) else None
+    if not stamp:
+        out["why"] = "no generated_at / at stamp"
+        return out
+    out["generated_at"] = str(stamp)
+    try:
+        ts = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+    except ValueError:
+        out["why"] = "stamp unparseable"
+        return out
+    out["age_hours"] = round(((now or datetime.now(tz=UTC)) - ts).total_seconds() / 3600.0, 2)
+    out["status"] = "MEASURED"
+    return out
+
+
+def blocked_rows() -> list[dict[str, str]]:
+    """The report's `blocked` list: every family still BLOCKED with its reason, then every
+    population whose import failed (this sweep's own and the buildability table's), named by
+    exception TYPE only."""
+    rows = [{"family": f, "why": w} for f, w in sorted(BLOCKED.items())]
+    for src, err in sorted(IMPORT_BLOCKED.items()):
+        rows.append({"source": src, "where": "breadth_sweep.default_families",
+                     "why": f"import failed ({err})", "error_type": err})
+    try:
+        from research.gauntlet_buildability import TABLE_BLOCKED
+    except Exception as exc:
+        rows.append({"source": "research.gauntlet_buildability", "where": "breadth_sweep",
+                     "why": f"import failed ({type(exc).__name__})",
+                     "error_type": type(exc).__name__})
+    else:
+        for src, err in sorted(TABLE_BLOCKED.items()):
+            rows.append({"source": src, "where": "gauntlet_buildability._family_table",
+                         "why": f"import failed ({err})", "error_type": err})
+    return rows
+
+
+def family_yield_rank(path: Path | None = None) -> dict[str, tuple[int, float]]:
+    """{family: (0 never mined / 1 mined, -posterior_hi)} from JUDGE_COVERAGE.json.
+
+    YIELD FIRST, AND THE NEVER-MINED AHEAD OF EVERYTHING (2026-11-17). The capped merge spent
+    itself in chart order, so a family with a measured 16% pass-rate posterior (mass_screen_clock)
+    queued behind thousands of retail-TA cells measured at ~0, and twenty live families the judge
+    names in `unmined_live_families` were never reached at all. Ranked here by the judge's own
+    posterior upper bound (`realised_pass_rate[].posterior_hi`, the optimistic read a bandit
+    explores on), with a never-mined bonus: an unmined family has no posterior yet and its first
+    cells are the cheapest information the sweep can buy. Read from the artifact, never a list.
+    An absent or unreadable report is an empty map, and the order is exactly what it was.
+    """
+    try:
+        doc = json.loads((path or JUDGE_COVERAGE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    out: dict[str, tuple[int, float]] = {}
+    for row in doc.get("realised_pass_rate") or []:
+        if isinstance(row, dict) and row.get("family"):
+            try:
+                hi = float(row.get("posterior_hi") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            out[str(row["family"])] = (1, -hi)
+    unmined = doc.get("unmined_live_families")
+    if not isinstance(unmined, list):
+        fams = doc.get("families")
+        unmined = [f for f, r in (fams.items() if isinstance(fams, dict) else [])
+                   if isinstance(r, dict) and r.get("mined") == 0]
+    for fam in unmined:
+        out[str(fam)] = (0, 0.0)
+    return out
+
+
+def _orthogonal_key(yield_rank: dict[str, tuple[int, float]] | None = None) -> Any:
+    """Spend a capped merge on never-mined and high-yield families first (`family_yield_rank`),
+    then intraday, under-certified families, then least-judged pairs.
 
     No family is banned: a genuinely distinct variant may still pass the full unchanged gates.
     This only prevents a cap from being exhausted by another copy of a saturated mechanism
@@ -375,11 +486,17 @@ def _orthogonal_key() -> Any:
     except Exception:
         by_pair = {}
     certified = _certified_family_counts()
+    if yield_rank is None:
+        yield_rank = family_yield_rank()
 
     def key(r: dict) -> tuple:
         tf = str((r.get("params") or {}).get("timeframe") or "H1")
         fam = str(r["family"])
-        return (_tf_rank(tf), certified.get(fam, 0),
+        # Never-mined families first, then by the judge's yield posterior (highest first), so
+        # a high-yield family is widened over every symbol, chart and session before a family
+        # measured at ~0; inside a family, the old order (intraday, under-certified, least
+        # judged). A family the report does not name sorts with the measured-at-zero ones.
+        return (*yield_rank.get(fam, (1, 0.0)), _tf_rank(tf), certified.get(fam, 0),
                 by_pair.get((str(r["symbol"]).upper(), fam), 0),
                 r["symbol"], r["family"])
     return key
@@ -419,8 +536,9 @@ def cells(only: str | None = None) -> list[dict]:
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest; then
     # least-judged (symbol, family) first, so the cap spends itself on orthogonal ground.
     out.sort(key=_orthogonal_key())
-    # THEN THE FAILURE MEMORY (Tier S S13): inside each chart tier, cells in a neighbourhood the
-    # memory has already mapped as dead go LAST and carry the theorem that maps it.
+    # THEN THE FAILURE MEMORY (Tier S S13): inside each (yield, chart) tier, cells in a
+    # neighbourhood the memory has already mapped as dead go LAST and carry the theorem that maps
+    # it. The tier carries the family's yield rank, so the memory never undoes the yield order.
     out, stats = order_by_failure_memory(out)
     FAILURE_MEMORY_STATS.clear()
     FAILURE_MEMORY_STATS.update(stats)
@@ -449,6 +567,8 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "blocked": blocked_rows(),
+        "judge_coverage": judge_coverage_age(),
         "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
                  "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
@@ -472,8 +592,9 @@ def _cell_tf_rank(r: dict) -> int:
     return _tf_rank(str((r.get("params") or {}).get("timeframe") or "H1"))
 
 
-def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tuple[list[dict],
-                                                                                  dict]:
+def order_by_failure_memory(rows: list[dict], memory: dict | None = None,
+                            yield_rank: dict[str, tuple[int, float]] | None = None
+                            ) -> tuple[list[dict], dict]:
     """Consult `libs/tiers/failure_memory` -- the theorems `tier_s.organ_failure_memory` compresses
     hourly from the gate ledger, the forward clocks and the live fills -- and push the cells it
     already maps as dead behind the rest of their chart tier, tagged with the theorem.
@@ -514,7 +635,14 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
         return {"mechanism": mech[fam], "asset_class": acls[sym],
                 "selector": str((r.get("params") or {}).get("session") or "?")}
 
-    return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
+    yr = family_yield_rank() if yield_rank is None else yield_rank
+
+    def tier(r: dict) -> tuple:
+        # (never-mined, -yield posterior, chart): the memory reorders inside a tier and so never
+        # undoes the yield order `_orthogonal_key` set.
+        return (*yr.get(str(r.get("family") or ""), (1, 0.0)), _cell_tf_rank(r))
+
+    return fm.prioritise(rows, mem, desc_of, rank=tier)
 
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
@@ -595,6 +723,8 @@ def main(argv: list[str] | None = None) -> int:
           f"{', '.join(sorted(sweepable))}")
     for fam, why in sorted(blocked_default.items()):
         print(f"  SET ASIDE {fam:<20} {why[:90]}")
+    for src, err in sorted(IMPORT_BLOCKED.items()):
+        print(f"  BLOCKED {src:<22} import failed ({err})")
     from collections import Counter
     by_tf = Counter(str((r.get('params') or {}).get('timeframe') or 'H1') for r in new)
     by_sess = Counter(str((r.get('params') or {}).get('session') or 'all') for r in new)

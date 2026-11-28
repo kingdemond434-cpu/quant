@@ -183,6 +183,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # `session_variant_remap` is an hourly discovery leg; its artifact also carries
+    # `universe_unreadable`, which `session_variant_issues` below turns into a BLIND issue.
+    ("session_variant_remap", "desks/mt5/reports/SESSION_VARIANT_REMAP.json", 3600,
+     "research/session_variant_remap.py"),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -453,9 +457,37 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+def session_variant_issues(root: Path | None = None) -> list[Issue]:
+    """THE READER `universe_unreadable` WAS PUBLISHED FOR (audit of #145, ported 2026-11-17).
+
+    `session_variant_remap` names why the broker registry (universe.json) cannot be read. With it
+    unreadable every asset-class key misses the firing cache and every session variant reads
+    UNMEASURED -- correct, but a field nothing reads is a warning nobody sees. A non-null reason
+    is a BLIND issue here: the desk believes it has session variants under measurement and has
+    none. Not auto-repairable: rerunning the leg re-reads the same broken file; the repair is the
+    registry's producer (the box's universe export), named in the detail.
+    An absent artifact is left to the CADENCE row (missing/stale), never read as clean.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / "desks/mt5/reports/SESSION_VARIANT_REMAP.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    reason = doc.get("universe_unreadable") if isinstance(doc, dict) else None
+    if not reason:
+        return []
+    return [Issue(
+        "universe:unreadable", "BLIND",
+        "the broker registry is unreadable; every session variant is UNMEASURED",
+        f"session_variant_remap ({doc.get('generated_at', 'time unknown')}): {reason}. Every "
+        "asset-class key misses the firing cache, so no session variant can be judged LIVE or "
+        "DEAD until desks/mt5/data/universe/universe.json reads with symbol rows again.",
+        repair=None, auto=False)]
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + session_variant_issues(root))
 
 
 def repair_budget_s() -> float | None:
