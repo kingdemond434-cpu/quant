@@ -864,6 +864,11 @@ $reportPaths = @(
     # (`account_ref`), never the id; the ledger is bounded at 1 MB by its writer.
     "desks/mt5/data/e8_gold_heartbeat.json",
     "desks/mt5/data/e8_decision_ledger.jsonl",
+    # DID EACH ACCOUNT FILL TODAY (2026-11-18, ops/daily_fills.py on MT5-ProcessHealth): per
+    # account the day's entries, verdict and newest skip-reason CODES, plus the `alarms` a closed
+    # market day with no fill raises. Reason codes and hashed fill handles only: no why-text, no
+    # account, no order number, no money.
+    "desks/mt5/reports/DAILY_FILLS.json",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
