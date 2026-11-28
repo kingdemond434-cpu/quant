@@ -1545,4 +1545,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    try:  # money runs above research (libs/ops/money_priority.py); never blocks this runner
+        from libs.ops.money_priority import enter as _money_priority
+
+        _money_priority()
+    except ImportError:
+        pass
     raise SystemExit(main())
