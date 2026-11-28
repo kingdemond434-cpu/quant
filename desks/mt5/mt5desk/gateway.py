@@ -823,13 +823,22 @@ def save_state(st: dict) -> None:
             os.unlink(temporary)
 
 
-def connect() -> bool:
-    if mt5.terminal_info() is not None:
-        return True
+def connect() -> object:
+    """The terminal's `terminal_info()` when attached (truthy), else False.
+
+    THE READ IS KEPT, NOT DISCARDED (2026-11-11): `main` hands it to the disconnect breaker
+    (`account_breakers.connection_breaker`), which refuses new orders on `connected` or
+    `trade_allowed` False. Every pass is a fresh process, so the first read answers None until
+    `initialize` attaches; the same read is taken again then. A terminal that attaches but will
+    not describe itself is returned as True and the breaker reads its quote age alone.
+    """
+    term = mt5.terminal_info()
+    if term is not None:
+        return term
     if not mt5.initialize(path=TERMINAL):
         log(f"mt5 initialize failed: {mt5.last_error()}")
         return False
-    return True
+    return mt5.terminal_info() or True
 
 
 def _past_cancel_hour(hour: float) -> bool:
@@ -4929,7 +4938,8 @@ def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
         return
-    if not connect():
+    _term = connect()
+    if not _term:
         return
     st = load_state()
     tick = mt5.symbol_info_tick("XAUUSD")
@@ -4937,7 +4947,8 @@ def main() -> None:
         log("no tick; market likely closed")
         mt5.shutdown()
         return
-    equity = float(mt5.account_info().equity)
+    _acct = mt5.account_info()
+    equity = float(_acct.equity)
     st["equity"] = round(equity, 2)
     from mt5desk.fusion_equity_reference import sizing_equity
 
@@ -5109,6 +5120,20 @@ def main() -> None:
                 log(f"daily-loss rail: resting gold brackets not cancelled "
                     f"({type(exc).__name__}: {exc}); they still carry their stops")
     save_state(st)
+    # THE DISCONNECT BREAKER (mt5desk.account_breakers, the one every account's lanes run): a
+    # terminal that says it is disconnected or has algo trading off, an account with trading
+    # off, or an XAUUSD quote older than QUOTE_MAX_AGE_S refuses NEW risk through the same
+    # NEW_RISK_OK gate. A disconnected terminal still answers symbol_info from its cache
+    # (tape.contract_terms_row), so the quote's own age is the measured backstop. It cancels and
+    # closes nothing; management above has run. Every refusal is a rails-ledger line.
+    from mt5desk import account_breakers as _ab
+    _cb = _ab.connection_breaker(tick_age=age_sec, terminal=_term, account=_acct)
+    st["disconnect_breaker"] = _cb.as_dict()
+    if _cb.refuse:
+        NEW_RISK_OK = False
+        log(f"{_cb.why} -- managing open positions only")
+        _ab.bill(_ab.RAIL_DISCONNECT, _cb, account="fusion", lane="gateway", day=day_key,
+                 tick_age_s=round(age_sec, 1))
     # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03, mt5desk.fusion_equity_reference). The
     # daily-loss rail above and the published equity read the real number; from here on `equity`
     # is what every sizer, the promoted-sleeve gate and the heat cap size from.
@@ -5714,13 +5739,14 @@ def main() -> None:
             if not NEW_RISK_OK:
                 # The bracket is computed and written as a not-taken decision, so the ledger
                 # shows what the sealed code would have placed while the running code could not.
-                log(f"[{s['name']}] bracket NOT placed: "
-                    f"{'the daily-loss rail' if _dl_down else 'release identity'} refuses new "
-                    f"risk")
+                _who = ("the daily-loss rail" if _dl_down else
+                        "the disconnect breaker" if _cb.refuse else "release identity")
+                log(f"[{s['name']}] bracket NOT placed: {_who} refuses new risk")
                 try:
                     _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
                                      price=None, sl=None, tp=None, taken=False,
                                      reason=("fusion_daily_loss" if _dl_down
+                                             else "account_disconnect" if _cb.refuse
                                              else "release_identity_refused"), detail=spec)
                 except Exception as exc:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "

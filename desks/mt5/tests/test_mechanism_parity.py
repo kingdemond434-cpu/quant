@@ -67,6 +67,10 @@ MECHANISMS: dict[str, tuple[str, ...]] = {
     "stop_rests_at_venue": ("stop_rests_at_venue(", "_mm.stop_move("),
     "opposite_side_fence": ("opposite_block(", "ftmo_block(", "_xa."),
     "order_door": ("order_door",),
+    # mt5desk.account_breakers (2026-11-11): the account's daily-loss latch (Fusion's rail is the
+    # same function, `decision_core.fusion_daily_loss`) and the disconnect breaker
+    "account_daily_loss_latch": ("_ab.account_latch(", "fusion_daily_loss(st"),
+    "account_disconnect_breaker": ("_ab.connection_breaker(",),
 }
 
 #: Anything that sends to a venue: a MetaTrader send, a venue stop modify or a placement.

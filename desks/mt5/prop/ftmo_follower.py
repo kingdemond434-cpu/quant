@@ -949,6 +949,33 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     st.setdefault("followed", {})
     st["account"] = _carry_day_start(st.get("account"), doc["account"], cet)
     doc["account"] = st["account"]
+    # THE ACCOUNT BREAKERS (mt5desk.account_breakers), the same two every account's lanes run:
+    # FTMO's daily-loss latch (ftmo-2step's circuit breaker, a declared tighter limit tightening
+    # it) on the equity this pass already read, and the disconnect breaker on the gold tick it
+    # already read. Measured every pass; obeyed only at "the one order" below, so a resting
+    # entry, a position and its stop management are never touched by either.
+    from mt5desk import account_breakers as _ab
+    # FTMO's own day anchor (audit HOLD f39234fbf): the CET-midnight balance from the deal
+    # history, the one loss_guard below measures from; unmeasurable -> this lane's carried
+    # first-read balance of the CET day (_carry_day_start), never a later equity read.
+    _acct_doc = doc["account"] or {}
+    try:
+        _anchor: Any = day_start_balance(mt5, float(_acct_doc.get("balance")), cet_midnight, now,
+                                         server_epoch=float(tick.time))
+    except Exception:
+        _anchor = _acct_doc.get("day_start_balance")
+    _breakers = (
+        (_ab.RAIL_DAILY_LOSS, _ab.account_latch(
+            "ftmo", _acct_doc.get("equity"), cet,
+            declared_daily_limit=decl.get("daily_loss_frac"), anchor=_anchor)),
+        (_ab.RAIL_DISCONNECT, _ab.connection_breaker(
+            tick_age=_ab.tick_age_s(getattr(tick, "time", None), now))))
+    doc["account_breakers"] = {r: b.as_dict() for r, b in _breakers}
+    for _rail, _b in _breakers:
+        if _b.refuse:
+            log(f"[{WINDOW}] {_b.why}")
+            _ab.bill(_rail, _b, account="ftmo", lane="ftmo_follower", day=cet, now=now)
+    _refused = next(((r, b) for r, b in _breakers if b.refuse), None)
     doc.update({"server_time": srv.isoformat(), "hour": round(hour, 3), "trading_date": today})
 
     # This account's gold state for every other lane, and the claim of any fill here.
@@ -1183,6 +1210,8 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     elif (spent := history_spent(mt5, today, now))[0] is not False:
         _skip(doc, st, "history_unreadable" if spent[0] is None else "already_followed",
               spent[1], today=today, now=now)
+    elif _refused is not None:
+        _skip(doc, st, _refused[0], _refused[1].why, today=today, now=now, rail=_refused[0])
     else:
         _place(mt5, st, doc, sig, key=key, decl=decl, armed=armed, today=today, now=now,
                hour=hour, cet=cet, cet_midnight=cet_midnight, book_ok=book_ok,

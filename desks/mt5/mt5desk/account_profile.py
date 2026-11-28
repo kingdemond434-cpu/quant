@@ -198,7 +198,28 @@ E8_ONE_PHASE_100K = AccountProfile(
          "a freedom"),
 )
 
-PROFILES = {p.name: p for p in (LIVE, E8_PRO, E8_ONE_8, E8_ONE_PHASE_100K)}
+#: FTMO 2-Step as the FTMO lanes trade it (prop/ftmo_follower.py DAILY_LOSS_FRAC 5%, MAX_LOSS_FRAC
+#: 10%): a hard 5% daily loss from the CET-midnight balance and a 10% maximum loss. Added
+#: 2026-11-11 so the account breaker (mt5desk.account_breakers) reads FTMO's threshold from the
+#: same table as every other venue's. risk_frac derives as E8's does: 5% x 0.6 / 5.5 = 0.55%.
+#: The circuit breaker sits AT the firm's 5% rule (audit HOLD f39234fbf, MF1): a buffer inside it
+#: would be a new latch with no E[log W] evidence (LIMIT_UTILISATION is qualitative), and it is the
+#: same 5% the FTMO lanes' own loss_guard already enforces (ftmo_follower.DAILY_LOSS_FRAC). An
+#: account declared 1-Step (3% daily) tightens it in proportion (account_breakers.trip_frac).
+FTMO_2STEP = AccountProfile(
+    name="ftmo-2step",
+    risk_frac=0.0055,
+    daily_loss_limit=0.05,
+    max_drawdown_limit=0.10,
+    daily_circuit_breaker=0.05,
+    profit_target=0.10,
+    consistency_cap=None,
+    retire_max_dd_r=-6.0,
+    why=("FTMO 2-Step: 5% daily from the CET-midnight balance, 10% maximum loss. The daily "
+         "limit binds first on a correlated cluster, as on E8"),
+)
+
+PROFILES = {p.name: p for p in (LIVE, E8_PRO, E8_ONE_8, E8_ONE_PHASE_100K, FTMO_2STEP)}
 
 
 #: Measured expectancy -> risk fraction. Computed by `scripts/optimise_prop_settings.py` as the
