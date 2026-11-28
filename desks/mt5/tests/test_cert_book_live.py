@@ -35,8 +35,10 @@ FUSION = {"EURZAR_overnight_gap_decay_asia": 0.0, "USDZAR_overnight_gap_decay_as
 #: gold windows and USDJPY, NZDJPY and AUDCHF at 0.0.
 #: THE BOX'S VALUE. The committed e8 gold_asia may never exceed it (landing must not widen E8).
 BOX_E8_GOLD_ASIA = 0.006
+#: 2026-11-18 (D-20261118-001): the FILE still holds USDJPY at 0.0 (box state); the code opens it
+#: at the principal's approved 0.004 (kelly_sizing.CODE_BOOK_OPEN), so the LOADED book carries it.
 E8 = {"gold_asia": BOX_E8_GOLD_ASIA, "gold_london_am": 0.0, "gold_afternoon": 0.0,
-      "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
+      "USDJPY_session_range_breakout_asia": 0.004, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
 @pytest.fixture(autouse=True)
@@ -60,7 +62,8 @@ def test_committed_book_carries_the_principals_sizes() -> None:
     assert load_cert_book(CERT_BOOK_FILE, "e8") == E8
     assert not any(k.startswith(("USDJPY", "CHFNOK")) for k in FUSION)
     assert all(v == 0.0 for v in FUSION.values()) and "gold_asia" not in FUSION
-    assert all(v == 0.0 for k, v in E8.items() if not k.startswith("gold_"))
+    assert all(v == 0.0 for k, v in E8.items()
+               if not k.startswith("gold_") and k != "USDJPY_session_range_breakout_asia")
     doc = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))
     assert doc["e8_pending"] == {"USDJPY_session_range_breakout_asia": 0.004}
     assert set(doc["e8_pins"]) == {"gold_asia", "USDJPY_session_range_breakout_asia"}
@@ -80,7 +83,10 @@ def test_the_committed_e8_block_is_safe_to_adopt_over_the_box() -> None:
     e8 = load_cert_book(CERT_BOOK_FILE, "e8")
     assert e8 is not None
     assert max(e8.values()) <= BOX_E8_GOLD_ASIA, e8
-    assert {k for k, v in e8.items() if v > 0} == {"gold_asia"}
+    # 2026-11-18 (D-20261118-001): USDJPY is opened by CODE at 0.004, never by this file.
+    assert {k for k, v in e8.items() if v > 0} == {"gold_asia", "USDJPY_session_range_breakout_asia"}
+    raw = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))["e8"]
+    assert {k for k, v in raw.items() if v > 0} == {"gold_asia"}
     assert e8["gold_london_am"] == 0.0 and e8["gold_afternoon"] == 0.0
 
 

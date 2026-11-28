@@ -532,10 +532,12 @@ def copy_switch(path: Path | None = None) -> dict[str, tuple[bool, float, str]]:
 
 
 def e8_symbols() -> set[str]:
-    """Symbols E8's live book trades (a non-zero `e8` key in CERT_BOOK_LIVE)."""
-    doc = _read_json(CERT_BOOK) or {}
-    return {_symbol_of(k) for k, v in (doc.get("e8") or {}).items()
-            if isinstance(v, (int, float)) and v > 0}
+    """Symbols E8's live book trades (a non-zero `e8` key in CERT_BOOK_LIVE, read through
+    `load_cert_book` so the code-side openings (`kelly_sizing.CODE_BOOK_OPEN`) count: the E8
+    executors size from that reading, and a raw-file read missed USDJPY, 2026-11-18 audit SF2)."""
+    from mt5desk.kelly_sizing import load_cert_book
+    book = load_cert_book(CERT_BOOK, "e8") or {}
+    return {_symbol_of(k) for k, v in book.items() if v > 0}
 
 
 def quarantined_symbols() -> set[str]:

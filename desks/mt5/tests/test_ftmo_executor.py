@@ -468,7 +468,10 @@ def test_a_vetoed_pass_leaves_a_row(world) -> None:
     assert row["status"] == "CLOCK_MISMATCH" and row["sleeve"] == KEY
 
 
-def test_an_empty_block_is_not_billed_as_a_veto(world) -> None:
+def test_an_empty_block_is_not_billed_as_a_veto(world, monkeypatch) -> None:
+    # An EMPTY non-gold block: the code-side opening (kelly_sizing.CODE_BOOK_OPEN) is off here.
+    from mt5desk import kelly_sizing as ks
+    monkeypatch.setattr(ks, "CODE_BOOK_OPEN", {})
     world.cert.write_text(json.dumps({"enabled": True, "excluded": {},
                                       "ftmo": {"gold_asia": 0.002}}))
     doc = fx.run(world.mt5, armed=True, now=NOW)
