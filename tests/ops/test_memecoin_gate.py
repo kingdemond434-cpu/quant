@@ -147,11 +147,64 @@ def test_red_running_or_missing_ci_waits():
     assert _decide(runs=GREEN[:2])[0] == "wait"
 
 
-def test_behind_is_brought_up_and_unknown_waits_and_drafts_wait():
+def test_behind_is_brought_up_and_unknown_waits_and_drafts_are_only_ever_readied():
     assert _decide(behind=3)[0] == "bring_up"
     assert _decide(behind=None)[0] == "wait"
-    assert _decide(pr=_pr(draft=True))[0] == "wait"
     assert _decide(pr=_pr(base={"ref": "dev"}))[0] == "wait"
+    assert _decide(pr=_pr(draft=True, base={"ref": "dev"}))[0] == "wait"
+
+
+def test_a_cleared_green_unfenced_draft_is_marked_ready_and_nothing_more():
+    def never():
+        raise AssertionError("a draft never opens or reads the veto window")
+
+    draft = _pr(draft=True)
+    assert _decide(pr=draft, window=never)[0] == "ready"
+    assert _decide(pr=draft, window=never, behind=3)[0] == "ready"  # readied, not brought up
+    # fenced, red/running, uncleared, cleared for another head, or HOLD after CLEAR: no
+    fence = _files(("src/execution/signer.py", "+x = 1"))
+    assert _decide(pr=draft, window=never, files=fence)[0] == "zuck"
+    assert _decide(pr=draft, window=never, runs=[])[0] == "wait"
+    assert _decide(pr=draft, window=never, rows=[])[0] == "wait"
+    old = [{**ROW[0], "sha": "b" * 40}]
+    assert _decide(pr=draft, window=never, rows=old)[0] == "wait"
+    held = [*ROW, {**ROW[0], "verdict": "HOLD"}]
+    assert _decide(pr=draft, window=never, rows=held)[0] == "wait"
+
+
+def test_the_sweep_readies_a_draft_by_its_node_id_and_never_merges_it(monkeypatch, tmp_path):
+    import audit_gate as ag
+
+    reg = tmp_path / "registry.jsonl"
+    reg.write_text("")
+    calls = []
+    pr = {**_pr(draft=True), "node_id": "PR_kw1"}
+
+    def fake_gh(*args, **kw):
+        calls.append(args)
+        if args[0].startswith(f"repos/{mg.REPO}/pulls?"):
+            return [pr]
+        if args[0].endswith("/files?per_page=100"):
+            return [[{"filename": "ops/health.py", "patch": "+x = 1", "changes": 1}]]
+        if "/check-runs" in args[0]:
+            return [{"check_runs": GREEN}]
+        if "/compare/" in args[0]:
+            return {"behind_by": 0}
+        return None
+
+    monkeypatch.setattr(ag, "_gh", fake_gh)
+    monkeypatch.setattr(ag, "registry_rows", lambda path: (ROW, ""))
+    monkeypatch.setattr(ag, "_summary", lambda msg: None)
+    assert mg.sweep(str(reg), None, NOW) == 0
+    graphql = [c for c in calls if c[0] == "graphql"]
+    assert len(graphql) == 1 and "markPullRequestReadyForReview" in graphql[0][2]
+    assert graphql[0][4] == "id=PR_kw1"
+    assert not any("/merge" in c[0] or "update-branch" in c[0] for c in calls)
+    # without a node id it is a logged skip, never a merge
+    calls.clear()
+    pr.pop("node_id")
+    assert mg.sweep(str(reg), None, NOW) == 1
+    assert not any(c[0] == "graphql" or "/merge" in c[0] for c in calls)
 
 
 def test_its_merge_title_is_one_auto_revert_recognises():

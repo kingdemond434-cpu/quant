@@ -27,6 +27,10 @@ THE RULE. The box (zuck's own gh login, `--box`) merges an open, non-draft memec
      fresh CI); the merge is pinned to the head sha.
   6. NOT DISABLED: no DISABLE_FILE beside the registry.
 
+DRAFTS (2026-11-17): a draft is never merged; one that is unfenced, green and CLEAR in the latest
+registry row for its exact head is marked ready (GraphQL markPullRequestReadyForReview), and
+merges on a later sweep only through all six rules above, veto window included.
+
 AUTO-REVERT: a registry merge whose `ci` on main fails while its first parent's passed is
 reverted on main, using audit_gate.auto_revert in the memecoin clone.
 
@@ -157,9 +161,8 @@ def decide(
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime,
 ) -> tuple[str, str]:
-    """("merge" | "bring_up" | "wait" | "zuck", why) for one PR. Pure apart from `window`."""
-    if pr.get("draft"):
-        return "wait", "draft"
+    """("merge" | "bring_up" | "ready" | "wait" | "zuck", why) for one PR. Pure apart from
+    `window`, which is never called for a draft."""
     if pr.get("base", {}).get("ref") != BASE:
         return "wait", f"base is {pr.get('base', {}).get('ref')}, not {BASE}"
     why = fenced(files)
@@ -167,6 +170,19 @@ def decide(
         return "zuck", why
     head = str(pr["head"]["sha"])
     ok, gwhy = green(runs)
+    if pr.get("draft"):
+        # A DRAFT IS MARKED READY, NEVER MERGED (2026-11-17): seven CLEARed, green, unfenced
+        # memecoin drafts sat for days because nothing here ever left "draft". Ready needs the
+        # same three facts a merge does except the window: unfenced, green, and the LATEST
+        # registry row CLEAR for this exact head. The merge itself still waits for the next sweep
+        # and the full veto window.
+        mine = [r for r in rows if r.get("pr") == int(pr["number"])]
+        last = mine[-1] if mine else {}
+        if not ok:
+            return "wait", f"draft; {gwhy}"
+        if last.get("verdict") != "CLEAR" or last.get("sha") != head:
+            return "wait", "draft without a CLEAR for its exact head"
+        return "ready", f"draft CLEARed at {head[:9]}, green and unfenced"
     if not ok:
         return "wait", gwhy
     if behind is None:
@@ -218,7 +234,20 @@ def sweep(registry: str, clone: str | None, now: datetime | None = None) -> int:
                 lambda n=n, head=head: ag.registry_window(seen, n, head, now, ag.run_notify),
                 now,
             )
-            if verdict == "bring_up":
+            if verdict == "ready":
+                node = str(pr.get("node_id") or "")
+                if not node:
+                    raise ValueError("no node_id to mark ready")
+                # REST has no ready-for-review endpoint; this is the one GraphQL mutation for it
+                ag._gh(
+                    "graphql",
+                    "-f",
+                    "query=mutation($id:ID!){markPullRequestReadyForReview("
+                    "input:{pullRequestId:$id}){pullRequest{isDraft}}}",
+                    "-f",
+                    f"id={node}",
+                )
+            elif verdict == "bring_up":
                 ag._gh(
                     f"repos/{REPO}/pulls/{n}/update-branch",
                     "-X",
