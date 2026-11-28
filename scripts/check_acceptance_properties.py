@@ -191,6 +191,67 @@ def ap5(desk: Path) -> dict[str, Any]:
             "why": "arms judged by survivor yield / realised Elog, plus organs the rent ledger names"}
 
 
+# ------------------------------------------------- versioned specification completion
+#: The acceptance audit's own freshness bound (global_research_acceptance.MAX_RUNTIME_AGE_H).
+SPEC_MAX_AGE_H = 26.0
+#: A report stamped slightly in the future is clock skew between hosts, not staleness.
+SPEC_FUTURE_SKEW_H = 5.0 / 60.0
+
+
+def _partial_count(entry: Any) -> int | None:
+    """The PARTIAL count of one by_specification entry, or None when it cannot be read."""
+    if not isinstance(entry, dict):
+        return None
+    v = entry.get("PARTIAL")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v or v < 0:
+        return None
+    if isinstance(v, float) and not v.is_integer():
+        return None
+    return int(v)
+
+
+def specification_completion(desk: Path, now: datetime) -> dict[str, Any]:
+    """Which acceptance-spec versions the desk may say it is complete against, right now.
+
+    `GLOBAL_RESEARCH_ACCEPTANCE.json` names them in `complete_against`; this is the reader that
+    carries that verdict into the hourly acceptance report beside AP1..AP5. A report that is
+    absent, unreadable or older than its own freshness bound completes against NOTHING: a stale
+    "complete" is a claim the desk cannot cash, so it reads UNMEASURED with an empty list.
+    """
+    doc = _read(desk / "reports" / "GLOBAL_RESEARCH_ACCEPTANCE.json")
+    if not isinstance(doc, dict):
+        return {"measured": False, "complete_against": [], "partial_against": [],
+                "why": "GLOBAL_RESEARCH_ACCEPTANCE.json absent or unreadable on this host"}
+    at = _stamp(doc.get("at"))
+    age_h = None if at is None else round((now - at).total_seconds() / 3600.0, 3)
+    raw_spec = doc.get("by_specification")
+    by_spec: dict[str, Any] = raw_spec if isinstance(raw_spec, dict) else {}
+    counts = {str(k): _partial_count(v) for k, v in by_spec.items()}
+    partial = sorted(k for k, n in counts.items() if n is not None and n > 0)
+    raw_claimed = doc.get("complete_against") or []
+    claimed = [str(k) for k in raw_claimed] if isinstance(raw_claimed, list) else []
+    # A version whose PARTIAL count cannot be read, or a claimed version with no entry at all,
+    # is UNMEASURED -- never a silent zero that would let an absence resolve clean.
+    unmeasurable = sorted({k for k, n in counts.items() if n is None}
+                          | {k for k in claimed if k not in counts})
+    base = {"by_specification": by_spec, "partial_against": partial, "age_h": age_h,
+            "unmeasurable_against": unmeasurable,
+            "release": doc.get("release"), "open_blockers": doc.get("open_blockers"),
+            "ownerless_blockers": list(doc.get("ownerless_blockers") or [])}
+    if age_h is None or age_h > SPEC_MAX_AGE_H or age_h < -SPEC_FUTURE_SKEW_H:
+        return {**base, "measured": False, "complete_against": [],
+                "why": f"acceptance report stamp unusable or stale (age_h={age_h})"}
+    if not isinstance(raw_spec, dict) or not isinstance(raw_claimed, list) or unmeasurable:
+        return {**base, "measured": False, "complete_against": [],
+                "why": "by_specification / complete_against malformed or missing for "
+                       f"{unmeasurable or 'the report'}"}
+    # Re-derive rather than trust: a version named complete must have nothing PARTIAL in it.
+    complete = sorted(k for k in claimed if k in by_spec and k not in partial)
+    return {**base, "measured": True, "complete_against": complete,
+            "rejected_claims": sorted(set(claimed) - set(complete)),
+            "why": "spec versions with zero PARTIAL requirements in a fresh acceptance audit"}
+
+
 def measure(desk: Path = DESK, root: Path = ROOT, now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     props = {"AP1": ap1(desk, root, now), "AP2": ap2(desk), "AP3": ap3(desk),
@@ -199,7 +260,8 @@ def measure(desk: Path = DESK, root: Path = ROOT, now: datetime | None = None) -
     unmeasured = [k for k, p in props.items() if not p["measured"]]
     return {"at": now.isoformat(timespec="seconds"), "properties": props,
             "met": met, "of": 5, "unmeasured": unmeasured,
-            "score": f"{met}/5 met, {len(unmeasured)} unmeasured"}
+            "score": f"{met}/5 met, {len(unmeasured)} unmeasured",
+            "specifications": specification_completion(desk, now)}
 
 
 def patch_ledger(doc: dict[str, Any], ledger_path: Path = LEDGER) -> int:
@@ -231,6 +293,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"acceptance properties: {doc['score']}")
     for k, p in doc["properties"].items():
         print(f"  {k}: {p['status']:8} {'measured' if p['measured'] else 'UNMEASURED'} -- {p['why']}")
+    spec = doc["specifications"]
+    print(f"  complete against: {spec['complete_against'] or 'nothing'}"
+          f" ({'measured' if spec['measured'] else 'UNMEASURED'} -- {spec['why']})")
     if args.ledger:
         print(f"  ledger rows updated: {patch_ledger(doc)}")
     return 0
