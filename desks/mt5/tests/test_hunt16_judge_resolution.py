@@ -12,8 +12,11 @@ from mt5desk.executables import hunt16_families, resolve_family
 def test_original_constructor_is_visible_to_the_judge(name):
     original = hunt16_families()[name]
     exported = getattr(families, f"family_{name}")
-    assert exported is original
-    assert exported is resolve_family(name)
+    # The judge's export WRAPS the forward engine's constructor only to read a cell's `side`
+    # param ("SHORT") as a direction (test_hunt16_side_param.py); the constructor underneath, its
+    # signature and its signals are the forward engine's own.
+    assert exported.__wrapped__ is original
+    assert exported.__wrapped__ is resolve_family(name)
     assert inspect.signature(exported) == inspect.signature(original)
 
 
