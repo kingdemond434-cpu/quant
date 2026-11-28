@@ -355,6 +355,26 @@ def _stand_down(now: float) -> dict[str, Any]:
                                and str(doc.get("status") or "").upper() == "STOOD_DOWN")}
 
 
+def _ledger_clock() -> dict[str, Any]:
+    """Whether the newest live-ledger rows carry real UTC stamps (row 247/239): a converted row
+    whose exit or entry stamp leads its own write time is a broker stamp under a UTC label."""
+    try:
+        from libs.ops.gateway_clock import ledger_clock_breaches
+        from libs.ops.live_ledger_view import ledger_path
+        lines = Path(ledger_path(DATA / "live_ledger.jsonl")).read_text("utf-8").splitlines()
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"live ledger unreadable ({type(exc).__name__})"}
+    rows = []
+    for line in lines[-500:]:
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            continue
+    bad = ledger_clock_breaches(rows)
+    return {"status": "BROKER_STAMPED" if bad else "OK", "n_rows": len(rows), "breaches": bad,
+            "why": "; ".join(bad[:3]) if bad else "no converted row leads its write time"}
+
+
 def measure(*, now: float | None = None) -> dict[str, Any]:
     """The whole liveness reading. Pure: reads artifacts, writes nothing."""
     now = time.time() if now is None else now
@@ -432,6 +452,9 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
                                     f"not declare it UNMEASURED ({r['declared']})"})
     if str(join.get("status")) == "BROKEN":
         breaches.append({"check": "JOIN", "why": str(join.get("why"))[:300]})
+    clock = _ledger_clock()
+    if clock["status"] == "BROKER_STAMPED":
+        breaches.append({"check": "LEDGER_CLOCK", "why": str(clock["why"])[:300]})
 
     # A CYCLE THAT PRODUCED NEITHER. The only legal states are "there is a fresh allocation" and
     # "there is a named stand-down that covers the gap". Nothing is the third state, and it is
@@ -457,6 +480,7 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
         "n_inputs_unmeasured": sum(1 for r in in_rows if r["verdict"] == UNMEASURED),
         "heat": heat,
         "join": join,
+        "ledger_clock": clock,
         "stand_down": sd,
         "breaches": breaches,
         "boundary": ("REPORT ONLY. This organ reads artifacts and publishes ages, declarations "

@@ -15,10 +15,14 @@ def clock_paths(tmp_path, monkeypatch):
 
 
 def test_live_offset_is_recorded_and_rounds_once(clock_paths, monkeypatch):
-    terminal = object()
+    # A FRESH tick 3 h (and a few seconds) ahead of the host's real clock is the broker offset
+    # (row 247/239); the pinned h1_source 0.0 is no longer read.
+    import time as _time
+    terminal = SimpleNamespace(
+        symbol_info_tick=lambda sym: SimpleNamespace(time=_time.time() + 3 * 3600 + 4))
     monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
     monkeypatch.setitem(sys.modules, "h1_source", SimpleNamespace(
-        broker_utc_offset_hours=lambda module: 2.8 if module is terminal else None))
+        broker_utc_offset_hours=lambda module: 0.0))
     assert sp.broker_utc_offset_h() == (3, "live_terminal")
     saved = json.loads(sp.BROKER_CLOCK.read_text())
     assert saved["utc_offset_hours"] == 3
@@ -59,3 +63,13 @@ def test_broken_phase_tiling_fails_instead_of_guessing(monkeypatch):
     monkeypatch.setattr(sp, "PHASES", (("ASIA_OPEN", 0, 2),))
     with pytest.raises(ValueError, match="no phase covers"):
         sp.phase_for_hour(7)
+
+
+def test_a_stale_tick_measures_no_offset_and_records_nothing(clock_paths, monkeypatch):
+    """A closed market's last tick is hours old: it measures tick AGE, not the clock."""
+    import time as _time
+    terminal = SimpleNamespace(
+        symbol_info_tick=lambda sym: SimpleNamespace(time=_time.time() - 29 * 3600))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
+    assert sp.broker_utc_offset_h()[1] != "live_terminal"
+    assert not sp.BROKER_CLOCK.exists()
