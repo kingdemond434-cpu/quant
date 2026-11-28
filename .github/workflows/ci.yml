@@ -55,14 +55,19 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # ONE GROUP PER PUSHED COMMIT. GitHub keeps one pending run per group and cancels the older
-  # pending one whatever cancel-in-progress says, so with a per-branch group every live push
-  # still cancelled the last (20 runs cancelled on 2026-09-30) and live never finished a run.
+  # ONE LIVE RUN AT A TIME, THE NEWEST NEXT (2026-11-17). This group was per pushed commit
+  # (2026-09-30: a per-branch group with cancel-in-progress cut off every running live run, so
+  # live never finished one). Per commit, though, every gate merge dispatches a full run beside
+  # the last: 10 LIVE runs from 20:35 to 21:55Z held 10 of the plan's 20 runners, each bound for
+  # the same red quality, and the one PR job that fixed it (#1244 coverage-floor) waited behind
+  # them. Now shared-branch runs (push and dispatch alike) share ONE group per branch, and
+  # cancel-in-progress stays OFF for them: the running LIVE run always finishes (09-30 cannot
+  # recur), and GitHub keeps one pending run, the newest, superseding only older runs that never
+  # started -- the newer LIVE commit's run tests a superset of what they would have tested.
   # A workflow_dispatch on LIVE is the audit gate's merge (a merge made with the workflow token
   # starts no push run): it is a push run in every respect, its own group included.
-  group: ci-${{ github.ref }}-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.sha || 'pr' }}
-  # A push run on a shared branch always finishes: every live run 11:42-12:54Z on 2026-09-30
-  # was cancelled by the next push, so live never produced a base set. PR runs still supersede.
+  group: ci-${{ github.ref }}-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'shared' || 'pr' }}
+  # A push run on a shared branch always finishes. PR runs still supersede.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
