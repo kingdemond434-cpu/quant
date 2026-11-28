@@ -854,7 +854,11 @@ $reportPaths = @(
     # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read
     "desks/mt5/reports/DECAY_VERDICTS.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
+    "desks/mt5/reports/FORWARD_ENROLMENT_SUMMARY.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
+    # its wire-sized summary (2026-11-10): the full artifact is 8.7 MB at 7,458 certificates and
+    # this cap skips it, so the summary is what reaches every reader off the box
+    "desks/mt5/reports/CERTIFICATE_CLOCK_LAW_SUMMARY.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
     # THE E8 GOLD LANE'S PLACEMENT EVIDENCE (2026-10-20). prop/e8_evidence.py writes both on every
