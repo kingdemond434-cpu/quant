@@ -184,6 +184,7 @@ LEG_LAYER: dict[str, str] = {
     # `alpha_rl` searches sequentially against the allocator's marginals, which is prediction.
     "alpha_rl": "prediction",
     "regime_monitor": "prediction",
+    "efficiency_regime": "prediction",
     "orthogonality": "portfolio",
     # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
     # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed

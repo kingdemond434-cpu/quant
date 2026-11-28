@@ -6444,6 +6444,11 @@ def main() -> None:
     # A report only -- the money path carries the cited values. Each value passes a two-sided
     # robustness gate (adopt/adopted_value); missed_growth (daily cycle) reads the report and
     # carries every held move's published missed-growth line into MISSED_GROWTH.json.
+    # EFFICIENCY REGIME FROM OUR OWN FAILURE MAP (idea #8, 2026-11-17): zones the judge has ruled on
+    # often with zero passes, as a regime feature and a stand-down PROPOSAL with its E[log W]
+    # with/without test on the live ledger. Report only; the allocator stays sovereign.
+    efr = _costed("efficiency_regime", lambda: _producer(
+        "efficiency_regime", "research/efficiency_regime.py"))
     sgd = _costed("stop_geometry_derivation", lambda: _producer(
         "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
@@ -6737,7 +6742,7 @@ def main() -> None:
                     "cluster_judge": clj, "arena": ar,
                     "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "kelly_survival": kls, "prop_challenge_allocator": fta, "efficiency_regime": efr,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
