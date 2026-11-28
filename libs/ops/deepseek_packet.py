@@ -299,10 +299,15 @@ def _resources(base: Path) -> dict[str, Any]:
     return out
 
 
+#: fields that change between two builds of the same content
+_VOLATILE = ("age_hours", "ram_available_gb", "disk_free_gb")
+
+
 def _stable(obj: Any) -> Any:
-    """Drop wall-clock-only fields so the packet hash identifies content, not the second it ran."""
+    """Drop wall-clock and live-load fields so the packet hash identifies content, not the second
+    it ran: free RAM and free disk move between two builds on a busy runner (#1270 flake)."""
     if isinstance(obj, dict):
-        return {k: _stable(v) for k, v in obj.items() if k not in ("age_hours",)}
+        return {k: _stable(v) for k, v in obj.items() if k not in _VOLATILE}
     if isinstance(obj, list):
         return [_stable(v) for v in obj]
     return obj
