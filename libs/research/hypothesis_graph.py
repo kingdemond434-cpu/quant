@@ -836,11 +836,51 @@ def _fate_index(g: Graph) -> tuple[dict[str, tuple[Any, Any, Any]], dict[str, st
         g.path.stat()
     except OSError:
         return {}, {}
+    fast = _fate_index_appended(g.path)
+    if fast is not None:
+        return fast
     try:
         with g.path.open(encoding="utf-8") as ledger:
             return _fold_fates(json.loads(ln) for ln in ledger if ln.strip())
     except (OSError, ValueError):
         return {}, {}
+
+
+FateIndex = tuple[dict[str, tuple[Any, Any, Any]], dict[str, str]]
+
+
+def _fate_index_appended(path: Path) -> FateIndex | None:
+    """`_fate_index`'s streamed answer, re-reading only the rows appended since the last call
+    (`libs.research.append_fold`: the cached prefix is verified by its SHA-256 every time). None
+    whenever the full read must decide -- a non-object row (which raises there), a torn or
+    undecodable line (which reads as empty there) -- so every answer is the full read's."""
+    from libs.research import append_fold
+
+    def fold(st: FateIndex, r: Any) -> bool:
+        if not isinstance(r, dict):
+            return False
+        cur, earliest = st
+        rid = str(r.get("id"))
+        cur[rid] = _fate_key(r)
+        if r.get("fate") in (FAILED, CERTIFIED, JUDGED) and r.get("at"):
+            rat = str(r["at"])
+            if rid not in earliest or rat < earliest[rid]:
+                earliest[rid] = rat
+        return True
+
+    def encode(st: FateIndex) -> Any:
+        return {"cur": st[0], "earliest": st[1]}
+
+    def decode(doc: Any) -> FateIndex:
+        def _i(x: Any) -> Any:
+            return sys.intern(x) if type(x) is str else x
+        cur = {sys.intern(k): (_i(v[0]), _i(v[1]), _i(v[2])) for k, v in doc["cur"].items()}
+        return cur, {str(k): str(v) for k, v in doc["earliest"].items()}
+
+    return append_fold.fold_appended(path, kind="fate_index",
+                                     code=append_fold.code_fingerprint(__file__),
+                                     empty=lambda: ({}, {}),
+                                     fold=fold, encode=encode, decode=decode)
 
 
 def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],

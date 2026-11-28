@@ -636,3 +636,5 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# append_fold accelerator caches (libs/research/append_fold.py): derived, re-verified by SHA-256 on every read
+**/.fold_cache/
