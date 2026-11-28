@@ -1716,19 +1716,6 @@
    "market": "HK"
   },
   {
-   "name": "HKEX 研究報告",
-   "region": "hk",
-   "language": "zh-Hant",
-   "route": "http",
-   "kind": "research",
-   "weight": 0.8,
-   "why": "exchange research: Connect flows, derivatives",
-   "url": "https://www.hkex.com.hk/News/Research-Reports?sc_lang=zh-HK",
-   "alt": [
-    "https://www.hkex.com.hk/News/Research-Reports?sc_lang=en"
-   ]
-  },
-  {
    "name": "雪球 港股",
    "region": "hk",
    "language": "zh-Hant",
@@ -1773,17 +1760,6 @@
     "恒指 波幅 策略"
    ],
    "market": "HK"
-  },
-  {
-   "name": "HKEX 市場數據",
-   "region": "hk",
-   "language": "zh-Hant",
-   "route": "http",
-   "kind": "dataset",
-   "weight": 0.9,
-   "why": "HSI futures OI, Connect turnover",
-   "url": "https://www.hkex.com.hk/Market-Data/Statistics?sc_lang=zh-HK",
-   "dataset_class": "futures_volume_oi"
   },
   {
    "name": "金管局 統計",
@@ -7328,26 +7304,6 @@
    "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1463.htm"
   },
   {
-   "name": "HKEX Rule 501 trading hours (securities market)",
-   "region": "hk",
-   "language": "en",
-   "route": "http",
-   "kind": "exchange_rulebook",
-   "weight": 1.0,
-   "why": "culture-gap ground (settlement_constrained): the morning session runs 09:30-12:00 and the afternoon 13:00-16:00 Hong Kong time",
-   "url": "https://www.hkex.com.hk/-/media/HKEX-Market/Services/Rules-and-Forms-and-Fees/Rules/SEHK/Securities/Rules/Chap_5_eng.pdf"
-  },
-  {
-   "name": "上海证券交易所交易规则 (price limits, T+1)",
-   "region": "cn",
-   "language": "zh",
-   "route": "http",
-   "kind": "exchange_rulebook",
-   "weight": 1.0,
-   "why": "culture-gap ground (settlement_constrained): mainland A-shares trade under daily price limits and T+1 settlement (a share bought today cannot be sold today), 09:30-11:30 and 13:00-15:00 Beijing time",
-   "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20250627_10783267.shtml"
-  },
-  {
    "name": "KRX 투자자별 거래실적",
    "region": "kr",
    "language": "ko",
@@ -7697,16 +7653,6 @@
    "weight": 1.0,
    "why": "culture-gap ground (institutional): SETS and SETSqx run a closing auction 16:30-16:35 London time",
    "url": "https://docs.londonstockexchange.com/sites/default/files/documents/market_close_information_document_0.pdf"
-  },
-  {
-   "name": "HKEX securities market trading hours",
-   "region": "hk",
-   "language": "zh",
-   "route": "http",
-   "kind": "local_market_mechanics",
-   "weight": 1.0,
-   "why": "culture-gap ground (institutional): pre-opening 09:00-09:30, morning 09:30-12:00, extended morning 12:00-13:00, afternoon 13:00-16:00, Closing Auction Session 16:00 to a random close between 16:08 and 16:10 Hong Kong time",
-   "url": "https://www.hkex.com.hk/Services/Trading-hours-and-Severe-Weather-Arrangements/Trading-Hours/Securities-Market?sc_lang=en"
   },
   {
    "name": "NYSE auctions",

@@ -34,6 +34,21 @@ REFUSED_HOSTS: dict[str, str] = {
     "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "theice.com": "ICE: terms refuse automated collection of its data",
+    # HKEX's terms cover "the websites of Hong Kong Exchanges and Clearing Limited and its
+    # affiliates", and the same s5 is served on hkexnews.hk, so both hosts are listed.
+    "hkex.com.hk": ("HKEX Terms of Use s5 (read 2026-11-18): \"You are not permitted to "
+                    "conduct, facilitate, enable, authorise or permit any text or data mining "
+                    "or web scraping in relation to this Website ... for any purpose\", "
+                    "including any \"robot\", \"bot\", \"spider\", \"scraper\" and \"any "
+                    "programmatic, scripted or other mechanical means to access this Website "
+                    "or any Information\"; personal use only"),
+    "hkexnews.hk": ("HKEX Terms of Use s5, the same text served at hkexnews.hk/Global/Exchange/"
+                    "Terms-of-Use (read 2026-11-18): no text or data mining, web scraping, "
+                    "robot, bot, spider or scraper, and no \"programmatic, scripted or other "
+                    "mechanical means\" of access"),
+    "sse.com.cn": ("SSE 法律声明 s3 (read 2026-11-18): \"任何机构或者个人可基于非商业目的浏览、"
+                   "下载本网站的内容\"; without the SSE's written permission no use of any "
+                   "content \"包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统获取\""),
 }
 
 

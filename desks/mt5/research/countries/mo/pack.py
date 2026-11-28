@@ -966,7 +966,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "mo_operator_disclosure", "The concessionaires' own regulated disclosure as an "
                                   "OBSERVABLE: HKEX and SEC filings, quarterly results, "
                                   "non-gaming investment progress reports", layer="institutional",
-        roots=("https://www.hkexnews.hk/", "https://www.sec.gov/cgi-bin/browse-edgar"),
+        # hkexnews.hk left 2026-11-18: TERMS_BLOCKED (HKEX Terms of Use s5)
+        roots=("https://www.sec.gov/cgi-bin/browse-edgar",),
         queries=("澳門博彩承批公司業績", "非博彩投資承諾", "貴賓廳業務", "中場收入",
                  "resultados das concessionarias", "investimento nao-jogo",
                  "relatorio trimestral concessionaria"),
@@ -1027,7 +1028,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "mo_hk_sellside", "Hong Kong and mainland sell-side gaming coverage published openly: "
                           "the brokers' Macau monthlies, the Greater Bay Area strategy notes and "
                           "the China consumer desks", layer="practitioner",
-        roots=("https://www.aastocks.com/tc/", "https://www.hkexnews.hk/",
+        # hkexnews.hk left 2026-11-18: TERMS_BLOCKED (HKEX Terms of Use s5)
+        roots=("https://www.aastocks.com/tc/",
                "https://www.ggrasia.com/category/analysis/"),
         queries=("澳門賭收預測", "博彩股評級", "中場復甦", "大灣區消費", "券商研報 澳門",
                  "analise do sector do jogo", "perspectivas do mercado de Macau"),

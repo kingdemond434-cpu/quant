@@ -911,7 +911,9 @@ KNOWN: tuple[Equivalent, ...] = (
        "Association", "https://freesis.kofia.or.kr"),
     _k("cn", "Part III:retail positioning", "sse_szse_margin_balance", "SSE/SZSE margin "
        "financing and securities lending balance (融资融券)", "daily",
-       "Shanghai and Shenzhen stock exchanges", "https://www.sse.com.cn"),
+       "Shanghai and Shenzhen stock exchanges", "https://www.szse.cn",
+       access="TERMS_BLOCKED", note="the SSE half is refused on its own terms (法律声明 s3, "
+       "non-commercial only; libs/data/refused_hosts.py); only the Shenzhen side is a lead"),
     _k("tw", "Part III:retail positioning", "twse_margin_balance", "TWSE margin purchase and "
        "short sale balance", "daily", "Taiwan Stock Exchange", "https://www.twse.com.tw"),
     _k("us", "Part III:retail positioning", "finra_margin_statistics", "FINRA margin "

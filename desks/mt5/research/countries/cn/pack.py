@@ -715,7 +715,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "融资融券余额 -- margin financing and securities lending balances",
      "covers": "the mainland retail and institutional leverage stock, by exchange and by name",
      "frequency": "daily", "lag": "one business day",
-     "root": "sse.com.cn, szse.cn", "licence": "free, public",
+     "root": "szse.cn",
+     "licence": "free, public; the SSE half is TERMS_BLOCKED (SSE 法律声明 s3, "
+                "non-commercial only) and never fetched",
      "note": "China's household-leverage gauge. It is RESTRICTED leverage: only eligible "
              "securities may be financed and only qualified investors may do it, so the series "
              "is a policy-bounded quantity and its ceiling moves when the eligible list does."},
@@ -723,7 +725,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "Stock Connect northbound and southbound turnover and quota balance",
      "covers": "cross-boundary equity flow between the mainland and Hong Kong",
      "frequency": "daily", "lag": "same day",
-     "root": "hkex.com.hk", "licence": "free, public",
+     "root": "hkex.com.hk",
+     "licence": "TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                "access; never fetched",
      "note": "BROKEN ON 2024-08-19. Real-time northbound flow disclosure ended on that date and "
              "only end-of-day turnover survives, with holdings quarterly. This is the largest "
              "point-in-time break in the pack and it is recorded as a date, not as a caveat."},
@@ -745,7 +749,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "CCASS shareholding search -- southbound holdings of Hong Kong names",
      "covers": "mainland ownership of HK-listed shares, by name, daily",
      "frequency": "daily", "lag": "one business day",
-     "root": "hkex.com.hk", "licence": "free, public",
+     "root": "hkex.com.hk",
+     "licence": "TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                "access; never fetched",
      "note": "Survived the 2024 northbound disclosure change; southbound remains observable, "
              "which makes HK50 and CHINAH the better-instrumented half of the Connect story."},
     {"id": "cftc_cot_absent",
@@ -833,8 +839,10 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                        "COMBINED, which is two missing observations a year by design."),
     source_class("cn_institutional", "The exchanges, the Connect operator and the industry bodies",
                  layer="institutional",
-                 roots=("sse.com.cn", "szse.cn", "cffex.com.cn", "shfe.com.cn", "dce.com.cn",
-                        "czce.com.cn", "ine.cn", "hkex.com.hk", "chinaclear.cn",
+                 # sse.com.cn and hkex.com.hk left the roots 2026-11-18: their own terms refuse
+                 # automated access (libs/data/refused_hosts.py).
+                 roots=("szse.cn", "cffex.com.cn", "shfe.com.cn", "dce.com.cn",
+                        "czce.com.cn", "ine.cn", "chinaclear.cn",
                         "amac.org.cn (中国证券投资基金业协会)"),
                  queries=("持仓排名", "库存日报", "融资融券余额", "沪股通 深股通 成交额",
                           "港股通 持股", "期货持仓龙虎榜", "交割结算价", "私募基金备案"),
@@ -929,7 +937,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("cn_archive", "Historical notices, gazettes and web archives",
                  layer="archive",
                  roots=("web.archive.org", "gov.cn 国务院办公厅 节假日安排 notice archive",
-                        "sse.com.cn and szse.cn historical 休市安排 and rule notices",
+                        "szse.cn historical 休市安排 and rule notices",
                         "pbc.gov.cn historical 货币政策执行报告"),
                  queries=("国务院办公厅 节假日安排 通知", "休市安排 公告", "调休 安排",
                           "熔断机制 暂停", "涨跌幅 调整", "沪深港通 交易日历"),
@@ -1132,10 +1140,12 @@ DATASETS: tuple[dict[str, Any], ...] = (
             pit_feasible=True,
             assets=("HK50", "CHINAH", "USDCNH"),
             mechanism_families=("foreign_flow", "capital_account", "risk_appetite"),
-            how_to_fetch="hkex.com.hk. BROKEN 2024-08-19: real-time northbound flow disclosure "
-                         "ended on that date and only end-of-day turnover survives, with "
-                         "holdings quarterly. A northbound-flow strategy backtested across that "
-                         "date is using an input that no longer exists live"),
+            how_to_fetch="TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                         "access, so this is never fetched. BROKEN 2024-08-19: real-time "
+                         "northbound flow disclosure ended on that date and only end-of-day "
+                         "turnover survives, with holdings quarterly. A northbound-flow "
+                         "strategy backtested across that date is using an input that no "
+                         "longer exists live"),
     dataset("cn_commodity_positions",
             source="SHFE, DCE, ZCE and INE 持仓排名 and 库存",
             coverage="top-20 member long and short open interest, and weekly warehouse stocks",
@@ -2061,10 +2071,10 @@ RELEASE_CLASSES: tuple[dict[str, Any], ...] = (
 INSTITUTIONAL_FLOW_SOURCES: tuple[str, ...] = (
     "CFFEX 持仓排名 (daily top-20 member index-futures positions, cffex.com.cn)",
     "SHFE, DCE, ZCE and INE 持仓排名 and 库存 (daily member positions, weekly warehouse stocks)",
-    "融资融券余额 (daily margin financing balances, sse.com.cn and szse.cn)",
-    "Stock Connect northbound and southbound turnover (hkex.com.hk; northbound real-time flow "
-    "ended 2024-08-19)",
-    "CCASS shareholding search (daily southbound holdings by participant, hkex.com.hk)",
+    "融资融券余额 (daily margin financing balances, szse.cn; the SSE half is terms-blocked)",
+    "Stock Connect northbound and southbound turnover (HKEX, TERMS_BLOCKED by its Terms of Use "
+    "s5; northbound real-time flow ended 2024-08-19)",
+    "CCASS shareholding search (daily southbound holdings by participant, HKEX, TERMS_BLOCKED)",
     "SAFE 银行结售汇 (monthly netted FX settlement and sales, safe.gov.cn)",
 )
 

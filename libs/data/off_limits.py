@@ -35,6 +35,11 @@ STATUTE_HOSTS: tuple[str, ...] = (
     "senate-stock-watcher-data.s3-us-west-2.amazonaws.com")
 WHY_STATUTE = ("5 U.S.C. 13107(c): congressional financial disclosure reports may not be "
                "obtained or used for a commercial purpose; never fetched")
+#: Exchanges whose own terms refuse automated access (read 2026-11-18; the verbatim clauses are on
+#: their rows in `libs/data/refused_hosts.py`). They are refused HERE as well, because this is
+#: the check every transport makes before a request (polite_fetch, asia_collector, alt_proxies,
+#: cn_sources, free_stack), so a roster row naming one is refused whichever organ reaches it.
+TERMS_REFUSED_DOMAINS: tuple[str, ...] = ("hkex.com.hk", "hkexnews.hk", "sse.com.cn")
 
 
 def off_limits(url: str) -> str | None:
@@ -49,6 +54,10 @@ def off_limits(url: str) -> str | None:
             return f"{WHY} [{host}]"
     if host in STATUTE_HOSTS:
         return f"{WHY_STATUTE} [{host}]"
+    for dom in TERMS_REFUSED_DOMAINS:
+        if host == dom or host.endswith("." + dom):
+            from libs.data.refused_hosts import refusal
+            return f"BLOCKED_TERMS: {refusal(url) or dom} [{host}]"
     return None
 
 

@@ -803,7 +803,8 @@ SEEDS = (
     "https://www.macromicro.me/blog",
     "https://news.cnyes.com/news/cat/forex",
     "https://www.etnet.com.hk/www/tc/news/categorized_news.php?category=commentary",
-    "https://www.hkex.com.hk/News/Research-Reports?sc_lang=en",
+    # hkex.com.hk left the seeds 2026-11-18: HKEX Terms of Use s5 refuse bots, scrapers and
+    # any programmatic access (libs/data/refused_hosts.py), so no HKEX page is crawled.
     # sea (sg / vn / th / id / my / ph)
     "https://forums.hardwarezone.com.sg/forums/money-mind.31/",
     "https://www.investingnote.com/",

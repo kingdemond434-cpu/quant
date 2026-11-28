@@ -10584,6 +10584,8 @@ adopted route to ICE-listed energy settlement on this box. Stated with the searc
 
 ### RESOLVED — item 1 (HKEX) — **verified-clean, ADOPTED**, and it closes run (y)'s open convention question
 
+> **SUPERSEDED 2026-11-18 — TERMS_BLOCKED.** This adoption read robots.txt, never the terms. HKEX's Terms of Use s5 forbid "any text or data mining or web scraping in relation to this Website ... for any purpose" and "any programmatic, scripted or other mechanical means to access this Website or any Information", and permit personal use only. The dayrpt pages are on hkex.com.hk, so the source is REFUSED and never fetched (`libs/data/refused_hosts.py`, `libs/data/off_limits.py`; `data/data_universe_map.json` `hkex_daily_derivatives_reports.terms_ruling`). The record below stays as history.
+
 #### CARD — HKEX daily derivatives market reports (RMB currency futures et al.) — **verified-clean**
 
 Free, keyless, T+1 **per-contract-month settlement price, day + after-hours volume, open interest

@@ -136,11 +136,12 @@
    "seed_source": "model_knowledge_unverified",
    "public_sample": {
     "status": "HEADLINE_ONLY",
+    "terms_status": "TERMS_BLOCKED",
     "kind": "public_origin",
     "url": "https://www.hkex.com.hk/Market-Data/Statistics/Consolidated-Reports/HKEX-Monthly-Market-Highlights?sc_lang=en",
     "endpoints": [],
     "source": "web_search:2026-09-30",
-    "note": "HKEX publishes Stock Connect turnover itself (the public origin of the paid series)"
+    "note": "HKEX publishes Stock Connect turnover itself (the public origin of the paid series). FENCED 2026-11-18: HKEX Terms of Use s5 refuse bots, scrapers and any programmatic access (libs/data/refused_hosts.py); never fetched"
    }
   }
  ]

@@ -239,6 +239,12 @@ def access_refusal(url: str) -> str | None:
     for h, why in TERMS_REFUSED.items():
         if host == h or host.endswith("." + h):
             return f"TERMS_REFUSED: {why}"
+    # The desk-wide list of hosts whose own terms refuse automated contact (HKEX, the SSE, CME,
+    # FRED, ...) binds this miner too, so a ground added to the roster later is still refused.
+    from libs.data.refused_hosts import refusal as _host_refusal
+    desk_refusal = _host_refusal(url)
+    if desk_refusal:
+        return f"TERMS_REFUSED: {desk_refusal}"
     parts = urlparse(url)
     if parts.path == "/robots.txt":
         return None
