@@ -1033,6 +1033,28 @@ def main() -> int:
         print(f"   peer/factor input completion unavailable ({type(exc).__name__}: {exc}); "
               "rows unchanged")
 
+    # FAMILY NAMES THE JUDGE CAN NEVER BUILD (2026-11-17, `research/family_dispositions`). An
+    # exact spelling of a registered family gets a fresh descendant under that family (originals
+    # kept, the descendant a charged trial like any other); every other unbuildable name is
+    # stamped with its named `never_judged_reason` and kept, so it reads UNMEASURED with a cause
+    # instead of as backlog the judge owes. A fault costs the stamp, never a row.
+    family_dispositions: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        from research import family_dispositions as _fd
+        _children, _alias_report = _fd.alias_descendants(
+            list(merged.values()), identity=_identity, now=now)
+        for _child in _children:
+            merged[_identity(_child)] = _child
+        family_dispositions = {"status": "APPLIED", "aliases": _alias_report,
+                               "never_judged": _fd.stamp_never_judged(list(merged.values()))}
+        if _alias_report["targets"] or family_dispositions["never_judged"]["stamped"]:
+            print(f"   family dispositions: {_alias_report['created']} alias descendant(s) "
+                  f"({_alias_report['already_present']} already present); never-judged "
+                  f"stamped {family_dispositions['never_judged']['by_reason']}")
+    except Exception as exc:
+        family_dispositions = {"status": f"FAILED: {type(exc).__name__}"}
+        print(f"   family dispositions unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
@@ -1329,6 +1351,7 @@ def main() -> int:
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "family_dispositions": family_dispositions,
         "hypothesis_families": families,
         "coverage_steer": steer_block,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "

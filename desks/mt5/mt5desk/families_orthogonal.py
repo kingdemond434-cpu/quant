@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -2660,3 +2661,31 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+
+# THE SCALP LANE'S TWO SIGN-FLIPPED FAMILIES, REACHABLE BY THE MAIN JUDGE (principal's yes,
+# 2026-11-17). `anti_donchian_breakout` and `anti_three_bar_momentum` are the negation of the
+# scalp lane's own donchian / three-bar signals and have no main-lane twin. They are built by
+# the lane's exact executable (`scalp_families.family_scalp`), imported inside the call so the
+# import closure is unchanged. The session is passed as `scalp_session` because the judge's cell
+# builder pops `session` and applies the desk's hour window, a different rule from the lane's.
+_SCALP_SESSIONS: tuple[str, ...] = ("all", "asia", "london", "new_york", "overlap")
+
+
+def _scalp_family(name: str) -> Callable[..., list[Signal]]:
+    def _fam(df: pd.DataFrame, *, scalp_session: str, stop_atr: float, target_atr: float,
+             max_hold: int) -> list[Signal]:
+        if scalp_session not in _SCALP_SESSIONS:
+            raise ValueError(f"scalp_session must be one of {_SCALP_SESSIONS}, not "
+                             f"{scalp_session!r}")
+        from mt5desk.scalp_families import family_scalp
+        return family_scalp(df, family=name, session=scalp_session, stop_atr=stop_atr,
+                            target_atr=target_atr, max_hold=max_hold, tag=name)
+    _fam.__name__ = f"family_{name}"
+    return _fam
+
+
+for _name in ("anti_donchian_breakout", "anti_three_bar_momentum"):
+    ORTHOGONAL_FAMILIES[_name] = _scalp_family(_name)
+    FAMILY_INPUTS[_name] = ("price only, the scalp lane's own bars",
+                            "data/universe/*_M1.parquet / *_M5.parquet / *_M15.parquet")

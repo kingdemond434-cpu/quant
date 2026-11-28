@@ -200,8 +200,18 @@ def family_verdict(family: str) -> tuple[str, str]:
         return UNMEASURED, f"families unimportable ({type(exc).__name__}: {exc})"
     fn = table.get(fam)
     if fn is None:
-        return NO_IMPLEMENTATION, (f"no `family_{fam}` in families and no {fam!r} in "
-                                   "ORTHOGONAL_FAMILIES -- the gauntlet's two lookups fail")
+        why = (f"no `family_{fam}` in families and no {fam!r} in "
+               "ORTHOGONAL_FAMILIES -- the gauntlet's two lookups fail")
+        try:
+            from research.family_dispositions import disposition
+            named = disposition(fam)
+        except Exception:
+            named = None
+        if named:
+            why += (f"; named: {named['never_judged_reason']}"
+                    + (f" (alias of {named['alias_of']})" if named.get("alias_of") else "")
+                    + f" -- {named['why']}")
+        return NO_IMPLEMENTATION, why
     if fam in SEALED_INPUT_DEFECTS:
         return SEALED_INPUT_DEFECT, SEALED_INPUT_DEFECTS[fam]
     data, _required = _signature_needs(fn)

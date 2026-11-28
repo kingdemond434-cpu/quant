@@ -1785,6 +1785,69 @@ def family_ict_fvg(
     return signals
 
 
+def family_fair_value_gap(
+    df: pd.DataFrame,
+    *,
+    atr_n: int = 20,
+    min_gap_atr: float = 0.25,
+    fill_depth: float = 0.0,
+    wait_bars: int = 12,
+    stop_atr: float = 0.5,
+    ttl_bars: int = 24,
+    rr: float = 2.0,
+    signal_hours: tuple = (),
+) -> list[Signal]:
+    """Three-bar imbalance, then a retrace INTO it -- continuation, not reversal.
+
+    A bullish gap exists at bar i when low[i] > high[i-2]: the middle bar
+    displaced hard enough that the band between those two prices was never
+    transacted. The claim under test is that the band is unfinished business and
+    price returning to it resumes the displacement.
+
+    THE GAP IS DETECTED ON CLOSED BARS AND ENTERED WITH A RESTING ORDER. Nothing
+    here inspects a bar it could not have seen: detection uses i-2..i, the order
+    rests from i+1, and `wait_bars` bounds how long it lives before the setup is
+    abandoned. `fill_depth` walks the entry from the near edge of the band (0.0,
+    fills often, worse price) to the far edge (1.0, fills rarely, better price)
+    -- the parameter exists because that trade-off is exactly what the hunt
+    should be pricing rather than a chart author asserting.
+    """
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    if len(h1) < atr_n + 4:
+        return []
+    a = atr.to_numpy()
+    hh = h1["high"].to_numpy()
+    ll = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(2, len(h1) - 2):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        ts = h1.index[i]
+        if signal_hours and ts.hour not in signal_hours:
+            continue
+        if ll[i] > hh[i - 2]:
+            side, near, far = 1, ll[i], hh[i - 2]
+        elif hh[i] < ll[i - 2]:
+            side, near, far = -1, hh[i], ll[i - 2]
+        else:
+            continue
+        if abs(near - far) < min_gap_atr * ai:
+            continue
+        trigger = near + (far - near) * fill_depth
+        stop = far - side * stop_atr * ai
+        stop_dist = abs(trigger - stop)
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=side, stop=stop,
+            target=trigger + side * stop_dist * rr,
+            ttl_bars=ttl_bars, tag="fair_value_gap",
+            trigger=float(trigger), wait_bars=wait_bars))
+    return signals
+
+
 @register_family(param_grid={
     "rr": [1.0, 1.5],
     "ttl_bars": [2, 4],

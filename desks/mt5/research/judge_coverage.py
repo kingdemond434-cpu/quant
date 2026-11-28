@@ -937,6 +937,38 @@ def _live_families() -> frozenset[str]:
         return frozenset()
 
 
+def _never_judged_annotate(table: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Name, on each family row the judge can never build, WHY -- UNMEASURED with a cause.
+
+    `research/family_dispositions` holds the table (an alias of a registered family, or a named
+    never-judged reason). Annotation only: no quota, order or count is changed here. An
+    unimportable table reads UNMEASURED, never as "nothing is unbuildable" (L1.28a).
+    """
+    try:
+        desk = str(BASE)
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from research import family_dispositions as fd
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"family_dispositions unimportable ({type(exc).__name__})"}
+    named: dict[str, Any] = {}
+    for fam, row in table.items():
+        d = fd.disposition(fam)
+        if d is None:
+            continue
+        row["never_judged_reason"] = d["never_judged_reason"]
+        if d.get("alias_of"):
+            row["alias_of"] = d["alias_of"]
+        named[fam] = {"never_judged_reason": d["never_judged_reason"],
+                      "disposition": d["disposition"], "unjudged": row.get("unjudged", 0),
+                      **{k: d[k] for k in ("alias_of", "closure_file", "why") if k in d}}
+    return {"status": "MEASURED", "families": named,
+            "unjudged_named": sum(int(v["unjudged"] or 0) for v in named.values()),
+            "rule": "a family no judge can build is UNMEASURED under a named reason, never "
+                    "silent backlog and never dropped"}
+
+
 def banned_from_capital() -> frozenset[str]:
     """The live-capital ban list, read once per pass (see `_banned_from_capital`)."""
     return frozenset(_pass_value("banned_from_capital", _banned_from_capital))
@@ -4015,6 +4047,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                 "the book even if it passes and is given no share of the scarce judge. Mining "
                 "is unrestricted; the rows are kept in data/hypotheses/study_bank.json")
 
+    never_judged = _never_judged_annotate(table)
+
     # NO FIXED FAMILY SET. The table's rows come from the LIVE registry unioned with whatever the
     # docket and the ledger name, so a family registered tomorrow has a row the same hour -- with
     # `mined: 0` until a miner reaches it, which is a measurement of the miners and not of this
@@ -4167,6 +4201,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "quota": quota,
         "starved": starved[:20],
         "unmined_live_families": unmined[:40],
+        "never_judged": never_judged,
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
         # the remainder actually followed it, which is what stops a future session quietly
         # reverting this to round-robin.
