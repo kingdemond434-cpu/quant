@@ -447,6 +447,9 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     # EVERY PATH IN tmp_path (audit of 8628268b6): no desk file may be written by this test.
     monkeypatch.setattr(mh, "_ack", lambda path: None)
     monkeypatch.setattr(mh, "_lease", lambda path: None)
+    # the families-step admission (#996) records its peak under job_lock's root
+    from research import job_lock
+    monkeypatch.setattr(job_lock, "LOCK_ROOT", tmp_path / ".job_locks")
     from libs.research import claim_selection as cs
     monkeypatch.setattr(cs, "LEDGER", hyp / "claim_families.json")
     # order_docket owns JUDGE_COVERAGE.json, the ratchet and the bank; stand it in, and FILTER
