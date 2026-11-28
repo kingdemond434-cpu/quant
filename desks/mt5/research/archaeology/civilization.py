@@ -224,6 +224,10 @@ def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
     if not body:
         return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
                               ": UNMEASURED policy, recorded as a label and mined")
+    from libs.data.robots_body import is_html_body
+    if is_html_body(body):  # a soft 404 / challenge page is no policy, never an "allowed" label
+        return snap.UNKNOWN, (f"robots.txt on {host} answered HTML, not rules: UNMEASURED "
+                              "policy, recorded as a label and mined")
     low = body.lower()
     for agent in ("claudebot", "anthropic", "gptbot", "ccbot"):
         if agent in low:

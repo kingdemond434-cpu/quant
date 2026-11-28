@@ -202,6 +202,9 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
         txt = fetch(f"https://{host}/robots.txt")
     except Exception:
         return True
+    from libs.data.robots_body import is_html_body
+    if is_html_body(txt):  # an HTML page in place of rules proves nothing: the wall stands
+        return True
     group_ua, disallowed = None, False
     for raw in txt.splitlines():
         line = raw.split("#", 1)[0].strip()
