@@ -24,7 +24,7 @@ OPERATORS: tuple[str, ...] = (
 DSL_FILES: tuple[str, ...] = (
     "libs/research/alpha_dsl.py", "libs/research/alpha_grammar.py",
     "libs/research/alpha_genome.py", "libs/research/adapters/hubble.py",
-    "libs/research/adapters/alpha101.py",
+    "libs/research/adapters/alpha101.py", "libs/research/formulaic_alphas.py",
 )
 
 
