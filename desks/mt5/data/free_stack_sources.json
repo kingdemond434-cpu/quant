@@ -1280,6 +1280,57 @@
      "note": "cnx_cffex latest point-in-time z and regime per mapped instrument"
     }
    }
+  },
+  {
+   "id": "cftc_options_combined",
+   "kind": "cftc_options",
+   "name": "CFTC legacy COT, futures-and-options combined minus futures-only: options-implied positioning per trader class",
+   "url": "https://publicreporting.cftc.gov/resource/jun7-fc8e.json",
+   "cadence": "weekly",
+   "auth": "none",
+   "licence": "US government work (CFTC), public domain; keyless Socrata API",
+   "machine_use_allowed": true,
+   "terms": "confirmed",
+   "terms_evidence": {
+    "terms_url": "https://www.cftc.gov/",
+    "checked_at": "2026-11-13",
+    "reading": "a US federal agency's statistical report: public domain (17 U.S.C. 105); robots is evaluated for the agent sent before every request"
+   },
+   "cursor": "first pass backfills the full history; later passes re-read the last 28 days so a revision lands as a vintage",
+   "region": "us",
+   "language": "en",
+   "lag_hours": 96,
+   "mechanism": "the delta-adjusted options book per trader class (combined minus futures-only): speculators' options delta is the crowd's convex bet, commercials' options delta is the hedger/dealer gamma side; both are the lawful public stand-in for exchange options OI, which every exchange's terms refuse",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "weekly and delta-adjusted at Tuesday's close, so it misses intra-week gamma flips and expiry-week pinning; it should fail exactly around monthly and quarterly expiries, when the options book rolls off between reports",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses cftc.gov); the first live reading is the box's",
+   "targets": {
+    "hypothesis": "per contract, libs.data.free_stack_cftc.CONTRACTS and RELATED",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "options-delta and options-OI-share columns as direct cells on the mapped instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "options-positioning regime (lagged z high/low) gating price-only base families: the dealer-gamma regime as a conditioner"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "latest point-in-time options-positioning z and regime per mapped instrument"
+    }
+   }
   }
  ]
 }

@@ -128,6 +128,9 @@ _OPTIONAL_BY_DESIGN = {
     # libs/data/keyed_sources.scrub_body imports it behind try/except ImportError and REFUSES a
     # `br` body (stores nothing) without it, so absence costs that body, never a leaked key.
     "brotli",
+    # libs/data/datahub_feeds.openbb_call imports it inside the call; a missing package raises
+    # there, the provider chain records the failure and falls through to the next provider.
+    "openbb",
     "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
 }
 

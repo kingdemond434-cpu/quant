@@ -18,7 +18,7 @@ but incomplete or advisory-only. **STUB** = interface/placeholder, no pipeline.
 | Session/entry perturbation | PARTIAL | exit_study, window quarantine |
 | Cost stress (2×/5×) | REAL+WIRED | battery 2×; validate_fusion cost audit |
 | Latency/fill realism | PARTIAL | engine: next-bar-open entries, intrabar trigger fills, costs inside; no latency model |
-| Cross-engine truth (independent engine) | MISSING | Fincept steal queued |
+| Cross-engine truth (independent engine) | REAL+WIRED | libs/validation/independent_replica.py (second implementation, imports no mt5desk) run against every LIVE/STANDBY certificate by research/independent_verifier.py, daily 05:10 in MT5-FrontierAudit (ops/run_frontier_audit.cmd); writes reports/INDEPENDENT_VERIFIER.json on the box (AGREE/DISAGREE/UNSUPPORTED/UNMEASURED) |
 | Block bootstrap | REAL+WIRED | portfolio_bootstrap (5d/21d/252d) |
 | PBO/CPCV | DOC-ONLY | mandated in MANDATE_RESEARCH_FACTORY; not implemented |
 | Placebo/null pipeline | REAL+WIRED | placebo_test.py (bar-return null; fixed 2026-08-17) |
@@ -85,7 +85,7 @@ but incomplete or advisory-only. **STUB** = interface/placeholder, no pipeline.
 
 1. Hourly cycle + sync (this build) — makes everything self-maintaining and shared.
 2. Bar-null placebo verdicts → correct SUSPECT flags (in flight).
-3. Cross-engine truth (independent replay engine for champions) — Fincept steal.
+3. ~~Cross-engine truth (independent replay engine for champions)~~ — landed: independent_verifier, daily in MT5-FrontierAudit.
 4. Miner checkpointing generalization.
 5. Broker adapter layer (Fusion second venue).
 6. PBO/CPCV on the survivor population once universe sweep completes.

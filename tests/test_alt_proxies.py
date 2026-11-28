@@ -589,6 +589,33 @@ def test_the_digest_keeps_every_organs_section_and_stays_bounded(tmp_path: Path)
     assert got.returncode == 1, "the digest must be committable"
 
 
+def test_a_403_is_a_hard_stop_that_holds_and_is_named(tmp_path) -> None:
+    import time as _t
+    import urllib.error
+
+    src = A.BY_ID["us_tsa_throughput"]
+    paths = A.Paths(tmp_path)
+    calls: list[str] = []
+
+    def refused(url: str):
+        calls.append(url)
+        raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)  # type: ignore[arg-type]
+
+    state: dict = {}
+    now = datetime(2026, 11, 13, 12, tzinfo=UTC)
+    rec = A.collect(paths, src, state, now, fetch=True, fixtures=None,
+                    deadline=_t.monotonic() + 30, getter=refused)
+    assert rec["status"] == "BLOCKED_HTTP_403" and rec["missed_growth"]
+    assert len(calls) == 1                              # one refusal stops the source
+    rec2 = A.collect(paths, src, state, now + timedelta(days=1), fetch=True, fixtures=None,
+                     deadline=_t.monotonic() + 30, getter=refused)
+    assert rec2["status"] == "BLOCKED_HTTP_403" and rec2["requests"] == 0
+    assert len(calls) == 1                              # not asked again inside the hold
+    A.collect(paths, src, state, now + timedelta(days=8), fetch=True, fixtures=None,
+              deadline=_t.monotonic() + 30, getter=refused)
+    assert len(calls) == 2                              # retried once after the hold
+
+
 def test_the_default_getter_hands_the_path_key_to_the_redirect_guard(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """FIRMS carries its key in the URL PATH; the redirect guard only finds a path key when it
