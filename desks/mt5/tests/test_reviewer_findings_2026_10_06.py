@@ -314,8 +314,10 @@ def test_acceptance_heat_state_adjustment_is_two_sided_above_the_floor() -> None
 # finite numbers: levels outside (0,1) and non-monotone quantiles are publishable.
 
 def _dist(value: dict[float, float]) -> fc.Belief:
+    # ARCH-11 handoff fields set, so only the quantile checks under test can raise a defect
     return fc.Belief(model_id="m", subject="XAUUSD:ret:1h", kind="DISTRIBUTION", value=value,
-                     horizon_s=3600, at="2026-10-06T00:00:00+00:00")
+                     horizon_s=3600, at="2026-10-06T00:00:00+00:00", instrument_id="XAUUSD",
+                     unit="return_frac", gross_or_net="gross")
 
 
 BAD_LEVELS = {1.5: 1.0, -0.2: 0.5}

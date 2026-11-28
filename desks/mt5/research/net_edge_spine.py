@@ -55,6 +55,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11)
 from libs.research import net_edge as NE  # noqa: E402
 
 REPORTS = DESK / "reports"
@@ -637,6 +638,10 @@ def run(*, budget_s: float = 600.0, write: bool = True, now: datetime | None = N
         },
     }
 
+    # THE HANDOFF (ARCH-11): R per trade, NET of every priced cost, one row per instrument.
+    HC.stamp(report, "allocator_input", unit="R", horizon_s=86400.0,
+             instrument_id={"rows": "ranked_if_net_were_the_only_ranking", "field": "symbol"},
+             gross_or_net="net", known_at=str(stamp))
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(report, indent=1, sort_keys=True, default=str) + "\n", "utf-8")

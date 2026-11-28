@@ -138,6 +138,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
     ("check_growth_governance.py", ()),
+    # THE HANDOFF CONTRACT (ARCH-11, 2026-10-07): every published handoff on the chain -- the
+    # forecast register, each allocator input, the gateway's intent rows -- carries one unit,
+    # currency, vintage, horizon, instrument identity and gross/net basis, and they agree across
+    # hops. Money-path producers wait on a shrink-only PENDING list; an absent artifact is
+    # UNMEASURED and named, never a pass.
+    ("check_handoff_contract.py", ()),
     # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
     # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
     # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`

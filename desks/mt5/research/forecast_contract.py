@@ -31,6 +31,13 @@ THE CONTRACT, and every field exists because its absence made a forecast unscore
     features     The information the belief was formed on, for P82's provenance graph and for
                  the leakage check: a feature stamped later than `at` is lookahead.
 
+THE HANDOFF FIELDS (ARCH-11). A register row is the first hop of the chain to the allocator and
+the gateway, so every accepted belief also carries `libs.research.handoff_contract`'s block:
+instrument_id (a Fusion symbol, or BOOK), unit, currency (only for a currency-bearing unit),
+gross_or_net, horizon_s and known_at -- the vintage of the information, which defaults to `at`
+and may never be later than it. A belief missing one is REFUSED like any other defect, and
+`scripts/check_handoff_contract.py` reads the register on every law-gate pass.
+
 WHAT THIS MODULE REFUSES. A belief that cannot be scored is rejected at publication rather than
 stored and quietly skipped later. `REFUSED` rows are kept with their reason, because a model
 whose beliefs are systematically malformed is a defect to fix, and deleting the evidence of it
@@ -48,6 +55,13 @@ from typing import Any, Literal
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research import handoff_contract as HC  # noqa: E402  (ARCH-11 chain stamp)
+
+#: This module's stage on the research -> forecast -> allocator -> gateway chain.
+STAGE = "forecast"
 REGISTER = BASE / "data" / "forecast_register.jsonl"
 REPORT = BASE / "reports" / "FORECAST_CONTRACT.json"
 
@@ -92,9 +106,22 @@ class Belief:
     confidence: float | None = None
     features: tuple[str, ...] = ()
     note: str = ""
+    # THE HANDOFF FIELDS (ARCH-11): required, so a default is a refusal, never a guess.
+    instrument_id: str = ""
+    unit: str = ""
+    gross_or_net: str = ""
+    currency: str | None = None
+    known_at: str = ""
 
     def bucket(self) -> str:
         return bucket_of(self.horizon_s)
+
+    def handoff(self) -> dict[str, Any]:
+        """The chain block this belief carries to the next hop (not validated here)."""
+        return {"contract": HC.CONTRACT, "stage": STAGE, "unit": self.unit,
+                "currency": self.currency, "known_at": self.known_at or self.at,
+                "horizon_s": self.horizon_s, "instrument_id": self.instrument_id,
+                "gross_or_net": self.gross_or_net}
 
 
 def _finite(x: Any) -> bool:
@@ -137,6 +164,13 @@ def defects(b: Belief) -> list[str]:
                                     or not 0.0 <= float(b.confidence) <= 1.0):
         out.append("confidence, when given, is a probability in [0, 1] and is scored too: a "
                    "model that is always certain is uncalibrated, not confident")
+    h = b.handoff()
+    out += [f"handoff: {d}" for d in HC.field_defects(h)
+            if not d.startswith("horizon_s")]          # the horizon defect is already named
+    known, said = HC.parse_iso(h["known_at"]), HC.parse_iso(b.at)
+    if known is not None and said is not None and known > said:
+        out.append("handoff: known_at is later than `at` -- the belief cites a vintage that was "
+                   "not yet released when it was said (lookahead)")
     return out
 
 
@@ -147,6 +181,12 @@ class Publication:
 
     def counts(self) -> dict[str, int]:
         return {"accepted": len(self.accepted), "refused": len(self.refused)}
+
+
+def _handoff_kwargs(b: Belief) -> dict[str, Any]:
+    h = b.handoff()
+    return {k: h[k] for k in ("unit", "currency", "known_at", "horizon_s", "instrument_id",
+                              "gross_or_net")}
 
 
 def publish(beliefs: list[Belief], register: Path | None = None) -> Publication:
@@ -166,7 +206,8 @@ def publish(beliefs: list[Belief], register: Path | None = None) -> Publication:
         if bad:
             pub.refused.append(row | {"status": "REFUSED", "defects": bad})
         else:
-            pub.accepted.append(row | {"status": "ACCEPTED"})
+            pub.accepted.append(row | {"status": "ACCEPTED",
+                                       HC.KEY: HC.block(STAGE, **_handoff_kwargs(b))})
     reg.parent.mkdir(parents=True, exist_ok=True)
     with reg.open("a", encoding="utf-8") as fh:
         for row in pub.accepted + pub.refused:
