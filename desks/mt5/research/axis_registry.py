@@ -162,7 +162,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
-    "macro_release event market": "event_reaction",
+    # `cb_tone_event` (2026-11-10) is event_reaction keyed on a central bank's published speech
+    # tone: the rate-expectation holder reprices the revealed reaction function, a market order.
+    "macro_release event market": "event_reaction cb_tone_event",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
