@@ -196,7 +196,12 @@ def collect_docs(now: datetime, *, first_seen: dict[str, str], news_limit: int =
                            available_at=pub + HIST_LAG, source="cb_press",
                            country_hint=ef.country_hint_for_currency(str(row.get("currency")))))
         by["cb_press"] = by.get("cb_press", 0) + 1
-    for row in _jsonl(bis_path):
+    # BIS terms are noncommercial: behind the desk's terms fence these titles are not read
+    from desks.mt5.research import terms_fences
+    bis_fence = terms_fences.path_fenced(bis_path)
+    if bis_fence is not None:
+        by["terms_fenced:" + str(bis_fence["id"])] = 0
+    for row in ([] if bis_fence is not None else _jsonl(bis_path)):
         title = str(row.get("title") or "")
         pub = bis_published(str(row.get("url") or "")) or _ts(row.get("date"))
         if pub is None or not title:

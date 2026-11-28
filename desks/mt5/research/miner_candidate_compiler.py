@@ -498,13 +498,37 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                          "cursor_row_offset": 0, "cursor_file_size": 0,
                          "cursor_prefix_sha256": None, "cycle_cutoff_utc": None})
     all_paths: list[Path] = []
+    # SOURCES WHOSE TERMS FORBID COMMERCIAL USE ARE NOT READ (2026-11-10). Their files stay on
+    # disk; each is counted here by fence, with the reason and what it costs, and the count is
+    # carried in the compiled artifact (`intake.terms_fenced`).
+    from desks.mt5.research import terms_fences
+    fences = terms_fences.load()
+    fenced: dict[str, dict] = {}
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
-        all_paths.extend(sorted((p for p in root.rglob("*")
-                                 if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
-                                 and not _is_operational_state(p.relative_to(root))),
-                                key=lambda p: p.stat().st_mtime, reverse=True))
+        kept: list[Path] = []
+        for p in root.rglob("*"):
+            if not (p.is_file() and p.suffix.lower() in {".json", ".jsonl"}):
+                continue
+            rel = p.relative_to(root)
+            if _is_operational_state(rel):
+                continue
+            fence = terms_fences.fence_for(rel, fences)
+            if fence is not None:
+                f = fenced.setdefault(str(fence["id"]), {
+                    "files_parked": 0, "bytes_parked": 0, "reason": str(fence.get("reason", "")),
+                    "missed_growth": str(fence.get("missed_growth", "")),
+                    "reopen": "terms_fences.json: open=true with the permitting clause pasted"})
+                f["files_parked"] += 1
+                try:
+                    f["bytes_parked"] += p.stat().st_size
+                except OSError:
+                    pass
+                continue
+            kept.append(p)
+        all_paths.extend(sorted(kept, key=lambda p: p.stat().st_mtime, reverse=True))
+    _LAST_INTAKE["terms_fenced"] = fenced
     start, start_row, saved_cutoff = _cursor_start(all_paths)
     cutoff = saved_cutoff or current_cutoff
     _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")

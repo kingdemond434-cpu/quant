@@ -801,6 +801,8 @@ def run_and_save(budget_s: float | None = None) -> dict:
     results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
     st = _state()
     probes = st.setdefault("wall_probes", {})
+    from desks.mt5.research import terms_fences
+    fences = terms_fences.load()           # loaded once per sweep, passed to every miner
     seconds: dict = dict(st.get("miner_seconds", {}))
     cursor = int(st.get("sweep_cursor", 0))
     order = sweep_order(cursor)
@@ -816,7 +818,7 @@ def run_and_save(budget_s: float | None = None) -> dict:
         ran.append(name)
         t_m = time.monotonic()
         try:
-            _run_one(name, fn, ts, st, probes, results, summary)
+            _run_one(name, fn, ts, st, probes, results, summary, fences)
         finally:
             seconds[name] = round(time.monotonic() - t_m, 1)
             _merge_state({"miner_seconds": seconds, "wall_probes": probes})
@@ -828,8 +830,21 @@ def run_and_save(budget_s: float | None = None) -> dict:
 
 
 def _run_one(name: str, fn, ts: str, st: dict, probes: dict, results: dict,
-             summary: dict) -> None:
+             summary: dict, fences: list | None = None) -> None:
     """One miner, walled or not, exactly as the sweep always ran it."""
+    from desks.mt5.research import terms_fences
+    fence = terms_fences.seat_fenced(name, fences)
+    if fence is not None:
+        # THE SOURCE'S OWN TERMS FORBID COMMERCIAL USE: it is not fetched. One row says why,
+        # so the channel reads as fenced with its cost named, never as a quiet source.
+        summary["terms_fenced"] = summary.get("terms_fenced", 0) + 1
+        _write_rows(name, [row(name, "walled", f"TERMS_FENCED: {fence.get('reason', '')}",
+                               str(fence.get("terms_url", "")),
+                               str(fence.get("missed_growth", "")), verdict="TERMS_FENCED",
+                               needs_selector_work=False)],
+                    ts, results, summary, counted=True)
+        print(f"  {name}: TERMS FENCED ({fence.get('reason', '')})")
+        return
     wall = SOURCE_WALLS.get(name)
     if wall:
         # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
