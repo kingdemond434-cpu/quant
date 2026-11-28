@@ -636,3 +636,5 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# dataset translator ring cursor (2026-11-18): box-local rotation state, rewritten every pass.
+desks/mt5/data/dataset_translation/cursor.json
