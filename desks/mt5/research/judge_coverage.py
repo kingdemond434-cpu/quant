@@ -109,6 +109,12 @@ REPORT = REPORTS / "JUDGE_COVERAGE.json"
 #: Written ONLY by a pass that stopped at its budget, and cleared by the next completed pass's
 #: commit. It never touches REPORT, which keeps its own `at` and ages out under the fence's lease.
 TIMEOUT_REPORT = REPORTS / "JUDGE_COVERAGE_TIMEOUT.json"
+#: THE WRITERS' LAST ATTEMPT (re-cut of #334). Both writers -- the hourly leg (`main`) and the
+#: intake call (`order_docket`, from merge_hypotheses) -- stamp STARTED before they build and
+#: WROTE, EMPTY, FAILED or TIMEOUT after, so a stale table names WHY it is stale: a STARTED never
+#: followed by an outcome is a writer killed mid-build. A sidecar, never the table: REPORT is
+#: committed in one transaction and its `at` must age out on its own.
+ATTEMPT_REPORT = REPORTS / "JUDGE_COVERAGE_ATTEMPT.json"
 #: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
 OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
@@ -4340,8 +4346,43 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     backlog. A failure here returns the rows untouched, because an ordering organ must never be
     able to cost the desk a docket (L1.28a).
     """
+    if publish:
+        note_attempt("STARTED", f"ordering {len(rows)} docket row(s)", via="merge_hypotheses")
     with _pass_memo():
-        return _order_docket(rows, publish=publish, now=now)
+        ordered, doc = _order_docket(rows, publish=publish, now=now)
+    if publish:
+        if str(doc.get("verdict") or "") == "UNMEASURED":
+            note_attempt("FAILED", str(doc.get("why") or "ordering failed"),
+                         via="merge_hypotheses")
+        elif not doc.get("families"):
+            note_attempt("EMPTY", str(doc.get("why") or "no family table"),
+                         via="merge_hypotheses")
+        else:
+            note_attempt("WROTE", "table published with the docket", via="merge_hypotheses")
+    return ordered, doc
+
+
+def note_attempt(status: str, why: str, *, via: str, path: Path | None = None) -> None:
+    """Stamp one writer's latest attempt on ATTEMPT_REPORT. Atomic, and it never raises.
+
+    WHY (2026-10-13, #334): JUDGE_COVERAGE.json froze for six days and nothing off the table could
+    say whether its writers were not reached, were killed by their cycle cap mid-build, or
+    returned without writing. The fence quotes this stamp when the table is stale. A stamp is a
+    report: a failed write costs neither the docket nor the table, and leaves no debris.
+    """
+    # Beside whatever REPORT is (== ATTEMPT_REPORT in production), so a test that points the
+    # table at tmp never stamps the checkout.
+    target = path or REPORT.with_name(ATTEMPT_REPORT.name)
+    doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "status": status,
+           "via": via, "why": str(why)[:500]}
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        _replace_retry(tmp, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
@@ -4843,6 +4884,9 @@ def main(argv: list[str] | None = None) -> int:
     stop_s, cap_s = stop_after_s(args.budget_s)
     m0 = time.monotonic()
     deadline = (m0, m0 + stop_s)
+    leg = "judge_coverage leg"
+    if not args.no_write:
+        note_attempt("STARTED", "hourly leg building the table", via=leg)
     try:
         # Always deferred: --no-write then DISCARDS the pass's staging, so it saves nothing of
         # its own (audit of v2.1: it used to commit priors, bank and handoff without the
@@ -4853,20 +4897,31 @@ def main(argv: list[str] | None = None) -> int:
         doc["budget_s"] = args.budget_s
         if not args.no_write:
             write(doc, deadline=deadline)
+            note_attempt("WROTE" if doc.get("families") else "EMPTY",
+                         "table published" if doc.get("families")
+                         else str(doc.get("why") or "no family table"), via=leg)
         else:
             _staged = doc.pop("_txn", None)
             if isinstance(_staged, _Txn):
                 _staged.discard()
     except TxnRecoveryRefused as exc:
+        if not args.no_write:
+            note_attempt("FAILED", f"recovery refused: {exc}", via=leg)
         print(f"judge coverage: RECOVERY REFUSED -- {exc}; nothing read or written. Resolve "
               f"the kept manifest by hand", file=sys.stderr, flush=True)
         return RECOVERY_REFUSED_EXIT
     except JudgeCoverageTimeout as exc:
+        if not args.no_write:
+            note_attempt("TIMEOUT", f"stopped uncommitted in phase {exc.phase}", via=leg)
         out = write_timeout(exc, budget_s=args.budget_s, stop_s=stop_s, cap_s=cap_s,
                             started=datetime.fromtimestamp(t0, tz=UTC))
         print(f"judge coverage: TIMEOUT -- {exc}; nothing committed, {REPORT.name} left as it "
               f"was (its own `at` ages it out); see {out.name}", flush=True)
         return TIMEOUT_EXIT
+    except Exception as exc:
+        if not args.no_write:
+            note_attempt("FAILED", f"{type(exc).__name__}: {exc}", via=leg)
+        raise
     if args.json:
         print(json.dumps(doc, indent=1, default=str))
     else:
@@ -4891,6 +4946,7 @@ __all__ = [
     "main",
     "measured_capacity",
     "name_unknowns",
+    "note_attempt",
     "order_docket",
     "rank_by_value",
     "render",
