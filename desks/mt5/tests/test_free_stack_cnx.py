@@ -257,7 +257,8 @@ def store(tmp_path: Path):
 def _roster(tmp_path: Path, n_days: int) -> Path:
     doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == "cnx_shfe")
-    row.update({"terms": "confirmed", "days_per_pass": n_days, "backfill_days": n_days,
+    row.update({"terms": "confirmed", "machine_use_allowed": True,
+                "days_per_pass": n_days, "backfill_days": n_days,
                 "max_seconds": 600})
     p = tmp_path / "roster.json"
     p.write_text(json.dumps({"sources": [row]}, ensure_ascii=False), "utf-8")

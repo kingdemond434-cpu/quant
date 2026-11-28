@@ -152,21 +152,28 @@ def test_a_hard_boundary_declared_by_the_registry_is_refused() -> None:
     assert "HARD_BOUNDARY" in why
 
 
-def test_a_terms_label_is_mined_and_never_refused() -> None:
-    """LAWS 5e names `machine_use_allowed=false` read as "registered, never scraped" as a DELETED
-    brake. A terms label withholds redistribution and changes nothing about reading."""
+def test_machine_use_false_is_registered_and_never_fetched() -> None:
+    """INVERTED 2026-11-17 (LAWS 5e act 6): `machine_use_allowed=false` read as "registered,
+    never scraped" is RESTORED as a refusal of the automated fetch. A terms note that does not
+    refuse the fetch still withholds only redistribution."""
     row = {"source_id": "terms", "url": "https://terms.test/x", "machine_use_allowed": False,
            "access_label": "PUBLIC_WITH_TERMS"}
-    assert CD.refusal_for(row, None) == ("", "")
-    note = CD.terms_note(row)
-    assert "REDISTRIBUTION WITHHELD" in note
-    assert "machine_use_allowed=false" in note
-    assert "never gates mining" in note
+    status, why = CD.refusal_for(row, None)
+    assert status == "refused-machine-use"
+    assert why.startswith("FETCH_REFUSED") and "never" in why
+    assert status in CD.REFUSAL_STATUSES
+    for flag in ({"snippets_only": True}, {"licence": "NOT FETCHABLE -- snippets"}):
+        assert CD.refusal_for({"source_id": "t", "url": "https://t.test/", **flag},
+                              None)[0] == "refused-machine-use", flag
+    assert CD.refusal_for({"source_id": "r", "url": "https://r.test/", "robots": "disallow"},
+                          None)[0] == "refused-robots"
+    note = CD.terms_note({"source_id": "u", "url": "https://u.test/", "route": "unreachable"})
+    assert "REDISTRIBUTION WITHHELD" in note and "never gates mining" in note
 
 
-def test_robots_and_route_labels_are_not_refusals() -> None:
-    """Two more deleted brakes. A robots Disallow is a publisher's crawl preference, not a
-    licence term, and the law says so; `route=unreachable` is a note about reachability."""
+def test_unread_robots_and_route_labels_are_not_refusals_here() -> None:
+    """A row with no robots verdict is UNMEASURED here: the collector's robots probe reads the
+    file and fails closed. `route=unreachable` is a note about reachability, not a refusal."""
     assert CD.refusal_for({"source_id": "r", "url": "https://robots.test/private/x"}, None) \
         == ("", "")
     note = CD.terms_note({"source_id": "r", "url": "https://r.test/", "route": "unreachable"})
@@ -267,10 +274,11 @@ def test_seeding_registers_ground_the_registry_had_never_heard_of(db: Path) -> N
     assert after["uncrawled_total"] == 5, "seeding RAISES the backlog, on purpose"
 
 
-def test_a_pack_ground_with_terms_is_seeded_labelled_and_left_drainable(db: Path) -> None:
-    """THE REGRESSION THIS TEST EXISTS FOR. The first build stamped such rows as refused in the
-    same step it registered them -- 113 of them, on a live pass. LAWS 5e names that exact brake
-    as deleted. The row must be seeded CLEARED, carry its terms note, and stay in the queue."""
+def test_a_pack_ground_whose_terms_refuse_the_fetch_is_catalogued_and_never_queued(
+        db: Path) -> None:
+    """INVERTED 2026-11-17 (LAWS 5e act 6). A ground declaring `machine_use_allowed=false` is
+    seeded so the desk knows it exists, and stamped `refused-machine-use` in the same step so no
+    collector ever fetches it. It is NOT a hard-boundary refusal."""
     conn = CD.connect(db)
     assert conn is not None
     grounds = [{"source_id": "pack:xx:media:terms", "url": "https://terms.example-xx.test/",
@@ -284,12 +292,30 @@ def test_a_pack_ground_with_terms_is_seeded_labelled_and_left_drainable(db: Path
                                 ).fetchone())
         after = CD.measure_backlog(conn)
     assert got["inserted"] == 1
-    assert got["refused_hard_boundary"] == 0, "a terms label is not one of the five refused ACTS"
-    assert got["terms_labelled"] == 1
-    assert not row["last_crawled"], "it is drainable; stamping it here would be the old brake"
-    assert row["status"] == CD.CLEARED
-    assert "REDISTRIBUTION WITHHELD" in (row["route_reason"] or "")
-    assert after["uncrawled_total"] == 5, "seeding a mineable ground RAISES the queue"
+    assert got["refused_hard_boundary"] == 0, "act 6 is not a refused label"
+    assert got["refused_fetch"] == 1
+    assert row["last_crawled"], "stamped, so it never queues for a collector"
+    assert row["status"] == "refused-machine-use"
+    assert "FETCH_REFUSED" in (row["route_reason"] or "")
+    assert after["uncrawled_total"] == 4, "a catalogued, never-fetched ground is not crawl work"
+
+
+def test_a_pack_ground_with_a_redistribution_note_is_seeded_and_left_drainable(
+        db: Path) -> None:
+    """A lawfully fetchable ground with a terms note stays CLEARED and in the queue."""
+    conn = CD.connect(db)
+    assert conn is not None
+    grounds = [{"source_id": "pack:xx:media:ok", "url": "https://ok.example-xx.test/",
+                "kind": "media", "country": "xx", "language": "xx", "pack": "xx",
+                "access_label": "PUBLIC_WITH_TERMS", "credibility": "RELIABLE",
+                "machine_use_allowed": True, "route": "unreachable",
+                "licence": "terms present", "label": "XX paper"}]
+    with closing(conn), conn:
+        got = CD.seed_grounds(conn, grounds)
+        row = dict(conn.execute("SELECT * FROM sources WHERE source_id='pack:xx:media:ok'"
+                                ).fetchone())
+    assert got["refused_fetch"] == 0 and got["terms_labelled"] == 1
+    assert not row["last_crawled"] and row["status"] == CD.CLEARED
 
 
 def test_a_hard_boundary_ground_is_registered_and_refused_in_one_step(db: Path) -> None:
@@ -497,23 +523,24 @@ def test_a_pack_that_mints_no_cells_is_a_named_gap() -> None:
 
 
 def test_a_deleted_brake_enforced_by_another_organ_is_named_not_swallowed() -> None:
-    """This organ cannot edit `moat_collectors` -- that file has its own owner. What it must not
-    do is let the loss go uncounted: ground declined on a robots Disallow is ground the desk is
-    lawfully entitled to read and is not reading, and the only reason that stays invisible is
-    that nobody counts it."""
+    """Ground declined as `unreachable` alone is a repealed brake and is counted. A robots
+    Disallow or `machine_use_allowed=false` decline is a LIVE refusal since 2026-11-17 (LAWS 5e
+    act 6) and is not a deleted brake."""
     collector = {"refused": [
         {"source": "a", "why": "example.com/x is Disallow in example.com/robots.txt"},
         {"source": "b", "why": "registry: machine_use_allowed=false"},
-        {"source": "c", "why": "source row carries no url"}]}
+        {"source": "c", "why": "source row carries no url"},
+        {"source": "d", "why": "registry route=unreachable"}]}
     named = CD.deleted_brake_refusals(collector)
-    assert [r["source"] for r in named] == ["a", "b"], "a rootless row is not a deleted brake"
+    assert [r["source"] for r in named] == ["d"]
     assert all(r["organ"] for r in named)
 
 
 def test_the_deleted_brake_family_is_the_cheapest_and_wins_the_morning() -> None:
     """One edit in one function buys all of it back, so it is charged at half a crawl and
     outranks everything else whenever it is non-empty. That ordering IS the point."""
-    collector = {"refused": [{"source": f"s{i}", "why": "robots Disallow"} for i in range(3)]}
+    collector = {"refused": [{"source": f"s{i}", "why": "route=unreachable"}
+                             for i in range(3)]}
     got = CD.largest_gap({"backlog_overdue": 4},
                          {"packs": {"aa": {"unverified": ["media"], "unmapped": []}}},
                          [], collector)
@@ -629,14 +656,16 @@ def test_the_organ_declares_its_boundaries_in_its_own_docstring() -> None:
     assert "LAWS 5e" in doc
 
 
-def test_the_refusal_function_names_the_deleted_brakes_so_they_stay_deleted() -> None:
-    """LAWS 5e: "no session may re-introduce one, in any form, under any name". The list lives in
-    the function's own docstring, where somebody about to add one back will read it."""
+def test_the_refusal_function_names_its_walls_and_its_non_walls() -> None:
+    """LAWS 5e as amended 2026-11-17: robots and machine-use are walls again (act 6);
+    ACCESS_UNCLEAR, a paywalled domain's open surface and route=unreachable are not."""
     doc = CD.refusal_for.__doc__ or ""
-    for brake in ("robots Disallow", "machine_use_allowed=false", "ACCESS_UNCLEAR",
-                  "snippets-only", "paywalled domain"):
-        assert brake in doc, brake
-    assert "deleted brake" in doc
+    for wall in ("robots Disallow", "machine_use_allowed=false", "snippets only"):
+        assert wall in doc, wall
+    for label in ("ACCESS_UNCLEAR", "paywalled domain", "route=unreachable"):
+        assert label in doc, label
+    assert "Missed growth" in doc
+    assert CD.DELETED_BRAKE_STATUSES == ()
 
 
 # --------------------------------------------------------------- the three parity axes

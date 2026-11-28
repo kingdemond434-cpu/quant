@@ -409,6 +409,16 @@ def test_legality_routes_rather_than_discarding():
                                 "credibility": "AUTHORITATIVE"})
     assert terms["route"] == "RESEARCHABLE" and terms["machine_use_allowed"] is True
     assert terms["redistribute_allowed"] is False and terms["may_consume_content"] is True
+    assert terms["fetch_allowed"] is True
+
+    # LAWS 5e act 6 (2026-11-17): a row whose terms declare `machine_use_allowed=false` or whose
+    # robots disallow is CATALOGUED, NEVER FETCHED -- kept, labelled, reason in the terms note.
+    for meta in ({"machine_use_allowed": False}, {"robots": "disallow"}):
+        refused = sc.classify_source({"source_id": "s", "access_label": "PUBLIC", **meta})
+        assert refused["access_label"] == "PUBLIC_WITH_TERMS"
+        assert refused["fetch_allowed"] is False and refused["machine_use_allowed"] is False
+        assert refused["refused"] is False and refused["route"] == "RESEARCHABLE"
+        assert "never fetched" in refused["terms_note"] and refused["fetch_refusal"]
 
     # ...and ACCESS_UNCLEAR was QUARANTINED with its content unconsumed. Also deleted: the label
     # still says the access path is unresolved, and the row is mined and tested with it attached.
@@ -426,11 +436,11 @@ def test_legality_routes_rather_than_discarding():
         assert row["refused"] is True and row["may_consume_content"] is False
         assert row["why"]
 
-    # The hard boundary is FIVE ACTS and no more -- the count is what a later session cannot
-    # quietly grow, so it is asserted against the classifier that owns it.
+    # The hard boundary is SIX ACTS and no more (act 6: LAWS 5e, 2026-11-17) -- the count is what
+    # a later session cannot quietly grow, so it is asserted against the classifier that owns it.
     from libs.research import access_classifier as ac
     assert list(sc.HARD_BOUNDARY) == list(ac.HARD_BOUNDARY)
-    assert len(sc.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 5
+    assert len(sc.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 6
     assert not any(v["route"] == "QUARANTINE" for v in sc.ACCESS_BEHAVIOUR.values())
 
     assert list(sc.SOURCE_PIPELINE) == ["DISCOVER", "CAPTURE_METADATA", "ACCESS_CLASSIFICATION",

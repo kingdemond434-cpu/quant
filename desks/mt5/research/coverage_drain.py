@@ -25,18 +25,18 @@ WHAT IT DOES, IN ONE PASS, AND WHY IN THIS ORDER.
      roots; what resolves gets its `url` filled and joins the drainable set, and what does not is
      registered as a PERMANENT REFUSAL (`NO_ROOT_KNOWN`) rather than sitting in the queue for
      another 134 hours pretending to be work.
-  3. LABEL, AND REFUSE ONLY THE FIVE ACTS. LAWS 5e (2026-09-23) is explicit and it is newer
-     than most of the code around this organ: licence, terms, robots and
-     `machine_use_allowed=false` are ROUTING AND PROVENANCE LABELS on the row -- they say what the
-     desk may REDISTRIBUTE, never whether it may READ. The section NAMES
-     "`machine_use_allowed=false` read as registered, never scraped" as a deleted brake that no
-     session may re-introduce in any form. So this organ mines those rows and carries the terms
-     note with them. What is refused is the principal's five ACTS -- credential theft, bypassing
-     an access control or paywall, MNPI, stolen or leaked private data, personal-data harvesting
-     -- which arrive as the three refused access labels (PRIVATE, CONFIDENTIAL_MNPI,
-     STOLEN_UNAUTHORIZED), a declared authenticated surface or declared MNPI. Those are stamped
-     with their reason and never queued again. THE REFUSAL IS STILL KNOWLEDGE: the row is kept,
-     because dropping it would lose the fact that the ground exists.
+  3. LABEL, AND REFUSE THE FIVE ACTS AND THE ROBOTS/TERMS FETCH REFUSALS. LAWS 5e as amended
+     2026-11-17: ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES. A ground whose registry row or
+     pack declares `machine_use_allowed=false`, "snippets only" / "NOT FETCHABLE", or a robots
+     Disallow is "registered, never scraped": stamped `refused-machine-use` / `refused-robots`
+     with its reason and never handed to a collector (`libs.research.access_classifier.
+     FETCH_REFUSALS`). Licence and other terms notes on a lawfully fetchable ground stay ROUTING
+     AND PROVENANCE LABELS that travel with the row. Also refused: the principal's five ACTS --
+     credential theft, bypassing an access control or paywall, MNPI, stolen or leaked private
+     data, personal-data harvesting -- which arrive as the three refused access labels (PRIVATE,
+     CONFIDENTIAL_MNPI, STOLEN_UNAUTHORIZED), a declared authenticated surface or declared MNPI.
+     Every refusal is stamped with its reason and never queued again. THE REFUSAL IS STILL
+     KNOWLEDGE: the row is kept, because dropping it would lose the fact that the ground exists.
   4. DRAIN. What is left is crawled through the machinery that already exists --
      `research/moat_collectors.py`, which owns the robots probe, the media typing, the collectors,
      the point-in-time capture and the claim writer -- with the budget spent OLDEST AND HIGHEST
@@ -123,13 +123,13 @@ LEASE_H = 24.0
 #: Refusals, as registered permanent facts. A refusal is stamped so the row leaves the pending
 #: set, and it keeps its reason forever so the knowledge that the ground EXISTS is never lost.
 #:
-#: TWO ONLY, AND NEITHER IS A LEGAL OPINION ABOUT CONTENT. `refused-hard-boundary` carries the
-#: principal's five refused ACTS (LAWS 5e), which reach this organ as the three refused access
-#: labels or a declared authenticated/MNPI surface. `refused-no-root` is not a legal refusal at
-#: all -- it is the factual statement that there is nothing to fetch. The statuses this organ
-#: USED to carry, `refused-machine-use` and `refused-robots`, are named in `REMOVED_BRAKES` and
-#: are kept in this tuple for ONE reason: rows stamped with them by an earlier build must still
-#: be recognised as refusals rather than read as successful crawls.
+#: NONE IS A LEGAL OPINION ABOUT CONTENT. `refused-hard-boundary` carries the principal's five
+#: refused ACTS (LAWS 5e), which reach this organ as the three refused access labels or a declared
+#: authenticated/MNPI surface. `refused-machine-use` and `refused-robots` are the robots/terms
+#: FETCH refusals RESTORED by the 2026-11-17 amendment (`access_classifier.FETCH_REFUSALS`): the
+#: ground is catalogued, never fetched. `refused-no-root` is not a legal refusal at all -- it is
+#: the factual statement that there is nothing to fetch. `refused-unreachable` is kept so rows an
+#: earlier build stamped with it are still recognised as refusals, not successful crawls.
 REFUSAL_STATUSES: tuple[str, ...] = ("refused-hard-boundary", "refused-no-root",
                                      "refused-machine-use", "refused-robots",
                                      "refused-unreachable")
@@ -154,9 +154,9 @@ SOURCE_LAYERS: tuple[str, ...] = (
 
 RULE = ("the uncrawled set falls every hour: overdue backlog and oldest wait ratchet DOWN, "
         "drained total ratchets UP, every refusal is a permanent registered fact with its rule "
-        "and its date, and the only refusals are the principal's five ACTS (LAWS 5e) -- a "
-        "terms, licence, robots or machine_use_allowed label travels with the row and never "
-        "stops it being read")
+        "and its date, and the refusals are the principal's five ACTS plus the robots/terms "
+        "fetch refusals (LAWS 5e as amended 2026-11-17: catalogued, never fetched) -- any other "
+        "terms or licence label travels with the row and never stops it being read")
 
 
 # --------------------------------------------------------------------------------- small tools
@@ -445,9 +445,13 @@ def registry_grounds(path: Path | None = None) -> list[dict[str, Any]]:
         url = str(row.get("url") or "")
         if not url.startswith(("http://", "https://")):
             continue
+        # THE FETCH FLAG (LAWS 5e as amended 2026-11-17): robots/terms refusals only.
+        # `route=unreachable` is a fact about reachability, not a refusal, and is not read here.
+        note = str(row.get("licence_note") or "").upper()
         allowed = (row.get("machine_use_allowed") is not False
-                   and str(row.get("route") or "") != "unreachable"
-                   and not row.get("snippets_only"))
+                   and not row.get("snippets_only")
+                   and "NOT FETCHABLE" not in note and "SNIPPETS ONLY" not in note
+                   and str(row.get("robots") or "").strip().lower() not in _ROBOTS_REFUSING)
         out.append({
             "source_id": str(sid), "url": url,
             "alt": tuple(str(a) for a in (row.get("aliases") or ())),
@@ -511,23 +515,53 @@ def lawful_grounds() -> list[dict[str, Any]]:
 
 
 # ------------------------------------------------------------------------------ the refusals
+#: Robots verdicts that refuse the fetch (the classifier's `ROBOTS_REFUSING`).
+_ROBOTS_REFUSING: tuple[str, ...] = ("disallow", "disallowed", "barred", "blocked", "unreadable")
+
+
+def fetch_refusal(row: Mapping[str, Any]) -> tuple[str, str]:
+    """(status, reason) when this row's robots or terms refuse the automated fetch, else ("", "").
+
+    LAWS 5e as amended 2026-11-17: the row is catalogued, never fetched ("registered, never
+    scraped"). Read off the row the organ already holds; the registry row is read by
+    `refusal_for` through `source_shares.machine_use_allowed`.
+    """
+    robots = str(row.get("robots") or "").strip().lower()
+    if robots in _ROBOTS_REFUSING:
+        return "refused-robots", (
+            f"FETCH_REFUSED (LAWS 5e, 2026-11-17): robots={robots}; the ground is catalogued, "
+            "never fetched")
+    licence = str(row.get("licence") or row.get("licence_note") or "").upper()
+    if (row.get("machine_use_allowed") is False or row.get("snippets_only")
+            or "NOT FETCHABLE" in licence or "SNIPPETS ONLY" in licence):
+        return "refused-machine-use", (
+            "FETCH_REFUSED (LAWS 5e, 2026-11-17): the ground's terms refuse automated fetching "
+            "(machine_use_allowed=false, snippets only or NOT FETCHABLE); registered, never "
+            "scraped")
+    return "", ""
+
+
 def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[str, str]:
     """(status, reason) when this row must never be fetched, else ("", "").
 
-    EXACTLY TWO WALLS, AND THIS IS THE PART OF THE ORGAN MOST LIKELY TO BE GOT WRONG BY THE NEXT
+    THREE WALLS, AND THIS IS THE PART OF THE ORGAN MOST LIKELY TO BE GOT WRONG BY THE NEXT
     SESSION. The first is the principal's five refused ACTS (LAWS 5e), which reach a registry row
-    as one of the three refused access labels or as a declared authenticated / MNPI surface; the
-    judgement is delegated to `source_shares.machine_use_allowed`, which is the desk's one reader
-    of that law, so this organ can never drift from it. The second is not a legal refusal at all:
-    a row with no url anywhere has nothing to fetch.
+    as one of the three refused access labels or as a declared authenticated / MNPI surface. The
+    second is the robots/terms FETCH refusal restored by the 2026-11-17 amendment
+    (`machine_use_allowed=false`, snippets only, NOT FETCHABLE, a robots Disallow): the ground is
+    catalogued, never fetched. The registry-row judgement for both is delegated to
+    `source_shares.machine_use_allowed`, the desk's one reader of that law, so this organ can
+    never drift from it. The third is not a legal refusal at all: a row with no url anywhere has
+    nothing to fetch.
 
-    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a robots Disallow, a
-    paywalled domain, `machine_use_allowed=false`, `route=unreachable`, snippets-only, an
-    ACCESS_UNCLEAR label, a social or user-submitted ground. Every one of those is a ROUTING
-    LABEL: it withholds redistribution and changes nothing about reading. LAWS 5e names each as a
-    deleted brake that "no session may re-introduce, in any form, under any name", so a future
-    edit that adds one back to this function is a violation of the section and of growth
-    governance, not a tightening.
+    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page that does not forbid automated access, a
+    licence note, a paywalled domain's open surface, `route=unreachable`, an ACCESS_UNCLEAR label,
+    a social or user-submitted ground. Each is a ROUTING LABEL: it withholds redistribution and
+    changes nothing about reading. Robots "unknown" is not a wall here either: the collector's
+    robots probe reads the file and fails closed on an unreadable one.
+
+    Missed growth: every fetch refusal is a ground the desk cannot read automatically; it stays
+    in the registry with its reason, so the loss is counted (`refused_hosts`) and never silent.
     """
     url = str(row.get("url") or "").strip()
     if not url:
@@ -549,6 +583,9 @@ def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[
         return "refused-hard-boundary", (
             f"HARD_BOUNDARY: access_label={label} carries one of the principal's five refused "
             "ACTS (LAWS 5e); the row is kept so the ground is known and is never fetched")
+    status, reason = fetch_refusal(row)
+    if status:
+        return status, reason
     if shares is not None:
         with suppress(Exception):
             from research import source_shares
@@ -556,6 +593,8 @@ def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[
             reg_row = (shares.get("rows") or {}).get(hit) if hit else None
             allowed, why = source_shares.machine_use_allowed(reg_row)
             if not allowed:
+                if why.startswith("FETCH_REFUSED"):
+                    return ("refused-robots" if "robots=" in why else "refused-machine-use"), why
                 return "refused-hard-boundary", f"HARD_BOUNDARY: {why}"
     return "", ""
 
@@ -571,19 +610,15 @@ def _refused_labels() -> tuple[str, ...]:
 def terms_note(row: Mapping[str, Any], shares: dict[str, Any] | None = None) -> str:
     """The provenance label that TRAVELS WITH a row, or "".
 
-    This is the half of the access law that replaced the brakes. A ground whose terms, robots
-    file or registry row says `machine_use_allowed=false` is mined exactly as hard as any other
-    and carries this sentence, which is what the desk consults before it REPUBLISHES anything
-    derived from it. Recording the note is the obligation; refusing the fetch never was.
+    A lawfully fetchable ground whose registry row carries a terms note (`route=unreachable`, a
+    licence restriction on redistribution) is mined exactly as hard as any other and carries this
+    sentence, which is what the desk consults before it REPUBLISHES anything derived from it. A
+    ground whose robots or terms REFUSE the automated fetch is not labelled here: it is refused by
+    `fetch_refusal` / `refusal_for` (LAWS 5e as amended 2026-11-17) and catalogued, never fetched.
     """
     notes: list[str] = []
-    if row.get("machine_use_allowed") is False:
-        notes.append("the ground declares machine_use_allowed=false")
     if str(row.get("route") or "") == "unreachable":
         notes.append("registry route=unreachable")
-    licence = str(row.get("licence") or row.get("licence_note") or "")
-    if "NOT FETCHABLE" in licence.upper() or "SNIPPETS ONLY" in licence.upper():
-        notes.append(f"licence note: {licence[:120]}")
     if shares is not None:
         with suppress(Exception):
             from research import source_shares
@@ -704,14 +739,19 @@ def _read_json_text(text: str) -> Any:
 
 
 # ------------------------------------------------------------------------------------ seeding
-#: Refusal statuses whose RULE NO LONGER EXISTS. LAWS 5e deleted the brakes that wrote them, so
-#: a row still carrying one is not a refusal -- it is a ground the desk stopped reading because
-#: of a law that was repealed, and leaving it stamped would make the repeal cosmetic.
-DELETED_BRAKE_STATUSES: tuple[str, ...] = ("refused-machine-use", "refused-robots")
+#: Refusal statuses whose RULE NO LONGER EXISTS. EMPTY SINCE 2026-11-17: `refused-machine-use`
+#: and `refused-robots` were here while LAWS 5e (2026-09-23) had deleted those brakes; the
+#: 2026-11-17 amendment RESTORED them as refusals of the automated fetch, so a row stamped with
+#: either is a live refusal again and must NOT be reopened for a collector.
+DELETED_BRAKE_STATUSES: tuple[str, ...] = ()
 
 
 def reopen_deleted_brakes(conn: sqlite3.Connection) -> dict[str, Any]:
     """Return to the queue every row refused under a rule that has since been deleted.
+
+    A NO-OP SINCE 2026-11-17: `DELETED_BRAKE_STATUSES` is empty because the robots and
+    machine-use refusals it used to reopen are live again (LAWS 5e as amended). Kept so the
+    report shape and the callers stay stable if a rule is ever repealed again.
 
     WHY THIS RUNS EVERY PASS AND NOT ONCE. A repealed brake leaves its damage in the DATA, not in
     the code: the stamp on the row is indistinguishable from a successful crawl to anything that
@@ -756,7 +796,8 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
     fails the law gate is on the OVERDUE backlog for exactly this reason.
     """
     out: dict[str, Any] = {"considered": len(grounds), "inserted": 0, "already": 0,
-                           "refused_hard_boundary": 0, "terms_labelled": 0, "errors": 0}
+                           "refused_hard_boundary": 0, "refused_fetch": 0, "terms_labelled": 0,
+                           "errors": 0}
     if not _has_sources(conn):
         out["errors"] = len(grounds)
         return out
@@ -773,13 +814,19 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
         if sid in have:
             out["already"] += 1
             continue
-        # A GROUND WHOSE TERMS WITHHOLD REDISTRIBUTION IS STILL MINED (LAWS 5e). It is seeded
-        # like any other and its terms note is written onto the row, where the republication
-        # decision will read it. An earlier build of this organ stamped such rows as refused in
-        # the same step it registered them -- 113 of them on the first live pass, every one a
-        # discovery brake the law names as deleted.
+        # A GROUND WHOSE TERMS WITHHOLD ONLY REDISTRIBUTION IS STILL MINED (LAWS 5e): seeded like
+        # any other with its terms note on the row. A ground whose robots or terms REFUSE the
+        # automated fetch (2026-11-17) is seeded AND stamped refused in the same step --
+        # catalogued so the ground is known, never fetched.
         note = terms_note(row)
-        refused = str(row.get("access_label") or "").strip().upper() in _refused_labels()
+        hard = str(row.get("access_label") or "").strip().upper() in _refused_labels()
+        f_status, f_reason = ("", "") if hard else fetch_refusal(row)
+        refused = hard or bool(f_status)
+        status = ("refused-hard-boundary" if hard else f_status) if refused else CLEARED
+        reason = ((f"HARD_BOUNDARY: access_label={row.get('access_label')} carries one of the "
+                   f"five refused ACTS (LAWS 5e); registered so the ground is known, never "
+                   f"fetched [registered {stamp} by {SOURCE}]") if hard
+                  else (f"{f_reason} [registered {stamp} by {SOURCE}]" if f_status else ""))
         meta = {"seeded_by": SOURCE, "pack": row.get("pack") or "",
                 "label": row.get("label") or "", "alt": list(row.get("alt") or ()),
                 "layer": row.get("kind") or "", "terms_note": note}
@@ -794,23 +841,22 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
                  str(row.get("language") or ""), str(row.get("country") or ""),
                  json.dumps([]), SOURCE, "coverage_drain seed", stamp,
                  stamp if refused else None,
-                 "refused-hard-boundary" if refused else CLEARED,
+                 status,
                  "; ".join(x for x in (str(row.get("licence") or ""), note) if x)[:900],
                  json.dumps(meta, sort_keys=True, default=str),
                  str(row.get("access_label") or "") or None,
                  str(row.get("credibility") or "") or None, "UNTESTED", 0,
                  stamp if refused else None,
-                 (f"HARD_BOUNDARY: access_label={row.get('access_label')} carries one of the "
-                  f"five refused ACTS (LAWS 5e); registered so the ground is known, never "
-                  f"fetched [registered {stamp} by {SOURCE}]")
-                 if refused else (note or None)))
+                 reason if refused else (note or None)))
         except sqlite3.Error:
             out["errors"] += 1
             continue
         have.add(sid)
         out["inserted"] += 1
-        if refused:
+        if hard:
             out["refused_hard_boundary"] += 1
+        elif f_status:
+            out["refused_fetch"] += 1
         elif note:
             out["terms_labelled"] += 1
     with suppress(sqlite3.Error):
@@ -1434,20 +1480,19 @@ def no_lawful_ground(mod: Any) -> list[dict[str, str]]:
 
 # ----------------------------------------------------------------------------- the daily verdict
 #: Words that identify a refusal raised under a rule LAWS 5e DELETED. Matched against the
-#: reasons other organs hand back, never against anything this organ decides itself.
-_DELETED_BRAKE_WORDS: tuple[str, ...] = ("robots", "machine_use", "machine use", "disallow",
-                                         "snippets", "unreachable")
+#: reasons other organs hand back, never against anything this organ decides itself. Robots,
+#: machine-use and snippets-only declines are NOT here since 2026-11-17: the amendment restored
+#: them as fetch refusals, so a collector that declines on them is obeying the law.
+_DELETED_BRAKE_WORDS: tuple[str, ...] = ("unreachable",)
 
 
 def deleted_brake_refusals(collector: Mapping[str, Any]) -> list[dict[str, str]]:
     """Refusals handed back by ANOTHER organ under a rule this desk repealed on 2026-09-23.
 
-    This organ cannot fix `moat_collectors.robots_barred` -- that file has its own owner and a
-    drain that edited every organ it touched would be a second desk. What it CAN do is refuse to
-    let the loss go unnamed: a ground the collector declined on a robots Disallow is ground the
-    desk is lawfully entitled to read and is not reading, and the only reason it stays invisible
-    is that nobody counts it. So it is counted, named with the organ that raised it, and offered
-    as a gap family in its own right.
+    A ground the collector declined as `unreachable` alone is ground the desk is entitled to read
+    and is not reading; it is counted, named with the organ that raised it, and offered as a gap
+    family in its own right. A robots Disallow decline (`moat_collectors.robots_barred`) is NOT
+    counted here since 2026-11-17: LAWS 5e as amended makes it a live fetch refusal.
     """
     out: list[dict[str, str]] = []
     for row in list(collector.get("refused") or ()):
@@ -1538,9 +1583,9 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
             "gap": "DELETED_BRAKE_STILL_ENFORCED", "reach": len(stale_brakes), "value": 1.0,
             "cost": 0.5, "ev": round(len(stale_brakes) / 0.5, 3),
             "what": (f"{len(stale_brakes)} ground(s) declined this pass under a rule LAWS 5e "
-                     f"REPEALED on 2026-09-23 (robots Disallow, machine_use_allowed=false, "
-                     f"snippets-only, route=unreachable). Raised by {organs}. The desk is "
-                     f"lawfully entitled to read every one of them."),
+                     f"REPEALED on 2026-09-23 (route=unreachable read as a refusal). Raised by "
+                     f"{organs}. Robots and terms declines are live refusals since 2026-11-17 "
+                     f"and are not counted here."),
             "fix": (f"the owner of {organs} makes those labels travel with the row instead of "
                     "refusing the fetch, as `coverage_drain.refusal_for` does"),
             "named": stale_brakes[:12]})

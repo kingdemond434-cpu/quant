@@ -152,8 +152,10 @@ ACCESS_BEHAVIOUR: dict[str, dict[str, Any]] = {
                        "why": "submitted for publication by its own author"},
     "PUBLIC_WITH_TERMS": {"route": "RESEARCHABLE", "consume": True, "machine_use_allowed": True,
                           "redistribute_allowed": False,
-                          "why": "MINED AND TESTED IN FULL; the terms or robots note is a "
-                                 "routing label that withholds REDISTRIBUTION and nothing else"},
+                          "why": "MINED AND TESTED IN FULL when robots and terms allow automated "
+                                 "reading; the terms note withholds REDISTRIBUTION. Robots or "
+                                 "terms that refuse the fetch (LAWS 5e act 6, 2026-11-17) make "
+                                 "it catalogued, never fetched -- see `fetch_allowed`"},
     "LICENSED": {"route": "RESEARCHABLE", "consume": True, "machine_use_allowed": True,
                  "redistribute_allowed": False,
                  "why": "mined and tested; the licence bounds redistribution, not research"},
@@ -180,17 +182,40 @@ ACCESS_BEHAVIOUR: dict[str, dict[str, Any]] = {
 EVIDENCE_WEIGHT: dict[str, float] = {"AUTHORITATIVE": 1.0, "RELIABLE": 0.7, "UNKNOWN": 0.4,
                                      "UNRELIABLE": 0.2, "FRINGE": 0.15, "CONTRADICTED": 0.1}
 
-#: THE HARD BOUNDARY -- the five ACTS of `libs.research.access_classifier.HARD_BOUNDARY`, verbatim
-#: and in the same order, restated so no reader has to infer it from the table above. Five, not
-#: six: a fence checks the count, so a later session cannot quietly add a brake and call it a
-#: boundary. Nothing off this list refuses anything.
+#: THE HARD BOUNDARY -- the six ACTS of `libs.research.access_classifier.HARD_BOUNDARY`, verbatim
+#: and in the same order, restated so no reader has to infer it from the table above. Six, not
+#: seven (act 6 is the Governance amendment of 2026-11-17): a fence checks the count, so a later
+#: session cannot quietly add a brake and call it a boundary. Nothing off this list refuses
+#: anything. Act 6 refuses the automated FETCH and leaves the row catalogued.
 HARD_BOUNDARY: tuple[str, ...] = (
     "no credential theft or logging in as someone else",
     "no bypassing an access control or a paywall",
     "no material non-public information",
     "no stolen or leaked private data",
     "no personal data harvesting or doxxing",
+    "no automated fetch that the host's robots.txt or terms refuse",
 )
+
+
+def _fetch_refusal(row: Mapping[str, Any]) -> str:
+    """The robots/terms fact that refuses the automated fetch (LAWS 5e act 6), or "".
+
+    Delegated to `access_classifier.fetch_refusal_of` when importable; the literal fallback reads
+    the three restored refusals only, so a crawler subprocess without `libs/` still obeys them.
+    """
+    ext = _external_classifier()
+    if ext is not None and hasattr(ext, "fetch_refusal_of"):
+        try:
+            return str(ext.fetch_refusal_of(dict(row)))
+        except Exception:
+            pass
+    reasons: list[str] = []
+    if str(row.get("robots") or "").strip().lower() in ("disallow", "disallowed", "barred",
+                                                         "blocked", "unreadable"):
+        reasons.append(f"robots={row.get('robots')}")
+    if row.get("machine_use_allowed") is False:
+        reasons.append("the source declares machine_use_allowed=false")
+    return "; ".join(reasons)
 
 
 def _external_classifier() -> Any:
@@ -230,12 +255,23 @@ def classify_source(row: Mapping[str, Any]) -> dict[str, Any]:
     pred = str(row.get("predictive_state") or "").upper()
     pred = pred if pred in PREDICTIVE_STATES else "UNTESTED"
     beh = ACCESS_BEHAVIOUR[access]
+    # ACT 6 (LAWS 5e, 2026-11-17): robots or terms that refuse the automated fetch leave the row
+    # catalogued as PUBLIC_WITH_TERMS and never fetched; the reason joins the terms note.
+    refusal = "" if beh["route"] == "REFUSED" else _fetch_refusal(row)
+    if refusal:
+        access, beh = "PUBLIC_WITH_TERMS", ACCESS_BEHAVIOUR["PUBLIC_WITH_TERMS"]
+    note = str(row.get("terms_note") or row.get("licence_note") or "")
+    if refusal:
+        note = "; ".join(x for x in (note, f"FETCH REFUSED (LAWS 5e act 6): {refusal}; "
+                                           "catalogued, never fetched") if x)
     return {"source_id": str(row.get("source_id") or row.get("url") or ""),
             "access_label": access, "credibility": cred, "predictive_state": pred,
             "route": beh["route"], "may_consume_content": beh["consume"],
-            "machine_use_allowed": beh["machine_use_allowed"],
+            "machine_use_allowed": bool(beh["machine_use_allowed"]) and not refusal,
+            "fetch_allowed": bool(beh["machine_use_allowed"]) and not refusal,
+            "fetch_refusal": refusal,
             "redistribute_allowed": beh["redistribute_allowed"],
-            "terms_note": str(row.get("terms_note") or row.get("licence_note") or ""),
+            "terms_note": note,
             "evidence_weight": EVIDENCE_WEIGHT[cred],
             "stage": SOURCE_PIPELINE[-1] if beh["consume"] else "ACCESS_CLASSIFICATION",
             "why": beh["why"], "pipeline": list(SOURCE_PIPELINE),

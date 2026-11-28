@@ -129,16 +129,17 @@ def test_legality_is_a_hard_gate_never_a_term(desk: Any) -> None:
     ranked = {r["dataset"]: r for r in doc["ranked"]}
     assert ranked["kr_leaked_broker_book"]["ev"] == 0.0
     assert "kr_leaked_broker_book" not in doc["requests"]["datasets"]
-    # LAWS 5e (2026-09-23): a pack source class declaring `machine_use_allowed: false` used to
-    # land in `registered_no_machine_extraction` and be blocked for an unresolved MNPI review.
-    # Both were access brakes. Only the five refused acts land there now, and the leaked book is
-    # exactly one of them.
+    # Only refused acts 1-5 land in `refused_hard_boundary`, and the leaked book is one of them.
+    # A robots/terms fetch refusal (act 6, 2026-11-17) is reported separately as
+    # `registered_no_machine_extraction`: catalogued, never fetched -- never a hard refusal.
     assert doc["legality"]["refused_hard_boundary"] == ["kr_leaked_broker_book"]
     assert "kr_layer_app_ecosystem" not in doc["legality"]["refused_hard_boundary"]
+    assert "kr_leaked_broker_book" not in doc["legality"]["registered_no_machine_extraction"]
+    assert doc["legality"]["fetch_refusals"] == list(das.AC.FETCH_REFUSALS)
     assert all("dump.example" not in u for u in desk["calls"]["fetch"])
     assert doc["legality"]["gate"] == DC.LEGALITY_RULE
     assert doc["legality"]["hard_boundary"] == list(das.AC.HARD_BOUNDARY)
-    assert len(doc["legality"]["hard_boundary"]) == das.AC.HARD_BOUNDARY_COUNT == 5
+    assert len(doc["legality"]["hard_boundary"]) == das.AC.HARD_BOUNDARY_COUNT == 6
     assert doc["legality"]["removed_brakes"], "the deleted brakes are named, not forgotten"
 
 
@@ -187,6 +188,29 @@ def test_a_second_pass_re_requests_nothing_until_the_value_moves_or_the_day_turn
     assert len(list(das.INTEL.glob("discoveries_*.json"))) == 1
     state = json.loads(das.STATE.read_text("utf-8"))
     assert state["kr_krx_short_sale_balance"]["first_requested_at"]
+
+
+@pytest.mark.parametrize("meta", [{"machine_use_allowed": False},
+                                  {"licence": "Terms of use: no scraping"}])
+def test_a_fetch_refused_dataset_is_catalogued_and_never_sampled(
+        meta: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """LAWS 5e act 6 (2026-11-17): robots or terms that refuse automated fetching return
+    FETCH_REFUSED before any network call -- not even robots.txt is read -- and the row is
+    kept out of the crawl queue. It is NOT a hard-boundary refusal."""
+    calls: list[str] = []
+    monkeypatch.setattr(das, "_robots_allows", lambda u: (calls.append(u), (True, "ok"))[1])
+    monkeypatch.setattr(das, "_fetch", lambda u: (calls.append(u), (None, "x"))[1])
+    cand = {"dataset": "xx_terms", "observable": "xx", "url": "https://terms.example/x.csv",
+            **meta}
+    contract, verdict = das.contract_for(cand, {"access": "free"}, "2026-11-17T00:00:00+00:00")
+    assert verdict.refused is False and verdict.fetch_allowed is False
+    assert contract.machine_use_allowed is False
+    got = das.sample(cand, contract, verdict, at="2026-11-17T00:00:00+00:00", code="t",
+                     marks=set())
+    assert got["status"] == "FETCH_REFUSED" and got["missed_growth"]
+    assert calls == []
+    assert das.register_hunt({"url": cand["url"], "machine_use_allowed": False,
+                              "task": "ACQUIRE"}, None) is False
 
 
 def test_dry_run_fetches_nothing_and_writes_nothing(desk: Any) -> None:
