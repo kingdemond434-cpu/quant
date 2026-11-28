@@ -94,6 +94,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.ops.env_keys import read_key  # noqa: E402
+from libs.ops.env_keys import refused as key_refused  # noqa: E402
 
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
@@ -3322,6 +3323,69 @@ CONFIG_DEFAULTS: dict[str, str] = {
 }
 
 
+#: THE BOX'S KEYS, LOADED BY NAME AT RUNTIME (coordinator decision 2026-11-11). The leg runs under
+#: MT5-Dept-Data as SYSTEM, which does not inherit the keys the principal set in Administrator's
+#: User scope, so ALT_PROXIES.json read every key False while the keys sat on the box. Each
+#: declared `key_env` is looked up, in order, through LIVE's reader `libs.ops.env_keys.read_key`
+#: (machine registry, THIS account's registry, process env) and then in data/secrets/alt_keys.json
+#: ({"NAME": "value"}, gitignored with all of data/secrets/). No other account's hive is ever read
+#: for a value (audit of #201, e32ae64ffe: "no hive sweep or export"); a key set under the wrong
+#: account is the checkers' to REPORT by name (scripts/check_keys.py), never this leg's to load.
+#: A name the catalog refuses (paid, non-commercial, banned: `env_keys.refused`) is never loaded
+#: from any source. A file value lands in this process's os.environ only: never printed, logged,
+#: written or committed. The report carries the SOURCE of each name ("read_key" / "secrets_file" /
+#: "refused" / absent), never a value.
+BOX_KEYS_FILE = DESK / "data" / "secrets" / "alt_keys.json"
+
+
+#: Keys other lanes read straight from a box secrets file, reported here by PRESENCE only (True /
+#: False, never a value) so an absent entry shows on the state wire instead of as a silent
+#: UNMEASURED downstream (coordinator 2026-11-11: #980 reads banxico_token from latam_apis.json).
+SECRETS_PRESENCE = (("latam_apis.json", "banxico_token"),)
+
+
+def secrets_presence(secrets_dir: Path | None = None) -> dict[str, bool]:
+    """{"<file>:<key>": present} for SECRETS_PRESENCE and for every declared key_env in
+    alt_keys.json. A file that is absent or unreadable reads False for each of its keys."""
+    d = secrets_dir or BOX_KEYS_FILE.parent
+    out: dict[str, bool] = {}
+    wanted = list(SECRETS_PRESENCE) + [(BOX_KEYS_FILE.name, k)
+                                       for k in sorted({s.key_env for s in SOURCES if s.key_env})]
+    for fname, key in wanted:
+        held = _read_json(d / fname, {})
+        val = held.get(key) if isinstance(held, dict) else None
+        out[f"{fname}:{key}"] = isinstance(val, str) and bool(val.strip())
+    return out
+
+
+def load_box_keys(environ: Any = None, keys_file: Path | None = None,
+                  reader: Callable[[str], str] | None = None) -> dict[str, str]:
+    """Resolve each declared key_env: first `reader` (default LIVE's `read_key`; with an injected
+    `environ` and no reader, that mapping stands in for it), then the box's secrets file, whose
+    value is set in `environ` (default os.environ). A refused name is loaded from neither.
+    Returns {name: source}, never a value."""
+    env: Any = os.environ if environ is None else environ
+    if reader is None:
+        reader = read_key if environ is None else (lambda n: str(env.get(n) or "").strip())
+    wanted = sorted({s.key_env for s in SOURCES if s.key_env})
+    source: dict[str, str] = {}
+    held: Any = None
+    for name in wanted:
+        if key_refused(name):
+            source[name] = "refused"
+            continue
+        if str(reader(name) or "").strip():
+            source[name] = "read_key"
+            continue
+        if held is None:
+            held = _read_json(keys_file or BOX_KEYS_FILE, {})
+        val = held.get(name) if isinstance(held, dict) else None
+        if isinstance(val, str) and val.strip():
+            env[name] = val.strip()
+            source[name] = "secrets_file"
+    return source
+
+
 #: Where a `key_file` lives. Its values never leave this box and are never printed.
 SECRETS_DIR = DESK / "data" / "secrets"
 
@@ -4603,7 +4667,7 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
 
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
         fixtures: Path | None = None, dry_run: bool = False, donate: bool = True,
-        now: datetime | None = None) -> dict[str, Any]:
+        now: datetime | None = None, key_source: dict[str, str] | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deadline = time.monotonic() + budget_s * 0.6
     state = _read_json(paths.state, {})
@@ -4679,6 +4743,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
         "keys": {s.key_env: bool(key_value(s)) for s in SOURCES if s.key_env},
+        # where each key was found (read_key / secrets_file) or that it is refused; never a value
+        "key_source": dict(sorted((key_source or {}).items())),
+        "secrets_presence": secrets_presence(),
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
@@ -4896,8 +4963,9 @@ def main(argv: list[str] | None = None) -> int:
         for fp in write_rosters():
             print(f"wrote {fp}")
         return 0
+    key_source = {} if a.fixtures else load_box_keys()
     rep = run(budget_s=a.budget_s, fetch=not a.no_fetch, fixtures=a.fixtures,
-              dry_run=a.dry_run, donate=not a.no_donate)
+              dry_run=a.dry_run, donate=not a.no_donate, key_source=key_source)
     print(f"alt_proxies ({rep['mode']}): {len(rep['sources'])} sources, "
           f"{rep['n_cells_tested']}/{rep['n_cells_total']} cells gain-tested, "
           f"direct {rep['direct_cells']['n']}, indirect {rep['indirect_cells']['n']}")
