@@ -330,6 +330,12 @@ def freeze_unfrozen(registry: dict, *, apply: bool, identities: dict | None = No
     return n
 
 
+#: WRITE-OR-EXPLAIN (libs/ops/write_or_explain.py): a pass that heals nothing writes nothing the
+#: cycle watches, and says so in the one marker line the contract reads. Without it every quiet
+#: hour read SILENT_NO_OP (box, 2026-11-05 00:03Z: 3 broken, 0 resumable, 3 terminal).
+_NOOP_LINE = "WRITE_OR_EXPLAIN: NO_OP identity healer: {why}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true",
@@ -363,6 +369,7 @@ def main() -> int:
               if str(v.get("status") or "").upper() == "IDENTITY_BROKEN"}
     if not broken:
         print("identity healer: no IDENTITY_BROKEN clocks")
+        print(_NOOP_LINE.format(why="no IDENTITY_BROKEN clocks"), flush=True)
         return 0
 
     resumed, rebased, refused = [], [], []
@@ -398,6 +405,10 @@ def main() -> int:
     for group, label in ((resumed, "RESUMED"), (rebased, "REBASED"), (refused, "TERMINAL")):
         for key, why in group:
             print(f"  {label:9s} {key[:46]:<48} {why[:96]}")
+    if not resumed and not rebased:
+        # Printed LAST: the cycle keeps only the final three stdout lines of this leg.
+        print(_NOOP_LINE.format(why=f"0 resumable of {len(broken)} broken "
+                                    f"({len(refused)} left terminal)"), flush=True)
     return 0
 
 

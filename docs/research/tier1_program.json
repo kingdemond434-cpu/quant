@@ -3160,7 +3160,10 @@
    "landed": [
     "surprise collector on a clock, UNMEASURED published honestly 2026-09-23"
    ],
-   "note": "`actual` is COLLECTED, not fabricated: on this host no release pair has ten prior surprises of its own kind, so z reads UNMEASURED with the count that made it so. That is the verdict the row asked for (L1.28a); a consensus guessed from a headline would have made every downstream reaction cube confidently wrong."
+   "note": "`actual` is COLLECTED, not fabricated: on this host no release pair has ten prior surprises of its own kind, so z reads UNMEASURED with the count that made it so. That is the verdict the row asked for (L1.28a); a consensus guessed from a headline would have made every downstream reaction cube confidently wrong.",
+   "artifact_by_leg": {
+    "fred_macro": "desks/mt5/reports/MACRO_VIEW.json"
+   }
   },
   {
    "id": "C3",
@@ -3287,7 +3290,10 @@
    "landed": [
     "country blocks, global factors and the edge-change hunter on a clock 2026-09-23"
    ],
-   "note": "A country block with no readable axis publishes UNMEASURED with the axis named, never an imputed level: a state vector that fills its own gaps would move the allocator's conditioning on a number nobody measured."
+   "note": "A country block with no readable axis publishes UNMEASURED with the axis named, never an imputed level: a state vector that fills its own gaps would move the allocator's conditioning on a number nobody measured.",
+   "artifact_by_leg": {
+    "fred_macro": "desks/mt5/reports/MACRO_VIEW.json"
+   }
   },
   {
    "id": "C8",
@@ -5902,7 +5908,24 @@
    "next_step": "register the eleven MT5-Forest-* tasks on the trading box; wire research_roi to write desks/mt5/data/forest_allocation.json so the forests actually compete",
    "landed": [
     "forest_federation 2026-09-17"
-   ]
+   ],
+   "artifact_by_leg": {
+    "forest_korea": "desks/mt5/reports/FOREST_KOREA.json",
+    "forest_china": "desks/mt5/reports/FOREST_CHINA.json",
+    "forest_russia_cis": "desks/mt5/reports/FOREST_RUSSIA_CIS.json",
+    "forest_south_asia": "desks/mt5/reports/FOREST_SOUTH_ASIA.json",
+    "forest_asean": "desks/mt5/reports/FOREST_ASEAN.json",
+    "forest_oceania": "desks/mt5/reports/FOREST_OCEANIA.json",
+    "forest_europe": "desks/mt5/reports/FOREST_EUROPE.json",
+    "forest_north_america": "desks/mt5/reports/FOREST_NORTH_AMERICA.json",
+    "forest_latam": "desks/mt5/reports/FOREST_LATAM.json",
+    "forest_mena": "desks/mt5/reports/FOREST_MENA.json",
+    "forest_africa": "desks/mt5/reports/FOREST_AFRICA.json",
+    "forest_global_web": "desks/mt5/reports/FOREST_GLOBAL_WEB.json",
+    "forest_global_academic_code": "desks/mt5/reports/FOREST_GLOBAL_ACADEMIC_CODE.json",
+    "forest_global_physical_data": "desks/mt5/reports/FOREST_GLOBAL_PHYSICAL_DATA.json",
+    "forest_global_market_data": "desks/mt5/reports/FOREST_GLOBAL_MARKET_DATA.json"
+   }
   },
   {
    "id": "U11",
@@ -5925,7 +5948,24 @@
    "next_step": "seed the view from the whole discoveries table rather than the last 1,500 rows; run the chain over the existing intake to measure the historical duplicate debt",
    "landed": [
     "dedup_chain 2026-09-17"
-   ]
+   ],
+   "artifact_by_leg": {
+    "forest_korea": "desks/mt5/reports/FOREST_KOREA.json",
+    "forest_china": "desks/mt5/reports/FOREST_CHINA.json",
+    "forest_russia_cis": "desks/mt5/reports/FOREST_RUSSIA_CIS.json",
+    "forest_south_asia": "desks/mt5/reports/FOREST_SOUTH_ASIA.json",
+    "forest_asean": "desks/mt5/reports/FOREST_ASEAN.json",
+    "forest_oceania": "desks/mt5/reports/FOREST_OCEANIA.json",
+    "forest_europe": "desks/mt5/reports/FOREST_EUROPE.json",
+    "forest_north_america": "desks/mt5/reports/FOREST_NORTH_AMERICA.json",
+    "forest_latam": "desks/mt5/reports/FOREST_LATAM.json",
+    "forest_mena": "desks/mt5/reports/FOREST_MENA.json",
+    "forest_africa": "desks/mt5/reports/FOREST_AFRICA.json",
+    "forest_global_web": "desks/mt5/reports/FOREST_GLOBAL_WEB.json",
+    "forest_global_academic_code": "desks/mt5/reports/FOREST_GLOBAL_ACADEMIC_CODE.json",
+    "forest_global_physical_data": "desks/mt5/reports/FOREST_GLOBAL_PHYSICAL_DATA.json",
+    "forest_global_market_data": "desks/mt5/reports/FOREST_GLOBAL_MARKET_DATA.json"
+   }
   },
   {
    "id": "U4",
