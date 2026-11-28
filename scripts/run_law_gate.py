@@ -168,6 +168,9 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_plumbing_invariants.py", ()),
     # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
     ("check_immutable_evaluator.py", ()),
+    # R3 (2026-11-10): a judge-file hash written in the release authority's name must be the one
+    # its Ed25519 attestation names; a forged or unbound attestation is a breach.
+    ("check_evaluator_attestations.py", ()),
     # THE EVOLVABLE / IMMUTABLE BOUNDARY (LAWS 5m): an evolvable organ's change set may not
     # touch a rail. Re-uses the evaluator's seal (one manifest, reported beside its own
     # verdict) and adds what a hash cannot see: the meta-evolution layer's lineage ledger
