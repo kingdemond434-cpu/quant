@@ -152,6 +152,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     monkeypatch.setattr(gr, "SHADOW", (shadow,))
     monkeypatch.setattr(gr, "GRAVEYARD_MD", md)
     monkeypatch.setattr(gr, "OUT", tmp_path / "GRAVEYARD_RESURRECTION.json")
+    monkeypatch.setattr(gr, "SLEEVES", tmp_path / "sleeves.json")   # absent: an empty roster
 
     donated: list[dict[str, Any]] = []
 
@@ -462,3 +463,94 @@ def test_the_cli_writes_the_artifact_atomically(desk, capsys) -> None:
     assert doc["candidates_generated"] <= 6 and doc["rule"] == gr.RULE
     assert not list(desk["tmp"].glob("*.tmp"))
     assert "graveyard resurrection:" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------ GRAVEYARD REFLEXIVITY
+# (ideas ledger, 2026-11-17) A certified mechanism that dies forward is the desk's own crowding
+# signal. These pin that the organ SEES every such death and spawns the migration it licenses.
+
+def _write_shadow(desk: dict[str, Any], doc: dict[str, Any]) -> None:
+    path = desk["tmp"] / "lane_state.json"
+    path.write_text(json.dumps(doc), "utf-8")
+    gr.SHADOW = (path,)        # monkeypatch in the fixture restores the module attribute
+
+
+def test_kill_tombstoned_and_nested_forward_deaths_are_all_read(desk) -> None:
+    """Before 2026-11-17 only TOP-LEVEL RETIRED/QUARANTINED rows were read: 335 certified KILL
+    clocks in the main lane, every tombstoned clock and the scalp lane's nested sleeves were
+    invisible, so the forward_decay class was empty on the real tree."""
+    _write_shadow(desk, {
+        "EURUSD.range_fade#lookback=20_side=1": {
+            "status": "KILL", "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
+            "e_crossed_stamp": "2026-11-12 10:25:00+00:00"},
+        "GBPUSD.range_fade": {"status": "KILL"},                         # never certified
+        "retired_clocks": {"AUDUSD.gap_decay": {
+            "status": "RETIRED", "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS"}},
+        "sleeves": {"xau_scalp": {"status": "KILL", "symbol": "XAUUSD",
+                                  "certificate": "forward_clock"}},
+    })
+    dead = {d.cell: d for d in gr.dead_cells([], 100) if d.origin == "forward_clock"}
+    assert set(dead) == {"EURUSD.range_fade#lookback=20_side=1", "AUDUSD.gap_decay", "xau_scalp"}
+    d = dead["EURUSD.range_fade#lookback=20_side=1"]
+    assert d.params == {"lookback": 20, "side": 1}           # the dead cell's own structure
+    assert d.evidence["died_at"] == "2026-11-12 10:25:00+00:00"
+    assert dead["xau_scalp"].symbol == "XAUUSD"
+
+
+@pytest.mark.parametrize(("reason", "evidence"), [
+    ("roll20 exp -0.464R <= 0", True),
+    ("forward record t=-2.4 over 40 trades", True),
+    ("CHFNOK is outside the live sleeve universe ['USDJPY', 'XAUUSD']", False),
+    ("family 'discovered' banned since 2026-09-16 by principal: live record 85 closes", False),
+    ("certificate is UNRUNNABLE: the parameterisation was never recorded", False),
+    ("exec lane 'scalp_market' is stood down -- principal", False),
+    ("", False), (None, False),
+])
+def test_only_a_retirement_on_the_sleeves_own_record_is_a_death(reason, evidence) -> None:
+    assert gr.is_evidence_retirement(reason) is evidence
+
+
+def test_live_roster_deaths_are_read_and_paperwork_is_not(desk) -> None:
+    (desk["tmp"] / "sleeves.json").write_text(json.dumps({"sleeves": [
+        {"name": "eu_fade", "symbol": "EURUSD", "family": "range_fade", "status": "RETIRED",
+         "retire_reason": "roll20 exp -0.30R <= 0", "retired_at": "2026-10-01T00:00:00+00:00",
+         "session": "london", "max_hold": 9},
+        {"name": "gu_fade", "symbol": "GBPUSD", "family": "range_fade", "status": "RETIRED",
+         "retire_reason": "GBPUSD is outside the live sleeve universe ['XAUUSD']"},
+        {"name": "au_live", "symbol": "AUDUSD", "family": "range_fade", "status": "STANDBY"},
+    ]}), "utf-8")
+    dead = [d for d in gr.dead_cells([], 100) if d.origin == "live_roster"]
+    assert [d.cell for d in dead] == ["eu_fade"]
+    assert dead[0].params == {"session": "london", "max_hold": 9}
+    assert dead[0].evidence["died_at"] == "2026-10-01T00:00:00+00:00"
+    assert gr.classify_failure(dead[0].terminal_gate, dead[0].evidence) == "forward_decay"
+
+
+def test_a_forward_death_migrates_to_untouched_siblings_and_fades_where_licensed(desk) -> None:
+    _write_shadow(desk, {"USDCAD.gap_limit#side=1": {
+        "status": "KILL", "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
+        "e_crossed_stamp": "2026-11-12 10:25:00+00:00"}})
+    gr.build(max_rows=500)
+    rows = [r for r in desk["donated"]
+            if r["evidence"]["parent_cell"] == "USDCAD.gap_limit#side=1"]
+    follow = [r for r in rows if r["evidence"]["variant"] == "crowding_migration"]
+    fade = [r for r in rows if r["evidence"]["variant"] == "crowding_fade"]
+    assert follow and all(r["symbol"] != "USDCAD" and r["params"]["side"] == 1 for r in follow)
+    # gap_limit already runs on AUDUSD and USDCHF: crowding is sought where the desk is NOT
+    assert {r["symbol"] for r in follow} <= {"EURUSD", "GBPUSD", "NZDUSD"}
+    assert fade and all(r["params"]["side"] == -1 for r in fade)
+    assert "USDCAD" in {r["symbol"] for r in fade}                   # faded where it died, too
+    assert all(r["evidence"]["parent_died_at"] == "2026-11-12 10:25:00+00:00" for r in rows)
+    assert all(r["evidence"]["trial_family"] == "gap_limit" for r in rows)   # charged, not free
+
+
+def test_a_one_way_payer_never_fades_and_a_missing_death_time_says_so(desk) -> None:
+    _write_shadow(desk, {"USDCAD.carry_roll#side=1": {
+        "status": "KILL", "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS"}})
+    dead = next(d for d in gr.dead_cells([], 100) if d.cell == "USDCAD.carry_roll#side=1")
+    dead.failure_class = "forward_decay"
+    pool = dict(ar.instruments_by_class())
+    out, ref = gr.migration_for(dead, pool)
+    assert out and all(p["kind"] == "transfer" for p in out)
+    assert any("fade refused" in r["why"] for r in ref)
+    assert all(p["parent_died_at"] == "UNMEASURED" for p in out)

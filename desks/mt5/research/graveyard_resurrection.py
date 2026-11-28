@@ -80,6 +80,10 @@ GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
 GATE_LEDGER = nk.GATE_LEDGER
 SHADOW = nk.SHADOW
 GRAVEYARD_MD = ROOT / "backups" / "moat" / "graveyard"
+#: The live roster. A sleeve RETIRED on its own forward/live record is the most expensive death the
+#: desk owns -- it cleared ten gates AND a forward clock first -- and until 2026-11-17 this organ
+#: never read it (GRAVEYARD REFLEXIVITY, ideas ledger).
+SLEEVES = DESK / "data" / "sleeves.json"
 OUT = DESK / "reports" / "GRAVEYARD_RESURRECTION.json"
 SOURCE = "graveyard_resurrection"
 
@@ -154,6 +158,27 @@ _SIDE_MODE = {"revert": "follow", "follow": "revert", "long": "short", "short": 
 _VOL = ("vol", "volatility", "turbulent", "stress", "crisis")
 _TAG_RE = re.compile(r"`([a-z][a-z0-9_]{3,48})`")
 _HEAD_RE = re.compile(r"^(#{2,4})\s+(.+?)\s*$")
+#: A live retirement counts as a DEATH only when its reason is the sleeve's own record. Every other
+#: retirement on the roster (a universe restriction, a lane stood down, a hygiene eviction, a
+#: principal ban) says nothing about the mechanism, and reading it as decay would spend trials on
+#: the desk's paperwork. ADMINISTRATIVE wins when both match.
+_EVIDENCE_RETIRE = re.compile(
+    r"roll\d+\s*exp|expectancy|<=\s*0\b|\bt\s*[=<]\s*-|max_?dd|max_?drawdown|decay|"
+    r"sharpe\s*-|forward (?:clock|record|t)|live record", re.I)
+_ADMIN_RETIRE = re.compile(
+    r"outside the live sleeve universe|keep only|stood down|unrunnable|duplicate|superseded|"
+    r"consolidat|hygiene|banned|principal|orphan|no ten-gate certificate", re.I)
+#: Forward-clock statuses that are a death. KILL is the scalp lane's spelling of RETIRED.
+_DEAD_STATUS = ("RETIRED", "QUARANTINED", "KILL")
+#: Where a lane store keeps clocks that are no longer top-level rows: the retired-clock tombstone
+#: (research/retired_clocks.py evacuates a retired row there) and the scalp lane's `sleeves` map.
+#: Before 2026-11-17 only top-level rows were read, so every evacuated or nested death was invisible.
+_NESTED_CLOCKS = ("retired_clocks", "sleeves")
+#: CROWDING MIGRATION. A certified mechanism that decays forward on one instrument is evidence the
+#: trade got crowded there, and crowding moves: the same structure on the untouched siblings
+#: (follow), and the mirrored side where the payer pays both ways (fade). Each is a charged trial
+#: under the dead cell's own trial family, inside the same per-run and per-family caps.
+MIGRATION_INSTRUMENTS = 3
 RULE = ("every failure generates questions; failure -> {conditional, inverse, transfer, repair, "
         "combination}; no edge and redundancy lower the prior instead of spawning")
 
@@ -320,21 +345,100 @@ def dead_cells(rows: list[dict[str, Any]], limit: int = MAX_ROWS) -> list[Dead]:
             sym, fam = sym or str(parsed.get("symbol") or ""), str(parsed.get("family") or "")
         out.append(_dead(cell, sym, fam, {}, str(r.get("terminal_gate") or ""), "gate_ledger",
                          str(r.get("at") or ""), {k: r[k] for k in keys if k in r}))
+    roster = _roster()
+    seen: set[str] = set()
     for path in SHADOW:
-        doc = nk._load_json(path)
-        for key, row in (doc.items() if isinstance(doc, dict) else ()):
-            status = str(row.get("status") or "").upper() if isinstance(row, dict) else ""
-            if not status.startswith(("RETIRED", "QUARANTINED")):
+        for key, row in _clock_rows(nk._load_json(path)):
+            status = str(row.get("status") or "").upper()
+            if not status.startswith(_DEAD_STATUS) or key in seen:
                 continue
-            if not str(row.get("gate_admission") or "").strip():
+            if not (str(row.get("gate_admission") or "").strip()
+                    or str(row.get("certificate") or "").strip()):
                 continue                     # retired without ever certifying: not a decay
+            seen.add(key)
             parsed = ar.parse_shadow_key(key)
-            out.append(_dead(key, str(parsed.get("symbol") or ""), str(parsed.get("family") or ""),
-                             {}, "forward_retirement", "forward_clock",
-                             str(row.get("last_attempt_at") or ""),
+            live = roster.get(key, {})
+            sym = str(row.get("symbol") or parsed.get("symbol") or live.get("symbol") or "")
+            fam = str(row.get("family") or live.get("family") or parsed.get("family") or "")
+            params = _clock_params(key) or _roster_params(live)
+            out.append(_dead(key, sym, fam, params, "forward_retirement", "forward_clock",
+                             str(row.get("last_attempt_at") or row.get("killed_at")
+                                 or row.get("last_source_bar") or ""),
                              {"forward_retired": True, "status": status, "n": row.get("n"),
-                              "exp_r": row.get("exp_r"), "t": row.get("forward_t")}))
+                              "exp_r": row.get("exp_r", row.get("expectancy_r")),
+                              "t": row.get("forward_t"),
+                              # the e-value crossing IS the forward kill; last_attempt_at is only
+                              # the lane's last pass over a clock that is already dead
+                              "died_at": row.get("killed_at") or row.get("e_crossed_stamp")}))
+    for name, row in roster.items():
+        if name in seen or str(row.get("status") or "").upper() != "RETIRED":
+            continue
+        if not is_evidence_retirement(row.get("retire_reason")):
+            continue
+        seen.add(name)
+        out.append(_dead(name, str(row.get("symbol") or ""), str(row.get("family") or ""),
+                         _roster_params(row), "forward_retirement", "live_roster",
+                         str(row.get("retired_at") or ""),
+                         {"forward_retired": True, "status": "RETIRED",
+                          "n": row.get("shadow_n"), "exp_r": row.get("shadow_exp"),
+                          "died_at": row.get("retired_at"),
+                          "why": str(row.get("retire_reason") or "")[:200]}))
     return out
+
+
+def is_evidence_retirement(reason: Any) -> bool:
+    """True only when a roster retirement names the sleeve's OWN record as the cause."""
+    text = str(reason or "")
+    return bool(_EVIDENCE_RETIRE.search(text)) and not _ADMIN_RETIRE.search(text)
+
+
+def _clock_rows(doc: Any) -> list[tuple[str, dict[str, Any]]]:
+    """Every clock row a lane store holds: top-level, tombstoned and nested."""
+    if not isinstance(doc, dict):
+        return []
+    rows = [(str(k), v) for k, v in doc.items() if isinstance(v, dict) and "status" in v]
+    for nest in _NESTED_CLOCKS:
+        inner = doc.get(nest)
+        if isinstance(inner, dict):
+            rows.extend((str(k), v) for k, v in inner.items() if isinstance(v, dict))
+    return rows
+
+
+#: The params a forward-clock key spells after `#`. The SAME regex pf_allocator._clock_params uses
+#: to rebuild a certificate's exact id from a clock key, so a migrated cell carries the dead
+#: cell's own structure rather than the family defaults.
+_CLOCK_PARAM = re.compile(r"(?:^|_)([a-z][a-z0-9_]*?)=(\[[^\]]*\]|[^_]+)")
+
+
+def _clock_params(key: str) -> dict[str, Any]:
+    import ast
+    out: dict[str, Any] = {}
+    for k, raw in _CLOCK_PARAM.findall(key.split("#", 1)[1] if "#" in key else ""):
+        try:
+            out[k] = ast.literal_eval(raw)
+        except (ValueError, SyntaxError):
+            out[k] = raw
+    return out
+
+
+def _roster() -> dict[str, dict[str, Any]]:
+    """The live roster by sleeve name; {} when absent or unreadable (read-only, never written)."""
+    doc = nk._load_json(SLEEVES)
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    return {str(r["name"]): r for r in (rows if isinstance(rows, list) else ())
+            if isinstance(r, dict) and r.get("name")}
+
+
+#: The roster fields that ARE the sleeve's spec. A sleeve row keeps them at the top level.
+_ROSTER_SPEC = ("session", "stop_atr", "target_atr", "max_hold", "timeframe", "side")
+
+
+def _roster_params(row: dict[str, Any]) -> dict[str, Any]:
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    params = spec.get("params") if isinstance(spec.get("params"), dict) else None
+    if params:
+        return dict(params)
+    return {k: row[k] for k in _ROSTER_SPEC if row.get(k) is not None}
 
 
 def do_not_repeat(path: Path | None = None) -> dict[str, Any]:
@@ -571,6 +675,11 @@ def proposals_for(dead: Dead, qs: dict[str, Any], pool: dict[str, list[str]]
         tag, why = _regime_tag(qs, dead)
         out.append({**base, "params": {**dead.params, "regime": tag}, "regime": tag,
                     "why": f"conditioned on {tag} ({why})"})
+        if cls == "forward_decay":
+            out[-1]["parent_died_at"] = str(dead.evidence.get("died_at") or "UNMEASURED")
+            mig, mref = migration_for(dead, pool)
+            out.extend(mig)
+            ref.extend(mref)
     elif cls == "wrong_direction":
         ok, why = allows_inverse(mech)
         flipped = _flip(dead.params) if ok else None
@@ -614,6 +723,48 @@ def proposals_for(dead: Dead, qs: dict[str, Any], pool: dict[str, list[str]]
     elif cls == "execution_killed":
         out.append({**base, "why": "the fill killed it, not the signal: entry delayed, on a limit",
                     "params": {**dead.params, "entry_delay_bars": 1, "entry_style": "limit"}})
+    return out, ref
+
+
+def migration_for(dead: Dead, pool: dict[str, list[str]]
+                  ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    """GRAVEYARD REFLEXIVITY: where a forward death's crowding may have moved to.
+
+    FOLLOW: the same structure on up to MIGRATION_INSTRUMENTS untouched siblings of the same
+    asset class. FADE: the mirrored side, on the dead instrument and those siblings, only where
+    the ontology says the payer pays both ways and the params carry a readable side. Every row
+    carries the parent's death time, so the gauntlet's verdict can later be read as a test of the
+    migration itself (did the sibling's edge decay after the parent's death, or start?).
+    """
+    out: list[dict[str, Any]] = []
+    ref: list[dict[str, str]] = []
+    died = str(dead.evidence.get("died_at") or "UNMEASURED")
+    mech = dead.axes.get("mechanism", ar.UNKNOWN)
+    base = {"kind": "transfer", "variant": "crowding_migration", "family": dead.family,
+            "params": dict(dead.params), "mechanism": mech, "parent": dead.cell,
+            "failure_class": dead.failure_class, "parent_died_at": died}
+    tried = {s.upper() for s in pool.get("_tried:" + _family_root(dead.family), [])}
+    free = [s for s in pool.get(dead.axes.get("asset_class", ""), [])
+            if s.upper() not in tried and s.upper() != dead.symbol.upper()]
+    sibs = free[:MIGRATION_INSTRUMENTS]
+    if not sibs:
+        ref.append({"cell": dead.cell, "why": "migration: no untouched sibling in this class"})
+    out.extend({**base, "symbol": sym,
+                "why": (f"{dead.family} decayed forward on {dead.symbol} (died {died}); crowding "
+                        f"migrates, so the same structure on {sym}")}
+               for sym in sibs)
+    ok, why = allows_inverse(mech)
+    flipped = _flip(dead.params) if ok else None
+    if not ok:
+        ref.append({"cell": dead.cell, "why": f"migration fade refused -- {why}"})
+    elif flipped is None:
+        ref.append({"cell": dead.cell, "why": "migration fade: no readable side to mirror"})
+    else:
+        out.extend({**base, "kind": "inverse", "variant": "crowding_fade", "symbol": sym,
+                    "params": flipped,
+                    "why": (f"{dead.family} decayed forward on {dead.symbol}; a crowded "
+                            f"trade unwinds against its holders, so the mirrored side on {sym}")}
+                   for sym in [dead.symbol, *sibs])
     return out, ref
 
 
@@ -812,6 +963,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                     "UNMEASURED with its n. Neither is a zero")},
         "sources": {"hypothesis_graph": len(rows), "gate_ledger": str(GATE_LEDGER),
                     "forward_clocks": sum(1 for d in dead if d.origin == "forward_clock"),
+                    "live_roster_deaths": sum(1 for d in dead if d.origin == "live_roster"),
                     "graveyard_markdown": dnr.get("n_entries", 0),
                     "do_not_repeat_tags": dnr.get("tags", {})},
         "caps": {"max_candidates": max_candidates, "max_per_family": fam_cap,
@@ -853,7 +1005,8 @@ def _write(accepted: list[dict[str, Any]], conn: Any, refusals: list[dict[str, s
                            f"resurrection[{p['kind']}/{p['variant']}] {fam} on {sym}",
                            {"failure_class": p["failure_class"], "parent_cell": p["parent"],
                             "kind_of_move": p["kind"], "variant": p["variant"],
-                            "why": p.get("why"), "trial_family": p["trial_family"]})
+                            "why": p.get("why"), "trial_family": p["trial_family"],
+                            "parent_died_at": p.get("parent_died_at")})
         row.update({"kind": "hypothesis", "symbols": [sym],
                     "novelty_vs_graveyard": p["novelty_vs_graveyard"]})
         rows.append(row)
