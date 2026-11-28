@@ -14,15 +14,19 @@ def clock_paths(tmp_path, monkeypatch):
     return tmp_path
 
 
-def test_live_offset_is_recorded_and_rounds_once(clock_paths, monkeypatch):
+def test_the_venue_clock_answers_before_any_terminal_and_records_round_once(clock_paths,
+                                                                            monkeypatch):
+    # The "live terminal" tier is gone (2026-09-30): h1_source.broker_utc_offset_hours returned
+    # 0.0 by construction. A terminal on the host no longer decides the clock; NY+7 does.
     terminal = object()
     monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
     monkeypatch.setitem(sys.modules, "h1_source", SimpleNamespace(
-        broker_utc_offset_hours=lambda module: 2.8 if module is terminal else None))
-    assert sp.broker_utc_offset_h() == (3, "live_terminal")
+        broker_utc_offset_hours=lambda module: 0.0))
+    off, src = sp.broker_utc_offset_h()
+    assert src == "venue_clock_ny_plus_7" and off in (2, 3)
+    sp._record_broker_clock(3)
     saved = json.loads(sp.BROKER_CLOCK.read_text())
     assert saved["utc_offset_hours"] == 3
-    assert saved["source"] == "live_terminal"
     first = sp.BROKER_CLOCK.read_bytes()
     sp._record_broker_clock(3)
     assert sp.BROKER_CLOCK.read_bytes() == first
@@ -36,6 +40,10 @@ def test_live_offset_is_recorded_and_rounds_once(clock_paths, monkeypatch):
                                     {"status": "MEASURED", "utc_offset_hours": "bad"}])
 def test_invalid_inference_remains_unknown(clock_paths, monkeypatch, record):
     monkeypatch.setitem(sys.modules, "MetaTrader5", None)
+
+    def _no_clock(_at):
+        raise ImportError("session_clock unavailable")
+    monkeypatch.setattr(sp, "_ny_plus_7_offset", _no_clock)   # the fallbacks below the venue clock
     sp.BROKER_CLOCK_MEASURED.write_text(json.dumps(record))
     assert sp.broker_utc_offset_h() == (None, "unknown")
 

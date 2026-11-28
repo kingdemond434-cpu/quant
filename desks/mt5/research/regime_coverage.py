@@ -290,7 +290,7 @@ def _label(trades: list[Trade], dims: tuple[str, ...],
     out = []
     for t in trades:
         b = {d: v for d, fn in fns.items() if (v := fn(t))}
-        out.append(Trade(t.sleeve, t.when, t.r, b))
+        out.append(Trade(t.sleeve, t.when, t.r, b, basis=t.basis))
     return out, gaps
 
 

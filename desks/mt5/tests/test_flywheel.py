@@ -497,6 +497,12 @@ def test_hosts_without_a_terminal_inherit_the_recorded_clock(tmp_path, monkeypat
     """
     monkeypatch.setattr(session_phase, "BROKER_CLOCK", tmp_path / "broker_clock.json")
     monkeypatch.setattr(session_phase, "BROKER_CLOCK_MEASURED", tmp_path / "measured.json")
+    # The venue clock (NY+7, 2026-09-30) answers first; the tiers below are its fallbacks.
+    assert session_phase.broker_utc_offset_h()[1] == "venue_clock_ny_plus_7"
+
+    def _no_clock(_at):
+        raise ImportError("session_clock unavailable")
+    monkeypatch.setattr(session_phase, "_ny_plus_7_offset", _no_clock)
     assert session_phase.broker_utc_offset_h() == (None, "unknown")
 
     # tier 3: the inference answers when nothing better exists
