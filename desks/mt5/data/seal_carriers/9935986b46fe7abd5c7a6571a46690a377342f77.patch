@@ -1,0 +1,148 @@
+From 9935986b46fe7abd5c7a6571a46690a377342f77 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 11 Nov 2026 12:51:26 +0000
+Subject: [PATCH] heat fence: CEILING reads the gateway's own bar
+ (decision_core.live_heat_ceiling), not a flat 30%; HEAT_HARD_CEILING
+ record-only
+
+Sealed companion to #1013 (BACKLOG W0: remove the 30% cap, fallback 20%). One rule, two readers:
+the fence and the gateway both read live_heat_ceiling, so an UNMEASURED survival surface holds the
+fallback in both. Needs re-sign through the sign train.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015zQxSCNNFB2qpEmUhiDMh9
+
+diff --git a/desks/mt5/mt5desk/gateway_config_fallback.py b/desks/mt5/mt5desk/gateway_config_fallback.py
+index 757baedef181e4566561b30c13e541aa69719453..79a0d70c1848386dacb2a820ab46cc6c3a17a33c 100644
+--- a/desks/mt5/mt5desk/gateway_config_fallback.py
++++ b/desks/mt5/mt5desk/gateway_config_fallback.py
+@@ -102,6 +102,10 @@ HEAT_TARGET = 0.20
+ #: its weight on the worst 20% of worlds) runs +0.00133/day at the free optimum, +0.00072 at 20%,
+ #: +0.00011 at 25% and NEGATIVE at 30%. Past 30% the book loses wealth in the worlds it has to
+ #: survive, and no amount of average-case growth buys that back.
++#:
++#: RECORD ONLY SINCE #1013 (BACKLOG W0, "remove the 30% cap, fallback 20%"). No sizing path and no
++#: fence reads this constant any more: the allocator's measured operative ceiling is the bar, and
++#: the unmeasured fallback is HEAT_TARGET. The value is kept as the 2026-09-02 measurement above.
+ HEAT_HARD_CEILING = 0.30
+ 
+ #: No single sleeve may hold more than this share of total heat. NOT tidiness -- measured
+diff --git a/scripts/check_heat_floor_wiring.py b/scripts/check_heat_floor_wiring.py
+index 1274f09269532be3613a27ec55c8421ee592e0a1..874b495cdaeaa1aaf8c52b816b3e21bb20afa590 100644
+--- a/scripts/check_heat_floor_wiring.py
++++ b/scripts/check_heat_floor_wiring.py
+@@ -5,8 +5,11 @@ Reads the allocator's live artifact and the arm files and refuses when:
+ 
+   * `pf_allocation.json` is absent or older than two allocator clocks (the floor is not being
+     solved for);
+-  * the resolved total heat is below HEAT_TARGET or above HEAT_HARD_CEILING, unless the
+-    catastrophe layer says so by name;
++  * the resolved total heat is below HEAT_TARGET, or above the bar the gateway itself binds at
++    (`decision_core.live_heat_ceiling`: the measured operative ceiling when survival is MEASURED,
++    capped at ABSOLUTE_SIM_MAX, else the recorded fallback), unless the catastrophe layer says so
++    by name. There is no flat 30% cap any more (#1013, BACKLOG W0 "no cap, fallback 20%"), and
++    the fence never reads a different bar from the gateway;
+   * the funded book does not sum to the resolved total (the floor was reported, not held);
+   * the fallback baseline book is missing while the proof failed (the gateway would size the
+     floor with nothing);
+@@ -21,6 +24,7 @@ import json
+ import sys
+ import time
+ from pathlib import Path
++from typing import Any
+ 
+ ROOT = Path(__file__).resolve().parent.parent
+ DESK = ROOT / "desks" / "mt5"
+@@ -28,9 +32,18 @@ sys.path.insert(0, str(DESK))
+ MAX_AGE_S = 2 * 3600
+ 
+ 
++def measured_bar(heat: dict[str, Any], floor: float) -> tuple[float, str]:
++    """The bar the GATEWAY binds at, read through the gateway's own rule (`live_heat_ceiling`):
++    one rule, two readers. An unmeasured survival surface holds the fallback; the floor is never
++    flagged as a ceiling breach."""
++    from mt5desk.decision_core import live_heat_ceiling
++    cap, why = live_heat_ceiling(heat)
++    return max(float(cap), floor), why
++
++
+ def check() -> list[dict[str, str]]:
+     f: list[dict[str, str]] = []
+-    from mt5desk.gateway_config_fallback import HEAT_HARD_CEILING, HEAT_TARGET
++    from mt5desk.gateway_config_fallback import HEAT_TARGET
+     art_p = DESK / "reports" / "pf_allocation.json"
+     if not (DESK / "data" / "PF_ALLOCATOR_ARMED").exists():
+         f.append({"check": "ARMED", "why": "data/PF_ALLOCATOR_ARMED absent: gateway ignores the allocator"})
+@@ -49,8 +62,9 @@ def check() -> list[dict[str, str]]:
+     if binding != "catastrophe":
+         if total < HEAT_TARGET - 1e-4:
+             f.append({"check": "FLOOR", "why": f"resolved heat {total:.2%} below the {HEAT_TARGET:.0%} floor (binding={binding})"})
+-        if total > HEAT_HARD_CEILING + 1e-4:
+-            f.append({"check": "CEILING", "why": f"resolved heat {total:.2%} above the {HEAT_HARD_CEILING:.0%} ceiling"})
++        bar, basis = measured_bar(heat, HEAT_TARGET)
++        if total > bar + 1e-4:
++            f.append({"check": "CEILING", "why": f"resolved heat {total:.2%} above the gateway's bar {bar:.2%} ({basis})"})
+         book_sum = float(sum(float(v) for v in (art.get("book") or {}).values()))
+         if abs(book_sum - total) > 5e-4:
+             f.append({"check": "FILLED", "why": f"book sums to {book_sum:.2%}, resolved {total:.2%}: the floor was reported, not held"})
+diff --git a/tests/test_check_heat_floor_wiring.py b/tests/test_check_heat_floor_wiring.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..42c59893a5112539ee87edbb8a799353bad67aba
+--- /dev/null
++++ b/tests/test_check_heat_floor_wiring.py
+@@ -0,0 +1,55 @@
++"""THE HEAT FENCE READS THE GATEWAY'S BAR, NOT A FLAT 30% (#1013, BACKLOG W0).
++
++With the 30% cap removed ("no cap, fallback 20%"), a measured heat above 30% that sits inside the
++allocator's MEASURED operative ceiling is the law working, not a breach. The fence reads that bar
++through `decision_core.live_heat_ceiling`, the same rule the gateway sizes by, so the two can never
++disagree: an UNMEASURED survival surface holds the recorded fallback in both.
++"""
++from __future__ import annotations
++
++import importlib.util
++import sys
++from pathlib import Path
++from types import ModuleType
++
++ROOT = Path(__file__).resolve().parents[1]
++DESK = ROOT / "desks" / "mt5"
++if str(DESK) not in sys.path:
++    sys.path.insert(0, str(DESK))
++
++from mt5desk import decision_core as dc  # noqa: E402
++
++
++def _fence() -> ModuleType:
++    spec = importlib.util.spec_from_file_location(
++        "check_heat_floor_wiring", ROOT / "scripts" / "check_heat_floor_wiring.py")
++    assert spec and spec.loader
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++def _heat(op: object, surv: str) -> dict[str, object]:
++    return {"envelope": {"operative_ceiling": op, "survival": {"status": surv}}}
++
++
++def test_a_measured_bar_above_thirty_is_the_bar() -> None:
++    bar, _ = _fence().measured_bar(_heat(0.36, "MEASURED"), 0.20)
++    assert bar == min(0.36, dc.ABSOLUTE_SIM_MAX)
++
++
++def test_unmeasured_survival_holds_the_gateways_fallback() -> None:
++    bar, _ = _fence().measured_bar(_heat(0.36, "UNMEASURED"), 0.20)
++    assert bar == max(float(dc.MAX_HEAT_CEILING), 0.20)
++    assert bar == max(dc.live_heat_ceiling(_heat(0.36, "UNMEASURED"))[0], 0.20)
++
++
++def test_fence_and_gateway_read_one_rule() -> None:
++    f = _fence()
++    for heat in (_heat(0.36, "MEASURED"), _heat(0.36, "UNMEASURED"), _heat("nan", "MEASURED"),
++                 _heat(0.15, "MEASURED"), {}):
++        assert f.measured_bar(heat, 0.20)[0] == max(dc.live_heat_ceiling(heat)[0], 0.20)
++
++
++def test_a_bar_below_the_floor_never_flags_the_floor_itself() -> None:
++    assert _fence().measured_bar(_heat(0.15, "MEASURED"), 0.20)[0] == 0.20
