@@ -338,6 +338,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Portable -- it reads the code -- and a ratchet: today's offenders are the committed floor
     # (docs/research/known_by_date_floor.json), only a NEW one fails, healed ones drop out.
     ("check_known_by_date.py", ()),
+    # THE SEVEN PRINCIPLES (ARCH-32, 2026-10-07): no sacred strategy/model/source/geography,
+    # structural change triggers relearning, cash is an allocation, research never stops,
+    # validation never relaxes, execution teaches research, ontology stays open. Each is mapped
+    # to its enforcing organs (docs/research/principles_map.json) and measured; this fails on a
+    # principle with no resolving organ or on a NEW finding against the committed floor
+    # (docs/research/principles_floor.json). Portable: pre-existing UNMEASURED states are floor,
+    # so a cloud clone is green and a regression is red. The state half is in _STATE_FENCES.
+    ("check_principles.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -657,6 +665,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the missing knobs named: the honest state, never the word "verified". It touches no money
     # path and forces no change to one. State, because FORMAL.json is written by the box's tier_s.
     ("check_formal_claim.py", ("--require-state",)),
+    # THE SEVEN PRINCIPLES, STATE HALF (ARCH-32): on the box a principle that reads UNMEASURED
+    # and is not already floor debt is a defect -- the artifact that measures it is missing.
+    ("check_principles.py", ("--require-state",)),
     # THE PAID-SUBSTITUTE HUNT IS ALIVE (principal 2026-09-30). The seeded paid-dataset catalogue
     # never falls below its committed floor, and reports/PAID_SUBSTITUTE_COVERAGE.json (hourly leg
     # `paid_substitute_engine`) is under six hours old. State, because reports/** is not in git:
