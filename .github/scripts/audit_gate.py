@@ -623,12 +623,16 @@ def checks(
     runs: Iterable[Mapping[str, Any]],
     gating: tuple[str, ...] = GATING_JOBS,
     genuine: Callable[[Mapping[str, Any]], bool] = _from_ci_app,
+    *,
+    draft: bool = False,
 ) -> tuple[str, str]:
-    """("pass" | "pending" | "fail", why) over the head's check runs. A job re-run keeps only
-    its newest run. A required job counts only from a run `genuine` accepts (by default: posted
-    by GitHub Actions; the gate also checks which workflow file made it), so a forged
-    same-name success can neither pass a job nor mask a real failure. An AUTO job that is not
-    required here is ignored, so the manual path never waits on, or fails by, the AUTO jobs."""
+    """("pass" | "pending" | "fail", why) over the head's check runs. `draft` is whether the PR
+    is a draft: only a draft's skipped gating job waits; on a ready PR it fails. A job re-run
+    keeps only its newest run. A required job counts only from a run `genuine` accepts (by
+    default: posted by GitHub Actions; the gate also checks which workflow file made it), so a
+    forged same-name success can neither pass a job nor mask a real failure. An AUTO job that is
+    not required here is ignored, so the manual path never waits on, or fails by, the AUTO
+    jobs."""
     newest: dict[str, Mapping[str, Any]] = {}
     for r in runs:
         name = str(r.get("name") or "")
@@ -637,7 +641,21 @@ def checks(
         if name in gating and not genuine(r):
             continue
         prev = newest.get(name)
-        if prev is None or str(r.get("started_at") or "") >= str(prev.get("started_at") or ""):
+        # A run still going always supersedes a SKIPPED one of the same job: the full run that
+        # marking a draft ready starts may carry no start stamp yet.
+        if (
+            prev is not None
+            and prev.get("conclusion") == "skipped"
+            and r.get("status") != "completed"
+        ):
+            newest[name] = r
+        elif (
+            prev is not None
+            and r.get("conclusion") == "skipped"
+            and prev.get("status") != "completed"
+        ):
+            continue
+        elif prev is None or str(r.get("started_at") or "") >= str(prev.get("started_at") or ""):
             newest[name] = r
     bad = sorted(
         n
@@ -652,6 +670,16 @@ def checks(
         return "pending", "waiting on: " + ", ".join(
             running + [f"{g} (not started)" for g in missing]
         )
+    # A gating job SKIPPED is never a pass. On a DRAFT it is the draft's run (2026-11-14) and
+    # waits for the run that marking the PR ready starts. On a READY PR it FAILS (#1222 audit):
+    # its full CI never ran, and waiting would hold that PR pending forever.
+    skipped = [g for g in gating if newest[g].get("conclusion") == "skipped"]
+    if skipped and draft:
+        return "pending", "waiting on: " + ", ".join(
+            f"{g} (skipped on a draft; it runs once the PR is ready)" for g in skipped
+        )
+    if skipped:
+        return "fail", "skipped on a ready PR (its full CI never ran): " + ", ".join(skipped)
     not_ok = [g for g in gating if newest[g].get("conclusion") != "success"]
     if not_ok:
         return "fail", "gating jobs did not succeed: " + ", ".join(not_ok)
@@ -1725,13 +1753,31 @@ def run(
         need = required + auto
         if clear.get("standing") and RISK_JOB not in need:
             need = (*need, RISK_JOB)
-        state, cwhy = checks(runs, need, genuine)
+        state, cwhy = checks(runs, need, genuine, draft=bool(p.get("draft")))
         if state == "pass":
             break
+        # A CLEARED DRAFT IS MARKED READY NOW, NOT AFTER ITS CHECKS (2026-11-14). Drafts run no
+        # gating job (ci.yml quality says why), so a draft could never show green and waiting for
+        # green first would hold it forever. Only the box does this: its `gh` is zuck's login, so
+        # the ready_for_review event starts the full CI (the workflow token's would start
+        # nothing). The next sweep, or the after-checks look when that CI ends, merges it.
+        # ONLY A REAL CLEAR (Autonomy review of #1173): the LOW and AUTO paths reach here with no
+        # CLEAR at all, so marking those drafts ready would start full CI on every unaudited
+        # draft a session is still pushing to (#552 SF5) and undo the load cut. And a CLEARed
+        # draft whose old full run FAILED is marked ready too: that starts one fresh run on the
+        # same head, once, after which it is a ready PR and the fail branch below judges it.
+        if p.get("draft") and box and not low:
+            subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True,
+                           timeout=GH_TIMEOUT_S)  # fmt: skip
+            _summary(f"#{pr} @ {head[:9]}: CLEARed draft marked ready ({cwhy}); full CI starts")
+            return 0
         if state == "fail" and REVIEWER in need:
             review = queued_review(repo, runs, genuine)
             rest = [r for r in runs if r is not review]
-            if review is not None and checks(rest, need, genuine)[0] != "fail":
+            if (
+                review is not None
+                and checks(rest, need, genuine, draft=bool(p.get("draft")))[0] != "fail"
+            ):
                 # no free reviewer answered: QUEUED, never a pass and never a quarantine
                 qwhy = f"{REVIEWER} queued: no free reviewer answered; {requeue(repo, review)}"
                 _status(repo, head, "pending", qwhy)
@@ -1743,7 +1789,10 @@ def run(
             and box
             and os.environ.get(REGISTRY_ENV)
             and os.environ.get(AUTHORITY_PUBKEY_ENV)
-            and checks(runs, tuple(j for j in need if j != REPLAY_JOB), genuine)[0] != "fail"
+            and checks(
+                runs, tuple(j for j in need if j != REPLAY_JOB), genuine, draft=bool(p.get("draft"))
+            )[0]
+            != "fail"
         ):
             # replay-shadow is the one red job: a MATCHES_DECLARED the authority signed for this
             # exact run is never an AUTO merge, so the PR leaves the no-comment path for the
@@ -1970,7 +2019,7 @@ def sweep(
                 rc = 1
                 continue
             runs = (got or {}).get("check_runs") or []
-            state = checks(runs, GATING_JOBS, lambda r: True)[0]
+            state = checks(runs, GATING_JOBS, lambda r: True, draft=bool(p.get("draft")))[0]
             if state == "pending":
                 skipped += 1
                 rank = 3
@@ -1978,7 +2027,9 @@ def sweep(
                 failed += 1
                 rank = 2
             else:
-                every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
+                every = checks(
+                    runs, GATING_JOBS + AUTO_JOBS, lambda r: True, draft=bool(p.get("draft"))
+                )[0]
                 rank = 0 if every == "pass" else 1
         ready.append((rank, i, n))
     if unread:

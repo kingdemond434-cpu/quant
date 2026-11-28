@@ -1,0 +1,39 @@
+name: draft-lint
+
+# THE ONLY CHECK A DRAFT RUNS (2026-11-14, zuck: "y does the tests ques take so long"). On 11-13
+# 570 of 597 open PRs were drafts, none could merge, and every push to one ran ci, release-gates
+# (with a 200-minute LLM review), trusted-eval and the audit gate: about ten jobs on a 20-slot
+# FIFO queue, ahead of the LIVE seal. ci.yml, release-gates.yml and trusted-eval.yml now skip a
+# draft; marking it ready (the box gate does that for a CLEARed draft) starts all of them. This
+# gives a draft one minute of lint feedback. It gates nothing: no gate reads this job's name.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, converted_to_draft]
+    branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
+
+concurrency:
+  group: draft-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  draft-lint:
+    if: github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff (the project's own pin)
+        run: python -m pip install "ruff>=0.15.17,<0.16"
+      - name: Lint (ruff), the same two calls as ci.yml quality
+        run: |
+          ruff check .
+          ruff check desks/mt5 --isolated --target-version py311 --select E9,F63,F7,F82
