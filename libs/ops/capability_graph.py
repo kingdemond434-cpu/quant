@@ -936,6 +936,23 @@ NODES: tuple[Node, ...] = (
     Node("srb_uncorrelated_sweep", "desks/mt5/research/srb_uncorrelated_sweep.py",
          writes=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",),
          reads=("desks/mt5/data/sleeves.json", "desks/mt5/data/universe/universe.json")),
+    # THE JUDGE'S DOCKET PRIORITY (H2 originality, H4 cross-source, H5 information gain;
+    # 2026-11-18). One hourly pass over the docket; its one decision output is the lookup the
+    # warmer's order reads (EXTERNAL_READERS below), the three reports are for a person.
+    Node("docket_priority", "desks/mt5/research/docket_priority.py",
+         writes=("desks/mt5/data/docket_priority.json", "desks/mt5/reports/ORIGINALITY.json",
+                 "desks/mt5/reports/CROSS_SOURCE.json", "desks/mt5/reports/INFO_GAIN.json"),
+         reads=("desks/mt5/data/hypotheses/external_survivors.json",
+                "desks/mt5/data/certificate_provenance.json",
+                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                "desks/mt5/reports/universal_gates_external.json")),
+    # The certificate birth record (hourly_cycle:attribution_census). Declared so the docket
+    # priority's certificate join has a named writer; its routes' other inputs are box ledgers.
+    Node("certificate_provenance", "desks/mt5/research/certificate_provenance.py",
+         writes=("desks/mt5/data/certificate_provenance.json",
+                 "desks/mt5/reports/PRODUCER_CONVERSION.json"),
+         reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                "desks/mt5/data/hypotheses/external_survivors.json")),
     Node("srb_basket_judge", "desks/mt5/research/srb_basket_judge.py",
          writes=("desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
                  "desks/mt5/data/srb_basket_leg_costs.json",
@@ -1070,6 +1087,12 @@ HUMAN_READ = frozenset({
     # summary is rebuilt from it; BAR_CLOCK.json (read by the bar clock) is what leaves the node,
     # and these two are its audit trail, which the self-edge rule cannot credit.
     "desks/mt5/data/bar_clock_probes.jsonl", "desks/mt5/data/bar_clock_probes.summary.json",
+    # The docket priority's three reports (H2/H4/H5): the evidence a person reads beside the
+    # lookup that actually reaches the order (EXTERNAL_READERS). None conditions a gate.
+    "desks/mt5/reports/ORIGINALITY.json", "desks/mt5/reports/CROSS_SOURCE.json",
+    "desks/mt5/reports/INFO_GAIN.json",
+    # The certificate conversion table: folded by issue_board into the board a person reads.
+    "desks/mt5/reports/PRODUCER_CONVERSION.json",
 })
 
 #: Consumers outside this graph that are known to read an artifact -- the crawler reads the
@@ -1080,6 +1103,9 @@ EXTERNAL_READERS = {
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),
     "desks/mt5/data/prospector_targets.json": "world_crawler (side_channels)",
+    "desks/mt5/data/docket_priority.json": ("judge_docket_order.priority_tilt via "
+                                            "warm_gauntlet_cache.run_round: the order the warmer "
+                                            "builds the sealed sweep's kept cells in"),
     "desks/mt5/data/hypotheses/deepened_candidates.json": "external_gauntlet via compiler merge",
     "desks/mt5/data/state_fits.json": "state_vector_build (its own cache)",
     # ORDER-SENSITIVE DECAY VERDICTS (R0312). The allocator's demote/shrink reader is owned by the

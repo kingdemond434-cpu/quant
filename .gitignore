@@ -349,6 +349,9 @@ desks/mt5/data/digests/regional_parity_digest.json
 desks/mt5/data/intelligence/world/discoveries_parity_*.json
 desks/mt5/data/equivalence_candidates.json
 desks/mt5/data/parity_hunt_targets.json
+# The docket priority lookup (`research/docket_priority.py`, hourly leg `docket_priority`):
+# rebuilt every hour from the box's own docket, read by judge_docket_order.priority_tilt.
+desks/mt5/data/docket_priority.json
 
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
