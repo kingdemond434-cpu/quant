@@ -277,16 +277,41 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
     if desk not in sys.path:
         sys.path.insert(0, desk)
     from mt5desk.tape import day_files
-    files = day_files(symbol, root)[-days:]
+    # The tape keeps up to two files per date (the recorder's compact YYYYMMDD and the merged
+    # dashed YYYY-MM-DD), so the window is the last `days` DISTINCT dates, every file of each.
+    every = day_files(symbol, root)
+    keep = set(sorted({d for d, _f in every})[-days:])
+    files = [(d, f) for d, f in every if d in keep]
     frames = []
     for _day, f in files:
         try:
-            frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
+            frames.append(pd.read_parquet(f, columns=["time_msc", "time", "bid", "ask"]))
         except (OSError, ValueError, KeyError, ImportError):
-            continue
+            try:
+                frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
+            except (OSError, ValueError, KeyError, ImportError):
+                continue
     if not frames:
         return None
-    t = pd.concat(frames, ignore_index=True).drop_duplicates()
+    t = pd.concat(frames, ignore_index=True).drop_duplicates()   # before `time` fills a gap
+    # A tape row can carry a null time_msc (a schema older than the column, or a merge that
+    # aligned columns to the union), and one null made `.astype("int64")` raise
+    # IntCastingNaNError for the WHOLE symbol: 221 of 240 symbols UNREADABLE on 2026-11-11.
+    # Recover the hour from the second-resolution `time` where it exists; drop and COUNT the
+    # rest, never let them cost the symbol its measured hours.
+    ms = pd.to_numeric(t["time_msc"], errors="coerce")
+    if "time" in t.columns:
+        sec = t["time"]
+        if pd.api.types.is_datetime64_any_dtype(sec):     # a datetime is never seconds x 1000
+            sec_ms = pd.to_datetime(sec, utc=True).astype("int64") // 10**6
+            fill = sec_ms.where(sec.notna())
+        else:
+            fill = pd.to_numeric(sec, errors="coerce") * 1000
+        ms = ms.fillna(fill)
+    t = t.assign(time_msc=ms).drop(columns=[c for c in ("time",) if c in t.columns])
+    n_no_time = int(t["time_msc"].isna().sum())
+    # Again after the fill: one tick stored with and without time_msc is one tick.
+    t = t[t["time_msc"].notna()].drop_duplicates(subset=["time_msc", "bid", "ask"])
     t = t[(t["bid"] > 0) & (t["ask"] > 0)]
     if t.empty:
         return None
@@ -308,7 +333,8 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
             row["p90"] = round(float(cell.quantile(0.90)), 2)
             row["p50_nonzero"] = round(float(nz.median()), 2) if nz.size else 0.0
         hours[str(h)] = row
-    return {"days": [d for d, _f in files], "n_ticks": len(t), "hours": hours,
+    return {"days": sorted(keep), "n_ticks": len(t), "n_dropped_no_time": n_no_time,
+            "hours": hours,
             "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED")}
 
 
