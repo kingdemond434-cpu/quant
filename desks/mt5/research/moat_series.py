@@ -100,18 +100,12 @@ FOOTER_BUDGET_S = 30.0
 #: A regression on four minutes is not a measurement. Below this the day's beta is NaN.
 MIN_REG_MINUTES = 20
 
-try:  # the desk's ONE session vocabulary; a private copy here would become a second one
-    from mt5desk.family_call import SESSIONS as _FAMILY_SESSIONS
-except ImportError:  # pragma: no cover -- the desk package is importable on both boxes
-    _FAMILY_SESSIONS = {}
-
-#: `family_call.SESSIONS` states its windows in SERVER hours and the tape is stamped UTC; the two
-#: differ by the venue's offset (+2 winter, +3 summer). The boundaries are kept IDENTICAL on
-#: purpose, so a spread measured in "london" here means the window a cell certified in "london"
-#: traded. Correcting the offset here would put this organ on a clock no certificate uses.
-SESSIONS: dict[str, tuple[int, int]] = {
-    k: v for k, v in (_FAMILY_SESSIONS or {}).items() if isinstance(v, tuple)
-} or {"asia": (0, 8), "london": (8, 16), "ny": (14, 22)}
+#: The same three sessions `family_call` trades -- each market's own 08:00-16:00 local
+#: (`libs/regime/session_clock.MARKET_SESSIONS`) -- stated in UTC, because this tape is stamped in
+#: UTC. Until 2026-09-30 this table copied `family_call.SESSIONS`, whose windows were then UTC
+#: session hours applied to the broker's EET stamps; "london" here and there were the same wrong
+#: window. Summer hours; Tokyo's 23:00 UTC hour is dropped so no window wraps midnight.
+SESSIONS: dict[str, tuple[int, int]] = {"asia": (0, 7), "london": (7, 15), "ny": (12, 20)}
 
 DERIVED_SERIES = ("realised_spread_session", "quote_intensity", "ofi_proxy", "spread_vol_beta",
                   "daily_quote_count")

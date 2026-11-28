@@ -462,6 +462,8 @@ def _covered_utc_hours(sfe: Any, sessions: list[str]) -> set[int] | None:
     """
     try:
         import pandas as pd
+
+        from libs.regime import session_clock
     except ImportError:
         return None
     idx = pd.date_range("2026-01-05", periods=24, freq="h", tz="UTC")
@@ -471,7 +473,9 @@ def _covered_utc_hours(sfe: Any, sessions: list[str]) -> set[int] | None:
             mask = sfe._session_mask(idx, name)
         except Exception:
             return None
-        out |= {int(ts.hour) for ts, on in zip(idx, mask, strict=False) if bool(on)}
+        # The mask reads `idx` as the broker's stamp clock; report the true UTC hour it covers.
+        utc = session_clock.utc_hours(idx)
+        out |= {int(h) for h, on in zip(utc, mask, strict=False) if bool(on)}
     return out
 
 

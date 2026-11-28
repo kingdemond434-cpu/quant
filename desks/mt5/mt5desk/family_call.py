@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import inspect
 import math
+from datetime import UTC
 from typing import Any
 
 
@@ -118,13 +119,25 @@ def accepts_side(fn: Any) -> bool:
 #: share, so a cell certified in a session is replayed and traded in that session and nowhere
 #: else. `session` is an identity key like `timeframe`: it names the cell, it is never an
 #: argument the family sees.
+#
+# THE WINDOWS WERE UTC HOURS READ ON THE SERVER CLOCK (Tier S, 2026-09-30). They used to be
+# asia 0-8, london 8-16, ny 14-22 in SERVER hours -- the conventional UTC session hours, applied
+# to EET/EEST stamps that run 2-3 h ahead of UTC -- so "london" fired from 05:00 UTC in summer
+# and closed three hours before London did. Each session is now the market's own 08:00-16:00 in
+# its own local clock (`libs/regime/session_clock.MARKET_SESSIONS`), judged per signal with DST.
+# ANCHOR-CLOCKED FAMILIES KEEP THEIR ANCHOR (2026-10-06): a family whose signal is defined by an
+# open, close, gap or the rollover (`session_clock.anchor_clocked`) is judged from the prior close
+# (server 00:00) through that market's 16:00 local -- a window that holds the old server-hour
+# window on every weekday, so no such cell loses a signal it had. The numbers below are those
+# windows in SERVER hours in summer, kept for the readers that size coverage off them;
+# `session_filter` does not use them.
 SESSIONS: dict[str, tuple[int, int] | None] = {
-    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
+    "asia": (2, 10), "london": (10, 18), "ny": (15, 23), "all": None,
 }
 
 
 def session_window(session: Any) -> tuple[int, int] | None:
-    """[start, end) server hours for a session name; None for `all`, missing or unknown."""
+    """[start, end) SUMMER server hours for a session name; None for `all`, missing or unknown."""
     key = str(session or "all").strip().lower()
     return SESSIONS.get(key)
 
@@ -139,26 +152,70 @@ def certified_session(sleeve: dict[str, Any]) -> Any:
     return params.get("session")
 
 
-def session_filter(sigs: list, session: Any) -> list:
-    """Only the signals whose bar hour falls inside the session window; every signal when the
-    session is `all` or unknown. A signal with no readable time is kept: absence is not a
-    reason to drop a trade the family emitted."""
-    win = session_window(session)
-    if win is None:
+def _session_clock() -> Any:
+    import sys
+    from pathlib import Path
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.regime import session_clock
+    return session_clock
+
+
+def _naive_stamp(t: Any) -> Any:
+    """A signal's time with no tzinfo: an aware one converted to UTC first."""
+    if getattr(t, "tzinfo", None) is not None and t.utcoffset() is not None:
+        return t.astimezone(UTC).replace(tzinfo=None)
+    return t
+
+
+def session_filter(sigs: list[Any], session: Any, family: Any = None,
+                   params: dict[str, Any] | None = None) -> list[Any]:
+    """Only the signals inside the session; every signal when the session is `all` or unknown.
+
+    The session is the market's own 08:00-16:00 local, or -- for an anchor-clocked family -- the
+    prior close through that market's 16:00 (`session_clock.filter_mask`). `family` (and its
+    `params`) decide which; without them each signal's own `tag` (the family that emitted it)
+    does. A signal with no readable time is kept: absence is not a reason to drop a trade the
+    family emitted. The certified-sleeve path (`certified_session_filter`, used by
+    shadow_forward, the gateway and E8) reaches this same clock."""
+    if session_window(session) is None:
         return list(sigs)
-    lo, hi = win
-    out = []
-    for g in sigs:
-        t = getattr(g, "time", None)
-        h = getattr(t, "hour", None)
-        if h is None or lo <= int(h) < hi:
-            out.append(g)
-    return out
+    key = str(session).strip().lower()
+    clock = _session_clock()
+    timed = [i for i, g in enumerate(sigs) if getattr(getattr(g, "time", None), "hour", None)
+             is not None]
+    inside: dict[int, bool] = {}
+    if timed:
+        # Naive stamps only: an aware stamp is read on its UTC wall clock (as `server_to_utc`
+        # reads a UTC-labelled index), so a list mixing naive and aware stamps -- which pandas
+        # refuses to put in one index -- is judged per stamp, as the hour-reading filter was.
+        times = [_naive_stamp(sigs[i].time) for i in timed]
+        if family is not None:
+            flags = [bool(clock.anchor_clocked(family, params))] * len(timed)
+        else:
+            flags = [bool(clock.anchor_clocked(getattr(sigs[i], "tag", None))) for i in timed]
+        market = clock.filter_mask(times, key, anchored=False)
+        if market is None:
+            # A window this table names but the market clock does not (None, never all-False):
+            # keep the table's own server-hour window rather than dropping or crashing.
+            lo, hi = SESSIONS[key] or (0, 24)
+            market = [lo <= int(t.hour) < hi for t in times]
+            anchored = market
+        else:
+            anchored = clock.filter_mask(times, key, anchored=True) if any(flags) else market
+        inside = {i: bool(a if f else m)
+                  for i, m, a, f in zip(timed, market, anchored, flags, strict=True)}
+    return [g for i, g in enumerate(sigs) if inside.get(i, True)]
 
 
 def certified_session_filter(sigs: list, sleeve: dict[str, Any]) -> list:
     """Apply a sleeve's frozen session, including the legacy nested E8 envelope."""
-    return session_filter(sigs, certified_session(sleeve))
+    got = sleeve.get("params")
+    raw: dict[str, Any] = got if isinstance(got, dict) else {}
+    inner = raw.get("params")
+    return session_filter(sigs, certified_session(sleeve), sleeve.get("family"),
+                          inner if isinstance(inner, dict) else raw)
 
 
 def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = None) -> list:
@@ -187,7 +244,10 @@ def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = No
         out = list(fn(bars, side=-1, **kwargs) if short else fn(bars, **kwargs))
     except TypeError:
         out = list(fn(bars, side=-1 if short else 1, **kwargs))
-    out = session_filter(out, session)
+    # The family's own name decides the clock (anchor or market); a wrapped callable without a
+    # `family_*` name falls back to each signal's tag.
+    name = str(getattr(fn, "__name__", "") or "")
+    out = session_filter(out, session, name if name.startswith("family_") else None, kwargs)
     return cell_modifiers.apply(out, bars, mods) if mods else out
 
 

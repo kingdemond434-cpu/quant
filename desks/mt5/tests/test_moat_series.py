@@ -38,7 +38,7 @@ def _ticks(day: str, *, per_hour: int = 90, asia_spread: float = 8e-5,
     hour = (ms // 3_600_000) % 24
     walk = np.cumsum(rng.choice([-1.0, 0.0, 1.0], size=ms.size)) * 1e-5
     mid = 1.1 + walk + drift * np.arange(ms.size)
-    half = np.where(hour < 8, asia_spread, other_spread) / 2.0
+    half = np.where(hour < 7, asia_spread, other_spread) / 2.0
     return pd.DataFrame({"time_msc": ms, "bid": np.round(mid - half, 7),
                          "ask": np.round(mid + half, 7), "last": 0.0, "volume": 0,
                          "flags": 6, "volume_real": 0.0})
@@ -103,7 +103,7 @@ def test_the_spread_series_separates_the_sessions_it_was_planted_in(rig: dict) -
     assert (f["spread_bps_med_asia"] > 5 * f["spread_bps_med_ny"]).all()
     # 8e-5 on a mid of ~1.1 is ~0.73 bps; the planted number, not a shape check.
     assert f["spread_bps_med_asia"].between(0.6, 0.9).all()
-    assert (f["n_asia"] == 8 * 90).all()
+    assert (f["n_asia"] == 7 * 90).all()     # Tokyo 08-15 JST in UTC: hours 0-6
     assert (f["zero_spread_frac"] == 0.0).all()
 
 

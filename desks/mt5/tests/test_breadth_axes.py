@@ -20,8 +20,9 @@ from mt5desk.family_inputs import runtime_call_params, strip_identity_keys  # no
 def test_the_session_filter_keeps_only_bars_inside_the_window_and_all_keeps_everything():
     sigs = [SimpleNamespace(time=pd.Timestamp(f"2026-09-16 {h:02d}:00", tz="UTC")) for h in
             (1, 7, 8, 13, 15, 21, 23)]
-    assert [g.time.hour for g in fc.session_filter(sigs, "asia")] == [1, 7]
-    assert [g.time.hour for g in fc.session_filter(sigs, "london")] == [8, 13, 15]
+    # Stamps are EET/EEST (UTC+3 on this date): each session is its market's own 08-16 local.
+    assert [g.time.hour for g in fc.session_filter(sigs, "asia")] == [7, 8]
+    assert [g.time.hour for g in fc.session_filter(sigs, "london")] == [13, 15]
     assert [g.time.hour for g in fc.session_filter(sigs, "ny")] == [15, 21]
     assert fc.session_filter(sigs, "all") == sigs and fc.session_filter(sigs, None) == sigs
     assert fc.session_filter(sigs, "nonsense") == sigs
@@ -33,7 +34,7 @@ def test_the_session_filter_keeps_only_bars_inside_the_window_and_all_keeps_ever
         return sigs
 
     out = fc.signals(fam, None, side=1, params={"session": "asia", "k": 2})
-    assert seen == {"k": 2} and [g.time.hour for g in out] == [1, 7]
+    assert seen == {"k": 2} and [g.time.hour for g in out] == [7, 8]
 
 
 def test_forward_and_live_preserve_the_session_for_the_shared_filter():
@@ -46,11 +47,13 @@ def test_forward_and_live_preserve_the_session_for_the_shared_filter():
     raw = {"timeframe": "M5", "session": "asia", "lookback": 24}
     params = runtime_call_params("trend_ma_cross", raw)
     assert params == {"session": "asia", "lookback": 24}
-    assert [g.time.hour for g in fc.signals(fam, None, side=1, params=params)] == [1]
+    # Stamp 09:00 (UTC+3 on this date) is 06:00 UTC = 15:00 Tokyo, inside asia; 01:00 and 18:00
+    # are 07:00 and 00:00 Tokyo, outside. The point here is that every path keeps the session.
+    assert [g.time.hour for g in fc.signals(fam, None, side=1, params=params)] == [9]
     assert [g.time.hour for g in fc.session_filter(
-        sigs, fc.certified_session({"params": {"params": raw}}))] == [1]
+        sigs, fc.certified_session({"params": {"params": raw}}))] == [9]
     assert [g.time.hour for g in fc.certified_session_filter(
-        sigs, {"params": {"params": raw}})] == [1]
+        sigs, {"params": {"params": raw}})] == [9]
 
 
 def test_every_default_family_is_swept_on_every_chart_and_session_except_the_banned(
