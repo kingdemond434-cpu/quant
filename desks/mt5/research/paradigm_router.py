@@ -465,20 +465,28 @@ def p_causal_discovery(lead: dict[str, Any], *, artifact: Path | None = None) ->
         nodes = {str(e.get("from") or "").upper(), str(e.get("to") or "").upper()}
         touched = {s for s in syms if any(s in n for n in nodes)}
         if touched:
+            bt = e.get("by_time") if isinstance(e.get("by_time"), dict) else {}
             hit.append({"from": e.get("from"), "to": e.get("to"), "lag": e.get("lag"),
-                        "klass": e.get("klass") or "DAG_WEIGHT", "instruments": sorted(touched)})
+                        "klass": e.get("klass") or "DAG_WEIGHT", "instruments": sorted(touched),
+                        "fading": bool(bt.get("fading"))})
     if not hit:
         return _outcome("causal_discovery", "NONE",
                         f"the lab's {len(edges)} tested edge(s) and {len(dag)} DAG edge(s) touch "
                         f"none of {sorted(syms)}; an untested pair is not a refuted one",
                         detail={"n_edges": len(edges), "n_dag": len(dag)})
     touched = sorted({s for h in hit for s in h["instruments"]})
+    # An edge the lab measured as FADING across its own window (`causal_lab.time_dependence`) is
+    # still evidence, and is shown last: the reader sees the arrows that are holding first.
+    hit.sort(key=lambda h: bool(h["fading"]))
     best = sorted(hit, key=lambda h: str(h["klass"]))[0]
+    n_fading = sum(1 for h in hit if h["fading"])
     return _outcome("causal_discovery", "PRODUCED",
                     f"{len(hit)} admitted edge(s) on {', '.join(touched)}; strongest class "
-                    f"{best['klass']}. Recorded UNSIGNED: an edge carries a causal sign, not a "
-                    f"trade direction", produced=len(hit), instruments=touched, direction=None,
-                    detail={"edges": hit[:6]})
+                    f"{best['klass']}" + (f"; {n_fading} fading across the lab's window"
+                                          if n_fading else "") +
+                    ". Recorded UNSIGNED: an edge carries a causal sign, not a "
+                    "trade direction", produced=len(hit), instruments=touched, direction=None,
+                    detail={"edges": hit[:6], "n_fading": n_fading})
 
 
 # --------------------------------------------------------------------------- agreement

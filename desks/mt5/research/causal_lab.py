@@ -85,6 +85,10 @@ DID_PRE, DID_POST, DID_T_BAR = 10, 3, 2.0
 #: share of days above which the series is a STATE variable rather than a release calendar.
 MIN_RELEASES, MAX_RELEASE_SHARE = 20, 0.40
 MIN_REGIME_N, VOL_WINDOW = 40, 20
+#: |t| on the edge-by-time interaction above which the edge is stamped `drifting`. 2.58 is the
+#: two-sided 1% point: the stamp demotes an edge that already cleared FDR, so it is held to a
+#: stricter bar than the 5% that admitted the edge.
+TIME_T_BAR = 2.58
 
 MARKET_KINDS = ("fx", "metal", "energy", "index")
 AXIS_KINDS = ("rate", "positioning", "macro")
@@ -559,6 +563,47 @@ def regime_strengths(panel: Panel, i: int, j: int, lag: int) -> dict[str, Any]:
     return out
 
 
+def time_dependence(panel: Panel, i: int, j: int, lag: int) -> dict[str, Any]:
+    """IS THIS EDGE THE SAME ARROW AT THE END OF THE WINDOW AS AT THE START?
+
+    The vol terciles above ask whether the edge survives a change of STATE. This asks whether it
+    survives the passage of TIME, by giving time itself a seat in the regression: the surrogate
+    variable of the nonstationary causal-discovery literature (Zhang et al., CD-NOD, IJCAI 2017;
+    the idea Bloomberg's GPL `causal-ts` builds its "C node" on -- the idea only, no code of
+    theirs is here). Y_t is fitted on [1, X_{t-lag}, c, X_{t-lag} * c] with c the time index
+    scaled to [-1, 1]. The coefficient on X*c is the change in the edge across the window; its t
+    is the test. An edge whose mechanism depends on c was fitted to an average of two different
+    relationships, and the half-window correlations say which way it is going.
+
+    Lagged, not partial, for the reason `regime_strengths` gives. ONE test per edge that already
+    survived FDR, and it can only DEMOTE what an allocator reads (`drifting`, `fading`); it never
+    admits an edge, so it adds nothing to the multiplicity denominator."""
+    z = panel.z
+    y, xs = z[lag:, j], z[:-lag, i]
+    n = len(y)
+    if n < 3 * MIN_REGIME_N:
+        return {"status": "UNMEASURED", "why": f"fewer than {3 * MIN_REGIME_N} aligned days"}
+    c = np.linspace(-1.0, 1.0, n)
+    a = np.column_stack([np.ones(n), xs, c, xs * c])
+    beta, *_ = np.linalg.lstsq(a, y, rcond=None)
+    res = y - a @ beta
+    # White (HC0) covariance: a return panel's variance moves with time, which is exactly the
+    # direction this test looks in, so the homoskedastic t would read a vol trend as a drift.
+    bread = np.linalg.pinv(a.T @ a)
+    cov = bread @ ((a * (res ** 2)[:, None]).T @ a) @ bread
+    se = float(np.sqrt(max(float(cov[3, 3]), 0.0)))
+    if se <= 1e-12:
+        return {"status": "UNMEASURED", "why": "the source series does not vary"}
+    t = float(beta[3]) / se
+    h = n // 2
+    r1, r2 = _corr(xs[:h], y[:h]), _corr(xs[h:], y[h:])
+    drifting = abs(t) > TIME_T_BAR
+    return {"status": "OK", "n": n, "interaction": round(float(beta[3]), 5), "t": round(t, 3),
+            "r_first_half": round(r1, 5), "r_second_half": round(r2, 5), "drifting": drifting,
+            "fading": bool(drifting and abs(r2) < abs(r1)),
+            "sign_flipped": bool(r1 * r2 < 0.0)}
+
+
 def intervention_test(panel: Panel, axis: str, responder: str, lag: int,
                       coef_sign: float) -> dict[str, Any]:
     """The natural experiment for an edge out of a release axis: the responder's move over the
@@ -637,6 +682,7 @@ def classify_edges(panel: Panel, edges: list[dict[str, Any]],
         if e["mechanism"]:
             e["klass"] = "PLAUSIBLE_MECHANISM"
         e["by_regime"] = regime_strengths(panel, int(e["i"]), int(e["j"]), int(e["lag"]))
+        e["by_time"] = time_dependence(panel, int(e["i"]), int(e["j"]), int(e["lag"]))
         if str(e["from"]) in panel.releases:
             did = intervention_test(panel, str(e["from"]), str(e["to"]), int(e["lag"]),
                                     float(e["coef"]))

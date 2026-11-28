@@ -284,3 +284,20 @@ def test_main_writes_the_report_and_an_empty_pass_is_a_verdict(desk, monkeypatch
     assert doc["n_leads"] == 1 and doc["n_intake_rows"] == 1
     monkeypatch.setattr(pr, "leads", lambda max_leads=50: ([], []))
     assert pr.main(["--max-leads", "5", "--budget-s", "30"]) == 2
+
+
+def test_a_fading_lab_edge_is_shown_last_and_counted(tmp_path):
+    """`causal_lab.time_dependence` stamps an edge that is dying across the lab's own window.
+    It stays evidence; the reader is told, and sees the arrows that are holding first."""
+    art = tmp_path / "CAUSAL_LAB.json"
+    art.write_text(json.dumps({"edges": [
+        {"from": "XAUUSD", "to": "XAGUSD", "lag": 1, "klass": "OBSERVATIONAL",
+         "by_time": {"status": "OK", "drifting": True, "fading": True}},
+        {"from": "EURUSD", "to": "XAUUSD", "lag": 2, "klass": "OBSERVATIONAL",
+         "by_time": {"status": "OK", "drifting": False, "fading": False}},
+        {"from": "XAUUSD", "to": "GBPUSD", "lag": 1, "klass": "OBSERVATIONAL"},
+    ]}), encoding="utf-8")
+    out = pr.p_causal_discovery({"symbols": ["XAUUSD"]}, artifact=art)
+    assert out["produced"] == 3 and out["detail"]["n_fading"] == 1
+    assert [e["fading"] for e in out["detail"]["edges"]] == [False, False, True]
+    assert "1 fading" in out["why"]
