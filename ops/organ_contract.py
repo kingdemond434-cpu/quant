@@ -252,7 +252,8 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                              "every clock certified or retired -- nothing squats"),
     # Certificates that passed the gates and can never be enrolled still counted toward the total
     # and still spent a share of the fixed family-wise error budget.
-    "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
+    # It runs FIRST in ops/run_frontier_audit.cmd; no task of its own exists (manifest UNDECLARED).
+    "MT5-FrontierAudit (certificate hygiene)": ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
                            "certificates the enrolment engine can never run, evicted with their "
                            "evidence kept"),
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
@@ -419,6 +420,187 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # THE 87 THAT COULD STOP UNSEEN (process_health 2026-11-17 20:00Z: UNCONTRACTED). Each row
+    # names the file its task refreshes every run, at its cadence plus one missed run. The 22
+    # department and forest residents share three slots, so their watermarks get a day. Rows
+    # whose only artifact lives outside the repository, the HTTP servers, one-shots and the
+    # memecoin repo's tasks are left out: their evidence cannot be named from this tree.
+    "MT5-AuditLane": (
+        "desks/mt5/logs/MT5-AuditLane.log", 180,
+        "the hourly audit/intake lane's run log (every step appends)"),
+    "MT5-BoxHeartbeat": (
+        "desks/mt5/reports/BOX_HEARTBEAT.json", 15,
+        "the box's external dead-man ping and what it checked"),
+    "MT5-ClockFixer": (
+        "desks/mt5/reports/CLOCK_FIXER.json", 40,
+        "the control plane's clock repair pass: fixed, dead and certificates without "
+        "clocks"),
+    "MT5-ContractTerms": (
+        "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json", 150,
+        "freshness of the broker swap/contract-terms capture that carry pricing reads"),
+    "MT5-ConvertSwarm": (
+        "desks/mt5/logs/MT5-ConvertSwarm.log", 150,
+        "the LLM conversion swarm's run log"),
+    "MT5-CostState": (
+        "desks/mt5/reports/COST_HONESTY.json", 1560,
+        "per-symbol hour-of-day spread and swap honesty versus the flat cost model"),
+    "MT5-CycleMidnight": (
+        "desks/mt5/data/cycle_state_midnight.json", 1560,
+        "the Codex CRO lane's daily checkpoint (date, status, completed stages)"),
+    "MT5-CycleNoon": (
+        "desks/mt5/data/cycle_state_noon.json", 1560,
+        "the Claude CRO lane's daily checkpoint (date, status, completed stages)"),
+    "MT5-DeepSeek": (
+        "desks/mt5/logs/MT5-DeepSeek.log", 150,
+        "the DeepSeek research seat's per-cycle log (stamped header every run)"),
+    "MT5-Deepening": (
+        "desks/mt5/reports/DEEPENING_BACKLOG.json", 90,
+        "the deepening worker's open backlog and its oldest age"),
+    "MT5-Dept-Data": (
+        "desks/mt5/data/watermarks/resident__dept_data.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Execution": (
+        "desks/mt5/data/watermarks/resident__dept_execution.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Forward": (
+        "desks/mt5/data/watermarks/resident__dept_forward.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Intel": (
+        "desks/mt5/data/watermarks/resident__dept_intel.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Japan": (
+        "desks/mt5/data/watermarks/resident__dept_japan.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Macro": (
+        "desks/mt5/data/watermarks/resident__dept_macro.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Mathlab": (
+        "desks/mt5/data/watermarks/resident__dept_mathlab.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Meta": (
+        "desks/mt5/data/watermarks/resident__dept_meta.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Regions": (
+        "desks/mt5/data/watermarks/resident__dept_regions.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Rest": (
+        "desks/mt5/data/watermarks/resident__dept_rest.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Dept-Validate": (
+        "desks/mt5/data/watermarks/resident__dept_validate.json", 1560,
+        "the department resident's progress watermark: written only when a pass "
+        "COMPLETES"),
+    "MT5-Forest-Africa": (
+        "desks/mt5/data/watermarks/resident__dept_africa.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Asean": (
+        "desks/mt5/data/watermarks/resident__dept_asean.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-China": (
+        "desks/mt5/data/watermarks/resident__dept_china.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Europe": (
+        "desks/mt5/data/watermarks/resident__dept_europe.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Korea": (
+        "desks/mt5/data/watermarks/resident__dept_korea.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Latam": (
+        "desks/mt5/data/watermarks/resident__dept_latam.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Mena": (
+        "desks/mt5/data/watermarks/resident__dept_mena.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-NorthAmerica": (
+        "desks/mt5/data/watermarks/resident__dept_north_america.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-Oceania": (
+        "desks/mt5/data/watermarks/resident__dept_oceania.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-RussiaCis": (
+        "desks/mt5/data/watermarks/resident__dept_russia_cis.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-Forest-SouthAsia": (
+        "desks/mt5/data/watermarks/resident__dept_south_asia.json", 1560,
+        "the forest resident's progress watermark: written only when a pass COMPLETES"),
+    "MT5-E8WindowGuard": (
+        "desks/mt5/logs/MT5-E8WindowGuard.log", 10,
+        "the E8 fail-open guard's per-minute verdict line (OK or ALERT)"),
+    "MT5-FTMO-Executor": (
+        "desks/mt5/reports/FTMO_EXEC.json", 15,
+        "the FTMO executor's per-pass state: what it sent, refused and why"),
+    "MT5-FTMO-VenueReader": (
+        "desks/mt5/reports/FTMO_ACCOUNT_STATE.json", 15,
+        "the FTMO account's venue reading (equity, positions) every read, success or "
+        "refusal"),
+    "MT5-FusionDeadmanDryRun": (
+        "desks/mt5/data/fusion_deadman_state.json", 15,
+        "the MT5 rail's dry-run verdict: readings, rails, breaches, what it WOULD do"),
+    "MT5-FusionDeadmanLive": (
+        "desks/mt5/data/fusion_deadman_state.json", 15,
+        "the MT5 rail's live verdict: readings, rails, breaches and the action taken"),
+    "MT5-GateAttest": (
+        "data/gate_attestation_run.json", 270,
+        "the gate attestation run record (which gates ran, their results)"),
+    "MT5-HourlyCore": (
+        "desks/mt5/logs/MT5-HourlyCore.log", 150,
+        "the core hourly pass's run log (governance, forward and publication legs)"),
+    "MT5-LawGate": (
+        "data/law_gate.json", 150,
+        "the rotating law-gate battery's merged verdict"),
+    "MT5-Moat-Exploit": (
+        "desks/mt5/reports/MOAT_SWARMS.json", 60,
+        "the moat swarms' shared report (this swarm's pass lands under swarms.exploit)"),
+    "MT5-Moat-Explore": (
+        "desks/mt5/reports/MOAT_SWARMS.json", 60,
+        "the moat swarms' shared report (this swarm's pass lands under swarms.explore)"),
+    "MT5-Moat-Resurrect": (
+        "desks/mt5/reports/MOAT_SWARMS.json", 60,
+        "the moat swarms' shared report (this swarm's pass lands under "
+        "swarms.resurrect)"),
+    "MT5-NoLog": (
+        "desks/mt5/reports/NO_LOG.json", 1560,
+        "the weekly review of gateway refusals by reason class"),
+    "MT5-OffsiteBackup": (
+        "desks/mt5/reports/OFFSITE_BACKUP.json", 750,
+        "the offsite backup's last run: status, included, missing, last success"),
+    "MT5-PlumbingWatchdog": (
+        "desks/mt5/reports/PLUMBING_WATCHDOG.json", 40,
+        "the plumbing watchdog's defect report"),
+    "MT5-ReapGitWriters": (
+        "desks/mt5/reports/GIT_WRITER_REAP.json", 40,
+        "the hung git-writer reaper's measurement (and kills under --apply)"),
+    "MT5-RebootDrill": (
+        "desks/mt5/reports/REBOOT_DRILL.json", 1560,
+        "the daily reboot-survival drill's verdict"),
+    "MT5-RegimeMonitor": (
+        "desks/mt5/data/regime_state.json", 40,
+        "per-sleeve regime flags (hibernate/wake) the gateway reads"),
+    "MT5-ResearchSupervisor": (
+        "desks/mt5/logs/supervisor_state.json", 150,
+        "the research supervisor's respawn/verify state"),
+    "MT5-ShadowSync": (
+        "desks/mt5/logs/sync_shadow_to_git.log", 40,
+        "the shadow-to-git sync's run log"),
+    "MT5-SshGuard": (
+        "desks/mt5/data/ssh_guard.json", 15,
+        "the SSH brute-force guard's bans and offenders"),
+    "Quant-SideChannelMiners": (
+        "desks/mt5/data/intelligence/latest_discoveries.json", 270,
+        "the side-channel miners' latest discoveries and per-miner counts"),
+    "Quant-VideoCells": (
+        "data/video_vault/LAST_RUN.json", 150,
+        "the video-transcript cell miner's last-run stamp"),
 }
 
 
@@ -428,6 +610,40 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: unstamped or future stamp reads as no artifact at all, which never_stale answers by starting
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
+    "data/gate_attestation_run.json": "at",
+    "data/video_vault/LAST_RUN.json": "ts",
+    "desks/mt5/data/regime_state.json": "swept_at",
+    "desks/mt5/data/watermarks/resident__dept_africa.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_asean.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_china.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_data.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_europe.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_execution.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_forward.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_intel.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_japan.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_korea.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_latam.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_macro.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mathlab.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mena.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_meta.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_north_america.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_oceania.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_regions.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_rest.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_russia_cis.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_south_asia.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_validate.json": "at",
+    "desks/mt5/reports/BOX_HEARTBEAT.json": "at",
+    "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json": "generated_at",
+    "desks/mt5/reports/CLOCK_FIXER.json": "at",
+    "desks/mt5/reports/DEEPENING_BACKLOG.json": "at",
+    "desks/mt5/reports/FTMO_EXEC.json": "at",
+    "desks/mt5/reports/MOAT_SWARMS.json": "at",
+    "desks/mt5/reports/NO_LOG.json": "at",
+    "desks/mt5/reports/PLUMBING_WATCHDOG.json": "at",
+    "desks/mt5/reports/REBOOT_DRILL.json": "checked_at",
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
 }
 

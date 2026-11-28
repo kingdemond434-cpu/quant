@@ -309,6 +309,31 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
 #: and carries `expected_disabled` (this entry), but it is not a fault. Every entry names who
 #: decided it and why, and the date; tests/ops/test_process_health_schtasks.py fails without
 #: them. Remove the entry when the task is meant to run again.
+#: A TASK THAT IS PAUSED BY A RAIL IS NOT BROKEN (2026-11-17). The Fusion ruin rail writes
+#: data/GATEWAY_PAUSED and the gateway then returns before it writes its state, every pass, until
+#: the principal re-arms -- so MT5-GatewayResident read STALE for 18 days and sat in every repair
+#: list beside genuinely dead organs. While the marker exists the row reads PAUSED, names the
+#: marker and how long it has stood, and is NOT restarted (never_stale restarts STALE and
+#: NO_ARTIFACT only). The marker's own text is never read: it carries account figures.
+PAUSE_MARKERS: dict[str, str] = {
+    "MT5-GatewayResident": "desks/mt5/data/GATEWAY_PAUSED",
+}
+
+
+def paused_by(name: str) -> str | None:
+    """Why `name` is paused, from its marker's presence and age only; None when it is not."""
+    rel = PAUSE_MARKERS.get(name)
+    if not rel:
+        return None
+    try:
+        mtime = (ROOT / rel).stat().st_mtime
+    except OSError:
+        return None
+    hours = max(0.0, (datetime.now(UTC).timestamp() - mtime) / 3600.0)
+    return (f"paused by {rel} (set {hours:.0f}h ago): a rail stood the task down and only the "
+            "principal re-arms it; not restarted, not a repair item")
+
+
 EXPECTED_DISABLED: dict[str, dict[str, str]] = {
     "MT5-AdoptRelease": {
         "reason": "disabled on purpose by the principal: the box does not self-adopt until the "
@@ -811,6 +836,8 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", (
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
                 "will start this is UNMEASURED")
+        elif artifact and (age is None or (max_age and age > max_age)) and paused_by(name):
+            verdict, why = "PAUSED", str(paused_by(name))
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
@@ -889,7 +916,7 @@ def build() -> dict[str, Any]:
 
     order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "DISABLED": 4, "PAUSED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
